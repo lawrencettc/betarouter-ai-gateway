@@ -62,7 +62,8 @@ Allow outbound TCP/UDP `7844` and outbound HTTPS for `cloudflared`.
 The current 2 GB Droplet is suitable for running the service but is tight for a
 full monorepo build. Add at least 4 GB of temporary swap and confirm adequate
 free disk before using the local-build fallback. Keep
-`BETAROUTER_BUILD_CONCURRENCY=1` so the Next.js applications build serially;
+`BETAROUTER_BUILD_CONCURRENCY=1` so the Next.js applications build serially and
+`BETAROUTER_BUILD_NODE_HEAP_MB=1536` so the largest build can use enough heap;
 higher concurrency can trigger the Linux out-of-memory killer. Once GHCR builds
 resume, set `BETAROUTER_IMAGE` back to the GHCR image and
 `BETAROUTER_PULL_POLICY=always`.

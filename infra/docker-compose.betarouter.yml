@@ -9,6 +9,7 @@ services:
       args:
         APP_VERSION: ${BETAROUTER_APP_VERSION:-self-hosted}
         TURBO_CONCURRENCY: ${BETAROUTER_BUILD_CONCURRENCY:-1}
+        NODE_MAX_OLD_SPACE_SIZE: ${BETAROUTER_BUILD_NODE_HEAP_MB:-1536}
     pull_policy: ${BETAROUTER_PULL_POLICY:-always}
     restart: unless-stopped
     stop_grace_period: 2m

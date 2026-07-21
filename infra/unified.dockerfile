@@ -95,7 +95,9 @@ COPY . .
 # Install all dependencies, build, then prune to production only. Keep the
 # default fast for CI; low-memory self-hosted builds can override this argument.
 ARG TURBO_CONCURRENCY=32
+ARG NODE_MAX_OLD_SPACE_SIZE=4096
 RUN --mount=type=cache,target=/app/.turbo \
+    NODE_OPTIONS="--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE}" \
     TURBO_TOKEN=turbotokenoss pnpm turbo run build --concurrency="${TURBO_CONCURRENCY}"
 
 # Copy database init scripts
