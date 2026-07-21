@@ -2,6 +2,7 @@ node_modules/
 dist/
 *.tsbuildinfo
 .env
+.env.production
 packages/**/*.js
 apps/**/*.js
 *spec.yaml

@@ -1,0 +1,121 @@
+name: betarouter-ai-gateway
+
+services:
+  llmgateway:
+    image: ${BETAROUTER_IMAGE:-ghcr.io/lawrencettc/betarouter-ai-gateway-unified:latest}
+    build:
+      context: ..
+      dockerfile: infra/unified.dockerfile
+      args:
+        APP_VERSION: ${BETAROUTER_APP_VERSION:-self-hosted}
+    pull_policy: ${BETAROUTER_PULL_POLICY:-always}
+    restart: unless-stopped
+    stop_grace_period: 2m
+    expose:
+      - "3002"
+      - "3003"
+      - "3004"
+      - "3005"
+      - "3006"
+      - "4001"
+      - "4002"
+    environment:
+      NODE_ENV: production
+      RUN_MIGRATIONS: "true"
+      TELEMETRY_ACTIVE: ${TELEMETRY_ACTIVE:-false}
+
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-betarouter}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      REDIS_HOST: localhost
+      REDIS_PORT: "6379"
+
+      AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET is required}
+      GATEWAY_API_KEY_HASH_SECRET: ${GATEWAY_API_KEY_HASH_SECRET:?GATEWAY_API_KEY_HASH_SECRET is required}
+      LLM_VIDEO_CONTENT_JWT_SECRET: ${LLM_VIDEO_CONTENT_JWT_SECRET:?LLM_VIDEO_CONTENT_JWT_SECRET is required}
+
+      UI_URL: ${UI_URL:?UI_URL is required}
+      PLAYGROUND_URL: ${PLAYGROUND_URL:?PLAYGROUND_URL is required}
+      CODE_URL: ${CODE_URL:?CODE_URL is required}
+      DOCS_URL: ${DOCS_URL:?DOCS_URL is required}
+      ADMIN_URL: ${ADMIN_URL:?ADMIN_URL is required}
+      API_URL: ${API_URL:?API_URL is required}
+      API_BACKEND_URL: ${API_BACKEND_URL:-http://localhost:4002}
+      ORIGIN_URLS: ${ORIGIN_URLS:?ORIGIN_URLS is required}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:?COOKIE_DOMAIN is required}
+      PASSKEY_RP_ID: ${PASSKEY_RP_ID:?PASSKEY_RP_ID is required}
+      PASSKEY_RP_NAME: ${PASSKEY_RP_NAME:-BetaRouter}
+
+      LLM_OPENAI_API_KEY: ${LLM_OPENAI_API_KEY:-}
+      LLM_ANTHROPIC_API_KEY: ${LLM_ANTHROPIC_API_KEY:-}
+      LLM_GOOGLE_AI_STUDIO_API_KEY: ${LLM_GOOGLE_AI_STUDIO_API_KEY:-}
+
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_AUDIENCE_ID: ${RESEND_AUDIENCE_ID:-}
+      RESEND_NEWSLETTER_TOPIC_ID: ${RESEND_NEWSLETTER_TOPIC_ID:-}
+      POSTHOG_KEY: ${POSTHOG_KEY:-}
+      POSTHOG_HOST: ${POSTHOG_HOST:-}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_PRO_MONTHLY_PRICE_ID: ${STRIPE_PRO_MONTHLY_PRICE_ID:-}
+      STRIPE_PRO_YEARLY_PRICE_ID: ${STRIPE_PRO_YEARLY_PRICE_ID:-}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - redis_data:/var/lib/redis
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          curl --fail --silent --show-error http://localhost:3002/ >/dev/null &&
+          curl --fail --silent --show-error http://localhost:4001/ >/dev/null &&
+          curl --fail --silent --show-error http://localhost:4002/ >/dev/null
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 2m
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: "5"
+    networks:
+      - betarouter
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.7.2
+    command:
+      - tunnel
+      - --no-autoupdate
+      - run
+      - --token
+      - ${TUNNEL_TOKEN:?TUNNEL_TOKEN is required}
+    restart: unless-stopped
+    depends_on:
+      llmgateway:
+        condition: service_healthy
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    networks:
+      - betarouter
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  betarouter:
+    driver: bridge
