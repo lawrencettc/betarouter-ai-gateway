@@ -1,0 +1,433 @@
+import { HTTPException } from "hono/http-exception";
+
+import { findActiveIamRules } from "@/lib/cached-queries.js";
+import { anyCidrMatches } from "@/lib/client-ip.js";
+import { validateEndUserSessionModelAccess } from "@/lib/end-user-session.js";
+
+import {
+	models,
+	type ModelDefinition,
+	type ProviderId,
+} from "@llmgateway/models";
+
+import type { GatewayApiKey } from "@/lib/cached-queries.js";
+
+export interface IamRule {
+	id: string;
+	ruleType:
+		| "allow_models"
+		| "deny_models"
+		| "allow_pricing"
+		| "deny_pricing"
+		| "allow_providers"
+		| "deny_providers"
+		| "allow_ip_cidrs"
+		| "deny_ip_cidrs";
+	ruleValue: {
+		models?: string[];
+		providers?: string[];
+		pricingType?: "free" | "paid";
+		maxInputPrice?: number;
+		maxOutputPrice?: number;
+		ipCidrs?: string[];
+	};
+	status: "active" | "inactive";
+}
+
+export interface IamValidationResult {
+	allowed: boolean;
+	reason?: string;
+	allowedProviders?: ProviderId[];
+}
+
+export async function validateModelAccess(
+	apiKeyId: string,
+	requestedModel: string,
+	requestedProvider?: string,
+	activeModelInfo?: ModelDefinition,
+	clientIp?: string,
+): Promise<IamValidationResult> {
+	// Get all active IAM rules for this API key (using cacheable select builder)
+	const iamRules = await findActiveIamRules(apiKeyId);
+
+	// Use the provided active model info (with deactivated providers filtered out)
+	// or fall back to looking up from the global models list
+	const modelDef =
+		activeModelInfo ?? models.find((m) => m.id === requestedModel);
+	if (!modelDef) {
+		return { allowed: false, reason: `Model ${requestedModel} not found` };
+	}
+
+	// If no rules exist, allow all access (backwards compatibility)
+	if (iamRules.length === 0) {
+		return {
+			allowed: true,
+			allowedProviders: modelDef.providers.map((p) => p.providerId),
+		};
+	}
+
+	// Get all provider IDs for this model (only active providers if activeModelInfo was provided)
+	const modelProviderIds = modelDef.providers.map((p) => p.providerId);
+
+	// Track which providers are allowed/denied by IAM rules
+	let allowedProviders: Set<ProviderId> = new Set(modelProviderIds);
+
+	// Allow rules of the same type are unioned: the request passes the group if
+	// ANY rule in it allows the request. Deny rules always apply individually.
+	const allowGroups = new Map<IamRule["ruleType"], IamRule[]>();
+	const denyRules: IamRule[] = [];
+	for (const rule of iamRules) {
+		if (rule.ruleType.startsWith("allow_")) {
+			if (isNoopAllowRule(rule)) {
+				continue;
+			}
+			const group = allowGroups.get(rule.ruleType);
+			if (group) {
+				group.push(rule);
+			} else {
+				allowGroups.set(rule.ruleType, [rule]);
+			}
+		} else {
+			denyRules.push(rule);
+		}
+	}
+
+	for (const group of allowGroups.values()) {
+		let groupAllowed = false;
+		let firstDenial: RuleEvaluationResult | undefined;
+		let unionedProviders: Set<ProviderId> | undefined;
+		for (const rule of group) {
+			const result = await evaluateRule(
+				rule,
+				modelDef,
+				requestedProvider,
+				allowedProviders,
+				clientIp,
+			);
+			if (result.allowed) {
+				groupAllowed = true;
+				if (result.allowedProviders) {
+					unionedProviders ??= new Set<ProviderId>();
+					for (const provider of result.allowedProviders) {
+						unionedProviders.add(provider);
+					}
+				}
+			} else if (!firstDenial) {
+				firstDenial = result;
+			}
+		}
+		if (!groupAllowed) {
+			return {
+				allowed: false,
+				reason:
+					(firstDenial?.reason ?? "Request denied by IAM rules.") +
+					` Adapt your LLMGateway API key IAM permissions in the dashboard or contact your LLMGateway API Key issuer. (Rule ID${group.length > 1 ? "s" : ""}: ${group.map((r) => r.id).join(", ")})`,
+			};
+		}
+		if (unionedProviders) {
+			allowedProviders = unionedProviders;
+		}
+	}
+
+	for (const rule of denyRules) {
+		const result = await evaluateRule(
+			rule,
+			modelDef,
+			requestedProvider,
+			allowedProviders,
+			clientIp,
+		);
+		if (!result.allowed) {
+			return {
+				allowed: false,
+				reason:
+					result.reason +
+					` Adapt your LLMGateway API key IAM permissions in the dashboard or contact your LLMGateway API Key issuer. (Rule ID: ${rule.id})`,
+			};
+		}
+		if (result.allowedProviders) {
+			allowedProviders = result.allowedProviders;
+		}
+	}
+
+	// If no providers remain after IAM filtering, deny access
+	if (allowedProviders.size === 0) {
+		return {
+			allowed: false,
+			reason: `No providers are allowed for model ${requestedModel} due to IAM rules`,
+		};
+	}
+
+	return { allowed: true, allowedProviders: Array.from(allowedProviders) };
+}
+
+export async function validateRequestModelAccess(
+	apiKey: GatewayApiKey,
+	requestedModel: string,
+	requestedProvider?: string,
+	activeModelInfo?: ModelDefinition,
+	clientIp?: string,
+	options: { autoRouting?: boolean } = {},
+): Promise<IamValidationResult> {
+	const sessionValidation = validateEndUserSessionModelAccess(
+		apiKey,
+		requestedModel,
+		activeModelInfo,
+		options,
+	);
+	if (sessionValidation) {
+		if (
+			sessionValidation.allowed &&
+			requestedProvider &&
+			!sessionValidation.allowedProviders?.includes(requestedProvider)
+		) {
+			return {
+				allowed: false,
+				reason: `Provider ${requestedProvider} is not allowed for this end-user session`,
+			};
+		}
+		return sessionValidation;
+	}
+
+	return await validateModelAccess(
+		apiKey.id,
+		requestedModel,
+		requestedProvider,
+		activeModelInfo,
+		clientIp,
+	);
+}
+
+interface RuleEvaluationResult {
+	allowed: boolean;
+	reason?: string;
+	allowedProviders?: Set<ProviderId>;
+}
+
+// An allow rule without its value field set does not restrict anything, so it
+// must not count as "allows everything" when unioned with sibling rules.
+function isNoopAllowRule(rule: IamRule): boolean {
+	const { ruleType, ruleValue } = rule;
+	switch (ruleType) {
+		case "allow_models":
+			return !ruleValue.models;
+		case "allow_providers":
+			return !ruleValue.providers;
+		case "allow_pricing":
+			return (
+				!ruleValue.pricingType &&
+				ruleValue.maxInputPrice === undefined &&
+				ruleValue.maxOutputPrice === undefined
+			);
+		case "allow_ip_cidrs":
+			return !ruleValue.ipCidrs || ruleValue.ipCidrs.length === 0;
+		default:
+			return false;
+	}
+}
+
+async function evaluateRule(
+	rule: IamRule,
+	modelDef: ModelDefinition,
+	requestedProvider: string | undefined,
+	currentAllowedProviders: Set<ProviderId>,
+	clientIp: string | undefined,
+): Promise<RuleEvaluationResult> {
+	const { ruleType, ruleValue } = rule;
+
+	switch (ruleType) {
+		case "allow_models":
+			if (ruleValue.models && !ruleValue.models.includes(modelDef.id)) {
+				return {
+					allowed: false,
+					reason: `Model ${modelDef.id} is not in the allowed models list`,
+				};
+			}
+			break;
+
+		case "deny_models":
+			if (ruleValue.models && ruleValue.models.includes(modelDef.id)) {
+				return {
+					allowed: false,
+					reason: `Model ${modelDef.id} is in the denied models list`,
+				};
+			}
+			break;
+
+		case "allow_providers":
+			if (ruleValue.providers) {
+				const newAllowedProviders = new Set<ProviderId>();
+				for (const provider of currentAllowedProviders) {
+					if (ruleValue.providers.includes(provider)) {
+						newAllowedProviders.add(provider);
+					}
+				}
+
+				if (requestedProvider) {
+					// Specific provider requested - check if it's allowed
+					if (!ruleValue.providers.includes(requestedProvider)) {
+						return {
+							allowed: false,
+							reason: `Provider ${requestedProvider} is not in the allowed providers list`,
+						};
+					}
+					return { allowed: true, allowedProviders: newAllowedProviders };
+				} else {
+					if (newAllowedProviders.size === 0) {
+						return {
+							allowed: false,
+							reason: `None of the model's providers are in the allowed providers list`,
+						};
+					}
+					return { allowed: true, allowedProviders: newAllowedProviders };
+				}
+			}
+			break;
+
+		case "deny_providers":
+			if (ruleValue.providers) {
+				const newAllowedProviders = new Set<ProviderId>();
+				for (const provider of currentAllowedProviders) {
+					if (!ruleValue.providers.includes(provider)) {
+						newAllowedProviders.add(provider);
+					}
+				}
+
+				if (requestedProvider) {
+					// Specific provider requested - check if it's denied
+					if (ruleValue.providers.includes(requestedProvider)) {
+						return {
+							allowed: false,
+							reason: `Provider ${requestedProvider} is in the denied providers list`,
+						};
+					}
+					return { allowed: true, allowedProviders: newAllowedProviders };
+				} else {
+					if (newAllowedProviders.size === 0) {
+						return {
+							allowed: false,
+							reason: `All of the model's providers are in the denied providers list`,
+						};
+					}
+					return { allowed: true, allowedProviders: newAllowedProviders };
+				}
+			}
+			break;
+
+		case "allow_pricing":
+			if (ruleValue.pricingType) {
+				const isFreeModel = modelDef.free === true;
+				const isPaidModel = !isFreeModel;
+
+				if (ruleValue.pricingType === "free" && isPaidModel) {
+					return {
+						allowed: false,
+						reason: "Only free models are allowed",
+					};
+				}
+
+				if (ruleValue.pricingType === "paid" && isFreeModel) {
+					return {
+						allowed: false,
+						reason: "Only paid models are allowed",
+					};
+				}
+			}
+
+			// Check max price limits
+			if (
+				ruleValue.maxInputPrice !== undefined ||
+				ruleValue.maxOutputPrice !== undefined
+			) {
+				for (const provider of modelDef.providers) {
+					if (requestedProvider && provider.providerId !== requestedProvider) {
+						continue;
+					}
+
+					if (
+						ruleValue.maxInputPrice !== undefined &&
+						provider.inputPrice &&
+						Number(provider.inputPrice) > ruleValue.maxInputPrice
+					) {
+						return {
+							allowed: false,
+							reason: `Model input price exceeds maximum allowed (${provider.inputPrice} > ${ruleValue.maxInputPrice})`,
+						};
+					}
+
+					if (
+						ruleValue.maxOutputPrice !== undefined &&
+						provider.outputPrice &&
+						Number(provider.outputPrice) > ruleValue.maxOutputPrice
+					) {
+						return {
+							allowed: false,
+							reason: `Model output price exceeds maximum allowed (${provider.outputPrice} > ${ruleValue.maxOutputPrice})`,
+						};
+					}
+				}
+			}
+			break;
+
+		case "deny_pricing":
+			if (ruleValue.pricingType) {
+				const isFreeModel = modelDef.free === true;
+				const isPaidModel = !isFreeModel;
+
+				if (ruleValue.pricingType === "free" && isFreeModel) {
+					return {
+						allowed: false,
+						reason: "Free models are not allowed",
+					};
+				}
+
+				if (ruleValue.pricingType === "paid" && isPaidModel) {
+					return {
+						allowed: false,
+						reason: "Paid models are not allowed",
+					};
+				}
+			}
+			break;
+
+		case "allow_ip_cidrs":
+			if (ruleValue.ipCidrs && ruleValue.ipCidrs.length > 0) {
+				if (!clientIp) {
+					return {
+						allowed: false,
+						reason:
+							"Client IP could not be determined but an IP allow-list rule is configured",
+					};
+				}
+				if (!anyCidrMatches(clientIp, ruleValue.ipCidrs)) {
+					return {
+						allowed: false,
+						reason: `Client IP ${clientIp} is not in the allowed CIDR ranges`,
+					};
+				}
+			}
+			break;
+
+		case "deny_ip_cidrs":
+			if (
+				ruleValue.ipCidrs &&
+				ruleValue.ipCidrs.length > 0 &&
+				clientIp &&
+				anyCidrMatches(clientIp, ruleValue.ipCidrs)
+			) {
+				return {
+					allowed: false,
+					reason: `Client IP ${clientIp} is in the denied CIDR ranges`,
+				};
+			}
+			break;
+	}
+
+	return { allowed: true };
+}
+
+export function throwIamException(reason: string): never {
+	throw new HTTPException(403, {
+		message: `Access denied: ${reason}`,
+	});
+}

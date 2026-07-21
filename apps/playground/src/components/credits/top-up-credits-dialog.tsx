@@ -1,0 +1,803 @@
+import {
+	CardElement,
+	Elements,
+	useElements,
+	useStripe as useStripeElements,
+} from "@stripe/react-stripe-js";
+import { useQueryClient } from "@tanstack/react-query";
+import { CreditCard, ExternalLink, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useApi } from "@/lib/fetch-client";
+import { useStripe } from "@/lib/stripe";
+
+import {
+	CREDIT_TOP_UP_MAX_AMOUNT,
+	CREDIT_TOP_UP_MIN_AMOUNT,
+	isCreditTopUpAmountInRange,
+} from "@llmgateway/shared";
+
+import type React from "react";
+
+export function TopUpCreditsButton() {
+	return (
+		<TopUpCreditsDialog>
+			<Button className="flex items-center">
+				<Plus className="mr-2 h-4 w-4" />
+				Top Up Credits
+			</Button>
+		</TopUpCreditsDialog>
+	);
+}
+
+interface TopUpCreditsDialogProps {
+	children?: React.ReactNode;
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
+	// The org credits should be added to (the playground's Chat org). When
+	// omitted, the API falls back to the user's first organization.
+	organizationId?: string;
+}
+
+export function TopUpCreditsDialog({
+	children,
+	open: controlledOpen,
+	onOpenChange: controlledOnOpenChange,
+	organizationId,
+}: TopUpCreditsDialogProps) {
+	const [internalOpen, setInternalOpen] = useState(false);
+	const open = controlledOpen ?? internalOpen;
+	const setOpen = controlledOnOpenChange ?? setInternalOpen;
+	const [step, setStep] = useState<
+		"amount" | "payment" | "select-payment" | "confirm-payment" | "success"
+	>("amount");
+	const [amount, setAmount] = useState<number>(50);
+	const [loading, setLoading] = useState(false);
+	const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
+		string | null
+	>(null);
+	const api = useApi();
+	const queryClient = useQueryClient();
+	const { stripe, isLoading: stripeLoading } = useStripe();
+
+	const { data: paymentMethodsData, isLoading: paymentMethodsLoading } =
+		api.useQuery(
+			"get",
+			"/payments/payment-methods",
+			{},
+			{
+				enabled: open, // Only fetch when dialog is open
+			},
+		);
+
+	const hasPaymentMethods =
+		paymentMethodsData?.paymentMethods &&
+		paymentMethodsData.paymentMethods.length > 0;
+	const defaultPaymentMethod = paymentMethodsData?.paymentMethods?.find(
+		(pm) => pm.isDefault,
+	);
+
+	useEffect(() => {
+		if (defaultPaymentMethod) {
+			setSelectedPaymentMethod(defaultPaymentMethod.id);
+		}
+	}, [defaultPaymentMethod]);
+
+	const handleClose = () => {
+		setOpen(false);
+		setTimeout(() => {
+			setStep("amount");
+			setLoading(false);
+		}, 300);
+	};
+
+	const handlePaymentSuccess = async () => {
+		// Invalidate organization query to refresh credits balance
+		await queryClient.invalidateQueries({
+			queryKey: api.queryOptions("get", "/orgs").queryKey,
+		});
+		setStep("success");
+	};
+
+	return (
+		<Dialog open={open} onOpenChange={setOpen}>
+			{children ? <DialogTrigger asChild>{children}</DialogTrigger> : null}
+			<DialogContent className="sm:max-w-[500px]">
+				{step === "amount" ? (
+					<AmountStep
+						amount={amount}
+						setAmount={setAmount}
+						organizationId={organizationId}
+						onNext={() => {
+							if (paymentMethodsLoading) {
+								return; // Don't proceed if still loading
+							}
+							if (hasPaymentMethods) {
+								setStep("select-payment");
+							} else {
+								setStep("payment");
+							}
+						}}
+						onCancel={handleClose}
+					/>
+				) : step === "select-payment" ? (
+					<SelectPaymentStep
+						amount={amount}
+						paymentMethods={paymentMethodsData?.paymentMethods ?? []}
+						selectedPaymentMethod={selectedPaymentMethod}
+						setSelectedPaymentMethod={setSelectedPaymentMethod}
+						onUseSelected={() => setStep("confirm-payment")}
+						onAddNew={() => setStep("payment")}
+						onBack={() => setStep("amount")}
+						onCancel={handleClose}
+					/>
+				) : step === "confirm-payment" ? (
+					<ConfirmPaymentStep
+						amount={amount}
+						paymentMethodId={selectedPaymentMethod!}
+						organizationId={organizationId}
+						onSuccess={handlePaymentSuccess}
+						onBack={() => setStep("select-payment")}
+						onCancel={handleClose}
+						setLoading={setLoading}
+						loading={loading}
+					/>
+				) : step === "payment" ? (
+					stripeLoading ? (
+						<div className="p-6 text-center">Loading payment form...</div>
+					) : (
+						<Elements stripe={stripe as any}>
+							<PaymentStep
+								amount={amount}
+								organizationId={organizationId}
+								onBack={() => setStep("amount")}
+								onSuccess={handlePaymentSuccess}
+								onCancel={handleClose}
+								setLoading={setLoading}
+								loading={loading}
+							/>
+						</Elements>
+					)
+				) : (
+					<SuccessStep onClose={handleClose} />
+				)}
+			</DialogContent>
+		</Dialog>
+	);
+}
+
+function AmountStep({
+	amount,
+	setAmount,
+	organizationId,
+	onNext,
+	onCancel,
+}: {
+	amount: number;
+	setAmount: (amount: number) => void;
+	organizationId?: string;
+	onNext: () => void;
+	onCancel: () => void;
+}) {
+	const presetAmounts = [10, 25, 50, 100];
+	const api = useApi();
+	const [checkoutLoading, setCheckoutLoading] = useState(false);
+	const { mutateAsync: createCheckoutSession } = api.useMutation(
+		"post",
+		"/payments/create-checkout-session",
+	);
+	const isAmountValid = isCreditTopUpAmountInRange(amount);
+	const amountValidationMessage =
+		amount > CREDIT_TOP_UP_MAX_AMOUNT
+			? `Maximum top-up amount is $${CREDIT_TOP_UP_MAX_AMOUNT.toLocaleString("en-US")}.`
+			: amount < CREDIT_TOP_UP_MIN_AMOUNT
+				? `Minimum top-up amount is $${CREDIT_TOP_UP_MIN_AMOUNT}.`
+				: !Number.isInteger(amount)
+					? "Amount must be a whole dollar amount."
+					: null;
+	const { data: feeData, isLoading: feeDataLoading } = api.useQuery(
+		"post",
+		"/payments/calculate-fees",
+		{
+			body: { amount },
+		},
+		{
+			enabled: isAmountValid,
+		},
+	);
+	const isActionDisabled =
+		!isAmountValid || Boolean(feeDataLoading) || checkoutLoading;
+
+	const handleStripeCheckout = async () => {
+		setCheckoutLoading(true);
+		try {
+			const { checkoutUrl } = await createCheckoutSession({
+				body: {
+					amount,
+					returnUrl: window.location.href.split("?")[0],
+					...(organizationId ? { organizationId } : {}),
+				},
+			});
+			window.location.href = checkoutUrl;
+		} catch (error: unknown) {
+			toast.error("Checkout Failed", {
+				description:
+					error instanceof Error
+						? error.message
+						: "Failed to create checkout session.",
+			});
+			setCheckoutLoading(false);
+		}
+	};
+
+	return (
+		<>
+			<DialogHeader>
+				<DialogTitle>Top Up Credits</DialogTitle>
+				<DialogDescription>
+					Add credits to your organization account. Confirm details on the next
+					step.
+				</DialogDescription>
+			</DialogHeader>
+			<div className="space-y-4 py-4">
+				<div className="space-y-2">
+					<Label htmlFor="amount">Amount (USD)</Label>
+					<Input
+						id="amount"
+						type="number"
+						min={CREDIT_TOP_UP_MIN_AMOUNT}
+						max={CREDIT_TOP_UP_MAX_AMOUNT}
+						step={1}
+						value={amount}
+						onChange={(e) => setAmount(Number(e.target.value))}
+						required
+					/>
+					<p className="text-xs text-muted-foreground">
+						Minimum ${CREDIT_TOP_UP_MIN_AMOUNT}. Maximum $
+						{CREDIT_TOP_UP_MAX_AMOUNT.toLocaleString("en-US")}.
+					</p>
+					{amountValidationMessage ? (
+						<p className="text-xs text-destructive">
+							{amountValidationMessage}
+						</p>
+					) : null}
+				</div>
+				<div className="flex flex-wrap gap-2">
+					{presetAmounts.map((preset) => (
+						<Button
+							key={preset}
+							type="button"
+							variant="outline"
+							onClick={() => setAmount(preset)}
+						>
+							${preset}
+						</Button>
+					))}
+				</div>
+
+				{isAmountValid && (
+					<div className="border rounded-lg p-4 bg-muted/50">
+						<p className="font-medium mb-2">Fee Breakdown</p>
+						{feeDataLoading ? (
+							<div className="flex items-center justify-center py-4">
+								<div className="h-5 w-5 animate-spin border-2 border-muted-foreground border-t-transparent rounded-full" />
+								<span className="ml-2 text-sm text-muted-foreground">
+									Calculating fees...
+								</span>
+							</div>
+						) : feeData ? (
+							<div className="space-y-1 text-sm">
+								<div className="flex justify-between">
+									<span>Credits</span>
+									<span>${feeData.baseAmount.toFixed(2)}</span>
+								</div>
+								<div className="flex justify-between">
+									<span>Platform fee (5%)</span>
+									<span>${feeData.platformFee.toFixed(2)}</span>
+								</div>
+								{feeData.internationalFee > 0 ? (
+									<div className="flex justify-between">
+										<span>International card fee (1.5%)</span>
+										<span>${feeData.internationalFee.toFixed(2)}</span>
+									</div>
+								) : null}
+								<div className="border-t pt-1 flex justify-between font-medium">
+									<span>Total</span>
+									<span>${feeData.totalAmount.toFixed(2)}</span>
+								</div>
+							</div>
+						) : null}
+					</div>
+				)}
+			</div>
+			<DialogFooter className="flex flex-col gap-3 sm:flex-col">
+				<div className="flex justify-end gap-2">
+					<Button type="button" variant="outline" onClick={onCancel}>
+						Cancel
+					</Button>
+					<Button type="button" onClick={onNext} disabled={isActionDisabled}>
+						Pay with Card
+					</Button>
+				</div>
+				<div className="relative">
+					<div className="absolute inset-0 flex items-center">
+						<span className="w-full border-t" />
+					</div>
+					<div className="relative flex justify-center text-xs uppercase">
+						<span className="bg-background px-2 text-muted-foreground">or</span>
+					</div>
+				</div>
+				<Button
+					type="button"
+					variant="outline"
+					className="w-full"
+					onClick={handleStripeCheckout}
+					disabled={isActionDisabled}
+				>
+					{checkoutLoading ? (
+						"Redirecting..."
+					) : (
+						<>
+							<ExternalLink className="mr-2 h-4 w-4" />
+							Pay with Stripe Checkout
+						</>
+					)}
+				</Button>
+				<p className="text-xs text-muted-foreground text-center">
+					Stripe Checkout supports additional payment methods like Google Pay,
+					Apple Pay, and more.
+				</p>
+				<InvoiceSettingsNote />
+			</DialogFooter>
+		</>
+	);
+}
+
+function SuccessStep({ onClose }: { onClose: () => void }) {
+	return (
+		<>
+			<DialogHeader>
+				<DialogTitle>Payment Successful</DialogTitle>
+				<DialogDescription>
+					Your credits have been added to your account.
+				</DialogDescription>
+			</DialogHeader>
+			<div className="py-4">
+				<p>
+					Thank you for your purchase. Your credits are now available for use.
+				</p>
+			</div>
+			<DialogFooter>
+				<Button onClick={onClose}>Close</Button>
+			</DialogFooter>
+		</>
+	);
+}
+
+function PaymentStep({
+	amount,
+	organizationId,
+	onBack,
+	onSuccess,
+	onCancel,
+	loading,
+	setLoading,
+}: {
+	amount: number;
+	organizationId?: string;
+	onBack: () => void;
+	onSuccess: () => Promise<void> | void;
+	onCancel: () => void;
+	loading: boolean;
+	setLoading: (loading: boolean) => void;
+}) {
+	const stripe = useStripeElements();
+	const elements = useElements();
+	const api = useApi();
+	const { mutateAsync: topUpMutation } = api.useMutation(
+		"post",
+		"/payments/create-payment-intent",
+	);
+	const { mutateAsync: setupIntentMutation } = api.useMutation(
+		"post",
+		"/payments/create-setup-intent",
+	);
+
+	const [saveCard, setSaveCard] = useState(true);
+
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+
+		if (!stripe || !elements) {
+			return;
+		}
+
+		setLoading(true);
+
+		try {
+			let stripePaymentMethodId: string | undefined;
+
+			if (saveCard) {
+				const { clientSecret: setupSecret } = await setupIntentMutation({});
+
+				const setupResult = await stripe.confirmCardSetup(setupSecret, {
+					payment_method: {
+						card: elements.getElement(CardElement) as any,
+					},
+				});
+
+				if (setupResult.error) {
+					toast.error("Error Saving Card", {
+						description: setupResult.error.message,
+					});
+					setLoading(false);
+					return;
+				}
+
+				const setupPaymentMethod = setupResult.setupIntent?.payment_method;
+				stripePaymentMethodId =
+					typeof setupPaymentMethod === "string"
+						? setupPaymentMethod
+						: setupPaymentMethod?.id;
+			} else {
+				const pmResult = await stripe.createPaymentMethod({
+					type: "card",
+					card: elements.getElement(CardElement) as any,
+				});
+
+				if (pmResult.error) {
+					toast.error("Error", {
+						description:
+							pmResult.error.message ?? "Could not read card details.",
+					});
+					setLoading(false);
+					return;
+				}
+
+				stripePaymentMethodId = pmResult.paymentMethod.id;
+			}
+
+			const { clientSecret } = await topUpMutation({
+				body: {
+					amount,
+					stripePaymentMethodId,
+					...(organizationId ? { organizationId } : {}),
+				},
+			});
+
+			const result = await stripe.confirmCardPayment(clientSecret);
+
+			if (result.error) {
+				toast.error("Payment Failed", {
+					description: result.error.message,
+				});
+				setLoading(false);
+			} else {
+				await onSuccess();
+			}
+		} catch (error: any) {
+			toast.error("Payment Failed", {
+				description:
+					error?.message ?? "An error occurred while processing your payment.",
+			});
+			setLoading(false);
+		}
+	};
+
+	return (
+		<>
+			<DialogHeader>
+				<DialogTitle>Payment Details</DialogTitle>
+				<DialogDescription>
+					Enter your card details to add ${amount} credits.
+				</DialogDescription>
+			</DialogHeader>
+			<form onSubmit={handleSubmit} className="space-y-4 py-4">
+				<div className="space-y-2">
+					<Label htmlFor="card-element">Card Details</Label>
+					<div className="border rounded-md p-3">
+						<CardElement
+							id="card-element"
+							options={{
+								style: {
+									base: {
+										fontSize: "16px",
+										color: "#424770",
+										"::placeholder": {
+											color: "#aab7c4",
+										},
+									},
+									invalid: {
+										color: "#9e2146",
+									},
+								},
+							}}
+						/>
+					</div>
+				</div>
+				<div className="space-y-2">
+					<div className="flex items-center space-x-2">
+						<Checkbox
+							id="save-card"
+							checked={saveCard}
+							onCheckedChange={(checked) => setSaveCard(checked as boolean)}
+						/>
+						<Label htmlFor="save-card">
+							Save this card for future payments
+						</Label>
+					</div>
+				</div>
+				<p className="text-xs text-muted-foreground">
+					International cards are subject to an additional 1.5% processing fee.
+				</p>
+				<DialogFooter className="flex space-x-2 justify-end">
+					<Button
+						type="button"
+						variant="outline"
+						onClick={onBack}
+						disabled={loading}
+					>
+						Back
+					</Button>
+					<Button
+						type="button"
+						variant="outline"
+						onClick={onCancel}
+						disabled={loading}
+					>
+						Cancel
+					</Button>
+					<Button type="submit" disabled={!stripe || loading}>
+						{loading ? "Processing..." : `Continue`}
+					</Button>
+				</DialogFooter>
+				<InvoiceSettingsNote />
+			</form>
+		</>
+	);
+}
+
+function SelectPaymentStep({
+	amount,
+	paymentMethods,
+	selectedPaymentMethod,
+	setSelectedPaymentMethod,
+	onUseSelected,
+	onAddNew,
+	onBack,
+	onCancel,
+}: {
+	amount: number;
+	paymentMethods: {
+		id: string;
+		stripePaymentMethodId: string;
+		type: string;
+		isDefault: boolean;
+		cardBrand?: string;
+		cardLast4?: string;
+		expiryMonth?: number;
+		expiryYear?: number;
+	}[];
+	selectedPaymentMethod: string | null;
+	setSelectedPaymentMethod: (id: string) => void;
+	onUseSelected: () => void;
+	onAddNew: () => void;
+	onBack: () => void;
+	onCancel: () => void;
+}) {
+	return (
+		<>
+			<DialogHeader>
+				<DialogTitle>Select Payment Method</DialogTitle>
+				<DialogDescription>
+					Choose a payment method to add ${amount} credits. Confirm details on
+					the next step.
+				</DialogDescription>
+			</DialogHeader>
+			<div className="space-y-4 py-4">
+				<div className="space-y-2">
+					{paymentMethods.map((method) => (
+						<div
+							key={method.id}
+							className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer ${
+								selectedPaymentMethod === method.id ? "border-primary" : ""
+							}`}
+							onClick={() => setSelectedPaymentMethod(method.id)}
+						>
+							<div className="flex items-center gap-3">
+								<CreditCard className="h-5 w-5" />
+								<div>
+									<p>
+										{method.cardBrand} •••• {method.cardLast4}
+									</p>
+									<p className="text-sm text-muted-foreground">
+										Expires {method.expiryMonth}/{method.expiryYear}
+									</p>
+								</div>
+								{method.isDefault && (
+									<span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+										Default
+									</span>
+								)}
+							</div>
+						</div>
+					))}
+					<Button
+						variant="outline"
+						className="w-full flex items-center justify-center gap-2"
+						onClick={onAddNew}
+					>
+						<Plus className="h-4 w-4" />
+						Add New Payment Method
+					</Button>
+				</div>
+			</div>
+			<DialogFooter className="flex space-x-2 justify-end">
+				<Button type="button" variant="outline" onClick={onBack}>
+					Back
+				</Button>
+				<Button type="button" variant="outline" onClick={onCancel}>
+					Cancel
+				</Button>
+				<Button
+					type="button"
+					onClick={onUseSelected}
+					disabled={!selectedPaymentMethod}
+				>
+					Continue
+				</Button>
+			</DialogFooter>
+		</>
+	);
+}
+
+function ConfirmPaymentStep({
+	amount,
+	paymentMethodId,
+	organizationId,
+	onSuccess,
+	onBack,
+	onCancel,
+	loading,
+	setLoading,
+}: {
+	amount: number;
+	paymentMethodId: string;
+	organizationId?: string;
+	onSuccess: () => Promise<void> | void;
+	onBack: () => void;
+	onCancel: () => void;
+	loading: boolean;
+	setLoading: (loading: boolean) => void;
+}) {
+	const api = useApi();
+	const { mutateAsync: topUpMutation } = api.useMutation(
+		"post",
+		"/payments/top-up-with-saved-method",
+	);
+
+	const { data: feeData, isLoading: feeDataLoading } = api.useQuery(
+		"post",
+		"/payments/calculate-fees",
+		{
+			body: { amount, paymentMethodId },
+		},
+	);
+
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+
+		setLoading(true);
+
+		try {
+			await topUpMutation({
+				body: {
+					amount,
+					paymentMethodId,
+					...(organizationId ? { organizationId } : {}),
+				},
+			});
+			await onSuccess();
+		} catch (error: any) {
+			toast.error("Payment Failed", {
+				description:
+					error?.message ?? "An error occurred while processing your payment.",
+			});
+			setLoading(false);
+		}
+	};
+
+	return (
+		<>
+			<DialogHeader>
+				<DialogTitle>Confirm Payment</DialogTitle>
+				<DialogDescription>
+					Review your payment details before confirming.
+				</DialogDescription>
+			</DialogHeader>
+			<form onSubmit={handleSubmit} className="space-y-4 py-4">
+				<div className="border rounded-lg p-4">
+					<p className="font-medium mb-3">Payment Summary</p>
+					{feeDataLoading ? (
+						<div className="flex items-center justify-center py-4">
+							<div className="h-5 w-5 animate-spin border-2 border-muted-foreground border-t-transparent rounded-full" />
+							<span className="ml-2 text-sm text-muted-foreground">
+								Calculating fees...
+							</span>
+						</div>
+					) : feeData ? (
+						<div className="space-y-2 text-sm">
+							<div className="flex justify-between">
+								<span>Credits</span>
+								<span>${feeData.baseAmount.toFixed(2)}</span>
+							</div>
+							<div className="flex justify-between">
+								<span>Platform fee (5%)</span>
+								<span>${feeData.platformFee.toFixed(2)}</span>
+							</div>
+							{feeData.internationalFee > 0 ? (
+								<div className="flex justify-between">
+									<span>International card fee (1.5%)</span>
+									<span>${feeData.internationalFee.toFixed(2)}</span>
+								</div>
+							) : null}
+							<div className="border-t pt-2 flex justify-between font-medium">
+								<span>Total</span>
+								<span>${feeData.totalAmount.toFixed(2)}</span>
+							</div>
+						</div>
+					) : (
+						<p className="text-sm text-muted-foreground">Amount: ${amount}</p>
+					)}
+				</div>
+				<DialogFooter className="flex space-x-2 justify-end">
+					<Button
+						type="button"
+						variant="outline"
+						onClick={onBack}
+						disabled={loading}
+					>
+						Back
+					</Button>
+					<Button
+						type="button"
+						variant="outline"
+						onClick={onCancel}
+						disabled={loading}
+					>
+						Cancel
+					</Button>
+					<Button type="submit" disabled={loading || feeDataLoading}>
+						{loading
+							? "Processing..."
+							: `Pay ${feeData ? `$${feeData.totalAmount.toFixed(2)}` : `$${amount}`}`}
+					</Button>
+				</DialogFooter>
+				<InvoiceSettingsNote />
+			</form>
+		</>
+	);
+}
+
+function InvoiceSettingsNote() {
+	return (
+		<p className="text-center text-[11px] leading-relaxed text-muted-foreground">
+			Need company/address details on your invoice? Update billing settings
+			before purchase. We email the invoice automatically after payment.
+		</p>
+	);
+}

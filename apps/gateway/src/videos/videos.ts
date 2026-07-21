@@ -1,0 +1,4953 @@
+import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
+import { HTTPException } from "hono/http-exception";
+
+import { getFinishReasonFromError } from "@/chat/tools/get-finish-reason-from-error.js";
+import { getProviderEnv } from "@/chat/tools/get-provider-env.js";
+import {
+	getErrorType,
+	selectNextProvider,
+	shouldRetryRequest,
+	type RoutingAttempt,
+} from "@/chat/tools/retry-with-fallback.js";
+import {
+	assertApiKeyWithinUsageLimits,
+	assertMemberWithinBudget,
+} from "@/lib/api-key-usage-limits.js";
+import {
+	findApiKeyByToken,
+	findEffectiveDiscount,
+	findOrganizationById,
+	findProjectById,
+	findProviderKey,
+	type GatewayApiKey,
+} from "@/lib/cached-queries.js";
+import { getClientIpFromRequest } from "@/lib/client-ip.js";
+import {
+	complianceBlockMessage,
+	filterCompliantProviders,
+	getActiveCompliancePolicy,
+	isProviderIdCompliant,
+	logComplianceBlock,
+} from "@/lib/compliance.js";
+import {
+	applyEndUserSession,
+	assertTestWalletModelAllowed,
+} from "@/lib/end-user-session.js";
+import { validateRequestModelAccess } from "@/lib/iam.js";
+import { getProviderMetricsForRouting } from "@/lib/provider-metrics-for-routing.js";
+import { getResolvedRoutingConfig } from "@/lib/routing-config-loader.js";
+import { getNoFallbackRoutingMetadata } from "@/lib/routing-metadata.js";
+
+import {
+	getCheapestFromAvailableProviders,
+	getDiscountedProviderSelectionPrice,
+	getProviderHeaders,
+	processImageUrl,
+	type RoutingMetadata,
+	type VideoPricingContext,
+} from "@llmgateway/actions";
+import { redisClient } from "@llmgateway/cache";
+import {
+	and,
+	db,
+	eq,
+	metricsKey,
+	sql,
+	shortid,
+	tables,
+	UnifiedFinishReason,
+	type InferSelectModel,
+} from "@llmgateway/db";
+import { logger, toError } from "@llmgateway/logger";
+import {
+	getProviderEnvValue,
+	getProviderEnvVar,
+	hasProviderEnvironmentToken,
+	models,
+	type ModelDefinition,
+	type Provider,
+	type ProviderModelMapping,
+	resolveVertexTokenType,
+	type VertexTokenType,
+} from "@llmgateway/models";
+import {
+	getAvalancheApiBaseUrl,
+	getAvalancheFileUploadBaseUrl,
+	getAvalancheJobsApiBaseUrl,
+	getVideoProxyRedisKey,
+	VIDEO_PROXY_REDIS_TTL_SECONDS,
+} from "@llmgateway/shared";
+import {
+	buildVertexVideoOutputStorageUri,
+	createSignedGcsReadUrl,
+	getGoogleVertexVideoOutputBucket,
+	getGoogleVertexVideoOutputPrefix,
+	parseGcsUri,
+} from "@llmgateway/shared/gcs";
+import {
+	buildSignedGatewayVideoLogContentUrl,
+	verifyVideoContentAccessToken,
+} from "@llmgateway/shared/video-access";
+
+import type { ServerTypes } from "@/vars.js";
+import type { ResolvedRoutingConfig } from "@llmgateway/shared/routing-config";
+import type { Context } from "hono";
+
+function createProviderDiscountResolver(organizationId: string) {
+	return async (
+		provider: Pick<ProviderModelMapping, "providerId">,
+		modelId: string,
+	) =>
+		(await findEffectiveDiscount(organizationId, provider.providerId, modelId))
+			.discount;
+}
+
+const TERMINAL_VIDEO_STATUSES = new Set([
+	"completed",
+	"failed",
+	"canceled",
+	"expired",
+]);
+const MIN_VIDEO_GENERATION_BALANCE = 1;
+const DEFAULT_VIDEO_SIZE = "1280x720";
+const SUPPORTED_VIDEO_SIZES = {
+	"848x480": {
+		size: "848x480",
+		width: 848,
+		height: 480,
+		resolution: "480p",
+		orientation: "landscape",
+	},
+	"854x480": {
+		size: "854x480",
+		width: 854,
+		height: 480,
+		resolution: "480p",
+		orientation: "landscape",
+	},
+	"480x854": {
+		size: "480x854",
+		width: 480,
+		height: 854,
+		resolution: "480p",
+		orientation: "portrait",
+	},
+	"1280x720": {
+		size: "1280x720",
+		width: 1280,
+		height: 720,
+		resolution: "720p",
+		orientation: "landscape",
+	},
+	"1696x960": {
+		size: "1696x960",
+		width: 1696,
+		height: 960,
+		resolution: "960p",
+		orientation: "landscape",
+	},
+	"720x1280": {
+		size: "720x1280",
+		width: 720,
+		height: 1280,
+		resolution: "720p",
+		orientation: "portrait",
+	},
+	"1366x768": {
+		size: "1366x768",
+		width: 1366,
+		height: 768,
+		resolution: "768p",
+		orientation: "landscape",
+	},
+	"768x1366": {
+		size: "768x1366",
+		width: 768,
+		height: 1366,
+		resolution: "768p",
+		orientation: "portrait",
+	},
+	"1920x1080": {
+		size: "1920x1080",
+		width: 1920,
+		height: 1080,
+		resolution: "1080p",
+		orientation: "landscape",
+	},
+	"1080x1920": {
+		size: "1080x1920",
+		width: 1080,
+		height: 1920,
+		resolution: "1080p",
+		orientation: "portrait",
+	},
+	"3840x2160": {
+		size: "3840x2160",
+		width: 3840,
+		height: 2160,
+		resolution: "4k",
+		orientation: "landscape",
+	},
+	"2160x3840": {
+		size: "2160x3840",
+		width: 2160,
+		height: 3840,
+		resolution: "4k",
+		orientation: "portrait",
+	},
+	"1792x1024": {
+		size: "1792x1024",
+		width: 1792,
+		height: 1024,
+		resolution: "hd",
+		orientation: "landscape",
+	},
+	"1024x1792": {
+		size: "1024x1792",
+		width: 1024,
+		height: 1792,
+		resolution: "hd",
+		orientation: "portrait",
+	},
+} as const;
+
+type SupportedVideoSize = keyof typeof SUPPORTED_VIDEO_SIZES;
+type VideoSizeConfig = (typeof SUPPORTED_VIDEO_SIZES)[SupportedVideoSize];
+
+const videoImageInputSchema = z
+	.union([
+		z.string(),
+		z.object({
+			image_url: z.string(),
+		}),
+	])
+	.openapi({
+		description:
+			"Input image for image-to-video generation. Supports HTTPS URLs and base64 data URLs. Routed to provider-specific image-to-video generation when supported by the selected model.",
+		example: {
+			image_url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
+		},
+	});
+
+const SEEDANCE_2_MAX_REFERENCE_IMAGES = 9;
+const DEFAULT_MAX_REFERENCE_IMAGES = 3;
+
+const videoReferenceImagesSchema = z
+	.array(videoImageInputSchema)
+	.min(1)
+	.max(SEEDANCE_2_MAX_REFERENCE_IMAGES);
+
+const referenceVideoUrlSchema = z
+	.string()
+	.url()
+	.refine((value) => /^https:\/\//i.test(value), {
+		message: "Reference video URL must be an HTTPS URL",
+	});
+
+const videoReferenceVideoInputSchema = z
+	.union([
+		referenceVideoUrlSchema,
+		z.object({
+			video_url: referenceVideoUrlSchema,
+		}),
+	])
+	.openapi({
+		description:
+			"Reference video input for omni-reference video generation. Must be a publicly reachable HTTPS URL; base64 data URLs are not supported for videos.",
+		example: {
+			video_url: "https://example.com/reference-motion.mp4",
+		},
+	});
+
+const videoReferenceVideosSchema = z
+	.array(videoReferenceVideoInputSchema)
+	.min(1)
+	.max(3);
+
+const referenceAudioUrlSchema = z
+	.string()
+	.url()
+	.refine((value) => /^https:\/\//i.test(value), {
+		message: "Reference audio URL must be an HTTPS URL",
+	});
+
+const videoReferenceAudioInputSchema = z
+	.union([
+		referenceAudioUrlSchema,
+		z.object({
+			audio_url: referenceAudioUrlSchema,
+		}),
+	])
+	.openapi({
+		description:
+			"Reference audio input for omni-reference video generation. Must be a publicly reachable HTTPS URL; base64 data URLs are not supported for audio.",
+		example: {
+			audio_url: "https://example.com/reference-track.mp3",
+		},
+	});
+
+const videoReferenceAudiosSchema = z
+	.array(videoReferenceAudioInputSchema)
+	.min(1)
+	.max(3);
+
+const createVideoRequestSchema = z
+	.object({
+		model: z.string().default("veo-3.1-generate-preview").openapi({
+			description:
+				"The video generation model to use. Supports current Veo and Sora video models, including provider-prefixed variants like openai/sora-2 or avalanche/veo-3.1-generate-preview.",
+			example: "veo-3.1-generate-preview",
+		}),
+		prompt: z.string().min(1).openapi({
+			description: "Text prompt describing the video to generate.",
+			example:
+				"A cinematic drone shot flying through a neon-lit futuristic city at night",
+		}),
+		size: z.string().optional().openapi({
+			description:
+				"Output resolution in OpenAI widthxheight format. Supported values depend on the selected model and provider mapping.",
+			example: "1280x720",
+		}),
+		callback_url: z.string().url().optional().openapi({
+			description:
+				"LLMGateway extension. When set, a signed webhook is delivered after the job reaches a terminal state.",
+			example: "https://example.com/webhooks/video",
+		}),
+		callback_secret: z.string().min(1).optional().openapi({
+			description:
+				"LLMGateway extension. Shared secret used to sign webhook deliveries with HMAC-SHA256.",
+			example: "whsec_test_secret",
+		}),
+		input_reference: z
+			.union([videoImageInputSchema, videoReferenceImagesSchema])
+			.optional()
+			.openapi({
+				description:
+					"Reference image input alias. Accepts HTTPS URLs or base64 data URLs and routes to provider-specific image-guided video generation when supported.",
+			}),
+		last_frame: videoImageInputSchema.optional().openapi({
+			description:
+				"Optional ending frame for frame-to-video generation. Requires image and is routed to providers that support first/last-frame generation.",
+			example: {
+				image_url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
+			},
+		}),
+		seconds: z.number().int().min(1).openapi({
+			description:
+				"Output duration in seconds. Supported values depend on the selected model and provider mapping.",
+			example: 8,
+		}),
+		audio: z.boolean().optional().default(true).openapi({
+			description:
+				"Whether the generated video should include audio. Support depends on the selected model and provider mapping.",
+			example: true,
+		}),
+		n: z.number().int().optional(),
+		image: videoImageInputSchema.optional(),
+		reference_images: videoReferenceImagesSchema.optional().openapi({
+			description:
+				"Reference images for provider-specific asset or material-guided video generation. ByteDance Seedance 2.0 models accept up to 9; other providers accept up to 3.",
+			example: [
+				{
+					image_url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
+				},
+			],
+		}),
+		reference_videos: videoReferenceVideosSchema.optional().openapi({
+			description:
+				"One to three reference videos (HTTPS URLs) for omni-reference video generation. Currently only supported on ByteDance Seedance 2.0 models and can be combined with reference_images.",
+			example: [
+				{
+					video_url: "https://example.com/reference-motion.mp4",
+				},
+			],
+		}),
+		reference_audios: videoReferenceAudiosSchema.optional().openapi({
+			description:
+				"One to three reference audio clips (HTTPS URLs) for omni-reference video generation. Currently only supported on ByteDance Seedance 2.0 models and can be combined with reference_images and reference_videos.",
+			example: [
+				{
+					audio_url: "https://example.com/reference-track.mp3",
+				},
+			],
+		}),
+	})
+	.superRefine((value, ctx) => {
+		const hasCallbackUrl = value.callback_url !== undefined;
+		const hasCallbackSecret = value.callback_secret !== undefined;
+
+		if (hasCallbackUrl !== hasCallbackSecret) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message:
+					"callback_url and callback_secret must either both be provided or both be omitted",
+				path: hasCallbackUrl ? ["callback_secret"] : ["callback_url"],
+			});
+		}
+
+		if (value.n !== undefined && value.n !== 1) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: "Only n=1 is supported for Veo 3.1 preview models",
+				path: ["n"],
+			});
+		}
+
+		if (value.size !== undefined && !(value.size in SUPPORTED_VIDEO_SIZES)) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: `size must be one of ${Object.keys(SUPPORTED_VIDEO_SIZES).join(", ")}`,
+				path: ["size"],
+			});
+		}
+
+		const hasFrameInput =
+			value.image !== undefined || value.last_frame !== undefined;
+		const hasReferenceInput =
+			value.reference_images !== undefined ||
+			value.input_reference !== undefined ||
+			value.reference_videos !== undefined ||
+			value.reference_audios !== undefined;
+
+		if (value.last_frame !== undefined && value.image === undefined) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: "last_frame requires image to also be provided",
+				path: ["last_frame"],
+			});
+		}
+
+		if (
+			value.reference_images !== undefined &&
+			value.input_reference !== undefined
+		) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message:
+					"Only one of reference_images or input_reference can be provided for a video request",
+				path: ["reference_images"],
+			});
+		}
+
+		if (hasFrameInput && hasReferenceInput) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message:
+					"Frame inputs (image/last_frame) cannot be combined with reference image inputs",
+				path: ["image"],
+			});
+		}
+	});
+
+const videoErrorSchema = z.object({
+	code: z.string().optional(),
+	message: z.string(),
+	details: z.unknown().optional(),
+});
+
+const videoContentSchema = z.array(
+	z.object({
+		type: z.literal("video"),
+		url: z.string().url(),
+		mime_type: z.string().nullable().optional(),
+	}),
+);
+
+const videoResponseSchema = z.object({
+	id: z.string(),
+	object: z.literal("video"),
+	model: z.string(),
+	status: z.enum([
+		"queued",
+		"in_progress",
+		"completed",
+		"failed",
+		"canceled",
+		"expired",
+	]),
+	progress: z.number().int().min(0).max(100).nullable(),
+	created_at: z.number(),
+	completed_at: z.number().nullable(),
+	expires_at: z.number().nullable(),
+	error: videoErrorSchema.nullable(),
+	content: videoContentSchema.optional(),
+});
+
+const createVideo = createRoute({
+	operationId: "v1_videos_create",
+	summary: "Create video",
+	description:
+		"Creates a new asynchronous video generation job using an OpenAI-compatible request format.",
+	method: "post",
+	path: "/",
+	security: [
+		{
+			bearerAuth: [],
+		},
+	],
+	request: {
+		body: {
+			content: {
+				"application/json": {
+					schema: createVideoRequestSchema,
+				},
+			},
+		},
+	},
+	responses: {
+		200: {
+			content: {
+				"application/json": {
+					schema: videoResponseSchema,
+				},
+			},
+			description: "Video job created.",
+		},
+	},
+});
+
+const getVideo = createRoute({
+	operationId: "v1_videos_retrieve",
+	summary: "Retrieve video",
+	description: "Retrieves the current state of a video generation job.",
+	method: "get",
+	path: "/{video_id}",
+	security: [
+		{
+			bearerAuth: [],
+		},
+	],
+	request: {
+		params: z.object({
+			video_id: z.string(),
+		}),
+	},
+	responses: {
+		200: {
+			content: {
+				"application/json": {
+					schema: videoResponseSchema,
+				},
+			},
+			description: "Video job state.",
+		},
+	},
+});
+
+const getVideoContent = createRoute({
+	operationId: "v1_videos_content",
+	summary: "Video content",
+	description:
+		"Streams the generated video content once the job has completed successfully.",
+	method: "get",
+	path: "/{video_id}/content",
+	security: [
+		{
+			bearerAuth: [],
+		},
+	],
+	request: {
+		params: z.object({
+			video_id: z.string(),
+		}),
+	},
+	responses: {
+		200: {
+			content: {
+				"video/mp4": {
+					schema: z.any(),
+				},
+				"application/octet-stream": {
+					schema: z.any(),
+				},
+			},
+			description: "Video bytes.",
+		},
+	},
+});
+
+const getVideoLogContent = createRoute({
+	operationId: "v1_videos_log_content",
+	summary: "Video log content",
+	description:
+		"Streams generated video content through a gateway-managed proxy URL keyed by log ID.",
+	method: "get",
+	path: "/logs/{log_id}/content",
+	request: {
+		params: z.object({
+			log_id: z.string(),
+		}),
+		query: z.object({
+			token: z.string().min(1).optional(),
+		}),
+	},
+	responses: {
+		200: {
+			content: {
+				"video/mp4": {
+					schema: z.any(),
+				},
+				"application/octet-stream": {
+					schema: z.any(),
+				},
+			},
+			description: "Video bytes.",
+		},
+	},
+});
+
+type VideoJobRecord = InferSelectModel<typeof tables.videoJob>;
+
+interface RequestContext {
+	apiKey: GatewayApiKey;
+	project: InferSelectModel<typeof tables.project>;
+	organization: InferSelectModel<typeof tables.organization>;
+	wallet: InferSelectModel<typeof tables.wallet> | null;
+	requestId: string;
+	routingCfg: ResolvedRoutingConfig;
+}
+
+interface ProviderContext {
+	providerId: Provider;
+	baseUrl: string;
+	token: string;
+	requestId: string;
+	usedMode: "api-keys" | "credits";
+	configIndex: number | null;
+	vertexProjectId?: string;
+	vertexRegion?: string;
+	vertexTokenType?: VertexTokenType;
+	uploadBaseUrl?: string;
+}
+
+/**
+ * Resolve the Vertex token type for video requests so the upstream call can
+ * choose between `?key=` (API key) and `Authorization: Bearer` (OAuth2). BYOK
+ * keys resolve from the provider-key option (env skipped); env-backed tokens
+ * resolve from the `LLM_GOOGLE_VERTEX_TOKEN_TYPE` env var.
+ */
+function resolveVideoVertexTokenType(
+	providerId: Provider,
+	providerKey: InferSelectModel<typeof tables.providerKey> | undefined,
+	configIndex: number | null,
+): VertexTokenType | undefined {
+	if (providerId !== "google-vertex") {
+		return undefined;
+	}
+	return providerKey
+		? resolveVertexTokenType(
+				providerId,
+				providerKey.options ?? undefined,
+				undefined,
+				true,
+			)
+		: resolveVertexTokenType(
+				providerId,
+				undefined,
+				configIndex ?? undefined,
+				false,
+			);
+}
+
+interface ResolvedVideoExecution {
+	providerMapping: ProviderModelMapping;
+	providerContext: ProviderContext;
+	upstreamModelName: string;
+	routingMetadata?: RoutingMetadata;
+	orderedMappings: ProviderModelMapping[];
+}
+
+interface ParsedVideoRequest {
+	rawBody: unknown;
+	request: z.infer<typeof createVideoRequestSchema>;
+}
+
+type VideoImageInput = z.infer<typeof videoImageInputSchema>;
+interface ProcessedVideoImageInput {
+	bytesBase64Encoded: string;
+	mimeType: string;
+}
+
+type VideoInputMode = "none" | "frames" | "reference";
+
+function getFormattedRequestedVideoModel(
+	normalizedModel: string,
+	requestedProvider: string | undefined,
+): string {
+	return requestedProvider
+		? `${requestedProvider}/${normalizedModel}`
+		: normalizedModel;
+}
+
+function getFormattedUsedVideoModel(provider: Provider, model: string): string {
+	return `${provider}/${model}`;
+}
+
+function getVideoImageFileExtension(mimeType: string): string {
+	switch (mimeType) {
+		case "image/jpeg":
+			return "jpg";
+		case "image/webp":
+			return "webp";
+		case "image/gif":
+			return "gif";
+		case "image/png":
+		default:
+			return "png";
+	}
+}
+
+function getAvailableCredits(
+	organization: InferSelectModel<typeof tables.organization>,
+): number {
+	const regularCredits = parseFloat(organization.credits ?? "0");
+	const devPlanCreditsRemaining =
+		organization.devPlan !== "none"
+			? parseFloat(organization.devPlanCreditsLimit ?? "0") -
+				parseFloat(organization.devPlanCreditsUsed ?? "0")
+			: 0;
+	const chatPlanCreditsRemaining =
+		organization.chatPlan !== "none"
+			? parseFloat(organization.chatPlanCreditsLimit ?? "0") -
+				parseFloat(organization.chatPlanCreditsUsed ?? "0")
+			: 0;
+	return regularCredits + devPlanCreditsRemaining + chatPlanCreditsRemaining;
+}
+
+function hasSufficientVideoGenerationBalance(
+	organization: InferSelectModel<typeof tables.organization>,
+): boolean {
+	return getAvailableCredits(organization) >= MIN_VIDEO_GENERATION_BALANCE;
+}
+
+function getInsufficientVideoGenerationBalanceError(): HTTPException {
+	return new HTTPException(402, {
+		message:
+			"Video generation requires at least $1.00 in available credits. Please add credits and try again.",
+	});
+}
+
+function isNoFallbackEnabled(c: Context): boolean {
+	return (
+		c.req.raw.headers.get("x-no-fallback") === "true" ||
+		c.req.raw.headers.get("x-no-fallback") === "1"
+	);
+}
+
+function extractToken(c: Context): string {
+	const auth = c.req.header("Authorization");
+	const xApiKey = c.req.header("x-api-key");
+
+	if (auth) {
+		const split = auth.split("Bearer ");
+		if (split.length === 2 && split[1]) {
+			return split[1];
+		}
+	}
+
+	if (xApiKey) {
+		return xApiKey;
+	}
+
+	throw new HTTPException(401, {
+		message:
+			"Unauthorized: No API key provided. Expected 'Authorization: Bearer your-api-token' header or 'x-api-key: your-api-token' header",
+	});
+}
+
+async function requireRequestContext(c: Context): Promise<RequestContext> {
+	const token = extractToken(c);
+	const apiKey = await findApiKeyByToken(token);
+
+	if (!apiKey) {
+		throw new HTTPException(401, {
+			message:
+				"Unauthorized: Invalid LLMGateway API token. The token could not be found. Go to the LLMGateway 'API Keys' page to generate a new token.",
+		});
+	}
+
+	if (apiKey.status !== "active") {
+		throw new HTTPException(401, {
+			message:
+				"Unauthorized: This LLMGateway API token is not active (it may be disabled or deleted). Go to the LLMGateway 'API Keys' page to generate a new token.",
+		});
+	}
+
+	const baseProject = await findProjectById(apiKey.projectId);
+	if (!baseProject) {
+		throw new HTTPException(500, {
+			message: "Could not find project",
+		});
+	}
+
+	if (baseProject.status === "deleted") {
+		throw new HTTPException(410, {
+			message: "Project has been archived and is no longer accessible",
+		});
+	}
+
+	// User-level limits take priority: enforce the per-member budget (set on the
+	// Teams page; fails open on read errors) before the per-key usage limits, so a
+	// member who is over budget is denied even if the key itself is within limits.
+	await assertMemberWithinBudget(apiKey.createdBy, baseProject.organizationId);
+	assertApiKeyWithinUsageLimits(apiKey);
+
+	const baseOrganization = await findOrganizationById(
+		baseProject.organizationId,
+	);
+	if (!baseOrganization) {
+		throw new HTTPException(500, {
+			message: "Could not find organization",
+		});
+	}
+
+	if (baseOrganization.status === "deleted") {
+		throw new HTTPException(410, {
+			message: "Organization has been disabled and is no longer accessible",
+		});
+	}
+
+	// LLM SDK: ephemeral end-user sessions bill the bound wallet. No-op
+	// for normal keys.
+	const { project, organization, wallet } = await applyEndUserSession(
+		c,
+		apiKey,
+		baseProject,
+		baseOrganization,
+	);
+
+	const requestId = c.req.header("x-request-id")?.trim() || shortid(40);
+	const routingCfg = await getResolvedRoutingConfig(
+		project.id,
+		organization.plan,
+	);
+
+	return {
+		apiKey,
+		project,
+		organization,
+		wallet,
+		requestId,
+		routingCfg,
+	};
+}
+
+function getVideoModel(model: string): {
+	normalizedModel: string;
+	requestedProvider: string | undefined;
+} {
+	const now = new Date();
+	const allVideoModels = models.filter((modelInfo) =>
+		modelInfo.providers.some(
+			(provider) => (provider as ProviderModelMapping).videoGenerations,
+		),
+	);
+	const supportedVideoModels = allVideoModels
+		.map((modelInfo) => ({
+			...modelInfo,
+			providers: modelInfo.providers.filter(
+				(provider) =>
+					(provider as ProviderModelMapping).videoGenerations &&
+					!(
+						(provider as ProviderModelMapping).deactivatedAt &&
+						now > (provider as ProviderModelMapping).deactivatedAt!
+					),
+			),
+		}))
+		.filter((modelInfo) => modelInfo.providers.length > 0);
+	const exactMatch = supportedVideoModels.find(
+		(modelInfo) => modelInfo.id === model,
+	);
+	if (exactMatch) {
+		return {
+			normalizedModel: model,
+			requestedProvider: undefined,
+		};
+	}
+
+	const exactDeactivatedMatch = allVideoModels.find(
+		(modelInfo) => modelInfo.id === model,
+	);
+	if (exactDeactivatedMatch) {
+		throw new HTTPException(410, {
+			message: `Model ${model} has been deactivated and is no longer available`,
+		});
+	}
+
+	for (const modelInfo of supportedVideoModels) {
+		for (const provider of modelInfo.providers as readonly ProviderModelMapping[]) {
+			if (!provider.videoGenerations) {
+				continue;
+			}
+
+			const prefixedModel = `${provider.providerId}/${modelInfo.id}`;
+			if (model === prefixedModel) {
+				return {
+					normalizedModel: modelInfo.id,
+					requestedProvider: provider.providerId,
+				};
+			}
+		}
+	}
+
+	for (const modelInfo of allVideoModels) {
+		for (const provider of modelInfo.providers as readonly ProviderModelMapping[]) {
+			if (!provider.videoGenerations) {
+				continue;
+			}
+
+			const prefixedModel = `${provider.providerId}/${modelInfo.id}`;
+			if (model === prefixedModel) {
+				throw new HTTPException(410, {
+					message: `Model ${model} has been deactivated and is no longer available`,
+				});
+			}
+		}
+	}
+
+	throw new HTTPException(400, {
+		message:
+			"Unsupported video model. Use a video-capable model from /v1/models, optionally prefixed with a configured provider like openai/, avalanche/, or google-vertex/.",
+	});
+}
+
+function getVideoSizeConfig(size: string | undefined): VideoSizeConfig {
+	const normalizedSize = size ?? DEFAULT_VIDEO_SIZE;
+	return SUPPORTED_VIDEO_SIZES[normalizedSize as SupportedVideoSize];
+}
+
+function isSoraVideoModelName(externalId: string): boolean {
+	return externalId === "sora-2" || externalId === "sora-2-pro";
+}
+
+function isBytedanceSeedance2Model(externalId: string): boolean {
+	return (
+		externalId === "dreamina-seedance-2-0-260128" ||
+		externalId === "dreamina-seedance-2-0-fast-260128" ||
+		externalId === "dreamina-seedance-2-0-mini-260615"
+	);
+}
+
+function isGoogleVertexVideoProvider(providerId: string): boolean {
+	return providerId === "google-vertex";
+}
+
+function isAtlasCloudVideoProvider(providerId: string): boolean {
+	return providerId === "atlascloud";
+}
+
+function isAtlasCloudCollapsedKlingModel(externalId: string): boolean {
+	return (
+		externalId === "kwaivgi/kling-v3.0" ||
+		externalId === "kwaivgi/kling-v3.0-turbo"
+	);
+}
+
+function getVideoProviderConstraintReasons(
+	provider: ProviderModelMapping,
+	videoSize: VideoSizeConfig,
+	videoDurationSeconds: number,
+	inputMode: VideoInputMode,
+	inputImageCount: number,
+	referenceVideoCount: number,
+	referenceAudioCount: number,
+	includeAudio: boolean,
+): string[] {
+	const reasons: string[] = [];
+
+	if (includeAudio) {
+		if (provider.supportsVideoAudio === false) {
+			reasons.push("audio output is unsupported for this provider mapping");
+		}
+	} else if (provider.supportsVideoWithoutAudio !== true) {
+		reasons.push(
+			"audio=false is unsupported because this provider mapping only supports audio-enabled output",
+		);
+	}
+
+	if (
+		provider.supportedVideoSizes?.length &&
+		!provider.supportedVideoSizes.includes(videoSize.size)
+	) {
+		if (
+			provider.providerId === "avalanche" &&
+			!isSoraVideoModelName(provider.externalId)
+		) {
+			reasons.push(
+				`size ${videoSize.size} is unsupported because Avalanche uses aspect_ratio and this integration only supports ${provider.supportedVideoSizes.join(", ")}`,
+			);
+		} else {
+			reasons.push(
+				`size ${videoSize.size} is unsupported (supported sizes: ${provider.supportedVideoSizes.join(", ")})`,
+			);
+		}
+	}
+
+	if (
+		provider.supportedVideoDurationsSeconds?.length &&
+		!provider.supportedVideoDurationsSeconds.includes(videoDurationSeconds)
+	) {
+		const supportedDurations = provider.supportedVideoDurationsSeconds
+			.map((duration) => `${duration}s`)
+			.join(", ");
+		if (
+			provider.providerId === "avalanche" &&
+			provider.supportedVideoDurationsSeconds.length === 1 &&
+			provider.supportedVideoDurationsSeconds[0] === 8
+		) {
+			reasons.push(
+				`duration ${videoDurationSeconds}s is unsupported because Avalanche Veo 3.1 generates fixed 8s clips`,
+			);
+		} else {
+			reasons.push(
+				`duration ${videoDurationSeconds}s is unsupported (supported durations: ${supportedDurations})`,
+			);
+		}
+	}
+
+	if (isSoraVideoModelName(provider.externalId) && inputMode === "frames") {
+		reasons.push(
+			"Sora models do not support image/last_frame inputs. Use input_reference or reference_images with exactly one image.",
+		);
+	}
+
+	if (!isSoraVideoModelName(provider.externalId) && inputMode === "frames") {
+		if (provider.providerId === "bytedance") {
+			if (!isBytedanceSeedance2Model(provider.externalId)) {
+				reasons.push(
+					"frame inputs are currently only supported on bytedance Seedance 2.0 (seedance-2-0, seedance-2-0-fast, seedance-2-0-mini)",
+				);
+			}
+		} else if (isAtlasCloudVideoProvider(provider.providerId)) {
+			if (!isAtlasCloudCollapsedKlingModel(provider.externalId)) {
+				reasons.push(
+					"frame inputs are only supported on AtlasCloud KLING video models",
+				);
+			}
+			if (videoDurationSeconds !== 5 && videoDurationSeconds !== 10) {
+				reasons.push(
+					"duration is unsupported because AtlasCloud KLING v3.0 only supports 5s and 10s outputs",
+				);
+			}
+		} else if (
+			!isGoogleVertexVideoProvider(provider.providerId) &&
+			provider.providerId !== "avalanche" &&
+			provider.providerId !== "minimax" &&
+			provider.providerId !== "xai"
+		) {
+			reasons.push(
+				"frame inputs are currently only supported through google-vertex, avalanche, minimax, xai, or bytedance",
+			);
+		}
+	}
+
+	if (inputMode === "reference") {
+		if (isSoraVideoModelName(provider.externalId)) {
+			if (referenceVideoCount > 0) {
+				reasons.push(
+					"Sora models do not support reference videos. Use reference_images with exactly one image.",
+				);
+			}
+			if (referenceAudioCount > 0) {
+				reasons.push(
+					"Sora models do not support reference audio. Use reference_images with exactly one image.",
+				);
+			}
+			if (inputImageCount !== 1) {
+				reasons.push(
+					"Sora reference-image video generation supports exactly 1 input image",
+				);
+			}
+
+			return reasons;
+		}
+
+		if (isAtlasCloudVideoProvider(provider.providerId)) {
+			reasons.push(
+				"reference inputs are unsupported on AtlasCloud KLING v3.0 models",
+			);
+
+			return reasons;
+		}
+
+		if (provider.providerId === "bytedance") {
+			if (!isBytedanceSeedance2Model(provider.externalId)) {
+				reasons.push(
+					"reference inputs are currently only supported on bytedance Seedance 2.0 (seedance-2-0, seedance-2-0-fast, seedance-2-0-mini)",
+				);
+			} else if (inputImageCount > SEEDANCE_2_MAX_REFERENCE_IMAGES) {
+				reasons.push(
+					`Seedance 2.0 supports at most ${SEEDANCE_2_MAX_REFERENCE_IMAGES} reference images`,
+				);
+			}
+
+			return reasons;
+		}
+
+		if (referenceVideoCount > 0) {
+			reasons.push(
+				"reference videos are currently only supported on bytedance Seedance 2.0 models",
+			);
+		}
+
+		if (referenceAudioCount > 0) {
+			reasons.push(
+				"reference audio is currently only supported on bytedance Seedance 2.0 models",
+			);
+		}
+
+		if (inputImageCount > DEFAULT_MAX_REFERENCE_IMAGES) {
+			reasons.push(
+				`this provider mapping supports at most ${DEFAULT_MAX_REFERENCE_IMAGES} reference images`,
+			);
+		}
+
+		if (isGoogleVertexVideoProvider(provider.providerId)) {
+			if (provider.externalId !== "veo-3.1-generate-001") {
+				reasons.push(
+					`reference images are currently only supported on ${provider.providerId}/veo-3.1-generate-preview`,
+				);
+			}
+		} else if (provider.providerId === "avalanche") {
+			if (provider.externalId !== "veo3_fast") {
+				reasons.push(
+					"reference images are currently only supported on avalanche/veo-3.1-fast-generate-preview",
+				);
+			}
+		} else {
+			reasons.push(
+				"reference images are currently only supported through google-vertex or avalanche",
+			);
+		}
+
+		if (videoDurationSeconds !== 8) {
+			reasons.push(
+				"reference images are currently only supported for 8 second outputs",
+			);
+		}
+	}
+
+	return reasons;
+}
+
+function formatVideoProviderConstraintSummary(
+	modelId: string,
+	providers: ProviderModelMapping[],
+	videoSize: VideoSizeConfig,
+	videoDurationSeconds: number,
+	inputMode: VideoInputMode,
+	inputImageCount: number,
+	referenceVideoCount: number,
+	referenceAudioCount: number,
+	includeAudio: boolean,
+): string {
+	const providerSummaries = providers.map((provider) => {
+		const reasons = getVideoProviderConstraintReasons(
+			provider,
+			videoSize,
+			videoDurationSeconds,
+			inputMode,
+			inputImageCount,
+			referenceVideoCount,
+			referenceAudioCount,
+			includeAudio,
+		);
+		return `${provider.providerId}: ${reasons.join("; ")}`;
+	});
+
+	if (providers.length === 1) {
+		const provider = providers[0];
+		return `Requested parameters are not supported for ${provider.providerId}/${modelId}. ${providerSummaries[0]}.`;
+	}
+
+	return `Requested parameters are not supported for model ${modelId}. ${providerSummaries.join(". ")}.`;
+}
+
+function getEligibleVideoProviderMappings(
+	modelInfo: ModelDefinition,
+	requestedProvider: string | undefined,
+	videoSize: VideoSizeConfig,
+	videoDurationSeconds: number,
+	inputMode: VideoInputMode,
+	inputImageCount: number,
+	referenceVideoCount: number,
+	referenceAudioCount: number,
+	includeAudio: boolean,
+): ProviderModelMapping[] {
+	const now = new Date();
+	const candidateProviders = modelInfo.providers.filter((provider) => {
+		if (!provider.videoGenerations) {
+			return false;
+		}
+
+		if (
+			(provider as ProviderModelMapping).deactivatedAt &&
+			now > (provider as ProviderModelMapping).deactivatedAt!
+		) {
+			return false;
+		}
+
+		if (requestedProvider && provider.providerId !== requestedProvider) {
+			return false;
+		}
+
+		return true;
+	});
+
+	const matchingProviders = candidateProviders.filter((provider) => {
+		return (
+			getVideoProviderConstraintReasons(
+				provider,
+				videoSize,
+				videoDurationSeconds,
+				inputMode,
+				inputImageCount,
+				referenceVideoCount,
+				referenceAudioCount,
+				includeAudio,
+			).length === 0
+		);
+	});
+
+	if (matchingProviders.length === 0) {
+		throw new HTTPException(400, {
+			message: formatVideoProviderConstraintSummary(
+				modelInfo.id,
+				candidateProviders,
+				videoSize,
+				videoDurationSeconds,
+				inputMode,
+				inputImageCount,
+				referenceVideoCount,
+				referenceAudioCount,
+				includeAudio,
+			),
+		});
+	}
+
+	return matchingProviders;
+}
+
+function getAvalancheVideoModelName(baseModelName: string): string {
+	return baseModelName;
+}
+
+function getAvalancheSoraTaskModelName(
+	baseModelName: string,
+	inputMode: VideoInputMode,
+): string {
+	return `${baseModelName}-${inputMode === "reference" ? "image" : "text"}-to-video`;
+}
+
+function getAtlasCloudTaskName(inputMode: VideoInputMode): string {
+	if (inputMode === "frames") {
+		return "image-to-video";
+	}
+
+	return "text-to-video";
+}
+
+function getAtlasCloudVideoModelName(
+	baseModelName: string,
+	videoSize: VideoSizeConfig,
+	inputMode: VideoInputMode,
+): string {
+	const taskName = getAtlasCloudTaskName(inputMode);
+	const isTurbo = baseModelName === "kwaivgi/kling-v3.0-turbo";
+
+	if (videoSize.resolution === "4k") {
+		return `kwaivgi/kling-v3.0-4k/${taskName}`;
+	}
+
+	return `kwaivgi/kling-v3.0-${isTurbo ? "turbo" : "std"}/${taskName}`;
+}
+
+function getVideoUpstreamModelName(
+	providerId: Provider,
+	baseModelName: string,
+	videoSize: VideoSizeConfig,
+	inputMode: VideoInputMode,
+): string {
+	switch (providerId) {
+		case "atlascloud":
+			return getAtlasCloudVideoModelName(baseModelName, videoSize, inputMode);
+		case "avalanche":
+			return getAvalancheVideoModelName(baseModelName);
+		case "bytedance":
+		case "google-vertex":
+		case "minimax":
+		default:
+			return baseModelName;
+	}
+}
+
+function getAvalancheAspectRatio(videoSize: VideoSizeConfig): "16:9" | "9:16" {
+	return videoSize.orientation === "portrait" ? "9:16" : "16:9";
+}
+
+function getAvalancheSoraAspectRatio(
+	videoSize: VideoSizeConfig,
+): "landscape" | "portrait" {
+	return videoSize.orientation === "portrait" ? "portrait" : "landscape";
+}
+
+function getAvalancheSoraSizeTier(
+	baseModelName: string,
+	videoSize: VideoSizeConfig,
+): "standard" | "high" | null {
+	if (baseModelName !== "sora-2-pro") {
+		return null;
+	}
+
+	return videoSize.resolution === "hd" ? "high" : "standard";
+}
+
+function getVertexAspectRatio(videoSize: VideoSizeConfig): "16:9" | "9:16" {
+	return videoSize.orientation === "portrait" ? "9:16" : "16:9";
+}
+
+function getVertexResolution(
+	videoSize: VideoSizeConfig,
+): "720p" | "1080p" | "4k" {
+	switch (videoSize.resolution) {
+		case "1080p":
+			return "1080p";
+		case "4k":
+			return "4k";
+		default:
+			return "720p";
+	}
+}
+
+function getDefaultVideoProviderBaseUrl(providerId: Provider): string | null {
+	switch (providerId) {
+		case "openai":
+			return "https://api.openai.com";
+		case "xai":
+			return "https://api.x.ai";
+		case "atlascloud":
+			return "https://api.atlascloud.ai";
+		case "bytedance":
+			return "https://ark.ap-southeast.bytepluses.com/api/v3";
+		case "google-vertex":
+			return "https://aiplatform.googleapis.com";
+		case "minimax":
+			return "https://api.minimax.io";
+		case "alibaba":
+			return "https://dashscope-intl.aliyuncs.com";
+		default:
+			return null;
+	}
+}
+
+function getVideoProviderKeyFilter(
+	providerId: Provider,
+): ((key: { baseUrl: string | null }) => boolean) | undefined {
+	if (!isGoogleVertexVideoProvider(providerId)) {
+		return undefined;
+	}
+	const allowedBaseUrls = new Set<string>();
+	const defaultBaseUrl = getDefaultVideoProviderBaseUrl(providerId);
+	if (defaultBaseUrl) {
+		allowedBaseUrls.add(defaultBaseUrl);
+	}
+	const envBaseUrl = getProviderEnvValue(providerId, "baseUrl");
+	if (envBaseUrl) {
+		allowedBaseUrls.add(envBaseUrl);
+	}
+	return (key) => !key.baseUrl || allowedBaseUrls.has(key.baseUrl);
+}
+
+function getVideoExcludedConfigIndices(
+	providerId: Provider,
+): ReadonlySet<number> | undefined {
+	if (!isGoogleVertexVideoProvider(providerId)) {
+		return undefined;
+	}
+	const apiKeyEnvVar = getProviderEnvVar(providerId);
+	if (!apiKeyEnvVar) {
+		return undefined;
+	}
+	const apiKeyValue = process.env[apiKeyEnvVar];
+	if (!apiKeyValue) {
+		return undefined;
+	}
+	const valueCount = apiKeyValue
+		.split(",")
+		.map((value) => value.trim())
+		.filter((value) => value.length > 0).length;
+	if (valueCount === 0) {
+		return undefined;
+	}
+	const defaultBaseUrl = getDefaultVideoProviderBaseUrl(providerId);
+	const storageProjectId = process.env.GOOGLE_CLOUD_PROJECT?.trim();
+	const excluded = new Set<number>();
+	for (let index = 0; index < valueCount; index += 1) {
+		const baseUrl = getProviderEnvValue(providerId, "baseUrl", index);
+		if (baseUrl && baseUrl !== defaultBaseUrl) {
+			excluded.add(index);
+			continue;
+		}
+		if (storageProjectId) {
+			const indexProjectId = getProviderEnvValue(providerId, "project", index);
+			if (indexProjectId && indexProjectId !== storageProjectId) {
+				excluded.add(index);
+			}
+		}
+	}
+	return excluded.size > 0 ? excluded : undefined;
+}
+
+function addRequestedVideoMetadata(
+	body: Record<string, unknown>,
+	videoSize: VideoSizeConfig,
+): Record<string, unknown> {
+	return {
+		...body,
+		size:
+			typeof body.size === "string" && body.size.length > 0
+				? body.size
+				: videoSize.size,
+		resolution:
+			typeof body.resolution === "string" && body.resolution.length > 0
+				? body.resolution
+				: videoSize.resolution,
+		width:
+			typeof body.width === "number" && Number.isFinite(body.width)
+				? body.width
+				: videoSize.width,
+		height:
+			typeof body.height === "number" && Number.isFinite(body.height)
+				? body.height
+				: videoSize.height,
+	};
+}
+
+async function resolveProviderContext(
+	providerId: Provider,
+	project: InferSelectModel<typeof tables.project>,
+	organizationId: string,
+	requestId: string,
+	selectionScope: string,
+): Promise<ProviderContext> {
+	const defaultBaseUrl = getDefaultVideoProviderBaseUrl(providerId);
+	const sharedVertexProjectId = isGoogleVertexVideoProvider(providerId)
+		? getProviderEnvValue(providerId, "project")
+		: undefined;
+	const sharedVertexRegion = isGoogleVertexVideoProvider(providerId)
+		? (getProviderEnvValue(providerId, "region", undefined, "us-central1") ??
+			"us-central1")
+		: undefined;
+
+	if (project.mode === "api-keys") {
+		const providerKey = await findProviderKey(
+			organizationId,
+			providerId,
+			selectionScope,
+			undefined,
+			getVideoProviderKeyFilter(providerId),
+		);
+		if (!providerKey) {
+			throw new HTTPException(400, {
+				message: `No API key set for provider: ${providerId}. Please add a provider key in your settings or add credits and switch to credits or hybrid mode.`,
+			});
+		}
+
+		const baseUrl =
+			providerKey.baseUrl ??
+			getProviderEnvValue(providerId, "baseUrl") ??
+			defaultBaseUrl;
+		if (!baseUrl) {
+			throw new HTTPException(400, {
+				message: `No base URL set for provider: ${providerId}`,
+			});
+		}
+
+		if (isGoogleVertexVideoProvider(providerId) && !sharedVertexProjectId) {
+			throw new HTTPException(500, {
+				message: `${providerId} project environment variable is required for video generation`,
+			});
+		}
+
+		const providerContext: ProviderContext = {
+			providerId,
+			baseUrl,
+			token: providerKey.token,
+			requestId,
+			usedMode: "api-keys",
+			configIndex: null,
+			vertexProjectId: sharedVertexProjectId,
+			vertexRegion: sharedVertexRegion,
+			vertexTokenType: resolveVideoVertexTokenType(
+				providerId,
+				providerKey,
+				null,
+			),
+			uploadBaseUrl:
+				providerId === "avalanche"
+					? getProviderEnvValue(providerId, "fileUploadBaseUrl")
+					: undefined,
+		};
+
+		return providerContext;
+	}
+
+	if (project.mode === "credits") {
+		const env = getProviderEnv(providerId, {
+			excludedIndices: getVideoExcludedConfigIndices(providerId),
+			selectionScope,
+		});
+		const baseUrl =
+			getProviderEnvValue(providerId, "baseUrl", env.configIndex) ??
+			defaultBaseUrl;
+		if (!baseUrl) {
+			throw new HTTPException(500, {
+				message: `Base URL environment variable is required for ${providerId} provider`,
+			});
+		}
+
+		const vertexProjectId = isGoogleVertexVideoProvider(providerId)
+			? getProviderEnvValue(providerId, "project", env.configIndex)
+			: undefined;
+		const vertexRegion = isGoogleVertexVideoProvider(providerId)
+			? (getProviderEnvValue(
+					providerId,
+					"region",
+					env.configIndex,
+					"us-central1",
+				) ?? "us-central1")
+			: undefined;
+
+		if (isGoogleVertexVideoProvider(providerId) && !vertexProjectId) {
+			throw new HTTPException(500, {
+				message: `${providerId} project environment variable is required for video generation`,
+			});
+		}
+
+		const providerContext: ProviderContext = {
+			providerId,
+			baseUrl,
+			token: env.token,
+			requestId,
+			usedMode: "credits",
+			configIndex: env.configIndex,
+			vertexProjectId,
+			vertexRegion,
+			vertexTokenType: resolveVideoVertexTokenType(
+				providerId,
+				undefined,
+				env.configIndex,
+			),
+			uploadBaseUrl:
+				providerId === "avalanche"
+					? getProviderEnvValue(
+							providerId,
+							"fileUploadBaseUrl",
+							env.configIndex,
+						)
+					: undefined,
+		};
+
+		return providerContext;
+	}
+
+	const providerKey = await findProviderKey(
+		organizationId,
+		providerId,
+		selectionScope,
+		undefined,
+		getVideoProviderKeyFilter(providerId),
+	);
+	if (providerKey) {
+		const baseUrl =
+			providerKey.baseUrl ??
+			getProviderEnvValue(providerId, "baseUrl") ??
+			defaultBaseUrl;
+		if (!baseUrl) {
+			throw new HTTPException(400, {
+				message: `No base URL set for provider: ${providerId}`,
+			});
+		}
+
+		if (isGoogleVertexVideoProvider(providerId) && !sharedVertexProjectId) {
+			throw new HTTPException(500, {
+				message: `${providerId} project environment variable is required for video generation`,
+			});
+		}
+
+		const providerContext: ProviderContext = {
+			providerId,
+			baseUrl,
+			token: providerKey.token,
+			requestId,
+			usedMode: "api-keys",
+			configIndex: null,
+			vertexProjectId: sharedVertexProjectId,
+			vertexRegion: sharedVertexRegion,
+			vertexTokenType: resolveVideoVertexTokenType(
+				providerId,
+				providerKey,
+				null,
+			),
+			uploadBaseUrl:
+				providerId === "avalanche"
+					? getProviderEnvValue(providerId, "fileUploadBaseUrl")
+					: undefined,
+		};
+
+		return providerContext;
+	}
+
+	if (!hasProviderEnvironmentToken(providerId)) {
+		throw new HTTPException(400, {
+			message: `No provider key or environment token set for provider: ${providerId}. Please add the provider key in the settings or switch the project mode to credits or hybrid.`,
+		});
+	}
+
+	const env = getProviderEnv(providerId, {
+		excludedIndices: getVideoExcludedConfigIndices(providerId),
+	});
+	const baseUrl =
+		getProviderEnvValue(providerId, "baseUrl", env.configIndex) ??
+		defaultBaseUrl;
+	if (!baseUrl) {
+		throw new HTTPException(500, {
+			message: `Base URL environment variable is required for ${providerId} provider`,
+		});
+	}
+
+	const vertexProjectId = isGoogleVertexVideoProvider(providerId)
+		? getProviderEnvValue(providerId, "project", env.configIndex)
+		: undefined;
+	const vertexRegion = isGoogleVertexVideoProvider(providerId)
+		? (getProviderEnvValue(
+				providerId,
+				"region",
+				env.configIndex,
+				"us-central1",
+			) ?? "us-central1")
+		: undefined;
+
+	if (isGoogleVertexVideoProvider(providerId) && !vertexProjectId) {
+		throw new HTTPException(500, {
+			message: `${providerId} project environment variable is required for video generation`,
+		});
+	}
+
+	const providerContext: ProviderContext = {
+		providerId,
+		baseUrl,
+		token: env.token,
+		requestId,
+		usedMode: "credits",
+		configIndex: env.configIndex,
+		vertexProjectId,
+		vertexRegion,
+		uploadBaseUrl:
+			providerId === "avalanche"
+				? getProviderEnvValue(providerId, "fileUploadBaseUrl", env.configIndex)
+				: undefined,
+	};
+
+	return providerContext;
+}
+
+async function hasVideoProviderConfiguration(
+	providerId: Provider,
+	project: InferSelectModel<typeof tables.project>,
+	organizationId: string,
+): Promise<boolean> {
+	const defaultBaseUrl = getDefaultVideoProviderBaseUrl(providerId);
+
+	if (project.mode === "api-keys") {
+		const providerKey = await findProviderKey(
+			organizationId,
+			providerId,
+			undefined,
+			undefined,
+			getVideoProviderKeyFilter(providerId),
+		);
+		return Boolean(
+			providerKey &&
+				(providerKey.baseUrl ??
+					getProviderEnvValue(providerId, "baseUrl") ??
+					defaultBaseUrl) &&
+				(!isGoogleVertexVideoProvider(providerId) ||
+					Boolean(getProviderEnvValue(providerId, "project"))),
+		);
+	}
+
+	if (project.mode === "credits") {
+		return hasVideoEnvConfiguration(providerId, defaultBaseUrl);
+	}
+
+	const providerKey = await findProviderKey(
+		organizationId,
+		providerId,
+		undefined,
+		undefined,
+		getVideoProviderKeyFilter(providerId),
+	);
+	if (providerKey) {
+		return Boolean(
+			(providerKey.baseUrl ??
+				getProviderEnvValue(providerId, "baseUrl") ??
+				defaultBaseUrl) &&
+				(!isGoogleVertexVideoProvider(providerId) ||
+					Boolean(getProviderEnvValue(providerId, "project"))),
+		);
+	}
+
+	return hasVideoEnvConfiguration(providerId, defaultBaseUrl);
+}
+
+function hasVideoEnvConfiguration(
+	providerId: Provider,
+	defaultBaseUrl: string | null,
+): boolean {
+	if (!hasProviderEnvironmentToken(providerId)) {
+		return false;
+	}
+	let env;
+	try {
+		env = getProviderEnv(providerId, {
+			advanceRoundRobin: false,
+			excludedIndices: getVideoExcludedConfigIndices(providerId),
+		});
+	} catch {
+		return false;
+	}
+	const baseUrl =
+		getProviderEnvValue(providerId, "baseUrl", env.configIndex) ??
+		defaultBaseUrl;
+	if (!baseUrl) {
+		return false;
+	}
+	if (
+		isGoogleVertexVideoProvider(providerId) &&
+		!getProviderEnvValue(providerId, "project", env.configIndex)
+	) {
+		return false;
+	}
+	return true;
+}
+
+async function resolveVideoExecution(
+	modelInfo: ModelDefinition,
+	requestedProvider: string | undefined,
+	videoSize: VideoSizeConfig,
+	videoDurationSeconds: number,
+	inputMode: VideoInputMode,
+	inputImageCount: number,
+	referenceVideoCount: number,
+	referenceAudioCount: number,
+	includeAudio: boolean,
+	project: InferSelectModel<typeof tables.project>,
+	organizationId: string,
+	requestId: string,
+	noFallback: boolean,
+	xNoFallbackHeaderSet: boolean,
+	routingCfg: ResolvedRoutingConfig,
+): Promise<ResolvedVideoExecution> {
+	const providerDiscountResolver =
+		createProviderDiscountResolver(organizationId);
+	const videoPricing: VideoPricingContext = {
+		durationSeconds: videoDurationSeconds,
+		includeAudio,
+		resolution:
+			videoSize.resolution === "4k"
+				? "4k"
+				: videoSize.resolution === "1080p"
+					? "1080p"
+					: videoSize.resolution === "768p"
+						? "768p"
+						: videoSize.resolution === "720p"
+							? "720p"
+							: videoSize.resolution === "480p"
+								? "480p"
+								: videoSize.resolution === "hd"
+									? "hd"
+									: "default",
+	};
+	const eligibleMappings = getEligibleVideoProviderMappings(
+		modelInfo,
+		requestedProvider,
+		videoSize,
+		videoDurationSeconds,
+		inputMode,
+		inputImageCount,
+		referenceVideoCount,
+		referenceAudioCount,
+		includeAudio,
+	);
+	const configuredEligibleMappings: ProviderModelMapping[] = [];
+	for (const providerMapping of eligibleMappings) {
+		if (
+			await hasVideoProviderConfiguration(
+				providerMapping.providerId as Provider,
+				project,
+				organizationId,
+			)
+		) {
+			configuredEligibleMappings.push(providerMapping);
+		}
+	}
+
+	if (!requestedProvider) {
+		const configuredProviders: Provider[] = [];
+		for (const providerMapping of modelInfo.providers) {
+			const providerId = providerMapping.providerId as Provider;
+			if (
+				providerMapping.videoGenerations &&
+				(await hasVideoProviderConfiguration(
+					providerId,
+					project,
+					organizationId,
+				))
+			) {
+				configuredProviders.push(providerId);
+			}
+		}
+
+		if (configuredProviders.length > 0) {
+			const configuredProviderMappings = modelInfo.providers.filter(
+				(provider) =>
+					provider.videoGenerations &&
+					configuredProviders.includes(provider.providerId as Provider),
+			);
+			const configuredEligibleMappings = eligibleMappings.filter((provider) =>
+				configuredProviders.includes(provider.providerId as Provider),
+			);
+			if (configuredEligibleMappings.length === 0) {
+				throw new HTTPException(400, {
+					message: formatVideoProviderConstraintSummary(
+						modelInfo.id,
+						configuredProviderMappings,
+						videoSize,
+						videoDurationSeconds,
+						inputMode,
+						inputImageCount,
+						referenceVideoCount,
+						referenceAudioCount,
+						includeAudio,
+					),
+				});
+			}
+		}
+	}
+
+	if (configuredEligibleMappings.length === 0) {
+		throw new HTTPException(400, {
+			message: `No configured provider is available for model ${modelInfo.id} and size ${videoSize.size}.`,
+		});
+	}
+
+	let routingMetadata: RoutingMetadata | undefined;
+	let orderedMappings = configuredEligibleMappings;
+
+	if (configuredEligibleMappings.length > 1) {
+		const metricsCombinations = configuredEligibleMappings.map((provider) => ({
+			modelId: modelInfo.id,
+			providerId: provider.providerId,
+			region: provider.region,
+		}));
+		const metricsMap = await getProviderMetricsForRouting(
+			metricsCombinations,
+			routingCfg,
+		);
+
+		const requestedMapping = requestedProvider
+			? configuredEligibleMappings.find(
+					(provider) => provider.providerId === requestedProvider,
+				)
+			: undefined;
+		const requestedKey = requestedMapping
+			? metricsKey(
+					modelInfo.id,
+					requestedMapping.providerId,
+					requestedMapping.region,
+				)
+			: undefined;
+
+		if (
+			requestedProvider &&
+			!noFallback &&
+			requestedKey &&
+			metricsMap.has(requestedKey)
+		) {
+			const requestedMetrics = metricsMap.get(requestedKey);
+			const requestedUptime = requestedMetrics?.uptime;
+
+			if (
+				requestedUptime !== undefined &&
+				requestedUptime < routingCfg.retry.lowUptimeFallbackThreshold
+			) {
+				const betterMappings = configuredEligibleMappings.filter((provider) => {
+					if (provider.providerId === requestedProvider) {
+						return false;
+					}
+
+					const providerMetrics = metricsMap.get(
+						metricsKey(modelInfo.id, provider.providerId, provider.region),
+					);
+					return (
+						!providerMetrics ||
+						(providerMetrics.uptime ?? 100) > requestedUptime
+					);
+				});
+
+				if (betterMappings.length > 0) {
+					const betterResult = await getCheapestFromAvailableProviders(
+						betterMappings,
+						modelInfo,
+						{
+							metricsMap,
+							isStreaming: false,
+							videoPricing,
+							routingConfig: routingCfg,
+							organizationId,
+							providerDiscountResolver,
+						},
+					);
+
+					if (betterResult) {
+						const originalMapping = configuredEligibleMappings.find(
+							(provider) => provider.providerId === requestedProvider,
+						);
+						const { price: originalPrice, discount: originalDiscount } =
+							await getDiscountedProviderSelectionPrice(
+								originalMapping,
+								modelInfo.id,
+								{
+									organizationId,
+									videoPricing,
+									providerDiscountResolver,
+								},
+							);
+						routingMetadata = {
+							...betterResult.metadata,
+							selectionReason: "low-uptime-fallback",
+							originalProvider: requestedProvider,
+							originalProviderUptime: requestedUptime,
+							providerScores: [
+								{
+									providerId: requestedProvider,
+									score: -1,
+									price: originalPrice.toNumber(),
+									discount: originalDiscount.toNumber(),
+									uptime: requestedUptime,
+									latency: requestedMetrics?.averageLatency,
+									throughput: requestedMetrics?.throughput,
+								},
+								...betterResult.metadata.providerScores,
+							],
+							...getNoFallbackRoutingMetadata(noFallback, xNoFallbackHeaderSet),
+						};
+
+						const orderedProviderIds = [
+							betterResult.provider.providerId,
+							requestedProvider,
+							...betterResult.metadata.providerScores
+								.filter(
+									(score) =>
+										score.providerId !== betterResult.provider.providerId,
+								)
+								.map((score) => score.providerId),
+						];
+						orderedMappings = orderedProviderIds
+							.map((providerId) =>
+								configuredEligibleMappings.find(
+									(provider) => provider.providerId === providerId,
+								),
+							)
+							.filter((provider): provider is ProviderModelMapping =>
+								Boolean(provider),
+							);
+					}
+				}
+			}
+		}
+
+		if (!routingMetadata) {
+			const cheapestResult = await getCheapestFromAvailableProviders(
+				configuredEligibleMappings,
+				modelInfo,
+				{
+					metricsMap,
+					isStreaming: false,
+					videoPricing,
+					routingConfig: routingCfg,
+					organizationId,
+					providerDiscountResolver,
+				},
+			);
+			if (cheapestResult) {
+				routingMetadata = {
+					...cheapestResult.metadata,
+					...getNoFallbackRoutingMetadata(noFallback, xNoFallbackHeaderSet),
+				};
+				const orderedProviderIds = [
+					cheapestResult.provider.providerId,
+					...cheapestResult.metadata.providerScores
+						.filter(
+							(score) =>
+								score.providerId !== cheapestResult.provider.providerId,
+						)
+						.sort((a, b) => a.score - b.score)
+						.map((score) => score.providerId),
+				];
+				orderedMappings = orderedProviderIds
+					.map((providerId) =>
+						configuredEligibleMappings.find(
+							(provider) => provider.providerId === providerId,
+						),
+					)
+					.filter((provider): provider is ProviderModelMapping =>
+						Boolean(provider),
+					);
+			}
+		}
+	}
+
+	routingMetadata ??= {
+		availableProviders: configuredEligibleMappings.map(
+			(provider) => provider.providerId,
+		),
+		selectedProvider: orderedMappings[0].providerId,
+		selectionReason: requestedProvider
+			? "direct-provider-specified"
+			: configuredEligibleMappings.length === 1
+				? "single-provider-available"
+				: "fallback-first-available",
+		providerScores: await Promise.all(
+			configuredEligibleMappings.map(async (provider) => {
+				const { price, discount } = await getDiscountedProviderSelectionPrice(
+					provider,
+					modelInfo.id,
+					{
+						organizationId,
+						videoPricing,
+						providerDiscountResolver,
+					},
+				);
+
+				return {
+					providerId: provider.providerId,
+					score: provider.providerId === orderedMappings[0].providerId ? 0 : 1,
+					price: price.toNumber(),
+					discount: discount.toNumber(),
+				};
+			}),
+		),
+		...getNoFallbackRoutingMetadata(noFallback, xNoFallbackHeaderSet),
+	};
+
+	const providerMapping = orderedMappings[0];
+	const providerContext = await resolveProviderContext(
+		providerMapping.providerId as Provider,
+		project,
+		organizationId,
+		requestId,
+		modelInfo.id,
+	);
+	return {
+		providerMapping,
+		providerContext,
+		upstreamModelName: getVideoUpstreamModelName(
+			providerMapping.providerId as Provider,
+			providerMapping.externalId,
+			videoSize,
+			inputMode,
+		),
+		routingMetadata,
+		orderedMappings,
+	};
+}
+
+function joinUrl(baseUrl: string, path: string): string {
+	const normalizedBaseUrl = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+	const normalizedPath = path.startsWith("/") ? path.slice(1) : path;
+	return new URL(normalizedPath, normalizedBaseUrl).toString();
+}
+
+function appendQueryParam(url: string, key: string, value: string): string {
+	const resolvedUrl = new URL(url);
+	resolvedUrl.searchParams.set(key, value);
+	return resolvedUrl.toString();
+}
+
+function getVideoDurationSeconds(
+	modelInfo: ModelDefinition,
+	seconds: number,
+): number {
+	if (
+		modelInfo.maxVideoDurationSeconds !== undefined &&
+		seconds > modelInfo.maxVideoDurationSeconds
+	) {
+		throw new HTTPException(400, {
+			message: `duration ${seconds}s exceeds the maximum supported duration of ${modelInfo.maxVideoDurationSeconds}s for model ${modelInfo.id}`,
+		});
+	}
+
+	return seconds;
+}
+
+function normalizeVideoStatus(value: unknown): VideoJobRecord["status"] {
+	if (typeof value !== "string") {
+		return "queued";
+	}
+
+	switch (value.toLowerCase()) {
+		case "queued":
+		case "pending":
+		case "submitted":
+		case "waiting":
+		case "queuing":
+			return "queued";
+		case "in_progress":
+		case "in-progress":
+		case "processing":
+		case "running":
+		case "generating":
+			return "in_progress";
+		case "completed":
+		case "done":
+		case "succeeded":
+		case "success":
+			return "completed";
+		case "failed":
+		case "error":
+			return "failed";
+		case "canceled":
+		case "cancelled":
+			return "canceled";
+		case "expired":
+			return "expired";
+		default:
+			return "queued";
+	}
+}
+
+function parseTimestamp(value: unknown): Date | null {
+	if (value instanceof Date) {
+		return value;
+	}
+
+	if (typeof value === "number" && Number.isFinite(value)) {
+		return new Date(value > 1_000_000_000_000 ? value : value * 1000);
+	}
+
+	if (typeof value === "string" && value.length > 0) {
+		const asNumber = Number(value);
+		if (!Number.isNaN(asNumber)) {
+			return new Date(
+				asNumber > 1_000_000_000_000 ? asNumber : asNumber * 1000,
+			);
+		}
+
+		const parsed = new Date(value);
+		if (!Number.isNaN(parsed.getTime())) {
+			return parsed;
+		}
+	}
+
+	return null;
+}
+
+function extractProgress(body: Record<string, unknown>): number {
+	const candidates = [
+		body.progress,
+		body.progress_percent,
+		body.progressPercentage,
+		body.data && typeof body.data === "object"
+			? (body.data as Record<string, unknown>).progress
+			: undefined,
+	];
+
+	for (const candidate of candidates) {
+		if (typeof candidate === "number" && Number.isFinite(candidate)) {
+			return Math.max(0, Math.min(100, Math.round(candidate)));
+		}
+		if (typeof candidate === "string" && candidate.length > 0) {
+			const parsed = Number(candidate);
+			if (!Number.isNaN(parsed)) {
+				return Math.max(0, Math.min(100, Math.round(parsed)));
+			}
+		}
+	}
+
+	return 0;
+}
+
+function extractContentUrl(body: Record<string, unknown>): string | null {
+	const candidates = [
+		body.url,
+		body.video_url,
+		body.output_url,
+		body.video,
+		body.content,
+		body.output,
+	];
+
+	for (const candidate of candidates) {
+		if (typeof candidate === "string" && candidate.startsWith("http")) {
+			return candidate;
+		}
+
+		if (Array.isArray(candidate)) {
+			for (const item of candidate) {
+				if (
+					item &&
+					typeof item === "object" &&
+					"url" in item &&
+					typeof item.url === "string"
+				) {
+					return item.url;
+				}
+			}
+		}
+
+		if (candidate && typeof candidate === "object") {
+			const obj = candidate as Record<string, unknown>;
+			if (typeof obj.url === "string") {
+				return obj.url;
+			}
+		}
+	}
+
+	return null;
+}
+
+function extractStorageUri(body: Record<string, unknown>): string | null {
+	const candidates = [
+		body.gcsUri,
+		body.storage_uri,
+		body.storageUri,
+		body.output_gcs_uri,
+	];
+
+	for (const candidate of candidates) {
+		if (typeof candidate === "string" && candidate.startsWith("gs://")) {
+			return candidate;
+		}
+	}
+
+	const response =
+		body.response && typeof body.response === "object"
+			? (body.response as Record<string, unknown>)
+			: null;
+	const videos =
+		response && Array.isArray(response.videos) ? response.videos : null;
+	const firstVideo =
+		videos && videos[0] && typeof videos[0] === "object"
+			? (videos[0] as Record<string, unknown>)
+			: null;
+
+	return firstVideo && typeof firstVideo.gcsUri === "string"
+		? firstVideo.gcsUri
+		: null;
+}
+
+function extractError(body: Record<string, unknown>): VideoJobRecord["error"] {
+	const candidate =
+		body.error && typeof body.error === "object"
+			? (body.error as Record<string, unknown>)
+			: undefined;
+
+	if (!candidate) {
+		return null;
+	}
+
+	return {
+		code: typeof candidate.code === "string" ? candidate.code : undefined,
+		message:
+			typeof candidate.message === "string"
+				? candidate.message
+				: "Video generation failed",
+		details: candidate,
+	};
+}
+
+function toUnixTimestamp(value: Date | null): number | null {
+	return value ? Math.floor(value.getTime() / 1000) : null;
+}
+
+async function getExternalVideoContentUrl(
+	job: VideoJobRecord,
+): Promise<string | null> {
+	if (job.storageUri) {
+		try {
+			return await createSignedGcsReadUrl(job.storageUri);
+		} catch (error) {
+			logger.error(
+				"Failed to create signed URL for video job",
+				toError(error),
+				{
+					videoJobId: job.id,
+					storageUri: job.storageUri,
+				},
+			);
+		}
+	}
+
+	return job.contentUrl;
+}
+
+async function cacheVideoProxySourceUrl(
+	logId: string,
+	sourceUrl: string,
+): Promise<void> {
+	try {
+		await redisClient.set(
+			getVideoProxyRedisKey(logId),
+			sourceUrl,
+			"EX",
+			VIDEO_PROXY_REDIS_TTL_SECONDS,
+		);
+	} catch (error) {
+		logger.warn("Failed to cache video proxy source URL", {
+			logId,
+			error: error instanceof Error ? error.message : String(error),
+		});
+	}
+}
+
+function getInlineGoogleVertexVideoFromBodies(
+	candidates: Array<unknown>,
+): { bytesBase64Encoded: string; mimeType: string } | null {
+	for (const candidate of candidates) {
+		if (!candidate || typeof candidate !== "object") {
+			continue;
+		}
+
+		const response =
+			"response" in candidate &&
+			candidate.response &&
+			typeof candidate.response === "object"
+				? (candidate.response as Record<string, unknown>)
+				: null;
+		const videos =
+			response && "videos" in response && Array.isArray(response.videos)
+				? response.videos
+				: null;
+		const firstVideo =
+			videos && videos[0] && typeof videos[0] === "object"
+				? (videos[0] as Record<string, unknown>)
+				: null;
+
+		if (
+			firstVideo &&
+			typeof firstVideo.bytesBase64Encoded === "string" &&
+			firstVideo.bytesBase64Encoded.length > 0
+		) {
+			return {
+				bytesBase64Encoded: firstVideo.bytesBase64Encoded,
+				mimeType:
+					typeof firstVideo.mimeType === "string" &&
+					firstVideo.mimeType.length > 0
+						? firstVideo.mimeType
+						: "video/mp4",
+			};
+		}
+	}
+
+	return null;
+}
+
+async function getPublicVideoContentUrl(
+	job: VideoJobRecord,
+	logId?: string | null,
+): Promise<string | null> {
+	if (job.status !== "completed") {
+		return null;
+	}
+
+	const resolvedLogId = logId ?? job.logId;
+	if (
+		resolvedLogId &&
+		(job.contentUrl ||
+			job.storageUri ||
+			getInlineGoogleVertexVideoFromBodies([
+				job.upstreamStatusResponse,
+				job.upstreamCreateResponse,
+			]))
+	) {
+		try {
+			return buildSignedGatewayVideoLogContentUrl(resolvedLogId);
+		} catch (error) {
+			logger.warn("Falling back to direct video content URL", {
+				videoJobId: job.id,
+				logId: resolvedLogId,
+				error: error instanceof Error ? error.message : String(error),
+			});
+		}
+	}
+
+	return await getExternalVideoContentUrl(job);
+}
+
+async function serializeVideoJob(job: VideoJobRecord, logId?: string | null) {
+	const contentUrl = await getPublicVideoContentUrl(job, logId);
+
+	return {
+		id: job.id,
+		object: "video" as const,
+		model: job.model,
+		status: job.status,
+		progress: TERMINAL_VIDEO_STATUSES.has(job.status)
+			? job.status === "completed"
+				? 100
+				: job.progress
+			: job.progress,
+		created_at: Math.floor(job.createdAt.getTime() / 1000),
+		completed_at: toUnixTimestamp(job.completedAt),
+		expires_at: toUnixTimestamp(job.expiresAt),
+		error: job.error ?? null,
+		content: contentUrl
+			? [
+					{
+						type: "video" as const,
+						url: contentUrl,
+						mime_type: job.contentType ?? null,
+					},
+				]
+			: undefined,
+	};
+}
+
+function getGoogleVertexInlineVideo(
+	job: VideoJobRecord,
+): { bytesBase64Encoded: string; mimeType: string } | null {
+	return getInlineGoogleVertexVideoFromBodies([
+		job.upstreamStatusResponse,
+		job.upstreamCreateResponse,
+	]);
+}
+
+async function requireVideoJobForProject(
+	projectId: string,
+	videoId: string,
+	sessionWalletId: string | null = null,
+): Promise<VideoJobRecord> {
+	const job = await db
+		.select()
+		.from(tables.videoJob)
+		.where(
+			and(
+				eq(tables.videoJob.id, videoId),
+				eq(tables.videoJob.projectId, projectId),
+			),
+		)
+		.limit(1)
+		.then((rows) => rows[0]);
+
+	if (!job) {
+		throw new HTTPException(404, {
+			message: "Video not found",
+		});
+	}
+
+	// LLM SDK: an ephemeral end-user session may only read jobs owned by
+	// its own wallet. End-users share a project, so a project-only scope would
+	// leak other end-users' jobs. (Normal developer keys pass null and see all
+	// project jobs, as before.)
+	if (sessionWalletId && job.endCustomerWalletId !== sessionWalletId) {
+		throw new HTTPException(404, {
+			message: "Video not found",
+		});
+	}
+
+	return job;
+}
+
+function getDirectVideoContentUrlFromJob(job: VideoJobRecord): string | null {
+	const upstreamResponse =
+		job.upstreamStatusResponse && typeof job.upstreamStatusResponse === "object"
+			? (job.upstreamStatusResponse as Record<string, unknown>)
+			: null;
+	return upstreamResponse ? extractContentUrl(upstreamResponse) : null;
+}
+
+async function getVideoSourceUrlFromCacheOrJob(
+	logId: string,
+	job: VideoJobRecord,
+): Promise<string | null> {
+	try {
+		const cachedUrl = await redisClient.get(getVideoProxyRedisKey(logId));
+		if (cachedUrl) {
+			return cachedUrl;
+		}
+	} catch (error) {
+		logger.warn("Failed to read video proxy source URL from cache", {
+			logId,
+			error: error instanceof Error ? error.message : String(error),
+		});
+	}
+
+	const sourceUrl = getDirectVideoContentUrlFromJob(job);
+	if (sourceUrl) {
+		await cacheVideoProxySourceUrl(logId, sourceUrl);
+	}
+
+	return sourceUrl;
+}
+
+async function streamVideoFromUrl(
+	contentUrl: string,
+	contentType?: string | null,
+): Promise<Response> {
+	// SSRF: refuse redirects so a tenant-controlled content URL cannot 3xx the
+	// gateway onward to an internal host whose body would then be streamed back.
+	const upstreamResponse = await fetch(contentUrl, { redirect: "error" });
+	if (!upstreamResponse.ok || !upstreamResponse.body) {
+		throw new HTTPException(502, {
+			message: "Failed to fetch video content from upstream provider",
+		});
+	}
+
+	const headers = new Headers();
+	headers.set(
+		"Content-Type",
+		upstreamResponse.headers.get("Content-Type") ?? contentType ?? "video/mp4",
+	);
+
+	const contentLength = upstreamResponse.headers.get("Content-Length");
+	if (contentLength) {
+		headers.set("Content-Length", contentLength);
+	}
+
+	return new Response(upstreamResponse.body, {
+		status: 200,
+		headers,
+	});
+}
+
+function shouldProxyDirectUpstreamVideoContent(job: VideoJobRecord): boolean {
+	return (
+		job.usedProvider === "openai" ||
+		job.usedProvider === "minimax" ||
+		job.usedProvider === "xai"
+	);
+}
+
+async function resolveVideoJobProviderContext(job: VideoJobRecord): Promise<{
+	providerId: Provider;
+	baseUrl: string;
+	token: string;
+	requestId: string;
+}> {
+	const providerId = job.usedProvider as Provider;
+	const defaultBaseUrl = getDefaultVideoProviderBaseUrl(providerId);
+
+	if (job.usedMode === "api-keys") {
+		const providerKey = await findProviderKey(
+			job.organizationId,
+			providerId,
+			job.usedModel,
+			undefined,
+			getVideoProviderKeyFilter(providerId),
+		);
+		if (!providerKey) {
+			throw new HTTPException(400, {
+				message: `No API key set for provider: ${providerId}`,
+			});
+		}
+
+		const baseUrl =
+			providerKey.baseUrl ??
+			getProviderEnvValue(providerId, "baseUrl") ??
+			defaultBaseUrl;
+		if (!baseUrl) {
+			throw new HTTPException(400, {
+				message: `No base URL set for provider: ${providerId}`,
+			});
+		}
+
+		return {
+			providerId,
+			baseUrl,
+			token: providerKey.token,
+			requestId: job.requestId,
+		};
+	}
+
+	const env = getProviderEnv(providerId, {
+		excludedIndices: getVideoExcludedConfigIndices(providerId),
+		selectionScope: job.usedModel,
+	});
+	const baseUrl =
+		getProviderEnvValue(providerId, "baseUrl", env.configIndex) ??
+		defaultBaseUrl;
+	if (!baseUrl) {
+		throw new HTTPException(500, {
+			message: `Base URL environment variable is required for ${providerId} provider`,
+		});
+	}
+
+	return {
+		providerId,
+		baseUrl,
+		token: env.token,
+		requestId: job.requestId,
+	};
+}
+
+async function streamDirectUpstreamVideoContent(
+	job: VideoJobRecord,
+): Promise<Response> {
+	const providerContext = await resolveVideoJobProviderContext(job);
+
+	let contentUrl: string;
+	if (providerContext.providerId === "minimax") {
+		const statusResponse =
+			job.upstreamStatusResponse &&
+			typeof job.upstreamStatusResponse === "object" &&
+			!Array.isArray(job.upstreamStatusResponse)
+				? (job.upstreamStatusResponse as Record<string, unknown>)
+				: {};
+		const fileId =
+			typeof statusResponse.file_id === "string"
+				? statusResponse.file_id
+				: typeof statusResponse.file_id === "number"
+					? String(statusResponse.file_id)
+					: null;
+		if (!fileId) {
+			throw new HTTPException(502, {
+				message: "MiniMax video response did not include a file_id for content",
+			});
+		}
+		const retrieveUrl = joinUrl(
+			providerContext.baseUrl,
+			`/v1/files/retrieve?file_id=${fileId}`,
+		);
+		const retrieveResponse = await fetch(retrieveUrl, {
+			// SSRF: never follow redirects on a tenant-baseUrl provider request.
+			redirect: "error",
+			headers: getProviderHeaders(
+				providerContext.providerId,
+				providerContext.token,
+				{ requestId: providerContext.requestId },
+			),
+		});
+		if (!retrieveResponse.ok) {
+			throw new HTTPException(502, {
+				message: "Failed to retrieve MiniMax video download URL",
+			});
+		}
+		const retrieveBody = (await retrieveResponse.json()) as {
+			file?: { download_url?: string };
+		};
+		contentUrl = retrieveBody.file?.download_url ?? "";
+		if (!contentUrl) {
+			throw new HTTPException(502, {
+				message:
+					"MiniMax file retrieve response did not include a download_url",
+			});
+		}
+	} else {
+		contentUrl = joinUrl(
+			providerContext.baseUrl,
+			`/v1/videos/${job.upstreamId}/content`,
+		);
+	}
+
+	const upstreamResponse = await fetch(contentUrl, {
+		// SSRF: never follow redirects on a tenant-controlled content/baseUrl
+		// request; the followed body would be streamed back to the caller.
+		redirect: "error",
+		headers: getProviderHeaders(
+			providerContext.providerId,
+			providerContext.token,
+			{ requestId: providerContext.requestId },
+		),
+	});
+	if (!upstreamResponse.ok || !upstreamResponse.body) {
+		throw new HTTPException(502, {
+			message: "Failed to fetch video content from upstream provider",
+		});
+	}
+
+	const headers = new Headers();
+	headers.set(
+		"Content-Type",
+		upstreamResponse.headers.get("Content-Type") ??
+			job.contentType ??
+			"video/mp4",
+	);
+	const contentLength = upstreamResponse.headers.get("Content-Length");
+	if (contentLength) {
+		headers.set("Content-Length", contentLength);
+	}
+
+	return new Response(upstreamResponse.body, {
+		status: 200,
+		headers,
+	});
+}
+
+async function markVideoDownloaded(logId: string): Promise<void> {
+	await db
+		.update(tables.log)
+		.set({
+			videoDownloadCount: sql`${tables.log.videoDownloadCount} + 1`,
+			lastVideoDownloadedAt: new Date(),
+		})
+		.where(eq(tables.log.id, logId));
+}
+
+async function parseJsonBody(c: Context): Promise<ParsedVideoRequest> {
+	let rawBody: unknown;
+	try {
+		rawBody = await c.req.json();
+	} catch {
+		throw new HTTPException(400, {
+			message: "Invalid JSON in request body",
+		});
+	}
+
+	const validationResult = createVideoRequestSchema.safeParse(rawBody);
+	if (!validationResult.success) {
+		throw new HTTPException(400, {
+			message: `Invalid request parameters: ${validationResult.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join(", ")}`,
+		});
+	}
+
+	return {
+		rawBody,
+		request: validationResult.data,
+	};
+}
+
+function isDebugMode(c: Context): boolean {
+	return (
+		c.req.header("x-debug") === "true" ||
+		process.env.FORCE_DEBUG_MODE === "true" ||
+		process.env.NODE_ENV !== "production"
+	);
+}
+
+async function fetchUpstreamJson(
+	url: string,
+	init: RequestInit,
+): Promise<Record<string, unknown>> {
+	// SSRF: never follow redirects on a tenant-baseUrl provider request.
+	const response = await fetch(url, { ...init, redirect: "error" });
+	const text = await response.text();
+	let body: Record<string, unknown> = {};
+
+	if (text.length > 0) {
+		try {
+			const parsed: unknown = JSON.parse(text);
+			body =
+				typeof parsed === "object" && parsed !== null
+					? (parsed as Record<string, unknown>)
+					: {
+							error: {
+								message: text,
+							},
+						};
+		} catch {
+			body = {
+				error: {
+					message: text,
+				},
+			};
+		}
+	}
+
+	const upstreamApplicationError =
+		typeof body.msg === "string" &&
+		body.msg.length > 0 &&
+		typeof body.code === "number" &&
+		body.code !== 200
+			? {
+					status:
+						body.code >= 400 && body.code <= 599
+							? (body.code as
+									| 400
+									| 401
+									| 402
+									| 403
+									| 404
+									| 409
+									| 422
+									| 429
+									| 500
+									| 502
+									| 503
+									| 504)
+							: 502,
+					message: body.msg,
+				}
+			: null;
+
+	if (!response.ok) {
+		logger.warn("Upstream video request failed", {
+			url,
+			status: response.status,
+			body,
+		});
+		throw new HTTPException(
+			response.status as
+				| 400
+				| 401
+				| 403
+				| 404
+				| 409
+				| 422
+				| 429
+				| 500
+				| 502
+				| 503
+				| 504,
+			{
+				message:
+					typeof body.error === "object" &&
+					body.error &&
+					"message" in body.error &&
+					typeof body.error.message === "string"
+						? body.error.message
+						: `Upstream provider error (${response.status})`,
+			},
+		);
+	}
+
+	if (upstreamApplicationError) {
+		logger.warn("Upstream video request returned an application error", {
+			url,
+			status: upstreamApplicationError.status,
+			body,
+		});
+		throw new HTTPException(upstreamApplicationError.status, {
+			message: upstreamApplicationError.message,
+		});
+	}
+
+	return body;
+}
+
+function extractUpstreamVideoId(body: Record<string, unknown>): string | null {
+	const data =
+		body.data && typeof body.data === "object"
+			? (body.data as Record<string, unknown>)
+			: null;
+
+	for (const value of [
+		body.name,
+		body.id,
+		body.request_id,
+		body.video_id,
+		body.task_id,
+		body.job_id,
+		body.taskId,
+		data?.taskId,
+		data?.task_id,
+		data?.id,
+	]) {
+		if (typeof value === "string" && value.length > 0) {
+			return value;
+		}
+	}
+
+	return null;
+}
+
+function buildVideoInputReferenceFormData(
+	model: string,
+	prompt: string,
+	size: string,
+	seconds: number | undefined,
+	inputReferenceImages: ProcessedVideoImageInput[],
+): FormData {
+	const formData = new FormData();
+	formData.set("model", model);
+	formData.set("prompt", prompt);
+	formData.set("size", size);
+	if (seconds !== undefined) {
+		formData.set("seconds", String(seconds));
+	}
+
+	for (const [index, image] of inputReferenceImages.entries()) {
+		const fileExtension = getVideoImageFileExtension(image.mimeType);
+		const fileName = `input_reference_${index + 1}.${fileExtension}`;
+		formData.append(
+			"input_reference",
+			new Blob([Buffer.from(image.bytesBase64Encoded, "base64")], {
+				type: image.mimeType,
+			}),
+			fileName,
+		);
+	}
+
+	return formData;
+}
+
+async function createOpenAIVideoJob(
+	providerContext: ProviderContext,
+	providerMapping: ProviderModelMapping,
+	videoSize: VideoSizeConfig,
+	prompt: string,
+	durationSeconds: number,
+	referenceImages: ProcessedVideoImageInput[],
+): Promise<{
+	upstreamId: string;
+	upstreamRequest: Record<string, unknown>;
+	upstreamResponse: Record<string, unknown>;
+}> {
+	const upstreamUrl = joinUrl(providerContext.baseUrl, "/v1/videos");
+	const upstreamModelName = getVideoUpstreamModelName(
+		"openai",
+		providerMapping.externalId,
+		videoSize,
+		referenceImages.length > 0 ? "reference" : "none",
+	);
+	const upstreamRequest =
+		referenceImages.length > 0
+			? {
+					model: upstreamModelName,
+					prompt,
+					size: videoSize.size,
+					seconds: String(durationSeconds),
+					input_reference: referenceImages.map((image, index) => ({
+						filename: `input_reference_${index + 1}.${getVideoImageFileExtension(image.mimeType)}`,
+						mimeType: image.mimeType,
+					})),
+				}
+			: {
+					model: upstreamModelName,
+					prompt,
+					size: videoSize.size,
+					seconds: String(durationSeconds),
+				};
+	const upstreamBody =
+		referenceImages.length > 0
+			? buildVideoInputReferenceFormData(
+					upstreamModelName,
+					prompt,
+					videoSize.size,
+					durationSeconds,
+					referenceImages,
+				)
+			: JSON.stringify(upstreamRequest);
+	const rawResponse = await fetchUpstreamJson(upstreamUrl, {
+		method: "POST",
+		headers: {
+			...getProviderHeaders("openai", providerContext.token, {
+				requestId: providerContext.requestId,
+			}),
+			...(referenceImages.length === 0
+				? { "Content-Type": "application/json" }
+				: {}),
+		},
+		body: upstreamBody,
+	});
+	const upstreamResponse = addRequestedVideoMetadata(
+		{
+			...rawResponse,
+			model: upstreamModelName,
+			seconds:
+				typeof rawResponse.seconds === "string"
+					? rawResponse.seconds
+					: String(durationSeconds),
+		},
+		videoSize,
+	);
+	const upstreamId = extractUpstreamVideoId(upstreamResponse);
+	if (!upstreamId) {
+		throw new HTTPException(502, {
+			message: "OpenAI video response did not include an id",
+		});
+	}
+
+	return { upstreamId, upstreamRequest, upstreamResponse };
+}
+
+async function createAvalancheVeoVideoJob(
+	providerContext: ProviderContext,
+	providerMapping: ProviderModelMapping,
+	videoSize: VideoSizeConfig,
+	prompt: string,
+	firstFrameInput: VideoImageInput | undefined,
+	lastFrameInput: VideoImageInput | undefined,
+	referenceImageInputs: VideoImageInput[],
+): Promise<{
+	upstreamId: string;
+	upstreamRequest: Record<string, unknown>;
+	upstreamResponse: Record<string, unknown>;
+}> {
+	const upstreamUrl = joinUrl(
+		getAvalancheApiBaseUrl(providerContext.baseUrl),
+		"/generate",
+	);
+	const upstreamModelName = getVideoUpstreamModelName(
+		"avalanche",
+		providerMapping.externalId,
+		videoSize,
+		referenceImageInputs.length > 0
+			? "reference"
+			: firstFrameInput || lastFrameInput
+				? "frames"
+				: "none",
+	);
+	const generationType =
+		referenceImageInputs.length > 0
+			? "REFERENCE_2_VIDEO"
+			: firstFrameInput || lastFrameInput
+				? "FIRST_AND_LAST_FRAMES_2_VIDEO"
+				: "TEXT_2_VIDEO";
+	const imageUrls =
+		generationType === "REFERENCE_2_VIDEO"
+			? await Promise.all(
+					referenceImageInputs.map((imageInput) =>
+						getAvalancheImageUrl(providerContext, imageInput),
+					),
+				)
+			: generationType === "FIRST_AND_LAST_FRAMES_2_VIDEO"
+				? (
+						await Promise.all([
+							firstFrameInput
+								? getAvalancheImageUrl(providerContext, firstFrameInput)
+								: Promise.resolve(null),
+							lastFrameInput
+								? getAvalancheImageUrl(providerContext, lastFrameInput)
+								: Promise.resolve(null),
+						])
+					).filter((imageUrl): imageUrl is string => imageUrl !== null)
+				: [];
+	const upstreamRequest = {
+		prompt,
+		model: upstreamModelName,
+		aspect_ratio: getAvalancheAspectRatio(videoSize),
+		generationType,
+		enableFallback: false,
+		...(imageUrls.length > 0 ? { imageUrls } : {}),
+	};
+	const rawResponse = await fetchUpstreamJson(upstreamUrl, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			...getProviderHeaders("avalanche", providerContext.token, {
+				requestId: providerContext.requestId,
+			}),
+		},
+		body: JSON.stringify(upstreamRequest),
+	});
+	const upstreamResponse = addRequestedVideoMetadata(
+		{
+			...rawResponse,
+			status: "queued",
+			duration: 8,
+			aspect_ratio: upstreamRequest.aspect_ratio,
+			generationType,
+		},
+		videoSize,
+	);
+	const upstreamId = extractUpstreamVideoId(upstreamResponse);
+	if (!upstreamId) {
+		throw new HTTPException(502, {
+			message: "Avalanche video response did not include a task id",
+		});
+	}
+
+	return { upstreamId, upstreamRequest, upstreamResponse };
+}
+
+async function createAvalancheSoraVideoJob(
+	providerContext: ProviderContext,
+	providerMapping: ProviderModelMapping,
+	videoSize: VideoSizeConfig,
+	prompt: string,
+	durationSeconds: number,
+	inputMode: VideoInputMode,
+	referenceImages: ProcessedVideoImageInput[],
+): Promise<{
+	upstreamId: string;
+	upstreamRequest: Record<string, unknown>;
+	upstreamResponse: Record<string, unknown>;
+}> {
+	const upstreamUrl = joinUrl(
+		getAvalancheJobsApiBaseUrl(providerContext.baseUrl),
+		"/createTask",
+	);
+	const upstreamModelName = getAvalancheSoraTaskModelName(
+		providerMapping.externalId,
+		inputMode,
+	);
+	const imageUrls =
+		inputMode === "reference"
+			? await Promise.all(
+					referenceImages.map((image) =>
+						uploadAvalancheBase64Image(providerContext, image),
+					),
+				)
+			: [];
+	const sizeTier = getAvalancheSoraSizeTier(
+		providerMapping.externalId,
+		videoSize,
+	);
+	const input = {
+		prompt,
+		aspect_ratio: getAvalancheSoraAspectRatio(videoSize),
+		n_frames: String(durationSeconds),
+		remove_watermark: true,
+		upload_method: "s3",
+		...(imageUrls.length > 0 ? { image_urls: imageUrls } : {}),
+		...(sizeTier ? { size: sizeTier } : {}),
+	};
+	const upstreamRequest = {
+		model: upstreamModelName,
+		input,
+	};
+	const rawResponse = await fetchUpstreamJson(upstreamUrl, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			...getProviderHeaders("avalanche", providerContext.token, {
+				requestId: providerContext.requestId,
+			}),
+		},
+		body: JSON.stringify(upstreamRequest),
+	});
+	const upstreamResponse = addRequestedVideoMetadata(
+		{
+			...rawResponse,
+			model: providerMapping.externalId,
+			status: "queued",
+			aspect_ratio: input.aspect_ratio,
+			seconds:
+				typeof rawResponse.seconds === "string"
+					? rawResponse.seconds
+					: String(durationSeconds),
+			avalanche_task_model: upstreamModelName,
+			avalanche_task_input: input,
+		},
+		videoSize,
+	);
+	const upstreamId = extractUpstreamVideoId(upstreamResponse);
+	if (!upstreamId) {
+		throw new HTTPException(502, {
+			message: "Avalanche Sora response did not include an id",
+		});
+	}
+
+	return { upstreamId, upstreamRequest, upstreamResponse };
+}
+
+async function createGoogleVertexVideoJob(
+	providerContext: ProviderContext,
+	providerMapping: ProviderModelMapping,
+	videoSize: VideoSizeConfig,
+	prompt: string,
+	durationSeconds: number,
+	includeAudio: boolean,
+	firstFrame: ProcessedVideoImageInput | null,
+	lastFrameInput: ProcessedVideoImageInput | null,
+	referenceImages: ProcessedVideoImageInput[],
+	videoJobId: string,
+	organizationId: string,
+	projectId: string,
+): Promise<{
+	upstreamId: string;
+	upstreamRequest: Record<string, unknown>;
+	upstreamResponse: Record<string, unknown>;
+}> {
+	const outputBucket = getGoogleVertexVideoOutputBucket();
+	const storageProjectId = process.env.GOOGLE_CLOUD_PROJECT?.trim();
+	const vertexProjectId = outputBucket
+		? storageProjectId
+		: providerContext.vertexProjectId;
+
+	if (outputBucket && !storageProjectId) {
+		throw new HTTPException(500, {
+			message:
+				"GOOGLE_CLOUD_PROJECT environment variable is required for vertex-compatible video output storage",
+		});
+	}
+
+	if (!vertexProjectId || !providerContext.vertexRegion) {
+		throw new HTTPException(500, {
+			message:
+				"Vertex-compatible video generation requires project and region metadata",
+		});
+	}
+
+	const upstreamModelName = getVideoUpstreamModelName(
+		providerContext.providerId,
+		providerMapping.externalId,
+		videoSize,
+		referenceImages.length > 0
+			? "reference"
+			: firstFrame || lastFrameInput
+				? "frames"
+				: "none",
+	);
+	const outputStorageUri = outputBucket
+		? buildVertexVideoOutputStorageUri({
+				bucket: outputBucket,
+				prefix: getGoogleVertexVideoOutputPrefix(),
+				organizationId,
+				projectId,
+				videoJobId,
+			})
+		: null;
+	const upstreamUrl = joinUrl(
+		providerContext.baseUrl,
+		`/v1/projects/${vertexProjectId}/locations/${providerContext.vertexRegion}/publishers/google/models/${upstreamModelName}:predictLongRunning`,
+	);
+	const useOAuth = providerContext.vertexTokenType === "oauth";
+	const authenticatedUpstreamUrl = useOAuth
+		? upstreamUrl
+		: appendQueryParam(upstreamUrl, "key", providerContext.token);
+	const upstreamRequest = {
+		instances: [
+			{
+				prompt,
+				...(firstFrame ? { image: firstFrame } : {}),
+				...(lastFrameInput ? { lastFrame: lastFrameInput } : {}),
+				...(referenceImages.length > 0
+					? {
+							referenceImages: referenceImages.map((image) => ({
+								image,
+								referenceType: "asset",
+							})),
+						}
+					: {}),
+			},
+		],
+		parameters: {
+			aspectRatio: getVertexAspectRatio(videoSize),
+			durationSeconds,
+			generateAudio: includeAudio,
+			resolution: getVertexResolution(videoSize),
+			sampleCount: 1,
+			...(outputStorageUri ? { storageUri: outputStorageUri } : {}),
+		},
+	};
+	const rawResponse = await fetchUpstreamJson(authenticatedUpstreamUrl, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			"x-request-id": providerContext.requestId,
+			...(useOAuth ? { Authorization: `Bearer ${providerContext.token}` } : {}),
+		},
+		body: JSON.stringify(upstreamRequest),
+	});
+	const upstreamId =
+		typeof rawResponse.name === "string" && rawResponse.name.length > 0
+			? rawResponse.name
+			: extractUpstreamVideoId(rawResponse);
+	if (!upstreamId) {
+		throw new HTTPException(502, {
+			message: "Google Vertex video response did not include an operation name",
+		});
+	}
+
+	return {
+		upstreamId,
+		upstreamRequest,
+		upstreamResponse: addRequestedVideoMetadata(
+			{
+				...rawResponse,
+				name: upstreamId,
+				status: rawResponse.done === true ? "completed" : "queued",
+				duration: durationSeconds,
+				google_vertex_project_id: vertexProjectId,
+				google_vertex_region: providerContext.vertexRegion,
+				google_vertex_model_name: upstreamModelName,
+				google_vertex_generate_audio: includeAudio,
+				...(outputStorageUri
+					? {
+							google_vertex_output_storage_uri: outputStorageUri,
+						}
+					: {}),
+			},
+			videoSize,
+		),
+	};
+}
+
+function getBytedanceVideoAspectRatio(videoSize: VideoSizeConfig): string {
+	if (videoSize.orientation === "portrait") {
+		return "9:16";
+	}
+	return "16:9";
+}
+
+function getAtlasCloudVideoAspectRatio(videoSize: VideoSizeConfig): string {
+	return videoSize.orientation === "portrait" ? "9:16" : "16:9";
+}
+
+function atlasCloudVideoModelAcceptsSound(modelName: string): boolean {
+	return !modelName.startsWith("kwaivgi/kling-v3.0-turbo/");
+}
+
+async function uploadAtlasCloudMedia(
+	providerContext: ProviderContext,
+	image: ProcessedVideoImageInput,
+): Promise<string> {
+	const uploadUrl = joinUrl(
+		providerContext.baseUrl,
+		"/api/v1/model/uploadMedia",
+	);
+	const fileExtension = getVideoImageFileExtension(image.mimeType);
+	const formData = new FormData();
+	formData.append(
+		"file",
+		new Blob([Buffer.from(image.bytesBase64Encoded, "base64")], {
+			type: image.mimeType,
+		}),
+		`input.${fileExtension}`,
+	);
+	const response = await fetchUpstreamJson(uploadUrl, {
+		method: "POST",
+		headers: getProviderHeaders("atlascloud", providerContext.token, {
+			requestId: providerContext.requestId,
+		}),
+		body: formData,
+	});
+	const uploadedUrl = extractAtlasCloudUploadedMediaUrl(response);
+
+	if (!uploadedUrl) {
+		throw new HTTPException(502, {
+			message: "AtlasCloud media upload did not return a usable URL",
+		});
+	}
+
+	return uploadedUrl;
+}
+
+function extractAtlasCloudUploadedMediaUrl(
+	response: Record<string, unknown>,
+): string | null {
+	const preferredKeys = new Set([
+		"url",
+		"fileUrl",
+		"file_url",
+		"downloadUrl",
+		"download_url",
+		"mediaUrl",
+		"media_url",
+		"temporaryUrl",
+		"temporary_url",
+		"tempUrl",
+		"temp_url",
+	]);
+
+	const isHttpUrl = (value: unknown): value is string =>
+		typeof value === "string" && /^https?:\/\//i.test(value);
+
+	const visitPreferred = (value: unknown): string | null => {
+		if (isHttpUrl(value)) {
+			return value;
+		}
+		if (Array.isArray(value)) {
+			for (const item of value) {
+				const found = visitPreferred(item);
+				if (found) {
+					return found;
+				}
+			}
+			return null;
+		}
+		if (!value || typeof value !== "object") {
+			return null;
+		}
+
+		const record = value as Record<string, unknown>;
+		for (const key of preferredKeys) {
+			const found = visitPreferred(record[key]);
+			if (found) {
+				return found;
+			}
+		}
+		for (const nested of Object.values(record)) {
+			const found = visitPreferred(nested);
+			if (found) {
+				return found;
+			}
+		}
+		return null;
+	};
+
+	return visitPreferred(response);
+}
+
+async function getAtlasCloudImageUrl(
+	providerContext: ProviderContext,
+	videoImage: VideoImageInput,
+): Promise<string> {
+	const imageUrl = getVideoImageUrl(videoImage);
+	if (/^https:\/\//i.test(imageUrl)) {
+		return imageUrl;
+	}
+
+	const processedImage = await processVideoImageInput(videoImage);
+	if (!processedImage) {
+		throw new HTTPException(400, {
+			message: "image must include a non-empty image URL",
+		});
+	}
+
+	return await uploadAtlasCloudMedia(providerContext, processedImage);
+}
+
+async function createAtlasCloudVideoJob(
+	providerContext: ProviderContext,
+	providerMapping: ProviderModelMapping,
+	videoSize: VideoSizeConfig,
+	prompt: string,
+	durationSeconds: number,
+	includeAudio: boolean,
+	firstFrameInput: VideoImageInput | undefined,
+	lastFrameInput: VideoImageInput | undefined,
+	referenceImageInputs: VideoImageInput[],
+	referenceVideoUrls: string[],
+): Promise<{
+	upstreamId: string;
+	upstreamRequest: Record<string, unknown>;
+	upstreamResponse: Record<string, unknown>;
+}> {
+	const upstreamModelName = getVideoUpstreamModelName(
+		"atlascloud",
+		providerMapping.externalId,
+		videoSize,
+		referenceImageInputs.length > 0 || referenceVideoUrls.length > 0
+			? "reference"
+			: firstFrameInput || lastFrameInput
+				? "frames"
+				: "none",
+	);
+	const imageUrl = firstFrameInput
+		? await getAtlasCloudImageUrl(providerContext, firstFrameInput)
+		: null;
+	const endImageUrl = lastFrameInput
+		? await getAtlasCloudImageUrl(providerContext, lastFrameInput)
+		: null;
+	const referenceImageUrls =
+		referenceImageInputs.length > 0
+			? await Promise.all(
+					referenceImageInputs.map((imageInput) =>
+						getAtlasCloudImageUrl(providerContext, imageInput),
+					),
+				)
+			: [];
+	const upstreamRequest: Record<string, unknown> = {
+		model: upstreamModelName,
+		prompt,
+		duration: durationSeconds,
+		aspect_ratio: getAtlasCloudVideoAspectRatio(videoSize),
+		...(atlasCloudVideoModelAcceptsSound(upstreamModelName)
+			? { sound: includeAudio }
+			: {}),
+		...(imageUrl ? { image: imageUrl } : {}),
+		...(endImageUrl ? { end_image: endImageUrl } : {}),
+		...(referenceImageUrls.length > 0
+			? { reference_image_urls: referenceImageUrls }
+			: {}),
+		...(referenceVideoUrls.length > 0
+			? { reference_video_urls: referenceVideoUrls }
+			: {}),
+	};
+
+	const upstreamUrl = joinUrl(
+		providerContext.baseUrl,
+		"/api/v1/model/generateVideo",
+	);
+	const rawResponse = await fetchUpstreamJson(upstreamUrl, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			...getProviderHeaders("atlascloud", providerContext.token, {
+				requestId: providerContext.requestId,
+			}),
+		},
+		body: JSON.stringify(upstreamRequest),
+	});
+
+	const upstreamResponse = addRequestedVideoMetadata(
+		{
+			...rawResponse,
+			model: upstreamModelName,
+			status: "queued",
+			duration: durationSeconds,
+			aspect_ratio: upstreamRequest.aspect_ratio,
+			sound: includeAudio,
+			audio: includeAudio,
+		},
+		videoSize,
+	);
+	const upstreamId = extractUpstreamVideoId(upstreamResponse);
+	if (!upstreamId) {
+		throw new HTTPException(502, {
+			message: "AtlasCloud video response did not include a prediction id",
+		});
+	}
+
+	return { upstreamId, upstreamRequest, upstreamResponse };
+}
+
+async function createBytedanceVideoJob(
+	providerContext: ProviderContext,
+	providerMapping: ProviderModelMapping,
+	videoSize: VideoSizeConfig,
+	prompt: string,
+	durationSeconds: number,
+	includeAudio: boolean,
+	firstFrameInput: VideoImageInput | undefined,
+	processedFirstFrame: ProcessedVideoImageInput | null,
+	processedLastFrame: ProcessedVideoImageInput | null,
+	processedReferenceImages: ProcessedVideoImageInput[],
+	referenceVideoUrls: string[],
+	referenceAudioUrls: string[],
+): Promise<{
+	upstreamId: string;
+	upstreamRequest: Record<string, unknown>;
+	upstreamResponse: Record<string, unknown>;
+}> {
+	const upstreamModelName = providerMapping.externalId;
+	const content: Array<Record<string, unknown>> = [
+		{
+			type: "text",
+			text: prompt,
+		},
+	];
+
+	if (processedFirstFrame) {
+		content.push({
+			type: "image_url",
+			image_url: {
+				url: `data:${processedFirstFrame.mimeType};base64,${processedFirstFrame.bytesBase64Encoded}`,
+			},
+			role: "first_frame",
+		});
+	}
+
+	if (processedLastFrame) {
+		content.push({
+			type: "image_url",
+			image_url: {
+				url: `data:${processedLastFrame.mimeType};base64,${processedLastFrame.bytesBase64Encoded}`,
+			},
+			role: "last_frame",
+		});
+	}
+
+	if (processedReferenceImages.length > 0) {
+		for (const image of processedReferenceImages) {
+			content.push({
+				type: "image_url",
+				image_url: {
+					url: `data:${image.mimeType};base64,${image.bytesBase64Encoded}`,
+				},
+				role: "reference_image",
+			});
+		}
+	}
+
+	for (const referenceVideoUrl of referenceVideoUrls) {
+		content.push({
+			type: "video_url",
+			video_url: {
+				url: referenceVideoUrl,
+			},
+			role: "reference_video",
+		});
+	}
+
+	for (const referenceAudioUrl of referenceAudioUrls) {
+		content.push({
+			type: "audio_url",
+			audio_url: {
+				url: referenceAudioUrl,
+			},
+			role: "reference_audio",
+		});
+	}
+
+	const isDreaminaModel = upstreamModelName.startsWith("dreamina-");
+
+	const videoRatio = getBytedanceVideoAspectRatio(videoSize);
+	const upstreamRequest: Record<string, unknown> = {
+		model: upstreamModelName,
+		content,
+		duration: durationSeconds,
+		ratio: videoRatio,
+		generate_audio: includeAudio,
+	};
+
+	if (isDreaminaModel) {
+		upstreamRequest.resolution =
+			videoSize.resolution === "1080p"
+				? "1080p"
+				: videoSize.resolution === "480p"
+					? "480p"
+					: "720p";
+	}
+
+	const upstreamUrl = joinUrl(
+		providerContext.baseUrl,
+		"/contents/generations/tasks",
+	);
+	const rawResponse = await fetchUpstreamJson(upstreamUrl, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			...getProviderHeaders("bytedance", providerContext.token, {
+				requestId: providerContext.requestId,
+			}),
+		},
+		body: JSON.stringify(upstreamRequest),
+	});
+
+	const upstreamResponse = addRequestedVideoMetadata(
+		{
+			...rawResponse,
+			status: rawResponse.status ?? "queued",
+			duration: durationSeconds,
+			aspect_ratio: videoRatio,
+		},
+		videoSize,
+	);
+
+	const upstreamId = extractUpstreamVideoId(upstreamResponse);
+	if (!upstreamId) {
+		throw new HTTPException(502, {
+			message: "ByteDance video response did not include a task id",
+		});
+	}
+
+	return { upstreamId, upstreamRequest, upstreamResponse };
+}
+
+function getMinimaxResolution(videoSize: VideoSizeConfig): string {
+	if (videoSize.resolution === "1080p") {
+		return "1080P";
+	}
+	if (videoSize.resolution === "4k") {
+		return "1080P";
+	}
+	return "768P";
+}
+
+async function createMinimaxVideoJob(
+	providerContext: ProviderContext,
+	providerMapping: ProviderModelMapping,
+	videoSize: VideoSizeConfig,
+	prompt: string,
+	durationSeconds: number,
+	processedFirstFrame: ProcessedVideoImageInput | null,
+): Promise<{
+	upstreamId: string;
+	upstreamRequest: Record<string, unknown>;
+	upstreamResponse: Record<string, unknown>;
+}> {
+	const upstreamModelName = providerMapping.externalId;
+	const resolution = getMinimaxResolution(videoSize);
+	const effectiveDuration =
+		resolution === "1080P" && durationSeconds > 6 ? 6 : durationSeconds;
+	const upstreamRequest: Record<string, unknown> = {
+		model: upstreamModelName,
+		prompt,
+		duration: effectiveDuration,
+		resolution,
+	};
+
+	if (processedFirstFrame) {
+		upstreamRequest.first_frame_image = `data:${processedFirstFrame.mimeType};base64,${processedFirstFrame.bytesBase64Encoded}`;
+	}
+
+	const upstreamUrl = joinUrl(providerContext.baseUrl, "/v1/video_generation");
+	const rawResponse = await fetchUpstreamJson(upstreamUrl, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			...getProviderHeaders("minimax", providerContext.token, {
+				requestId: providerContext.requestId,
+			}),
+		},
+		body: JSON.stringify(upstreamRequest),
+	});
+
+	const baseResp = rawResponse.base_resp as
+		| { status_code?: number; status_msg?: string }
+		| undefined;
+	if (baseResp && baseResp.status_code !== 0) {
+		throw new HTTPException(502, {
+			message: `MiniMax video API error: ${baseResp.status_msg ?? "unknown error"} (code ${baseResp.status_code})`,
+		});
+	}
+
+	const upstreamResponse = addRequestedVideoMetadata(
+		{
+			...rawResponse,
+			model: upstreamModelName,
+			status: "queued",
+			duration: durationSeconds,
+		},
+		videoSize,
+	);
+
+	const upstreamId = extractUpstreamVideoId(upstreamResponse);
+	if (!upstreamId) {
+		throw new HTTPException(502, {
+			message: "MiniMax video response did not include a task id",
+		});
+	}
+
+	return { upstreamId, upstreamRequest, upstreamResponse };
+}
+
+async function createXaiVideoJob(
+	providerContext: ProviderContext,
+	providerMapping: ProviderModelMapping,
+	videoSize: VideoSizeConfig,
+	prompt: string,
+	durationSeconds: number,
+	processedFirstFrame: ProcessedVideoImageInput | null,
+): Promise<{
+	upstreamId: string;
+	upstreamRequest: Record<string, unknown>;
+	upstreamResponse: Record<string, unknown>;
+}> {
+	const upstreamModelName = providerMapping.externalId;
+	const upstreamRequest: Record<string, unknown> = {
+		model: upstreamModelName,
+		prompt,
+		size: videoSize.size,
+		duration: durationSeconds,
+	};
+
+	if (processedFirstFrame) {
+		upstreamRequest.image = {
+			url: `data:${processedFirstFrame.mimeType};base64,${processedFirstFrame.bytesBase64Encoded}`,
+		};
+	}
+
+	const upstreamUrl = joinUrl(
+		providerContext.baseUrl,
+		"/v1/videos/generations",
+	);
+	const rawResponse = await fetchUpstreamJson(upstreamUrl, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			...getProviderHeaders("xai", providerContext.token, {
+				requestId: providerContext.requestId,
+			}),
+		},
+		body: JSON.stringify(upstreamRequest),
+	});
+
+	const upstreamResponse = addRequestedVideoMetadata(
+		{
+			...rawResponse,
+			model: upstreamModelName,
+			status: "queued",
+			duration: durationSeconds,
+		},
+		videoSize,
+	);
+
+	const upstreamId = extractUpstreamVideoId(upstreamResponse);
+	if (!upstreamId) {
+		throw new HTTPException(502, {
+			message: "xAI video response did not include a request id",
+		});
+	}
+
+	return { upstreamId, upstreamRequest, upstreamResponse };
+}
+
+async function createAlibabaVideoJob(
+	providerContext: ProviderContext,
+	providerMapping: ProviderModelMapping,
+	videoSize: VideoSizeConfig,
+	prompt: string,
+	durationSeconds: number,
+): Promise<{
+	upstreamId: string;
+	upstreamRequest: Record<string, unknown>;
+	upstreamResponse: Record<string, unknown>;
+}> {
+	const upstreamModelName = providerMapping.externalId;
+	const upstreamRequest: Record<string, unknown> = {
+		model: upstreamModelName,
+		input: {
+			prompt,
+		},
+		parameters: {
+			size: `${videoSize.width}*${videoSize.height}`,
+			duration: durationSeconds,
+		},
+	};
+
+	const upstreamUrl = joinUrl(
+		providerContext.baseUrl,
+		"/api/v1/services/aigc/video-generation/video-synthesis",
+	);
+	const rawResponse = await fetchUpstreamJson(upstreamUrl, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			"X-DashScope-Async": "enable",
+			...getProviderHeaders("alibaba", providerContext.token, {
+				requestId: providerContext.requestId,
+			}),
+		},
+		body: JSON.stringify(upstreamRequest),
+	});
+
+	const output =
+		rawResponse.output && typeof rawResponse.output === "object"
+			? (rawResponse.output as Record<string, unknown>)
+			: null;
+	const taskId =
+		output && typeof output.task_id === "string" ? output.task_id : null;
+	if (!taskId) {
+		const message =
+			typeof rawResponse.message === "string"
+				? rawResponse.message
+				: "Alibaba video response did not include a task id";
+		const code =
+			typeof rawResponse.code === "string" ? rawResponse.code : undefined;
+		throw new HTTPException(502, {
+			message: code
+				? `Alibaba video API error: ${message} (code ${code})`
+				: message,
+		});
+	}
+
+	const upstreamResponse = addRequestedVideoMetadata(
+		{
+			...rawResponse,
+			task_id: taskId,
+			model: upstreamModelName,
+			status: "queued",
+			duration: durationSeconds,
+		},
+		videoSize,
+	);
+
+	return { upstreamId: taskId, upstreamRequest, upstreamResponse };
+}
+
+async function createUpstreamVideoJob(
+	providerContext: ProviderContext,
+	providerMapping: ProviderModelMapping,
+	videoSize: VideoSizeConfig,
+	prompt: string,
+	durationSeconds: number,
+	includeAudio: boolean,
+	inputMode: VideoInputMode,
+	firstFrameInput: VideoImageInput | undefined,
+	lastFrameInput: VideoImageInput | undefined,
+	referenceImageInputs: VideoImageInput[],
+	referenceVideoUrls: string[],
+	referenceAudioUrls: string[],
+	processedFirstFrame: ProcessedVideoImageInput | null,
+	processedLastFrame: ProcessedVideoImageInput | null,
+	processedReferenceImages: ProcessedVideoImageInput[],
+	videoJobId: string,
+	organizationId: string,
+	projectId: string,
+): Promise<{
+	upstreamId: string;
+	upstreamRequest: Record<string, unknown>;
+	upstreamResponse: Record<string, unknown>;
+}> {
+	switch (providerContext.providerId) {
+		case "atlascloud":
+			return await createAtlasCloudVideoJob(
+				providerContext,
+				providerMapping,
+				videoSize,
+				prompt,
+				durationSeconds,
+				includeAudio,
+				firstFrameInput,
+				lastFrameInput,
+				referenceImageInputs,
+				referenceVideoUrls,
+			);
+		case "xai":
+			return await createXaiVideoJob(
+				providerContext,
+				providerMapping,
+				videoSize,
+				prompt,
+				durationSeconds,
+				processedFirstFrame,
+			);
+		case "openai":
+			return await createOpenAIVideoJob(
+				providerContext,
+				providerMapping,
+				videoSize,
+				prompt,
+				durationSeconds,
+				processedReferenceImages,
+			);
+		case "avalanche":
+			return isSoraVideoModelName(providerMapping.externalId)
+				? await createAvalancheSoraVideoJob(
+						providerContext,
+						providerMapping,
+						videoSize,
+						prompt,
+						durationSeconds,
+						inputMode,
+						processedReferenceImages,
+					)
+				: await createAvalancheVeoVideoJob(
+						providerContext,
+						providerMapping,
+						videoSize,
+						prompt,
+						firstFrameInput,
+						lastFrameInput,
+						referenceImageInputs,
+					);
+		case "bytedance":
+			return await createBytedanceVideoJob(
+				providerContext,
+				providerMapping,
+				videoSize,
+				prompt,
+				durationSeconds,
+				includeAudio,
+				firstFrameInput,
+				processedFirstFrame,
+				processedLastFrame,
+				processedReferenceImages,
+				referenceVideoUrls,
+				referenceAudioUrls,
+			);
+		case "google-vertex":
+			return await createGoogleVertexVideoJob(
+				providerContext,
+				providerMapping,
+				videoSize,
+				prompt,
+				durationSeconds,
+				includeAudio,
+				processedFirstFrame,
+				processedLastFrame,
+				processedReferenceImages,
+				videoJobId,
+				organizationId,
+				projectId,
+			);
+		case "minimax":
+			return await createMinimaxVideoJob(
+				providerContext,
+				providerMapping,
+				videoSize,
+				prompt,
+				durationSeconds,
+				processedFirstFrame,
+			);
+		case "alibaba":
+			return await createAlibabaVideoJob(
+				providerContext,
+				providerMapping,
+				videoSize,
+				prompt,
+				durationSeconds,
+			);
+		default:
+			throw new HTTPException(500, {
+				message: `Unsupported video provider: ${providerContext.providerId}`,
+			});
+	}
+}
+
+export const videos = new OpenAPIHono<ServerTypes>();
+
+function getVideoFirstFrameInput(
+	request: z.infer<typeof createVideoRequestSchema>,
+): VideoImageInput | undefined {
+	return request.image;
+}
+
+function getVideoLastFrameInput(
+	request: z.infer<typeof createVideoRequestSchema>,
+): VideoImageInput | undefined {
+	return request.last_frame;
+}
+
+function getVideoReferenceImageInputs(
+	request: z.infer<typeof createVideoRequestSchema>,
+): VideoImageInput[] {
+	if (request.reference_images) {
+		return request.reference_images;
+	}
+
+	if (!request.input_reference) {
+		return [];
+	}
+
+	return Array.isArray(request.input_reference)
+		? request.input_reference
+		: [request.input_reference];
+}
+
+function getVideoInputMode(
+	request: z.infer<typeof createVideoRequestSchema>,
+): VideoInputMode {
+	if (request.image !== undefined || request.last_frame !== undefined) {
+		return "frames";
+	}
+
+	if (
+		request.reference_images !== undefined ||
+		request.input_reference !== undefined ||
+		request.reference_videos !== undefined ||
+		request.reference_audios !== undefined
+	) {
+		return "reference";
+	}
+
+	return "none";
+}
+
+function getVideoReferenceVideoInputs(
+	request: z.infer<typeof createVideoRequestSchema>,
+): string[] {
+	if (!request.reference_videos) {
+		return [];
+	}
+
+	return request.reference_videos.map((referenceVideo) =>
+		typeof referenceVideo === "string"
+			? referenceVideo
+			: referenceVideo.video_url,
+	);
+}
+
+function getVideoReferenceAudioInputs(
+	request: z.infer<typeof createVideoRequestSchema>,
+): string[] {
+	if (!request.reference_audios) {
+		return [];
+	}
+
+	return request.reference_audios.map((referenceAudio) =>
+		typeof referenceAudio === "string"
+			? referenceAudio
+			: referenceAudio.audio_url,
+	);
+}
+
+function getVideoInputImageCount(
+	inputMode: VideoInputMode,
+	firstFrameInput: VideoImageInput | undefined,
+	lastFrameInput: VideoImageInput | undefined,
+	referenceImageInputs: VideoImageInput[],
+): number {
+	if (inputMode === "reference") {
+		return referenceImageInputs.length;
+	}
+
+	if (inputMode === "frames") {
+		return [firstFrameInput, lastFrameInput].filter(Boolean).length;
+	}
+
+	return 0;
+}
+
+function getVideoImageUrl(videoImage: VideoImageInput): string {
+	return typeof videoImage === "string" ? videoImage : videoImage.image_url;
+}
+
+async function processVideoImageInput(
+	videoImage: VideoImageInput | undefined,
+): Promise<ProcessedVideoImageInput | null> {
+	if (!videoImage) {
+		return null;
+	}
+
+	const imageUrl = getVideoImageUrl(videoImage);
+	if (!imageUrl) {
+		throw new HTTPException(400, {
+			message: "image must include a non-empty image URL",
+		});
+	}
+
+	try {
+		const { data, mimeType } = await processImageUrl(
+			imageUrl,
+			process.env.NODE_ENV === "production",
+			20,
+			null,
+		);
+		return {
+			bytesBase64Encoded: data,
+			mimeType,
+		};
+	} catch (error) {
+		throw new HTTPException(400, {
+			message:
+				error instanceof Error
+					? `Invalid image input: ${error.message}`
+					: "Invalid image input",
+		});
+	}
+}
+
+async function processVideoImageInputs(
+	videoImages: VideoImageInput[],
+): Promise<ProcessedVideoImageInput[]> {
+	return (
+		await Promise.all(
+			videoImages.map((videoImage) => processVideoImageInput(videoImage)),
+		)
+	).filter((image): image is ProcessedVideoImageInput => image !== null);
+}
+
+function buildVideoClientErrorRoutingMetadata(
+	routingMetadata: RoutingMetadata | undefined,
+	providerContext: ProviderContext,
+	modelId: string,
+	statusCode: number,
+): RoutingMetadata | null {
+	const routingAttempt: RoutingAttempt = {
+		provider: providerContext.providerId,
+		model: modelId,
+		status_code: statusCode,
+		error_type: "client_error",
+		succeeded: false,
+	};
+
+	if (!routingMetadata) {
+		return {
+			availableProviders: [providerContext.providerId],
+			selectedProvider: providerContext.providerId,
+			selectionReason: "client_error",
+			providerScores: [
+				{
+					providerId: providerContext.providerId,
+					score: 0,
+					price: 0,
+					failed: true,
+					status_code: statusCode,
+					error_type: "client_error",
+				},
+			],
+			routing: [routingAttempt],
+		};
+	}
+
+	return {
+		...routingMetadata,
+		selectedProvider: providerContext.providerId,
+		routing: [routingAttempt],
+		providerScores: routingMetadata.providerScores.map((score) =>
+			score.providerId === providerContext.providerId
+				? {
+						...score,
+						failed: true,
+						status_code: statusCode,
+						error_type: "client_error",
+					}
+				: score,
+		),
+	};
+}
+
+async function insertVideoClientErrorLog(options: {
+	request: z.infer<typeof createVideoRequestSchema>;
+	requestId: string;
+	apiKey: GatewayApiKey;
+	project: InferSelectModel<typeof tables.project>;
+	organization: InferSelectModel<typeof tables.organization>;
+	normalizedModel: string;
+	requestedProvider: string | undefined;
+	providerContext: ProviderContext;
+	upstreamModelName: string;
+	routingMetadata: RoutingMetadata | undefined;
+	statusCode: number;
+	message: string;
+	startedAt: number;
+}): Promise<void> {
+	const responseText = options.message;
+	await db.insert(tables.log).values({
+		requestId: options.requestId,
+		organizationId: options.organization.id,
+		projectId: options.project.id,
+		apiKeyId: options.apiKey.id,
+		endUserSessionId: options.apiKey.endUserSession?.id ?? null,
+		endCustomerWalletId: options.apiKey.endCustomerWalletId ?? null,
+		duration: Math.max(0, Date.now() - options.startedAt),
+		timeToFirstToken: null,
+		timeToFirstReasoningToken: null,
+		requestedModel: getFormattedRequestedVideoModel(
+			options.normalizedModel,
+			options.requestedProvider,
+		),
+		requestedProvider: options.requestedProvider ?? null,
+		usedModel: getFormattedUsedVideoModel(
+			options.providerContext.providerId,
+			options.normalizedModel,
+		),
+		usedModelMapping: options.upstreamModelName,
+		usedProvider: options.providerContext.providerId,
+		responseSize: responseText.length,
+		content: null,
+		reasoningContent: null,
+		finishReason: "client_error",
+		unifiedFinishReason: UnifiedFinishReason.CLIENT_ERROR,
+		promptTokens: null,
+		completionTokens: null,
+		totalTokens: null,
+		reasoningTokens: null,
+		cachedTokens: null,
+		cacheWriteTokens: null,
+		messages:
+			options.organization.retentionLevel === "retain"
+				? [
+						{
+							role: "user",
+							content: options.request.prompt,
+						},
+					]
+				: null,
+		hasError: true,
+		errorDetails: {
+			statusCode: options.statusCode,
+			statusText: "Bad Request",
+			responseText,
+		},
+		cost: 0,
+		inputCost: 0,
+		outputCost: 0,
+		cachedInputCost: 0,
+		cacheWriteInputCost: 0,
+		requestCost: 0,
+		webSearchCost: 0,
+		contentFilterCost: null,
+		imageInputTokens: null,
+		imageOutputTokens: null,
+		imageInputCost: null,
+		imageOutputCost: null,
+		audioInputTokens: null,
+		audioInputCost: null,
+		videoOutputCost: 0,
+		estimatedCost: false,
+		discount: null,
+		pricingTier: null,
+		requestedServiceTier: null,
+		usedServiceTier: null,
+		canceled: false,
+		streamed: false,
+		cached: false,
+		mode: options.project.mode,
+		usedMode: options.providerContext.usedMode,
+		routingMetadata: buildVideoClientErrorRoutingMetadata(
+			options.routingMetadata,
+			options.providerContext,
+			options.normalizedModel,
+			options.statusCode,
+		),
+		processedAt: null,
+		rawRequest: null,
+		rawResponse: null,
+		upstreamRequest: null,
+		upstreamResponse: null,
+		dataStorageCost: "0",
+	});
+}
+
+async function uploadAvalancheBase64Image(
+	providerContext: ProviderContext,
+	image: ProcessedVideoImageInput,
+): Promise<string> {
+	const uploadUrl = joinUrl(
+		getAvalancheFileUploadBaseUrl(
+			providerContext.baseUrl,
+			providerContext.uploadBaseUrl,
+		),
+		"/api/file-base64-upload",
+	);
+	const response = await fetchUpstreamJson(uploadUrl, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			...getProviderHeaders("avalanche", providerContext.token, {
+				requestId: providerContext.requestId,
+			}),
+		},
+		body: JSON.stringify({
+			base64Data: `data:${image.mimeType};base64,${image.bytesBase64Encoded}`,
+			uploadPath: "videos/input-images",
+		}),
+	});
+	const data =
+		response.data && typeof response.data === "object"
+			? (response.data as Record<string, unknown>)
+			: null;
+	const fileUrl =
+		typeof data?.fileUrl === "string" && data.fileUrl.length > 0
+			? data.fileUrl
+			: null;
+	const downloadUrl =
+		typeof data?.downloadUrl === "string" && data.downloadUrl.length > 0
+			? data.downloadUrl
+			: null;
+	const uploadedUrl = fileUrl ?? downloadUrl;
+
+	if (!uploadedUrl) {
+		throw new HTTPException(502, {
+			message: "Avalanche file upload did not return a usable file URL",
+		});
+	}
+
+	return uploadedUrl;
+}
+
+async function getAvalancheImageUrl(
+	providerContext: ProviderContext,
+	videoImage: VideoImageInput,
+): Promise<string> {
+	const processedImage = await processVideoImageInput(videoImage);
+	if (!processedImage) {
+		throw new HTTPException(400, {
+			message: "image must include a non-empty image URL",
+		});
+	}
+
+	return await uploadAvalancheBase64Image(providerContext, processedImage);
+}
+
+videos.openapi(createVideo, async (c) => {
+	const startedAt = Date.now();
+	const { rawBody, request } = await parseJsonBody(c);
+	const { apiKey, project, organization, wallet, requestId, routingCfg } =
+		await requireRequestContext(c);
+
+	if (organization.kind === "devpass" && organization.devPlan !== "none") {
+		throw new HTTPException(403, {
+			message:
+				"Video generation is not available for coding plans. Coding plans only include text-based inference.",
+		});
+	}
+
+	const { normalizedModel, requestedProvider } = getVideoModel(request.model);
+	const firstFrameInput = getVideoFirstFrameInput(request);
+	const lastFrameInput = getVideoLastFrameInput(request);
+	const referenceImageInputs = getVideoReferenceImageInputs(request);
+	const referenceVideoInputs = getVideoReferenceVideoInputs(request);
+	const referenceAudioInputs = getVideoReferenceAudioInputs(request);
+	const inputMode = getVideoInputMode(request);
+	const inputImageCount = getVideoInputImageCount(
+		inputMode,
+		firstFrameInput,
+		lastFrameInput,
+		referenceImageInputs,
+	);
+	const debugMode = isDebugMode(c);
+	const noFallback = isNoFallbackEnabled(c);
+	const xNoFallbackHeaderSet =
+		c.req.raw.headers.has("x-no-fallback") ||
+		c.req.raw.headers.has("X-No-Fallback");
+
+	const modelInfo = models.find((model) => model.id === normalizedModel);
+	if (!modelInfo) {
+		throw new HTTPException(400, {
+			message: `Model ${normalizedModel} not found`,
+		});
+	}
+
+	// Sandbox wallets can only spend on free models (none for video), so reject
+	// paid video generation from test-mode end-user sessions.
+	assertTestWalletModelAllowed(wallet, modelInfo);
+
+	if (
+		"imageInputRequired" in modelInfo &&
+		modelInfo.imageInputRequired &&
+		inputMode === "none"
+	) {
+		throw new HTTPException(400, {
+			message: `Model ${normalizedModel} requires an input image. Please provide an image using the "image" field.`,
+		});
+	}
+
+	const videoSize = getVideoSizeConfig(request.size);
+	const videoDurationSeconds = getVideoDurationSeconds(
+		modelInfo,
+		request.seconds,
+	);
+
+	const iamValidation = await validateRequestModelAccess(
+		apiKey,
+		normalizedModel,
+		requestedProvider,
+		modelInfo,
+		getClientIpFromRequest(c),
+	);
+
+	if (!iamValidation.allowed) {
+		throw new HTTPException(403, {
+			message: iamValidation.reason ?? "Access to this model is not allowed",
+		});
+	}
+
+	// Enterprise provider compliance policy: restrict video routing to providers
+	// that meet the org's policy, and block before dispatch if none qualify.
+	const videoCompliancePolicy = getActiveCompliancePolicy(organization);
+	let complianceModelInfo: ModelDefinition = modelInfo;
+	if (videoCompliancePolicy) {
+		// A pinned provider is dispatched directly, so block it explicitly even
+		// when the model has other compliant providers (mirrors the chat path).
+		const pinnedBlocked =
+			requestedProvider !== undefined &&
+			!isProviderIdCompliant(requestedProvider, videoCompliancePolicy);
+		const compliantProviders = filterCompliantProviders(
+			modelInfo.providers as ProviderModelMapping[],
+			videoCompliancePolicy,
+		);
+		if (pinnedBlocked || compliantProviders.length === 0) {
+			await logComplianceBlock(project.organizationId, {
+				apiKeyId: apiKey.id,
+				model: normalizedModel,
+			});
+			throw new HTTPException(403, {
+				message: complianceBlockMessage(normalizedModel),
+			});
+		}
+		complianceModelInfo = { ...modelInfo, providers: compliantProviders };
+	}
+
+	const {
+		providerMapping,
+		providerContext,
+		upstreamModelName,
+		routingMetadata,
+		orderedMappings,
+	} = await resolveVideoExecution(
+		complianceModelInfo,
+		requestedProvider,
+		videoSize,
+		videoDurationSeconds,
+		inputMode,
+		inputImageCount,
+		referenceVideoInputs.length,
+		referenceAudioInputs.length,
+		request.audio,
+		project,
+		organization.id,
+		requestId,
+		noFallback,
+		xNoFallbackHeaderSet,
+		routingCfg,
+	);
+
+	const videoId = shortid();
+	let selectedProviderMapping = providerMapping;
+	let selectedProviderContext = providerContext;
+	let selectedUpstreamModelName = upstreamModelName;
+	let enrichedRoutingMetadata = routingMetadata;
+	let processedFirstFrame: ProcessedVideoImageInput | null;
+	let processedLastFrameInput: ProcessedVideoImageInput | null;
+	let processedReferenceImages: ProcessedVideoImageInput[];
+	try {
+		processedFirstFrame = await processVideoImageInput(firstFrameInput);
+		processedLastFrameInput = await processVideoImageInput(lastFrameInput);
+		processedReferenceImages =
+			await processVideoImageInputs(referenceImageInputs);
+	} catch (error) {
+		if (error instanceof HTTPException && error.status >= 400) {
+			await insertVideoClientErrorLog({
+				request,
+				requestId,
+				apiKey,
+				project,
+				organization,
+				normalizedModel,
+				requestedProvider,
+				providerContext: selectedProviderContext,
+				upstreamModelName: selectedUpstreamModelName,
+				routingMetadata: enrichedRoutingMetadata,
+				statusCode: error.status,
+				message: error.message,
+				startedAt,
+			});
+		}
+		throw error;
+	}
+	const routingAttempts: RoutingAttempt[] = [];
+	const failedProviders = new Set<string>();
+	let retryCount = 0;
+
+	let upstreamId: string | undefined;
+	let upstreamRequest: Record<string, unknown> | undefined;
+	let upstreamResponse: Record<string, unknown> | undefined;
+	const hasVideoGenerationBalance =
+		hasSufficientVideoGenerationBalance(organization);
+
+	for (;;) {
+		if (
+			selectedProviderContext.usedMode === "credits" &&
+			!hasVideoGenerationBalance
+		) {
+			routingAttempts.push({
+				provider: selectedProviderContext.providerId,
+				model: modelInfo.id,
+				status_code: 402,
+				error_type: "insufficient_credits",
+				succeeded: false,
+			});
+			failedProviders.add(selectedProviderContext.providerId);
+
+			const nextProvider =
+				!requestedProvider && !noFallback
+					? selectNextProvider(
+							enrichedRoutingMetadata?.providerScores ?? [],
+							failedProviders,
+							orderedMappings,
+						)
+					: null;
+			if (!nextProvider) {
+				throw getInsufficientVideoGenerationBalanceError();
+			}
+
+			const nextMapping = orderedMappings.find(
+				(mapping) =>
+					mapping.providerId === nextProvider.providerId &&
+					(mapping.region ?? undefined) === nextProvider.region,
+			);
+			if (!nextMapping) {
+				throw getInsufficientVideoGenerationBalanceError();
+			}
+
+			selectedProviderMapping = nextMapping;
+			selectedProviderContext = await resolveProviderContext(
+				nextMapping.providerId as Provider,
+				project,
+				organization.id,
+				requestId,
+				modelInfo.id,
+			);
+			selectedUpstreamModelName = getVideoUpstreamModelName(
+				nextMapping.providerId as Provider,
+				nextMapping.externalId,
+				videoSize,
+				inputMode,
+			);
+			continue;
+		}
+
+		if (
+			isGoogleVertexVideoProvider(selectedProviderContext.providerId) &&
+			!getGoogleVertexVideoOutputBucket() &&
+			organization.retentionLevel === "none"
+		) {
+			const statusCode = 400;
+			routingAttempts.push({
+				provider: selectedProviderContext.providerId,
+				model: modelInfo.id,
+				status_code: statusCode,
+				error_type: "client_error",
+				succeeded: false,
+			});
+			failedProviders.add(selectedProviderContext.providerId);
+
+			const nextProvider = selectNextProvider(
+				enrichedRoutingMetadata?.providerScores ?? [],
+				failedProviders,
+				orderedMappings,
+			);
+			if (!nextProvider || requestedProvider) {
+				throw new HTTPException(400, {
+					message:
+						"Vertex-compatible video generation requires either GCS output storage or data retention to be enabled.",
+				});
+			}
+
+			const nextMapping = orderedMappings.find(
+				(mapping) =>
+					mapping.providerId === nextProvider.providerId &&
+					(mapping.region ?? undefined) === nextProvider.region,
+			);
+			if (!nextMapping) {
+				throw new HTTPException(400, {
+					message:
+						"Google Vertex video generation requires either GCS output storage or data retention to be enabled.",
+				});
+			}
+
+			selectedProviderMapping = nextMapping;
+			selectedProviderContext = await resolveProviderContext(
+				nextMapping.providerId as Provider,
+				project,
+				organization.id,
+				requestId,
+				modelInfo.id,
+			);
+			selectedUpstreamModelName = getVideoUpstreamModelName(
+				nextMapping.providerId as Provider,
+				nextMapping.externalId,
+				videoSize,
+				inputMode,
+			);
+			continue;
+		}
+
+		try {
+			const upstreamJob = await createUpstreamVideoJob(
+				selectedProviderContext,
+				selectedProviderMapping,
+				videoSize,
+				request.prompt,
+				videoDurationSeconds,
+				request.audio,
+				inputMode,
+				firstFrameInput,
+				lastFrameInput,
+				referenceImageInputs,
+				referenceVideoInputs,
+				referenceAudioInputs,
+				processedFirstFrame,
+				processedLastFrameInput,
+				processedReferenceImages,
+				videoId,
+				organization.id,
+				project.id,
+			);
+			upstreamId = upstreamJob.upstreamId;
+			upstreamRequest = upstreamJob.upstreamRequest;
+			upstreamResponse = upstreamJob.upstreamResponse;
+			routingAttempts.push({
+				provider: selectedProviderContext.providerId,
+				model: modelInfo.id,
+				status_code: 200,
+				error_type: "none",
+				succeeded: true,
+			});
+			break;
+		} catch (error) {
+			const statusCode = error instanceof HTTPException ? error.status : 0;
+			const retryErrorType =
+				statusCode === 0
+					? "network_error"
+					: getFinishReasonFromError(statusCode);
+			routingAttempts.push({
+				provider: selectedProviderContext.providerId,
+				model: modelInfo.id,
+				status_code: statusCode,
+				error_type: getErrorType(statusCode),
+				succeeded: false,
+			});
+			failedProviders.add(selectedProviderContext.providerId);
+
+			const remainingProviders = (enrichedRoutingMetadata?.providerScores ?? [])
+				.map((score) => score.providerId)
+				.filter((providerId) => !failedProviders.has(providerId)).length;
+			if (
+				!shouldRetryRequest({
+					requestedProvider,
+					noFallback,
+					errorType: retryErrorType,
+					retryCount,
+					remainingProviders,
+					usedProvider: selectedProviderContext.providerId,
+					maxRetries: routingCfg.retry.maxRetries,
+				})
+			) {
+				throw error;
+			}
+
+			const nextProvider = selectNextProvider(
+				enrichedRoutingMetadata?.providerScores ?? [],
+				failedProviders,
+				orderedMappings,
+			);
+
+			if (!nextProvider) {
+				throw error;
+			}
+
+			const nextMapping = orderedMappings.find(
+				(mapping) =>
+					mapping.providerId === nextProvider.providerId &&
+					(mapping.region ?? undefined) === nextProvider.region,
+			);
+			if (!nextMapping) {
+				throw error;
+			}
+
+			selectedProviderMapping = nextMapping;
+			selectedProviderContext = await resolveProviderContext(
+				nextMapping.providerId as Provider,
+				project,
+				organization.id,
+				requestId,
+				modelInfo.id,
+			);
+			selectedUpstreamModelName = getVideoUpstreamModelName(
+				nextMapping.providerId as Provider,
+				nextMapping.externalId,
+				videoSize,
+				inputMode,
+			);
+			retryCount++;
+		}
+	}
+
+	if (!upstreamId || !upstreamRequest || !upstreamResponse) {
+		throw new HTTPException(500, {
+			message: "Video provider selection failed before job creation",
+		});
+	}
+
+	if (enrichedRoutingMetadata) {
+		enrichedRoutingMetadata = {
+			...enrichedRoutingMetadata,
+			selectedProvider: selectedProviderContext.providerId,
+			routing: routingAttempts,
+			providerScores: enrichedRoutingMetadata.providerScores.map((score) => {
+				const failedAttempt = routingAttempts.find(
+					(attempt) =>
+						attempt.provider === score.providerId &&
+						attempt.succeeded === false,
+				);
+				return failedAttempt
+					? {
+							...score,
+							failed: true,
+							status_code: failedAttempt.status_code,
+							error_type: failedAttempt.error_type,
+						}
+					: score;
+			}),
+		};
+	}
+	const storageUri = extractStorageUri(upstreamResponse);
+	const parsedStorageUri = parseGcsUri(storageUri);
+
+	const initialStatus = normalizeVideoStatus(upstreamResponse.status);
+	const created = await db
+		.insert(tables.videoJob)
+		.values({
+			id: videoId,
+			requestId,
+			organizationId: organization.id,
+			projectId: project.id,
+			apiKeyId: apiKey.id,
+			// Owner for per-end-user logging/isolation; null for normal developer
+			// keys.
+			endUserSessionId: apiKey.endUserSession?.id ?? null,
+			endCustomerWalletId: apiKey.endCustomerWalletId ?? null,
+			mode: project.mode,
+			usedMode: selectedProviderContext.usedMode,
+			model: normalizedModel,
+			requestedProvider: requestedProvider ?? null,
+			usedProvider: selectedProviderContext.providerId,
+			usedModel: selectedUpstreamModelName,
+			providerConfigIndex: selectedProviderContext.configIndex,
+			upstreamId,
+			prompt: request.prompt,
+			status: initialStatus,
+			progress: extractProgress(upstreamResponse),
+			error: extractError(upstreamResponse),
+			contentUrl: extractContentUrl(upstreamResponse),
+			storageProvider: parsedStorageUri ? "gcs" : null,
+			storageBucket: parsedStorageUri?.bucket ?? null,
+			storageObjectPath: parsedStorageUri?.objectPath ?? null,
+			storageUri,
+			storageExpiresAt: null,
+			contentType:
+				typeof upstreamResponse.mime_type === "string"
+					? upstreamResponse.mime_type
+					: "video/mp4",
+			completedAt: parseTimestamp(upstreamResponse.completed_at),
+			expiresAt: parseTimestamp(upstreamResponse.expires_at),
+			lastPolledAt: null,
+			nextPollAt: new Date(),
+			pollAttemptCount: 0,
+			callbackUrl: request.callback_url ?? null,
+			callbackSecret: request.callback_secret ?? null,
+			callbackStatus: request.callback_url ? "pending" : "none",
+			routingMetadata: enrichedRoutingMetadata ?? null,
+			upstreamCreateResponse: {
+				...upstreamResponse,
+				llmgateway_requested_size: videoSize.size,
+				llmgateway_requested_resolution: videoSize.resolution,
+				llmgateway_requested_duration_seconds: videoDurationSeconds,
+				llmgateway_input_image_count: inputImageCount,
+				...(debugMode
+					? {
+							llmgateway_raw_request: rawBody,
+							llmgateway_upstream_request: upstreamRequest,
+						}
+					: {}),
+			},
+			upstreamStatusResponse: upstreamResponse,
+		})
+		.returning()
+		.then((rows) => rows[0]);
+
+	logger.info("Created video job", {
+		videoId: created.id,
+		upstreamId,
+		projectId: project.id,
+		organizationId: organization.id,
+		model: normalizedModel,
+		usedProvider: selectedProviderContext.providerId,
+	});
+
+	return c.json(await serializeVideoJob(created));
+});
+
+videos.openapi(getVideo, async (c) => {
+	const { project, apiKey } = await requireRequestContext(c);
+	const { video_id: videoId } = c.req.valid("param");
+	const job = await requireVideoJobForProject(
+		project.id,
+		videoId,
+		apiKey.endCustomerWalletId ?? null,
+	);
+	return c.json(await serializeVideoJob(job));
+});
+
+videos.openapi(getVideoLogContent, async (c) => {
+	const { log_id: logId } = c.req.valid("param");
+	const { token } = c.req.valid("query");
+	if (!token || !verifyVideoContentAccessToken(token, logId)) {
+		throw new HTTPException(401, {
+			message: "Unauthorized: Invalid or expired video access token.",
+		});
+	}
+
+	const videoJob = await db
+		.select()
+		.from(tables.videoJob)
+		.where(eq(tables.videoJob.logId, logId))
+		.limit(1)
+		.then((rows) => rows[0]);
+	if (!videoJob) {
+		throw new HTTPException(404, {
+			message: "Video content is not available",
+		});
+	}
+
+	const directSourceUrl = await getVideoSourceUrlFromCacheOrJob(
+		logId,
+		videoJob,
+	);
+	if (directSourceUrl) {
+		const response = await streamVideoFromUrl(directSourceUrl);
+		await markVideoDownloaded(logId);
+		return response;
+	}
+
+	if (videoJob.storageUri) {
+		const signedUrl = await getExternalVideoContentUrl(videoJob);
+		if (!signedUrl) {
+			throw new HTTPException(404, {
+				message: "Video content is not available",
+			});
+		}
+
+		const response = await streamVideoFromUrl(signedUrl, videoJob.contentType);
+		await markVideoDownloaded(logId);
+		return response;
+	}
+
+	if (shouldProxyDirectUpstreamVideoContent(videoJob)) {
+		const response = await streamDirectUpstreamVideoContent(videoJob);
+		await markVideoDownloaded(logId);
+		return response;
+	}
+
+	const inlineVideo = getInlineGoogleVertexVideoFromBodies([
+		videoJob.upstreamStatusResponse,
+		videoJob.upstreamCreateResponse,
+	]);
+	if (!inlineVideo) {
+		throw new HTTPException(404, {
+			message: "Video content is not available",
+		});
+	}
+
+	await markVideoDownloaded(logId);
+	return new Response(
+		Uint8Array.from(Buffer.from(inlineVideo.bytesBase64Encoded, "base64")),
+		{
+			status: 200,
+			headers: {
+				"Content-Type": inlineVideo.mimeType,
+			},
+		},
+	);
+});
+
+videos.openapi(getVideoContent, async (c) => {
+	const { project, apiKey } = await requireRequestContext(c);
+	const { video_id: videoId } = c.req.valid("param");
+	const job = await requireVideoJobForProject(
+		project.id,
+		videoId,
+		apiKey.endCustomerWalletId ?? null,
+	);
+
+	if (job.status !== "completed") {
+		throw new HTTPException(409, {
+			message: `Video is not ready yet. Current status: ${job.status}`,
+		});
+	}
+
+	if (!job.contentUrl && !job.storageUri) {
+		if (shouldProxyDirectUpstreamVideoContent(job)) {
+			const logId = job.logId;
+			const response = await streamDirectUpstreamVideoContent(job);
+			if (logId) {
+				await markVideoDownloaded(logId);
+			}
+			return response;
+		}
+
+		const inlineVideo = getGoogleVertexInlineVideo(job);
+		if (!inlineVideo) {
+			throw new HTTPException(404, {
+				message: "Video content is not available",
+			});
+		}
+
+		const bytes = Uint8Array.from(
+			Buffer.from(inlineVideo.bytesBase64Encoded, "base64"),
+		);
+		return new Response(bytes, {
+			status: 200,
+			headers: {
+				"Content-Type": inlineVideo.mimeType,
+			},
+		});
+	}
+
+	const contentUrl = job.contentUrl ?? (await getExternalVideoContentUrl(job));
+	if (!contentUrl) {
+		const inlineVideo = getGoogleVertexInlineVideo(job);
+		if (inlineVideo) {
+			const bytes = Uint8Array.from(
+				Buffer.from(inlineVideo.bytesBase64Encoded, "base64"),
+			);
+			return new Response(bytes, {
+				status: 200,
+				headers: {
+					"Content-Type": inlineVideo.mimeType,
+				},
+			});
+		}
+
+		throw new HTTPException(404, {
+			message: "Video content is not available",
+		});
+	}
+
+	const logId = job.logId;
+	const response = await streamVideoFromUrl(contentUrl, job.contentType);
+	if (logId) {
+		await markVideoDownloaded(logId);
+	}
+	return response;
+});

@@ -1,0 +1,27 @@
+name: llmgateway
+
+services:
+  postgres:
+    container_name: postgres
+    command: postgres -c log_statement=all
+    image: postgres:17-alpine
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: pw
+      POSTGRES_DB: db
+      CI: ${CI}
+    volumes:
+      - ./packages/db/init:/docker-entrypoint-initdb.d
+
+  redis:
+    container_name: redis
+    image: redis:8
+    command: ["redis-server", "--protected-mode", "no", "--bind", "0.0.0.0"]
+    restart: always
+    ports:
+      - "6379:6379"
+    environment:
+      CI: ${CI}

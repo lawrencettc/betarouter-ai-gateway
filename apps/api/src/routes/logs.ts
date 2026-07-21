@@ -1,0 +1,920 @@
+import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
+import { HTTPException } from "hono/http-exception";
+import { z } from "zod";
+
+import {
+	getActiveUserOrganizationIds,
+	getUserProjectIds,
+	userHasProjectAccess,
+} from "@/utils/authorization.js";
+
+import {
+	and,
+	asc,
+	db,
+	desc,
+	eq,
+	errorDetails,
+	gatewayContentFilterResponseSchema,
+	getTableColumns,
+	gt,
+	gte,
+	type InferSelectModel,
+	inArray,
+	lt,
+	lte,
+	or,
+	sql,
+	tables,
+	toolChoice,
+	toolResults,
+	tools,
+} from "@llmgateway/db";
+import { buildSignedGatewayVideoLogContentUrl } from "@llmgateway/shared/video-access";
+
+import type { ServerTypes } from "@/vars.js";
+
+export const logs = new OpenAPIHono<ServerTypes>();
+
+// internalErrorDetails is omitted: public log queries never select it.
+type LogRecord = Omit<
+	InferSelectModel<typeof tables.log>,
+	"internalErrorDetails"
+>;
+
+// internalErrorDetails holds the raw upstream error for stealth providers and
+// must never leave the internal admin surface, so strip it from the columns
+// served by the public logs endpoints.
+const { internalErrorDetails: _internalErrorDetails, ...publicLogColumns } =
+	getTableColumns(tables.log);
+
+const logSelection = {
+	...publicLogColumns,
+	organizationName: tables.organization.name,
+	projectName: tables.project.name,
+	apiKeyName: tables.apiKey.description,
+};
+
+async function enrichLogsWithVideoContentUrls<T extends LogRecord>(
+	logEntries: T[],
+): Promise<T[]> {
+	const hasVideoLogState = (log: T) =>
+		log.videoOutputCost !== null ||
+		log.videoDownloadCount > 0 ||
+		log.lastVideoDownloadedAt !== null;
+
+	return logEntries.map((log) =>
+		hasVideoLogState(log) &&
+		(log.content !== null || (log.videoOutputCost ?? 0) > 0)
+			? { ...log, content: buildSignedGatewayVideoLogContentUrl(log.id) }
+			: log,
+	);
+}
+
+const BASE64_INPUT_PLACEHOLDER = "[base64_image_input_redacted]";
+
+function scrubMessagesBase64(messages: unknown): unknown {
+	if (messages === null || messages === undefined) {
+		return messages;
+	}
+	if (typeof messages === "string") {
+		if (
+			messages.length > 1000 &&
+			(messages.includes(";base64,") || /[A-Za-z0-9+/=]{800,}/.test(messages))
+		) {
+			return BASE64_INPUT_PLACEHOLDER;
+		}
+		return messages;
+	}
+	if (Array.isArray(messages)) {
+		return messages.map((item) => scrubMessagesBase64(item));
+	}
+	if (typeof messages === "object") {
+		const out: Record<string, unknown> = {};
+		for (const [key, value] of Object.entries(messages)) {
+			out[key] = scrubMessagesBase64(value);
+		}
+		return out;
+	}
+	return messages;
+}
+
+// Use the log schema directly from the database
+// Using z.object directly instead of createSelectSchema due to compatibility issues
+const logSchema = z.object({
+	id: z.string(),
+	requestId: z.string(),
+	traceId: z.string().nullable().optional(),
+	createdAt: z.date(),
+	updatedAt: z.date(),
+	organizationId: z.string(),
+	organizationName: z.string().nullable().optional(),
+	projectId: z.string(),
+	projectName: z.string().nullable().optional(),
+	apiKeyId: z.string(),
+	apiKeyName: z.string().nullable().optional(),
+	duration: z.number(),
+	requestedModel: z.string(),
+	requestedProvider: z.string().nullable(),
+	usedModel: z.string(),
+	usedProvider: z.string(),
+	responseSize: z.number(),
+	content: z.string().nullable(),
+	reasoningContent: z.string().nullable(),
+	unifiedFinishReason: z.string().nullable(),
+	finishReason: z.string().nullable(),
+	promptTokens: z.string().nullable(),
+	completionTokens: z.string().nullable(),
+	totalTokens: z.string().nullable(),
+	reasoningTokens: z.string().nullable(),
+	cachedTokens: z.string().nullable().optional(),
+	cacheWriteTokens: z.string().nullable().optional(),
+	cacheWrite5mTokens: z.string().nullable().optional(),
+	cacheWrite1hTokens: z.string().nullable().optional(),
+	messages: z.any(),
+	temperature: z.number().nullable(),
+	maxTokens: z.number().nullable(),
+	topP: z.number().nullable(),
+	frequencyPenalty: z.number().nullable(),
+	presencePenalty: z.number().nullable(),
+	reasoningEffort: z.string().nullable(),
+	reasoningMaxTokens: z.number().nullable(),
+	responseFormat: z.any().nullable(),
+	tools: tools.nullable(),
+	toolChoice: toolChoice.nullable(),
+	toolResults: toolResults.nullable(),
+	hasError: z.boolean().nullable(),
+	errorDetails: errorDetails.nullable(),
+	cost: z.number().nullable(),
+	inputCost: z.number().nullable(),
+	outputCost: z.number().nullable(),
+	requestCost: z.number().nullable(),
+	cachedInputCost: z.number().nullable().optional(),
+	cacheWriteInputCost: z.number().nullable().optional(),
+	webSearchCost: z.number().nullable().optional(),
+	contentFilterCost: z.number().nullable().optional(),
+	imageInputTokens: z.string().nullable(),
+	audioInputTokens: z.string().nullable(),
+	imageOutputTokens: z.string().nullable(),
+	imageInputCost: z.number().nullable(),
+	audioInputCost: z.number().nullable(),
+	imageOutputCost: z.number().nullable(),
+	videoOutputCost: z.number().nullable(),
+	videoDownloadCount: z.number().nullable(),
+	lastVideoDownloadedAt: z.date().nullable(),
+	estimatedCost: z.boolean().nullable(),
+	canceled: z.boolean().nullable(),
+	streamed: z.boolean().nullable(),
+	cached: z.boolean().nullable(),
+	customHeaders: z.any().nullable(),
+	mode: z.enum(["api-keys", "credits", "hybrid"]),
+	usedMode: z.enum(["api-keys", "credits"]),
+	source: z.string().nullable(),
+	sessionId: z.string().nullable().optional(),
+	routingMetadata: z
+		.object({
+			availableProviders: z.array(z.string()).optional(),
+			selectedProvider: z.string().optional(),
+			selectionReason: z.string().optional(),
+			usedApiKeyHash: z.string().optional(),
+			providerScores: z
+				.array(
+					z.object({
+						providerId: z.string(),
+						region: z.string().optional(),
+						score: z.number(),
+						uptime: z.number().optional(),
+						latency: z.number().optional(),
+						throughput: z.number().optional(),
+						price: z.number().optional(),
+						priority: z.number().optional(),
+						cacheSupported: z.boolean().optional(),
+						failed: z.boolean().optional(),
+						status_code: z.number().optional(),
+						error_type: z.string().optional(),
+						rate_limited: z.boolean().optional(),
+						contentFilterProvider: z.boolean().optional(),
+						excludedByContentFilter: z.boolean().optional(),
+					}),
+				)
+				.optional(),
+			contentFilterMatched: z.boolean().optional(),
+			contentFilterRerouted: z.boolean().optional(),
+			contentFilterExcludedProviders: z.array(z.string()).optional(),
+			routing: z
+				.array(
+					z.object({
+						provider: z.string(),
+						model: z.string(),
+						region: z.string().optional(),
+						status_code: z.number(),
+						error_type: z.string(),
+						succeeded: z.boolean(),
+						apiKeyHash: z.string().optional(),
+						logId: z.string().optional(),
+					}),
+				)
+				.optional(),
+		})
+		.nullable()
+		.optional(),
+	discount: z.number().nullable().optional(),
+	requestedServiceTier: z.string().nullable().optional(),
+	usedServiceTier: z.string().nullable().optional(),
+	retried: z.boolean().nullable().optional(),
+	retriedByLogId: z.string().nullable().optional(),
+	gatewayContentFilterResponse: gatewayContentFilterResponseSchema
+		.nullable()
+		.optional(),
+});
+
+// GET /logs/:id - Fetch a single log by ID
+const getById = createRoute({
+	method: "get",
+	path: "/{id}",
+	request: {
+		params: z.object({
+			id: z.string().openapi({ description: "Log ID" }),
+		}),
+	},
+	responses: {
+		200: {
+			content: {
+				"application/json": {
+					schema: z.object({ log: logSchema }),
+				},
+			},
+			description: "Single log entry",
+		},
+		404: {
+			description: "Log not found",
+		},
+	},
+});
+
+const querySchema = z.object({
+	apiKeyId: z.string().optional().openapi({
+		description: "Filter logs by API key ID",
+	}),
+	providerKeyId: z.string().optional().openapi({
+		description: "Filter logs by provider key ID",
+	}),
+	projectId: z.string().optional().openapi({
+		description: "Filter logs by project ID",
+	}),
+	orgId: z.string().optional().openapi({
+		description: "Filter logs by organization ID",
+	}),
+	startDate: z.string().optional().openapi({
+		description: "Filter logs created after this date (ISO string)",
+	}),
+	endDate: z.string().optional().openapi({
+		description: "Filter logs created before this date (ISO string)",
+	}),
+	finishReason: z.string().optional().openapi({
+		description: "Filter logs by finish reason",
+	}),
+	unifiedFinishReason: z.string().optional().openapi({
+		description: "Filter logs by unified finish reason",
+	}),
+	provider: z.string().optional().openapi({
+		description: "Filter logs by provider",
+	}),
+	model: z.string().optional().openapi({
+		description: "Filter logs by model",
+	}),
+	source: z.string().optional().openapi({
+		description: "Filter logs by source",
+	}),
+	cursor: z.string().optional().openapi({
+		description: "Cursor for pagination (log ID to start after)",
+	}),
+	orderBy: z.enum(["createdAt_asc", "createdAt_desc"]).optional().openapi({
+		description: "Order results by creation date (default: createdAt_desc)",
+		example: "createdAt_desc",
+	}),
+	limit: z
+		.string()
+		.optional()
+		.transform((val) => (val ? parseInt(val, 10) : undefined))
+		.pipe(z.number().int().min(1).max(100).optional())
+		.openapi({
+			description: "Number of items to return (default: 50, max: 100)",
+			example: "50",
+		}),
+	customHeaderKey: z.string().optional().openapi({
+		description:
+			"Filter logs by custom header key (without x-llmgateway- prefix)",
+		example: "uid",
+	}),
+	customHeaderValue: z.string().optional().openapi({
+		description: "Filter logs by custom header value",
+		example: "12345",
+	}),
+	requestId: z.string().optional().openapi({
+		description: "Filter logs by request ID",
+	}),
+	sessionId: z.string().optional().openapi({
+		description: "Filter logs by session ID",
+		example: "conversation-9f8e7d6c",
+	}),
+});
+
+const get = createRoute({
+	method: "get",
+	path: "/",
+	request: {
+		query: querySchema,
+	},
+	responses: {
+		200: {
+			content: {
+				"application/json": {
+					schema: z.object({
+						message: z.string().optional().openapi({
+							description: "Optional message about the response",
+						}),
+						logs: z.array(logSchema).openapi({
+							description: "Array of log entries",
+						}),
+						pagination: z
+							.object({
+								nextCursor: z.string().nullable().openapi({
+									description:
+										"Cursor to use for the next page of results, null if no more results",
+								}),
+								hasMore: z.boolean().openapi({
+									description: "Whether there are more results available",
+								}),
+								limit: z.number().int().openapi({
+									description: "Number of items requested per page",
+								}),
+							})
+							.openapi({
+								description: "Pagination metadata",
+							}),
+					}),
+				},
+			},
+			description: "User logs response with pagination.",
+		},
+	},
+});
+
+logs.openapi(get, async (c) => {
+	const user = c.get("user");
+
+	if (!user) {
+		throw new HTTPException(401, {
+			message: "Unauthorized",
+		});
+	}
+
+	// Get query parameters
+	const query = c.req.valid("query");
+
+	const sanitize = (value: string | undefined) =>
+		value === "all" ? undefined : value;
+
+	const {
+		apiKeyId,
+		providerKeyId,
+		projectId,
+		orgId,
+		startDate,
+		endDate,
+		finishReason,
+		unifiedFinishReason,
+		provider,
+		model,
+		source,
+		cursor,
+		orderBy = "createdAt_desc",
+		limit: queryLimit,
+		customHeaderKey,
+		customHeaderValue,
+		requestId,
+		sessionId,
+	} = {
+		...query,
+		apiKeyId: sanitize(query.apiKeyId),
+		providerKeyId: sanitize(query.providerKeyId),
+		projectId: sanitize(query.projectId),
+		orgId: sanitize(query.orgId),
+		startDate: sanitize(query.startDate),
+		endDate: sanitize(query.endDate),
+		finishReason: sanitize(query.finishReason),
+		unifiedFinishReason: sanitize(query.unifiedFinishReason),
+		provider: sanitize(query.provider),
+		model: sanitize(query.model),
+		source: sanitize(query.source),
+		customHeaderKey: sanitize(query.customHeaderKey),
+		customHeaderValue: sanitize(query.customHeaderValue),
+		requestId: sanitize(query.requestId),
+		sessionId: sanitize(query.sessionId),
+	};
+
+	// Set default limit if not provided or enforce max limit
+	const limit = queryLimit ? Math.min(queryLimit, 100) : 50;
+
+	// Get all active organizations the user is a member of
+	const organizationIds = await getActiveUserOrganizationIds(user.id);
+
+	if (!organizationIds.length) {
+		return c.json({
+			logs: [],
+			message: "No organizations found",
+			pagination: {
+				nextCursor: null,
+				hasMore: false,
+				limit,
+			},
+		});
+	}
+
+	// If org filter is provided, check if user has access to it
+	if (orgId && !organizationIds.includes(orgId)) {
+		throw new HTTPException(403, {
+			message: "You don't have access to this organization",
+		});
+	}
+
+	// Get all projects associated with the user's organizations
+	const projectsQuery: any = {
+		where: {
+			organizationId: {
+				in: orgId ? [orgId] : organizationIds,
+			},
+			status: {
+				ne: "deleted",
+			},
+		},
+	};
+
+	// If projectId is provided, check if it belongs to user's organizations
+	if (projectId) {
+		projectsQuery.where.id = projectId;
+	}
+
+	const projects = await db.query.project.findMany(projectsQuery);
+
+	if (!projects.length) {
+		return c.json({
+			logs: [],
+			message: "No projects found",
+			pagination: {
+				nextCursor: null,
+				hasMore: false,
+				limit,
+			},
+		});
+	}
+
+	// Intersect with RBAC-aware access so project-scoped "developer" members only
+	// see logs for the projects granted to them.
+	const accessibleProjectIds = new Set(await getUserProjectIds(user.id));
+	const projectIds = projects
+		.map((project) => project.id)
+		.filter((id) => accessibleProjectIds.has(id));
+
+	// If projectId is provided but not found in user's accessible projects, deny
+	if (projectId && !projectIds.includes(projectId)) {
+		throw new HTTPException(403, {
+			message: "You don't have access to this project",
+		});
+	}
+
+	// Check apiKeyId authorization if provided
+	if (apiKeyId) {
+		const apiKey = await db.query.apiKey.findFirst({
+			where: {
+				id: apiKeyId,
+			},
+		});
+
+		if (!apiKey) {
+			throw new HTTPException(404, {
+				message: "API key not found",
+			});
+		}
+
+		// Check if the API key belongs to one of the user's projects
+		if (!projectIds.includes(apiKey.projectId)) {
+			throw new HTTPException(403, {
+				message: "You don't have access to this API key",
+			});
+		}
+	}
+
+	// Check providerKeyId authorization if provided
+	if (providerKeyId) {
+		const providerKey = await db.query.providerKey.findFirst({
+			where: {
+				id: providerKeyId,
+			},
+		});
+
+		if (!providerKey) {
+			throw new HTTPException(404, {
+				message: "Provider key not found",
+			});
+		}
+
+		// Check if the provider key belongs to one of the user's organizations
+		if (!organizationIds.includes(providerKey.organizationId)) {
+			throw new HTTPException(403, {
+				message: "You don't have access to this provider key",
+			});
+		}
+	}
+
+	// Build where conditions for the select query
+	const whereConditions = [];
+
+	// Add project filter
+	if (projectId) {
+		whereConditions.push(eq(tables.log.projectId, projectId));
+	} else {
+		whereConditions.push(inArray(tables.log.projectId, projectIds));
+	}
+
+	// Add date range filters
+	if (startDate) {
+		whereConditions.push(gte(tables.log.createdAt, new Date(startDate)));
+	}
+	if (endDate) {
+		whereConditions.push(lte(tables.log.createdAt, new Date(endDate)));
+	}
+
+	// Add model filter - match the model id part after the slash and before any
+	// `:region` suffix (usedModel is stored as `provider/modelId[:region]`),
+	// or the full value if there's no slash (seed data / legacy format)
+	if (model) {
+		whereConditions.push(
+			sql`CASE WHEN ${tables.log.usedModel} LIKE '%/%'
+				THEN SPLIT_PART(SPLIT_PART(${tables.log.usedModel}, '/', 2), ':', 1)
+				ELSE SPLIT_PART(${tables.log.usedModel}, ':', 1)
+			END = ${model}`,
+		);
+	}
+
+	// Add provider filter
+	if (provider) {
+		whereConditions.push(eq(tables.log.usedProvider, provider));
+	}
+
+	// Add finish reason filter
+	if (finishReason) {
+		whereConditions.push(eq(tables.log.finishReason, finishReason));
+	}
+
+	// Add unified finish reason filter
+	if (unifiedFinishReason) {
+		whereConditions.push(
+			eq(tables.log.unifiedFinishReason, unifiedFinishReason),
+		);
+	}
+
+	// Add apiKeyId filter
+	if (apiKeyId) {
+		whereConditions.push(eq(tables.log.apiKeyId, apiKeyId));
+	}
+
+	// Add providerKeyId filter
+	if (providerKeyId) {
+		// whereConditions.push(eq(tables.log.providerKeyId, providerKeyId));
+	}
+
+	// Add custom header filter
+	if (customHeaderKey && customHeaderValue) {
+		whereConditions.push(
+			sql`${tables.log.customHeaders}
+			->>
+			${customHeaderKey}
+			=
+			${customHeaderValue}`,
+		);
+	}
+
+	// Add source filter if provided (supports comma-separated values)
+	if (source) {
+		const sources = source.split(",").map((s) => s.trim());
+		if (sources.length === 1) {
+			whereConditions.push(eq(tables.log.source, sources[0]));
+		} else {
+			whereConditions.push(inArray(tables.log.source, sources));
+		}
+	}
+
+	// Add requestId filter
+	if (requestId) {
+		whereConditions.push(eq(tables.log.requestId, requestId));
+	}
+
+	// Add sessionId filter
+	if (sessionId) {
+		whereConditions.push(eq(tables.log.sessionId, sessionId));
+	}
+
+	// Add cursor-based pagination conditions
+	if (cursor) {
+		const cursorLog = await db
+			.select()
+			.from(tables.log)
+			.where(eq(tables.log.id, cursor))
+			.limit(1);
+
+		if (cursorLog.length > 0) {
+			const cursorCreatedAt = cursorLog[0].createdAt;
+
+			if (orderBy === "createdAt_asc") {
+				whereConditions.push(
+					or(
+						gt(tables.log.createdAt, cursorCreatedAt),
+						and(
+							eq(tables.log.createdAt, cursorCreatedAt),
+							gt(tables.log.id, cursor),
+						),
+					),
+				);
+			} else {
+				whereConditions.push(
+					or(
+						lt(tables.log.createdAt, cursorCreatedAt),
+						and(
+							eq(tables.log.createdAt, cursorCreatedAt),
+							lt(tables.log.id, cursor),
+						),
+					),
+				);
+			}
+		}
+	}
+
+	// Build the final where clause
+	const finalWhereClause =
+		whereConditions.length > 0 ? and(...whereConditions) : undefined;
+
+	// Build order by clauses
+	const orderByClauses =
+		orderBy === "createdAt_asc"
+			? [asc(tables.log.createdAt), asc(tables.log.id)]
+			: [desc(tables.log.createdAt), desc(tables.log.id)];
+
+	// Execute the query using select
+	let dbQuery = db
+		.select(logSelection)
+		.from(tables.log)
+		.leftJoin(
+			tables.organization,
+			eq(tables.log.organizationId, tables.organization.id),
+		)
+		.leftJoin(tables.project, eq(tables.log.projectId, tables.project.id))
+		.leftJoin(tables.apiKey, eq(tables.log.apiKeyId, tables.apiKey.id));
+
+	if (finalWhereClause) {
+		// @ts-ignore
+		dbQuery = dbQuery.where(finalWhereClause);
+	}
+
+	const logs = await dbQuery.orderBy(...orderByClauses).limit(limit + 1); // Fetch one extra for pagination
+
+	// Check if there are more results
+	const hasMore = logs.length > limit;
+	// Remove the extra item if we fetched more than the limit
+	const paginatedLogs = hasMore ? logs.slice(0, limit) : logs;
+
+	// Determine the next cursor (ID of the last item)
+	const nextCursor =
+		hasMore && paginatedLogs.length > 0
+			? paginatedLogs[paginatedLogs.length - 1].id
+			: null;
+
+	if (!paginatedLogs.length) {
+		return c.json({
+			logs: [],
+			message: "No logs found",
+			pagination: {
+				nextCursor: null,
+				hasMore: false,
+				limit,
+			},
+		});
+	}
+
+	const enrichedLogs = await enrichLogsWithVideoContentUrls(paginatedLogs);
+
+	const logsForResponse = enrichedLogs.map((log) => {
+		const scrubbedMessages = scrubMessagesBase64(log.messages);
+		const next =
+			log.content && log.content.includes(";base64,")
+				? { ...log, content: "[image_generated]" }
+				: log;
+		return { ...next, messages: scrubbedMessages };
+	});
+
+	return c.json({
+		logs: logsForResponse,
+		pagination: {
+			nextCursor,
+			hasMore,
+			limit,
+		},
+	});
+});
+
+const uniqueModelsGet = createRoute({
+	method: "get",
+	path: "/unique-models",
+	request: {
+		query: z.object({
+			projectId: z.string().optional().openapi({
+				description: "Filter models by project ID",
+			}),
+			orgId: z.string().optional().openapi({
+				description: "Filter models by organization ID",
+			}),
+		}),
+	},
+	responses: {
+		200: {
+			content: {
+				"application/json": {
+					schema: z.object({
+						models: z.array(z.string()).openapi({
+							description:
+								"Array of unique model names (extracted from provider/model)",
+						}),
+						providers: z.array(z.string()).openapi({
+							description:
+								"Array of unique provider names (extracted from provider/model)",
+						}),
+					}),
+				},
+			},
+			description: "Unique models response.",
+		},
+	},
+});
+
+logs.openapi(uniqueModelsGet, async (c) => {
+	const user = c.get("user");
+
+	if (!user) {
+		throw new HTTPException(401, {
+			message: "Unauthorized",
+		});
+	}
+
+	const query = c.req.valid("query");
+	const { projectId, orgId } = query;
+
+	// Get all active organizations the user is a member of
+	const organizationIds = await getActiveUserOrganizationIds(user.id);
+
+	if (!organizationIds.length) {
+		return c.json({
+			models: [],
+			providers: [],
+		});
+	}
+
+	// If org filter is provided, check if user has access to it
+	if (orgId && !organizationIds.includes(orgId)) {
+		throw new HTTPException(403, {
+			message: "You don't have access to this organization",
+		});
+	}
+
+	// Get all projects associated with the user's organizations
+	const projectsQuery: any = {
+		where: {
+			organizationId: {
+				in: orgId ? [orgId] : organizationIds,
+			},
+			status: {
+				ne: "deleted",
+			},
+		},
+	};
+
+	// If projectId is provided, check if it belongs to user's organizations
+	if (projectId) {
+		projectsQuery.where.id = projectId;
+	}
+
+	const projects = await db.query.project.findMany(projectsQuery);
+
+	if (!projects.length) {
+		return c.json({
+			models: [],
+			providers: [],
+		});
+	}
+
+	// Intersect with RBAC-aware access so project-scoped "developer" members only
+	// see logs for the projects granted to them.
+	const accessibleProjectIds = new Set(await getUserProjectIds(user.id));
+	const projectIds = projects
+		.map((project) => project.id)
+		.filter((id) => accessibleProjectIds.has(id));
+
+	// If projectId is provided but not found in user's accessible projects, deny
+	if (projectId && !projectIds.includes(projectId)) {
+		throw new HTTPException(403, {
+			message: "You don't have access to this project",
+		});
+	}
+
+	// Build where conditions
+	const whereConditions = [];
+	if (projectId) {
+		whereConditions.push(eq(tables.log.projectId, projectId));
+	} else {
+		whereConditions.push(inArray(tables.log.projectId, projectIds));
+	}
+
+	const finalWhereClause =
+		whereConditions.length > 0 ? and(...whereConditions) : undefined;
+
+	const [uniqueUsedModels, uniqueUsedProviders] = await Promise.all([
+		db
+			.selectDistinct({ usedModel: tables.log.usedModel })
+			.from(tables.log)
+			.where(finalWhereClause!),
+		db
+			.selectDistinct({ usedProvider: tables.log.usedProvider })
+			.from(tables.log)
+			.where(finalWhereClause!),
+	]);
+
+	const modelNames = new Set<string>();
+	const providerNames = new Set<string>();
+
+	for (const row of uniqueUsedProviders) {
+		if (row.usedProvider) {
+			providerNames.add(row.usedProvider);
+		}
+	}
+
+	for (const row of uniqueUsedModels) {
+		const usedModel = row.usedModel;
+		if (!usedModel) {
+			continue;
+		}
+
+		const slashIndex = usedModel.indexOf("/");
+		if (slashIndex !== -1) {
+			providerNames.add(usedModel.substring(0, slashIndex));
+			modelNames.add(usedModel.substring(slashIndex + 1));
+		} else {
+			modelNames.add(usedModel);
+		}
+	}
+
+	return c.json({
+		models: Array.from(modelNames).sort(),
+		providers: Array.from(providerNames).sort(),
+	});
+});
+
+logs.openapi(getById, async (c) => {
+	const user = c.get("user");
+
+	if (!user) {
+		throw new HTTPException(401, { message: "Unauthorized" });
+	}
+
+	const { id } = c.req.valid("param");
+
+	const baseQuery = () =>
+		db
+			.select(logSelection)
+			.from(tables.log)
+			.leftJoin(
+				tables.organization,
+				eq(tables.log.organizationId, tables.organization.id),
+			)
+			.leftJoin(tables.project, eq(tables.log.projectId, tables.project.id))
+			.leftJoin(tables.apiKey, eq(tables.log.apiKeyId, tables.apiKey.id));
+
+	let [log] = await baseQuery().where(eq(tables.log.id, id)).limit(1);
+
+	if (!log) {
+		[log] = await baseQuery().where(eq(tables.log.requestId, id)).limit(1);
+	}
+
+	if (!log) {
+		throw new HTTPException(404, { message: "Log not found" });
+	}
+
+	// Verify the user can access this log's project (RBAC-aware: developers are
+	// limited to their granted projects).
+	if (!(await userHasProjectAccess(user.id, log.projectId))) {
+		throw new HTTPException(403, {
+			message: "You don't have access to this log",
+		});
+	}
+
+	return c.json({ log });
+});

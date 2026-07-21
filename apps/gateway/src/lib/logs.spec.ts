@@ -1,0 +1,390 @@
+import { describe, expect, it } from "vitest";
+
+import { UnifiedFinishReason } from "@llmgateway/db";
+
+import {
+	calculateDataStorageCost,
+	getUnifiedFinishReason,
+	isContentFilterFinishReason,
+	isExpectedUnknownFinishReason,
+	isLengthLimitFinishReason,
+} from "./logs.js";
+
+describe("getUnifiedFinishReason", () => {
+	it("maps OpenAI finish reasons correctly", () => {
+		expect(getUnifiedFinishReason("stop", "openai")).toBe(
+			UnifiedFinishReason.COMPLETED,
+		);
+		expect(getUnifiedFinishReason("length", "openai")).toBe(
+			UnifiedFinishReason.LENGTH_LIMIT,
+		);
+		expect(getUnifiedFinishReason("content_filter", "openai")).toBe(
+			UnifiedFinishReason.CONTENT_FILTER,
+		);
+	});
+
+	it("maps upstream 'abort' to upstream error regardless of provider", () => {
+		expect(getUnifiedFinishReason("abort", "minimax")).toBe(
+			UnifiedFinishReason.UPSTREAM_ERROR,
+		);
+		expect(getUnifiedFinishReason("abort", "novita")).toBe(
+			UnifiedFinishReason.UPSTREAM_ERROR,
+		);
+	});
+
+	it("maps Anthropic finish reasons correctly", () => {
+		expect(getUnifiedFinishReason("stop_sequence", "anthropic")).toBe(
+			UnifiedFinishReason.COMPLETED,
+		);
+		expect(getUnifiedFinishReason("max_tokens", "anthropic")).toBe(
+			UnifiedFinishReason.LENGTH_LIMIT,
+		);
+		expect(getUnifiedFinishReason("end_turn", "anthropic")).toBe(
+			UnifiedFinishReason.COMPLETED,
+		);
+		expect(getUnifiedFinishReason("refusal", "anthropic")).toBe(
+			UnifiedFinishReason.CONTENT_FILTER,
+		);
+	});
+
+	it("maps Vertex Anthropic finish reasons correctly", () => {
+		expect(getUnifiedFinishReason("end_turn", "vertex-anthropic")).toBe(
+			UnifiedFinishReason.COMPLETED,
+		);
+		expect(getUnifiedFinishReason("stop_sequence", "vertex-anthropic")).toBe(
+			UnifiedFinishReason.COMPLETED,
+		);
+		expect(getUnifiedFinishReason("max_tokens", "vertex-anthropic")).toBe(
+			UnifiedFinishReason.LENGTH_LIMIT,
+		);
+		expect(getUnifiedFinishReason("tool_use", "vertex-anthropic")).toBe(
+			UnifiedFinishReason.TOOL_CALLS,
+		);
+		expect(getUnifiedFinishReason("refusal", "vertex-anthropic")).toBe(
+			UnifiedFinishReason.CONTENT_FILTER,
+		);
+	});
+
+	it("maps aws-bedrock refusal to content filter", () => {
+		expect(getUnifiedFinishReason("refusal", "aws-bedrock")).toBe(
+			UnifiedFinishReason.CONTENT_FILTER,
+		);
+	});
+
+	it("maps Google AI Studio finish reasons correctly (original Google format)", () => {
+		expect(getUnifiedFinishReason("STOP", "google-ai-studio")).toBe(
+			UnifiedFinishReason.COMPLETED,
+		);
+		expect(getUnifiedFinishReason("MAX_TOKENS", "google-ai-studio")).toBe(
+			UnifiedFinishReason.LENGTH_LIMIT,
+		);
+		expect(getUnifiedFinishReason("SAFETY", "google-ai-studio")).toBe(
+			UnifiedFinishReason.CONTENT_FILTER,
+		);
+		expect(
+			getUnifiedFinishReason("PROHIBITED_CONTENT", "google-ai-studio"),
+		).toBe(UnifiedFinishReason.CONTENT_FILTER);
+		expect(getUnifiedFinishReason("RECITATION", "google-ai-studio")).toBe(
+			UnifiedFinishReason.CONTENT_FILTER,
+		);
+		expect(getUnifiedFinishReason("BLOCKLIST", "google-ai-studio")).toBe(
+			UnifiedFinishReason.CONTENT_FILTER,
+		);
+		expect(getUnifiedFinishReason("SPII", "google-ai-studio")).toBe(
+			UnifiedFinishReason.CONTENT_FILTER,
+		);
+		expect(getUnifiedFinishReason("LANGUAGE", "google-ai-studio")).toBe(
+			UnifiedFinishReason.CONTENT_FILTER,
+		);
+		expect(getUnifiedFinishReason("IMAGE_SAFETY", "google-ai-studio")).toBe(
+			UnifiedFinishReason.CONTENT_FILTER,
+		);
+		expect(
+			getUnifiedFinishReason("IMAGE_PROHIBITED_CONTENT", "google-ai-studio"),
+		).toBe(UnifiedFinishReason.CONTENT_FILTER);
+		expect(getUnifiedFinishReason("IMAGE_RECITATION", "google-ai-studio")).toBe(
+			UnifiedFinishReason.CONTENT_FILTER,
+		);
+		expect(getUnifiedFinishReason("IMAGE_OTHER", "google-ai-studio")).toBe(
+			UnifiedFinishReason.CONTENT_FILTER,
+		);
+		expect(getUnifiedFinishReason("NO_IMAGE", "google-ai-studio")).toBe(
+			UnifiedFinishReason.CONTENT_FILTER,
+		);
+		expect(getUnifiedFinishReason("OTHER", "google-ai-studio")).toBe(
+			UnifiedFinishReason.UNKNOWN,
+		);
+	});
+
+	it("maps OpenAI-format finish reasons returned by Google providers", () => {
+		expect(getUnifiedFinishReason("stop", "google-ai-studio")).toBe(
+			UnifiedFinishReason.COMPLETED,
+		);
+		expect(getUnifiedFinishReason("length", "google-ai-studio")).toBe(
+			UnifiedFinishReason.LENGTH_LIMIT,
+		);
+		expect(getUnifiedFinishReason("tool_calls", "google-ai-studio")).toBe(
+			UnifiedFinishReason.TOOL_CALLS,
+		);
+		expect(getUnifiedFinishReason("length", "google-vertex")).toBe(
+			UnifiedFinishReason.LENGTH_LIMIT,
+		);
+		expect(
+			getUnifiedFinishReason("MALFORMED_FUNCTION_CALL", "google-ai-studio"),
+		).toBe(UnifiedFinishReason.TOOL_CALLS);
+		expect(
+			getUnifiedFinishReason("MALFORMED_RESPONSE", "google-ai-studio"),
+		).toBe(UnifiedFinishReason.UNKNOWN);
+	});
+
+	it("maps Glacier finish reasons like Google AI Studio", () => {
+		expect(getUnifiedFinishReason("STOP", "glacier")).toBe(
+			UnifiedFinishReason.COMPLETED,
+		);
+		expect(getUnifiedFinishReason("MAX_TOKENS", "glacier")).toBe(
+			UnifiedFinishReason.LENGTH_LIMIT,
+		);
+		expect(getUnifiedFinishReason("SAFETY", "glacier")).toBe(
+			UnifiedFinishReason.CONTENT_FILTER,
+		);
+		expect(getUnifiedFinishReason("OTHER", "glacier")).toBe(
+			UnifiedFinishReason.UNKNOWN,
+		);
+	});
+
+	it("maps Glacier image content filter finish reasons correctly", () => {
+		expect(getUnifiedFinishReason("IMAGE_PROHIBITED_CONTENT", "glacier")).toBe(
+			UnifiedFinishReason.CONTENT_FILTER,
+		);
+		expect(getUnifiedFinishReason("IMAGE_SAFETY", "glacier")).toBe(
+			UnifiedFinishReason.CONTENT_FILTER,
+		);
+		expect(getUnifiedFinishReason("NO_IMAGE", "glacier")).toBe(
+			UnifiedFinishReason.CONTENT_FILTER,
+		);
+	});
+
+	it("maps Mistral finish reasons correctly", () => {
+		expect(getUnifiedFinishReason("stop", "mistral")).toBe(
+			UnifiedFinishReason.COMPLETED,
+		);
+		expect(getUnifiedFinishReason("length", "mistral")).toBe(
+			UnifiedFinishReason.LENGTH_LIMIT,
+		);
+		expect(getUnifiedFinishReason("model_length", "mistral")).toBe(
+			UnifiedFinishReason.LENGTH_LIMIT,
+		);
+		expect(getUnifiedFinishReason("tool_calls", "mistral")).toBe(
+			UnifiedFinishReason.TOOL_CALLS,
+		);
+		expect(getUnifiedFinishReason("content_filter", "mistral")).toBe(
+			UnifiedFinishReason.CONTENT_FILTER,
+		);
+		expect(getUnifiedFinishReason("error", "mistral")).toBe(
+			UnifiedFinishReason.UPSTREAM_ERROR,
+		);
+	});
+
+	it("handles special cases", () => {
+		expect(getUnifiedFinishReason("canceled", "any-provider")).toBe(
+			UnifiedFinishReason.CANCELED,
+		);
+		expect(getUnifiedFinishReason("gateway_error", "any-provider")).toBe(
+			UnifiedFinishReason.GATEWAY_ERROR,
+		);
+		expect(getUnifiedFinishReason("upstream_error", "any-provider")).toBe(
+			UnifiedFinishReason.UPSTREAM_ERROR,
+		);
+		expect(getUnifiedFinishReason(null, "any-provider")).toBe(
+			UnifiedFinishReason.UNKNOWN,
+		);
+		expect(getUnifiedFinishReason(undefined, "any-provider")).toBe(
+			UnifiedFinishReason.UNKNOWN,
+		);
+		expect(getUnifiedFinishReason("unknown_reason", "any-provider")).toBe(
+			UnifiedFinishReason.UNKNOWN,
+		);
+	});
+
+	it("maps zai finish reasons correctly", () => {
+		expect(getUnifiedFinishReason("stop", "zai")).toBe(
+			UnifiedFinishReason.COMPLETED,
+		);
+		expect(getUnifiedFinishReason("length", "zai")).toBe(
+			UnifiedFinishReason.LENGTH_LIMIT,
+		);
+		expect(getUnifiedFinishReason("tool_calls", "zai")).toBe(
+			UnifiedFinishReason.TOOL_CALLS,
+		);
+		expect(getUnifiedFinishReason("sensitive", "zai")).toBe(
+			UnifiedFinishReason.CONTENT_FILTER,
+		);
+		expect(getUnifiedFinishReason("content_filter", "zai")).toBe(
+			UnifiedFinishReason.CONTENT_FILTER,
+		);
+	});
+
+	it("maps novita finish reasons correctly", () => {
+		expect(getUnifiedFinishReason("stop", "novita")).toBe(
+			UnifiedFinishReason.COMPLETED,
+		);
+		expect(getUnifiedFinishReason("length", "novita")).toBe(
+			UnifiedFinishReason.LENGTH_LIMIT,
+		);
+		expect(getUnifiedFinishReason("tool_calls", "novita")).toBe(
+			UnifiedFinishReason.TOOL_CALLS,
+		);
+		expect(getUnifiedFinishReason("sensitive", "novita")).toBe(
+			UnifiedFinishReason.CONTENT_FILTER,
+		);
+		expect(getUnifiedFinishReason("content_filter", "novita")).toBe(
+			UnifiedFinishReason.CONTENT_FILTER,
+		);
+	});
+
+	it("maps llmgateway_content_filter to CONTENT_FILTER", () => {
+		expect(
+			getUnifiedFinishReason("llmgateway_content_filter", "any-provider"),
+		).toBe(UnifiedFinishReason.CONTENT_FILTER);
+		expect(getUnifiedFinishReason("llmgateway_content_filter", "openai")).toBe(
+			UnifiedFinishReason.CONTENT_FILTER,
+		);
+	});
+});
+
+describe("isExpectedUnknownFinishReason", () => {
+	it("returns true for Google OTHER finish reason", () => {
+		expect(isExpectedUnknownFinishReason("OTHER", "google-ai-studio")).toBe(
+			true,
+		);
+		expect(isExpectedUnknownFinishReason("OTHER", "glacier")).toBe(true);
+		expect(isExpectedUnknownFinishReason("OTHER", "google-vertex")).toBe(true);
+	});
+
+	it("returns true for Google MALFORMED_RESPONSE finish reason", () => {
+		expect(
+			isExpectedUnknownFinishReason("MALFORMED_RESPONSE", "google-ai-studio"),
+		).toBe(true);
+		expect(isExpectedUnknownFinishReason("MALFORMED_RESPONSE", "glacier")).toBe(
+			true,
+		);
+		expect(
+			isExpectedUnknownFinishReason("MALFORMED_RESPONSE", "google-vertex"),
+		).toBe(true);
+	});
+
+	it("returns false for OTHER from other providers", () => {
+		expect(isExpectedUnknownFinishReason("OTHER", "openai")).toBe(false);
+		expect(isExpectedUnknownFinishReason("OTHER", "anthropic")).toBe(false);
+		expect(isExpectedUnknownFinishReason("MALFORMED_RESPONSE", "openai")).toBe(
+			false,
+		);
+	});
+
+	it("returns false for other finish reasons from Google", () => {
+		expect(isExpectedUnknownFinishReason("STOP", "google-ai-studio")).toBe(
+			false,
+		);
+		expect(isExpectedUnknownFinishReason("unknown", "google-ai-studio")).toBe(
+			false,
+		);
+	});
+
+	it("returns false for null or undefined finish reasons", () => {
+		expect(isExpectedUnknownFinishReason(null, "google-ai-studio")).toBe(false);
+		expect(isExpectedUnknownFinishReason(undefined, "google-ai-studio")).toBe(
+			false,
+		);
+	});
+});
+
+describe("isContentFilterFinishReason", () => {
+	it("returns true for Google-compatible image filter finish reasons", () => {
+		expect(
+			isContentFilterFinishReason("IMAGE_PROHIBITED_CONTENT", "glacier"),
+		).toBe(true);
+		expect(
+			isContentFilterFinishReason(
+				"IMAGE_PROHIBITED_CONTENT",
+				"google-ai-studio",
+			),
+		).toBe(true);
+	});
+
+	it("returns false for Google OTHER finish reason", () => {
+		expect(isContentFilterFinishReason("OTHER", "glacier")).toBe(false);
+	});
+
+	it("returns true for OpenAI content filters", () => {
+		expect(isContentFilterFinishReason("content_filter", "openai")).toBe(true);
+	});
+});
+
+describe("isLengthLimitFinishReason", () => {
+	it("returns true for Google MAX_TOKENS (e.g. tiny max_tokens)", () => {
+		expect(isLengthLimitFinishReason("MAX_TOKENS", "google-ai-studio")).toBe(
+			true,
+		);
+		expect(isLengthLimitFinishReason("MAX_TOKENS", "google-vertex")).toBe(true);
+	});
+
+	it("returns true for OpenAI length finish reason", () => {
+		expect(isLengthLimitFinishReason("length", "openai")).toBe(true);
+	});
+
+	it("returns true for Anthropic max_tokens finish reason", () => {
+		expect(isLengthLimitFinishReason("max_tokens", "anthropic")).toBe(true);
+	});
+
+	it("returns false for normal stop finish reasons", () => {
+		expect(isLengthLimitFinishReason("STOP", "google-ai-studio")).toBe(false);
+		expect(isLengthLimitFinishReason("stop", "openai")).toBe(false);
+		expect(isLengthLimitFinishReason(null, "openai")).toBe(false);
+	});
+});
+
+describe("calculateDataStorageCost", () => {
+	it("calculates cost based on total tokens", () => {
+		// 1M tokens = $0.01 (formula: totalTokens / 1_000_000 * 0.01)
+		const cost = calculateDataStorageCost(500000, 0, 500000, 0);
+		expect(cost).toBe("0.01"); // 1M tokens * $0.01 per 1M = $0.01
+	});
+
+	it("does not double-count cached tokens when promptTokens already includes them", () => {
+		// promptTokens is the canonical input count in gateway logs.
+		// cachedTokens is tracked separately for pricing and diagnostics, but should
+		// not increase storage accounting a second time.
+		const cost = calculateDataStorageCost(500000, 250000, 250000, 250000);
+		expect(cost).toBe("0.01"); // 1M tokens * $0.01 per 1M = $0.01
+	});
+
+	it("returns zero when retention level is none", () => {
+		const cost = calculateDataStorageCost(1000000, 0, 1000000, 0, "none");
+		expect(cost).toBe("0");
+	});
+
+	it("calculates cost when retention level is retain", () => {
+		const cost = calculateDataStorageCost(500000, 0, 500000, 0, "retain");
+		expect(cost).toBe("0.01");
+	});
+
+	it("calculates cost when retention level is null", () => {
+		const cost = calculateDataStorageCost(500000, 0, 500000, 0, null);
+		expect(cost).toBe("0.01");
+	});
+
+	it("calculates cost when retention level is undefined", () => {
+		const cost = calculateDataStorageCost(500000, 0, 500000, 0, undefined);
+		expect(cost).toBe("0.01");
+	});
+
+	it("handles null and undefined token values", () => {
+		const cost = calculateDataStorageCost(null, undefined, null, undefined);
+		expect(cost).toBe("0");
+	});
+
+	it("handles string token values", () => {
+		const cost = calculateDataStorageCost("500000", "0", "500000", "0");
+		expect(cost).toBe("0.01");
+	});
+});

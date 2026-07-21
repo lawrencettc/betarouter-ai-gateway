@@ -1,0 +1,302 @@
+import { HTTPException } from "hono/http-exception";
+
+import { validateModelOutput } from "@/lib/validate-model-output.js";
+
+import { logger } from "@llmgateway/logger";
+
+import type {
+	ModelDefinition,
+	Provider,
+	ProviderModelMapping,
+	WebSearchTool,
+} from "@llmgateway/models";
+
+export interface ValidateModelCapabilitiesOptions {
+	response_format?: {
+		type: "text" | "json_object" | "json_schema";
+	};
+	reasoning_effort?: string;
+	reasoning_max_tokens?: number;
+	verbosity?: string;
+	tools?: unknown[];
+	tool_choice?: unknown;
+	webSearchTool?: WebSearchTool;
+	hasImages?: boolean;
+	hasDocuments?: boolean;
+}
+
+/**
+ * Validates that a model supports the requested capabilities.
+ *
+ * Checks JSON output, JSON schema output, reasoning, tools, and web search capabilities.
+ * For "auto" and "custom" models, these checks are skipped as capabilities will be resolved dynamically.
+ *
+ * @throws HTTPException if the model doesn't support a requested capability
+ */
+export function validateModelCapabilities(
+	modelInfo: ModelDefinition,
+	requestedModel: string,
+	requestedProvider: Provider | undefined,
+	options: ValidateModelCapabilitiesOptions,
+): void {
+	const {
+		response_format,
+		reasoning_effort,
+		reasoning_max_tokens,
+		verbosity,
+		tools,
+		tool_choice,
+		webSearchTool,
+		hasImages,
+		hasDocuments,
+	} = options;
+
+	// Custom providers have no catalog entry, so the gateway cannot know which
+	// capabilities they support. Skip all capability validation and let the
+	// upstream provider reject anything it doesn't support.
+	if (requestedProvider === "custom") {
+		return;
+	}
+
+	// Chat completions serve text and image output (image generation is routed
+	// through this endpoint). Any model that only produces embeddings, OCR,
+	// video, or audio belongs to a dedicated endpoint and is rejected here with
+	// a pointer to the right one.
+	validateModelOutput(modelInfo, requestedModel, ["text", "image"]);
+
+	// Validate vision capability when the request contains images.
+	// Skip this check for "auto" and "custom" models as they will be resolved dynamically.
+	if (hasImages && requestedModel !== "auto" && requestedModel !== "custom") {
+		const providersToCheck = requestedProvider
+			? modelInfo.providers.filter(
+					(p) => (p as ProviderModelMapping).providerId === requestedProvider,
+				)
+			: modelInfo.providers;
+
+		const supportsVision = providersToCheck.some(
+			(provider) => (provider as ProviderModelMapping).vision === true,
+		);
+
+		if (!supportsVision) {
+			throw new HTTPException(400, {
+				message: requestedProvider
+					? `Provider ${requestedProvider} does not support image input for model ${requestedModel}. Remove the image content or use a vision-capable model.`
+					: `Model ${requestedModel} does not support image input. Remove the image content or use a vision-capable model.`,
+			});
+		}
+	}
+
+	// Validate document capability when the request contains `file` content blocks.
+	// Skip for "auto" and "custom" models (router/transform handle dynamic resolution).
+	if (
+		hasDocuments &&
+		requestedModel !== "auto" &&
+		requestedModel !== "custom"
+	) {
+		const providersToCheck = requestedProvider
+			? modelInfo.providers.filter(
+					(p) => (p as ProviderModelMapping).providerId === requestedProvider,
+				)
+			: modelInfo.providers;
+
+		const supportsDocuments = providersToCheck.some(
+			(provider) => (provider as ProviderModelMapping).document === true,
+		);
+
+		if (!supportsDocuments) {
+			throw new HTTPException(400, {
+				message: requestedProvider
+					? `Provider ${requestedProvider} does not support document input for model ${requestedModel}. Remove the file content or use a document-capable model.`
+					: `Model ${requestedModel} does not support document input. Remove the file content or use a document-capable model.`,
+			});
+		}
+	}
+
+	// Validate JSON object output capability
+	if (response_format?.type === "json_object") {
+		const providersToCheck = requestedProvider
+			? modelInfo.providers.filter(
+					(p) => (p as ProviderModelMapping).providerId === requestedProvider,
+				)
+			: modelInfo.providers;
+
+		const supportsJsonOutput = providersToCheck.some(
+			(provider) => (provider as ProviderModelMapping).jsonOutput === true,
+		);
+
+		if (!supportsJsonOutput) {
+			throw new HTTPException(400, {
+				message: `Model ${requestedModel} does not support JSON output mode`,
+			});
+		}
+	}
+
+	// Validate JSON schema output capability
+	if (response_format?.type === "json_schema") {
+		const providersToCheck = requestedProvider
+			? modelInfo.providers.filter(
+					(p) => (p as ProviderModelMapping).providerId === requestedProvider,
+				)
+			: modelInfo.providers;
+
+		// For non-auto/custom models, check if the provider supports json_schema
+		if (requestedModel !== "auto" && requestedModel !== "custom") {
+			const supportsJsonSchema = providersToCheck.some(
+				(provider) =>
+					(provider as ProviderModelMapping).jsonOutputSchema === true,
+			);
+
+			if (!supportsJsonSchema) {
+				throw new HTTPException(400, {
+					message: `Model ${requestedModel} does not support JSON schema output mode`,
+				});
+			}
+		}
+	}
+
+	// Check if reasoning_effort is specified but model doesn't support reasoning
+	// Skip this check for "auto" and "custom" models as they will be resolved dynamically
+	if (
+		reasoning_effort !== undefined &&
+		requestedModel !== "auto" &&
+		requestedModel !== "custom"
+	) {
+		const providersToCheck = requestedProvider
+			? modelInfo.providers.filter(
+					(p) => (p as ProviderModelMapping).providerId === requestedProvider,
+				)
+			: modelInfo.providers;
+
+		const supportsReasoning = providersToCheck.some(
+			(provider) => (provider as ProviderModelMapping).reasoning === true,
+		);
+
+		if (!supportsReasoning) {
+			logger.warn(
+				`Reasoning effort specified for non-reasoning model: ${requestedModel}`,
+				{
+					requestedModel,
+					requestedProvider,
+					reasoning_effort,
+					modelProviders: modelInfo.providers.map((p) => ({
+						providerId: p.providerId,
+						reasoning: (p as ProviderModelMapping).reasoning,
+					})),
+				},
+			);
+
+			throw new HTTPException(400, {
+				message: `Model ${requestedModel} does not support reasoning. Remove the reasoning_effort parameter or use a reasoning-capable model.`,
+			});
+		}
+	}
+
+	// Check if verbosity is specified but model doesn't support it
+	// Skip this check for "auto" and "custom" models as they will be resolved dynamically
+	if (
+		verbosity !== undefined &&
+		requestedModel !== "auto" &&
+		requestedModel !== "custom"
+	) {
+		const providersToCheck = requestedProvider
+			? modelInfo.providers.filter(
+					(p) => (p as ProviderModelMapping).providerId === requestedProvider,
+				)
+			: modelInfo.providers;
+
+		const supportsVerbosity = providersToCheck.some(
+			(provider) => (provider as ProviderModelMapping).verbosity === true,
+		);
+
+		if (!supportsVerbosity) {
+			throw new HTTPException(400, {
+				message: `Model ${requestedModel} does not support the verbosity parameter. Remove the verbosity parameter or use a model that supports it (OpenAI GPT-5 and later).`,
+			});
+		}
+	}
+
+	// Check if reasoning.max_tokens is specified but model doesn't support it
+	// Skip this check for "auto" and "custom" models as they will be resolved dynamically
+	if (
+		reasoning_max_tokens !== undefined &&
+		requestedModel !== "auto" &&
+		requestedModel !== "custom"
+	) {
+		const providersToCheck = requestedProvider
+			? modelInfo.providers.filter(
+					(p) => (p as ProviderModelMapping).providerId === requestedProvider,
+				)
+			: modelInfo.providers;
+
+		const reasoningMaxTokens = providersToCheck.some(
+			(provider) =>
+				(provider as ProviderModelMapping).reasoningMaxTokens === true,
+		);
+
+		if (!reasoningMaxTokens) {
+			logger.warn(
+				`reasoning.max_tokens specified for model that doesn't support it: ${requestedModel}`,
+				{
+					requestedModel,
+					requestedProvider,
+					reasoning_max_tokens,
+					modelProviders: modelInfo.providers.map((p) => ({
+						providerId: p.providerId,
+						reasoningMaxTokens: (p as ProviderModelMapping).reasoningMaxTokens,
+					})),
+				},
+			);
+
+			throw new HTTPException(400, {
+				message: `Model ${requestedModel} does not support reasoning.max_tokens. Remove the reasoning.max_tokens parameter or use a model that supports explicit reasoning token budgets (Anthropic or Google thinking models).`,
+			});
+		}
+	}
+
+	// Check if tools are specified but model doesn't support them
+	// Skip this check for "auto" and "custom" models as they will be resolved dynamically
+	if (
+		(tools !== undefined || tool_choice !== undefined) &&
+		requestedModel !== "auto" &&
+		requestedModel !== "custom"
+	) {
+		const providersToCheck = requestedProvider
+			? modelInfo.providers.filter(
+					(p) => (p as ProviderModelMapping).providerId === requestedProvider,
+				)
+			: modelInfo.providers;
+
+		const supportsTools = providersToCheck.some(
+			(provider) => (provider as ProviderModelMapping).tools === true,
+		);
+
+		const supportsWebSearch = providersToCheck.some(
+			(provider) => (provider as ProviderModelMapping).webSearch === true,
+		);
+
+		// Determine if we have function tools (web_search tools were already extracted earlier)
+		// After extraction, `tools` only contains function tools
+		const hasFunctionTools = tools && tools.length > 0;
+
+		// The request is web-search-only if:
+		// 1. A web search tool was extracted (webSearchTool is set)
+		// 2. No function tools remain in the tools array
+		const isWebSearchOnly = webSearchTool !== undefined && !hasFunctionTools;
+
+		// Allow the request if:
+		// 1. Model supports regular tools, OR
+		// 2. Model supports web search AND request only uses web search (no function tools)
+		if (!supportsTools && !(supportsWebSearch && isWebSearchOnly)) {
+			throw new HTTPException(400, {
+				message: `Model ${requestedModel} does not support tool calls. Remove the tools/tool_choice parameter or use a tool-capable model.`,
+			});
+		}
+
+		// If web_search tool is specifically requested, ensure the model supports it
+		if (webSearchTool && !supportsWebSearch) {
+			throw new HTTPException(400, {
+				message: `Model ${requestedModel} does not support native web search. Remove the web_search tool or use a model that supports it. See https://llmgateway.io/models?features=webSearch for supported models.`,
+			});
+		}
+	}
+}

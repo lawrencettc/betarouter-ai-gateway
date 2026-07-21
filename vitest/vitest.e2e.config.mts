@@ -1,0 +1,26 @@
+import tsconfigPaths from "vite-tsconfig-paths";
+import { defineConfig } from "vitest/config";
+
+export default defineConfig({
+	plugins: [tsconfigPaths()],
+	test: {
+		include: ["**/*.e2e.ts"],
+		exclude: ["**/node_modules/**", "**/dist/**", ".conductor/**"],
+		environment: "node",
+		testTimeout: 120000, // Longer timeout for e2e tests
+		hookTimeout: 60000, // Timeout for hooks
+		setupFiles: [
+			"./vitest/test-database-setup.ts",
+			"./vitest/e2e-setup.ts",
+		],
+		reporters: ["default"],
+		coverage: {
+			reporter: ["text", "json", "html"],
+			exclude: ["**/node_modules/**", "**/dist/**"],
+		},
+		// Configure parallel execution with pool of 16 threads
+		pool: "threads",
+		maxWorkers: 16,
+		minWorkers: 8,
+	},
+});

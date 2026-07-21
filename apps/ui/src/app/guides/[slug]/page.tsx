@@ -1,0 +1,197 @@
+import { ArrowLeftIcon } from "lucide-react";
+import Markdown from "markdown-to-jsx";
+import Image from "next/image";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+
+import Footer from "@/components/landing/footer";
+import { HeroRSC } from "@/components/landing/hero-rsc";
+import { getMarkdownOptions } from "@/lib/utils/markdown";
+
+import { CopyMarkdownButton } from "./copy-markdown-button";
+
+import type { Guide } from "content-collections";
+import type { Metadata } from "next";
+
+interface GuidePageProps {
+	params: Promise<{ slug: string }>;
+}
+
+export default async function GuidePage({ params }: GuidePageProps) {
+	const { allGuides } = await import("content-collections");
+
+	const { slug } = await params;
+
+	const guide = allGuides.find((guide: Guide) => guide.slug === slug);
+
+	if (!guide) {
+		notFound();
+	}
+
+	const articleSchema = {
+		"@context": "https://schema.org",
+		"@type": "TechArticle",
+		headline: guide.title,
+		description: guide.description ?? "LLM Gateway integration guide",
+		datePublished: guide.date,
+		dateModified: guide.date,
+		author: {
+			"@type": "Organization",
+			name: "LLM Gateway",
+			url: "https://llmgateway.io",
+		},
+		publisher: {
+			"@type": "Organization",
+			name: "LLM Gateway",
+			url: "https://llmgateway.io",
+			logo: {
+				"@type": "ImageObject",
+				url: "https://llmgateway.io/favicon/android-chrome-512x512.png",
+			},
+		},
+		mainEntityOfPage: {
+			"@type": "WebPage",
+			"@id": `https://llmgateway.io/guides/${slug}`,
+		},
+		...(guide.image && {
+			image: {
+				"@type": "ImageObject",
+				url: guide.image.src.startsWith("http")
+					? guide.image.src
+					: `https://llmgateway.io${guide.image.src}`,
+				width: guide.image.width,
+				height: guide.image.height,
+			},
+		}),
+	};
+
+	const breadcrumbSchema = {
+		"@context": "https://schema.org",
+		"@type": "BreadcrumbList",
+		itemListElement: [
+			{
+				"@type": "ListItem",
+				position: 1,
+				name: "Home",
+				item: "https://llmgateway.io",
+			},
+			{
+				"@type": "ListItem",
+				position: 2,
+				name: "Guides",
+				item: "https://llmgateway.io/guides",
+			},
+			{
+				"@type": "ListItem",
+				position: 3,
+				name: guide.title,
+				item: `https://llmgateway.io/guides/${slug}`,
+			},
+		],
+	};
+
+	return (
+		<>
+			<script
+				type="application/ld+json"
+				// eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
+				dangerouslySetInnerHTML={{
+					__html: JSON.stringify(articleSchema),
+				}}
+			/>
+			<script
+				type="application/ld+json"
+				// eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
+				dangerouslySetInnerHTML={{
+					__html: JSON.stringify(breadcrumbSchema),
+				}}
+			/>
+			<HeroRSC navbarOnly />
+			<div className="min-h-screen bg-white text-black dark:bg-black dark:text-white pt-30">
+				<main className="container mx-auto px-4 py-8">
+					<div className="max-w-4xl mx-auto">
+						<div className="mb-8 flex items-center justify-between">
+							<Link
+								href="/guides"
+								className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+							>
+								<ArrowLeftIcon className="mr-2 h-4 w-4" />
+								Back to guides
+							</Link>
+							<CopyMarkdownButton content={guide.content} />
+						</div>
+
+						<article className="prose prose-lg dark:prose-invert max-w-none">
+							<header className="mb-8">
+								<h1 className="text-4xl font-bold mb-4">{guide.title}</h1>
+								<div className="text-muted-foreground">
+									{guide.description && (
+										<p className="text-lg mb-2">{guide.description}</p>
+									)}
+								</div>
+							</header>
+
+							{guide.image && (
+								<div className="mb-8">
+									<Image
+										src={guide.image.src}
+										alt={guide.image.alt ?? guide.title}
+										width={guide.image.width}
+										height={guide.image.height}
+										className="w-full rounded-lg object-cover"
+									/>
+								</div>
+							)}
+
+							<div className="prose prose-lg dark:prose-invert max-w-none">
+								<Markdown options={getMarkdownOptions()}>
+									{guide.content}
+								</Markdown>
+							</div>
+						</article>
+					</div>
+				</main>
+				<Footer />
+			</div>
+		</>
+	);
+}
+
+export async function generateStaticParams() {
+	const { allGuides } = await import("content-collections");
+
+	return allGuides.map((guide: Guide) => ({
+		slug: guide.slug,
+	}));
+}
+
+export async function generateMetadata({
+	params,
+}: GuidePageProps): Promise<Metadata> {
+	const { allGuides } = await import("content-collections");
+
+	const { slug } = await params;
+
+	const guide = allGuides.find((guide: Guide) => guide.slug === slug);
+
+	if (!guide) {
+		return {};
+	}
+
+	return {
+		title: `${guide.title} - Guides`,
+		description: guide.description ?? "LLM Gateway integration guide",
+		alternates: { canonical: `/guides/${guide.slug}` },
+		openGraph: {
+			title: `${guide.title} - Guides | LLM Gateway`,
+			description: guide.description ?? "LLM Gateway integration guide",
+			type: "article",
+			url: `https://llmgateway.io/guides/${guide.slug}`,
+		},
+		twitter: {
+			card: "summary_large_image",
+			title: `${guide.title} - Guides | LLM Gateway`,
+			description: guide.description ?? "LLM Gateway integration guide",
+		},
+	};
+}

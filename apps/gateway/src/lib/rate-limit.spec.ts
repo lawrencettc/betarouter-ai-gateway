@@ -1,0 +1,640 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { checkFreeModelRateLimit, isFreeModel } from "./rate-limit.js";
+
+// Mock dependencies
+vi.mock("@llmgateway/cache", () => ({
+	redisClient: {
+		zremrangebyscore: vi.fn(),
+		zcard: vi.fn(),
+		zrange: vi.fn(),
+		zadd: vi.fn(),
+		expire: vi.fn(),
+	},
+}));
+
+vi.mock("@llmgateway/logger", () => ({
+	logger: {
+		info: vi.fn(),
+		debug: vi.fn(),
+		error: vi.fn(),
+	},
+}));
+
+// Mock the cached queries module
+vi.mock("@/lib/cached-queries.js", () => ({
+	findOrganizationById: vi.fn(),
+}));
+
+const mockCache = await import("@llmgateway/cache");
+const mockCachedQueries = await import("@/lib/cached-queries.js");
+const redis = mockCache.redisClient;
+
+describe("Rate Limiting", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	describe("isFreeModel", () => {
+		it("should return true for free models", () => {
+			const freeModel = { free: true };
+			expect(isFreeModel(freeModel)).toBe(true);
+		});
+
+		it("should return false for non-free models", () => {
+			const paidModel = { free: false };
+			expect(isFreeModel(paidModel)).toBe(false);
+		});
+
+		it("should return false for models without free property", () => {
+			const model = {};
+			expect(isFreeModel(model)).toBe(false);
+		});
+	});
+
+	describe("checkFreeModelRateLimit", () => {
+		const organizationId = "test-org-id";
+		const model = "test-model";
+
+		it("should allow non-free models without rate limiting", async () => {
+			const modelDefinition = { free: false };
+
+			const result = await checkFreeModelRateLimit(
+				organizationId,
+				model,
+				modelDefinition,
+			);
+
+			expect(result.allowed).toBe(true);
+			expect(result.retryAfter).toBeUndefined();
+		});
+
+		it("should apply base rate limits for orgs with 0 credits", async () => {
+			const modelDefinition = { free: true };
+
+			vi.mocked(mockCachedQueries.findOrganizationById).mockResolvedValue({
+				id: "org-1",
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				name: "Test Org",
+				billingEmail: "test@example.com",
+				billingCompany: null,
+				billingAddress: null,
+				billingTaxId: null,
+				billingNotes: null,
+				stripeCustomerId: null,
+				stripeSubscriptionId: null,
+				credits: "0",
+				autoTopUpEnabled: false,
+				autoTopUpThreshold: "10",
+				autoTopUpAmount: "10",
+				plan: "free" as const,
+				planExpiresAt: null,
+				seats: null,
+				apiKeyLimit: null,
+				subscriptionCancelled: false,
+				trialStartDate: null,
+				trialEndDate: null,
+				isTrialActive: false,
+				retentionLevel: "retain" as const,
+				providerCompliancePolicy: null,
+				ssoAutoJoinDomain: null,
+				status: "active" as const,
+				referralEarnings: "0",
+				referralBonusEnabled: false,
+				referralBonusPercent: "50",
+				paymentFailureCount: 0,
+				lastPaymentFailureAt: null,
+				paymentFailureStartedAt: null,
+				kind: "default",
+				devPlan: "none" as const,
+				devPlanPendingTier: null,
+				devPlanCreditsUsed: "0",
+				devPlanCreditsLimit: "0",
+				devPlanPremiumCreditsUsed: "0",
+				devPlanPremiumWeekStart: null,
+				devPlanResetPassesLite: 0,
+				devPlanResetPassesPro: 0,
+				devPlanResetPassesMax: 0,
+				devPlanIncludedResetPassesUsed: 0,
+				devPlanCreditsFrozen: false,
+				devPlanCreditsLimitBeforeFreeze: null,
+				devPlanBillingCycleStart: null,
+				devPlanTierChangeClaimedAt: null,
+				devPlanStripeSubscriptionId: null,
+				devPlanCancelled: false,
+				devPlanExpiresAt: null,
+				devPlanCycle: "monthly" as const,
+				devPlanServiceTier: "default" as const,
+				devPlanBillingOverride: false,
+				devPlanCardFingerprint: null,
+				chatPlan: "none" as const,
+				chatPlanCreditsUsed: "0",
+				chatPlanCreditsLimit: "0",
+				chatPlanBillingCycleStart: null,
+				chatPlanStripeSubscriptionId: null,
+				chatPlanCancelled: false,
+				chatPlanExpiresAt: null,
+				chatPlanCycle: "monthly" as const,
+				chatPlanCardFingerprint: null,
+				lastTopUpAmount: null,
+				endUserMarginBalance: "0",
+				stripeConnectAccountId: null,
+				stripeConnectOnboarded: false,
+				defaultDeveloperMaxApiKeys: null,
+				defaultDeveloperUsageLimit: null,
+				defaultDeveloperPeriodUsageLimit: null,
+				defaultDeveloperPeriodUsageDurationValue: null,
+				defaultDeveloperPeriodUsageDurationUnit: null,
+			});
+
+			vi.mocked(redis.zcard).mockResolvedValue(0);
+
+			const result = await checkFreeModelRateLimit(
+				organizationId,
+				model,
+				modelDefinition,
+			);
+
+			expect(result.allowed).toBe(true);
+			expect(redis.zremrangebyscore).toHaveBeenCalled();
+			expect(redis.zadd).toHaveBeenCalled();
+			expect(redis.expire).toHaveBeenCalled();
+		});
+
+		it("should use a unique sorted-set member per request", async () => {
+			const modelDefinition = { free: true };
+			const now = 1_700_000_000_000;
+			const dateNowSpy = vi.spyOn(Date, "now").mockReturnValue(now);
+
+			vi.mocked(mockCachedQueries.findOrganizationById).mockResolvedValue({
+				id: "org-1",
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				name: "Test Org",
+				billingEmail: "test@example.com",
+				billingCompany: null,
+				billingAddress: null,
+				billingTaxId: null,
+				billingNotes: null,
+				stripeCustomerId: null,
+				stripeSubscriptionId: null,
+				credits: "0",
+				autoTopUpEnabled: false,
+				autoTopUpThreshold: "10",
+				autoTopUpAmount: "10",
+				plan: "free" as const,
+				planExpiresAt: null,
+				seats: null,
+				apiKeyLimit: null,
+				subscriptionCancelled: false,
+				trialStartDate: null,
+				trialEndDate: null,
+				isTrialActive: false,
+				retentionLevel: "retain" as const,
+				providerCompliancePolicy: null,
+				ssoAutoJoinDomain: null,
+				status: "active" as const,
+				referralEarnings: "0",
+				referralBonusEnabled: false,
+				referralBonusPercent: "50",
+				paymentFailureCount: 0,
+				lastPaymentFailureAt: null,
+				paymentFailureStartedAt: null,
+				kind: "default",
+				devPlan: "none" as const,
+				devPlanPendingTier: null,
+				devPlanCreditsUsed: "0",
+				devPlanCreditsLimit: "0",
+				devPlanPremiumCreditsUsed: "0",
+				devPlanPremiumWeekStart: null,
+				devPlanResetPassesLite: 0,
+				devPlanResetPassesPro: 0,
+				devPlanResetPassesMax: 0,
+				devPlanIncludedResetPassesUsed: 0,
+				devPlanCreditsFrozen: false,
+				devPlanCreditsLimitBeforeFreeze: null,
+				devPlanBillingCycleStart: null,
+				devPlanTierChangeClaimedAt: null,
+				devPlanStripeSubscriptionId: null,
+				devPlanCancelled: false,
+				devPlanExpiresAt: null,
+				devPlanCycle: "monthly" as const,
+				devPlanServiceTier: "default" as const,
+				devPlanBillingOverride: false,
+				devPlanCardFingerprint: null,
+				chatPlan: "none" as const,
+				chatPlanCreditsUsed: "0",
+				chatPlanCreditsLimit: "0",
+				chatPlanBillingCycleStart: null,
+				chatPlanStripeSubscriptionId: null,
+				chatPlanCancelled: false,
+				chatPlanExpiresAt: null,
+				chatPlanCycle: "monthly" as const,
+				chatPlanCardFingerprint: null,
+				lastTopUpAmount: null,
+				endUserMarginBalance: "0",
+				stripeConnectAccountId: null,
+				stripeConnectOnboarded: false,
+				defaultDeveloperMaxApiKeys: null,
+				defaultDeveloperUsageLimit: null,
+				defaultDeveloperPeriodUsageLimit: null,
+				defaultDeveloperPeriodUsageDurationValue: null,
+				defaultDeveloperPeriodUsageDurationUnit: null,
+			});
+			vi.mocked(redis.zcard).mockResolvedValue(0);
+
+			try {
+				await checkFreeModelRateLimit(organizationId, model, modelDefinition);
+
+				expect(redis.zadd).toHaveBeenCalledOnce();
+				const zaddArgs = vi.mocked(redis.zadd).mock.calls[0];
+				expect(zaddArgs[0]).toBe(
+					`rate_limit:free_model:${organizationId}:${model}`,
+				);
+				expect(zaddArgs[1]).toBe(now);
+				expect(zaddArgs[2]).toMatch(new RegExp(`^${now}:`));
+				expect(zaddArgs[2]).not.toBe(now.toString());
+			} finally {
+				dateNowSpy.mockRestore();
+			}
+		});
+
+		it("should apply elevated rate limits for orgs with credits > 0", async () => {
+			const modelDefinition = { free: true };
+
+			vi.mocked(mockCachedQueries.findOrganizationById).mockResolvedValue({
+				id: "org-1",
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				name: "Test Org",
+				billingEmail: "test@example.com",
+				billingCompany: null,
+				billingAddress: null,
+				billingTaxId: null,
+				billingNotes: null,
+				stripeCustomerId: null,
+				stripeSubscriptionId: null,
+				credits: "10.50",
+				autoTopUpEnabled: false,
+				autoTopUpThreshold: "10",
+				autoTopUpAmount: "10",
+				plan: "free" as const,
+				planExpiresAt: null,
+				seats: null,
+				apiKeyLimit: null,
+				subscriptionCancelled: false,
+				trialStartDate: null,
+				trialEndDate: null,
+				isTrialActive: false,
+				retentionLevel: "retain" as const,
+				providerCompliancePolicy: null,
+				ssoAutoJoinDomain: null,
+				status: "active" as const,
+				referralEarnings: "0",
+				referralBonusEnabled: false,
+				referralBonusPercent: "50",
+				paymentFailureCount: 0,
+				lastPaymentFailureAt: null,
+				paymentFailureStartedAt: null,
+				kind: "default",
+				devPlan: "none" as const,
+				devPlanPendingTier: null,
+				devPlanCreditsUsed: "0",
+				devPlanCreditsLimit: "0",
+				devPlanPremiumCreditsUsed: "0",
+				devPlanPremiumWeekStart: null,
+				devPlanResetPassesLite: 0,
+				devPlanResetPassesPro: 0,
+				devPlanResetPassesMax: 0,
+				devPlanIncludedResetPassesUsed: 0,
+				devPlanCreditsFrozen: false,
+				devPlanCreditsLimitBeforeFreeze: null,
+				devPlanBillingCycleStart: null,
+				devPlanTierChangeClaimedAt: null,
+				devPlanStripeSubscriptionId: null,
+				devPlanCancelled: false,
+				devPlanExpiresAt: null,
+				devPlanCycle: "monthly" as const,
+				devPlanServiceTier: "default" as const,
+				devPlanBillingOverride: false,
+				devPlanCardFingerprint: null,
+				chatPlan: "none" as const,
+				chatPlanCreditsUsed: "0",
+				chatPlanCreditsLimit: "0",
+				chatPlanBillingCycleStart: null,
+				chatPlanStripeSubscriptionId: null,
+				chatPlanCancelled: false,
+				chatPlanExpiresAt: null,
+				chatPlanCycle: "monthly" as const,
+				chatPlanCardFingerprint: null,
+				lastTopUpAmount: null,
+				endUserMarginBalance: "0",
+				stripeConnectAccountId: null,
+				stripeConnectOnboarded: false,
+				defaultDeveloperMaxApiKeys: null,
+				defaultDeveloperUsageLimit: null,
+				defaultDeveloperPeriodUsageLimit: null,
+				defaultDeveloperPeriodUsageDurationValue: null,
+				defaultDeveloperPeriodUsageDurationUnit: null,
+			});
+
+			vi.mocked(redis.zcard).mockResolvedValue(5); // Under elevated limit (20)
+
+			const result = await checkFreeModelRateLimit(
+				organizationId,
+				model,
+				modelDefinition,
+			);
+
+			expect(result.allowed).toBe(true);
+		});
+
+		it("should block requests when base rate limit is exceeded", async () => {
+			const modelDefinition = { free: true };
+
+			vi.mocked(mockCachedQueries.findOrganizationById).mockResolvedValue({
+				id: "org-1",
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				name: "Test Org",
+				billingEmail: "test@example.com",
+				billingCompany: null,
+				billingAddress: null,
+				billingTaxId: null,
+				billingNotes: null,
+				stripeCustomerId: null,
+				stripeSubscriptionId: null,
+				credits: "0",
+				autoTopUpEnabled: false,
+				autoTopUpThreshold: "10",
+				autoTopUpAmount: "10",
+				plan: "free" as const,
+				planExpiresAt: null,
+				seats: null,
+				apiKeyLimit: null,
+				subscriptionCancelled: false,
+				trialStartDate: null,
+				trialEndDate: null,
+				isTrialActive: false,
+				retentionLevel: "retain" as const,
+				providerCompliancePolicy: null,
+				ssoAutoJoinDomain: null,
+				status: "active" as const,
+				referralEarnings: "0",
+				referralBonusEnabled: false,
+				referralBonusPercent: "50",
+				paymentFailureCount: 0,
+				lastPaymentFailureAt: null,
+				paymentFailureStartedAt: null,
+				kind: "default",
+				devPlan: "none" as const,
+				devPlanPendingTier: null,
+				devPlanCreditsUsed: "0",
+				devPlanCreditsLimit: "0",
+				devPlanPremiumCreditsUsed: "0",
+				devPlanPremiumWeekStart: null,
+				devPlanResetPassesLite: 0,
+				devPlanResetPassesPro: 0,
+				devPlanResetPassesMax: 0,
+				devPlanIncludedResetPassesUsed: 0,
+				devPlanCreditsFrozen: false,
+				devPlanCreditsLimitBeforeFreeze: null,
+				devPlanBillingCycleStart: null,
+				devPlanTierChangeClaimedAt: null,
+				devPlanStripeSubscriptionId: null,
+				devPlanCancelled: false,
+				devPlanExpiresAt: null,
+				devPlanCycle: "monthly" as const,
+				devPlanServiceTier: "default" as const,
+				devPlanBillingOverride: false,
+				devPlanCardFingerprint: null,
+				chatPlan: "none" as const,
+				chatPlanCreditsUsed: "0",
+				chatPlanCreditsLimit: "0",
+				chatPlanBillingCycleStart: null,
+				chatPlanStripeSubscriptionId: null,
+				chatPlanCancelled: false,
+				chatPlanExpiresAt: null,
+				chatPlanCycle: "monthly" as const,
+				chatPlanCardFingerprint: null,
+				lastTopUpAmount: null,
+				endUserMarginBalance: "0",
+				stripeConnectAccountId: null,
+				stripeConnectOnboarded: false,
+				defaultDeveloperMaxApiKeys: null,
+				defaultDeveloperUsageLimit: null,
+				defaultDeveloperPeriodUsageLimit: null,
+				defaultDeveloperPeriodUsageDurationValue: null,
+				defaultDeveloperPeriodUsageDurationUnit: null,
+			});
+
+			vi.mocked(redis.zcard).mockResolvedValue(5); // At limit (5)
+			const futureTimestamp = Date.now() + 30000; // 30 seconds in future
+			vi.mocked(redis.zrange).mockResolvedValue([
+				"123",
+				futureTimestamp.toString(),
+			]);
+
+			const result = await checkFreeModelRateLimit(
+				organizationId,
+				model,
+				modelDefinition,
+			);
+
+			expect(result.allowed).toBe(false);
+			expect(result.retryAfter).toBeGreaterThan(0);
+			expect(result.remaining).toBe(0);
+			expect(result.limit).toBe(5);
+		});
+
+		it("should block requests when elevated rate limit is exceeded", async () => {
+			const modelDefinition = { free: true };
+
+			vi.mocked(mockCachedQueries.findOrganizationById).mockResolvedValue({
+				id: "org-1",
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				name: "Test Org",
+				billingEmail: "test@example.com",
+				billingCompany: null,
+				billingAddress: null,
+				billingTaxId: null,
+				billingNotes: null,
+				stripeCustomerId: null,
+				stripeSubscriptionId: null,
+				credits: "10.50",
+				autoTopUpEnabled: false,
+				autoTopUpThreshold: "10",
+				autoTopUpAmount: "10",
+				plan: "free" as const,
+				planExpiresAt: null,
+				seats: null,
+				apiKeyLimit: null,
+				subscriptionCancelled: false,
+				trialStartDate: null,
+				trialEndDate: null,
+				isTrialActive: false,
+				retentionLevel: "retain" as const,
+				providerCompliancePolicy: null,
+				ssoAutoJoinDomain: null,
+				status: "active" as const,
+				referralEarnings: "0",
+				referralBonusEnabled: false,
+				referralBonusPercent: "50",
+				paymentFailureCount: 0,
+				lastPaymentFailureAt: null,
+				paymentFailureStartedAt: null,
+				kind: "default",
+				devPlan: "none" as const,
+				devPlanPendingTier: null,
+				devPlanCreditsUsed: "0",
+				devPlanCreditsLimit: "0",
+				devPlanPremiumCreditsUsed: "0",
+				devPlanPremiumWeekStart: null,
+				devPlanResetPassesLite: 0,
+				devPlanResetPassesPro: 0,
+				devPlanResetPassesMax: 0,
+				devPlanIncludedResetPassesUsed: 0,
+				devPlanCreditsFrozen: false,
+				devPlanCreditsLimitBeforeFreeze: null,
+				devPlanBillingCycleStart: null,
+				devPlanTierChangeClaimedAt: null,
+				devPlanStripeSubscriptionId: null,
+				devPlanCancelled: false,
+				devPlanExpiresAt: null,
+				devPlanCycle: "monthly" as const,
+				devPlanServiceTier: "default" as const,
+				devPlanBillingOverride: false,
+				devPlanCardFingerprint: null,
+				chatPlan: "none" as const,
+				chatPlanCreditsUsed: "0",
+				chatPlanCreditsLimit: "0",
+				chatPlanBillingCycleStart: null,
+				chatPlanStripeSubscriptionId: null,
+				chatPlanCancelled: false,
+				chatPlanExpiresAt: null,
+				chatPlanCycle: "monthly" as const,
+				chatPlanCardFingerprint: null,
+				lastTopUpAmount: null,
+				endUserMarginBalance: "0",
+				stripeConnectAccountId: null,
+				stripeConnectOnboarded: false,
+				defaultDeveloperMaxApiKeys: null,
+				defaultDeveloperUsageLimit: null,
+				defaultDeveloperPeriodUsageLimit: null,
+				defaultDeveloperPeriodUsageDurationValue: null,
+				defaultDeveloperPeriodUsageDurationUnit: null,
+			});
+
+			vi.mocked(redis.zcard).mockResolvedValue(20); // At elevated limit (20)
+			const futureTimestamp = Date.now() + 30000; // 30 seconds in future
+			vi.mocked(redis.zrange).mockResolvedValue([
+				"123",
+				futureTimestamp.toString(),
+			]);
+
+			const result = await checkFreeModelRateLimit(
+				organizationId,
+				model,
+				modelDefinition,
+			);
+
+			expect(result.allowed).toBe(false);
+			expect(result.retryAfter).toBeGreaterThan(0);
+			expect(result.remaining).toBe(0);
+			expect(result.limit).toBe(20);
+		});
+
+		it("should allow requests on Redis errors", async () => {
+			const modelDefinition = { free: true };
+
+			vi.mocked(mockCachedQueries.findOrganizationById).mockResolvedValue({
+				id: "org-1",
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				name: "Test Org",
+				billingEmail: "test@example.com",
+				billingCompany: null,
+				billingAddress: null,
+				billingTaxId: null,
+				billingNotes: null,
+				stripeCustomerId: null,
+				stripeSubscriptionId: null,
+				credits: "0",
+				autoTopUpEnabled: false,
+				autoTopUpThreshold: "10",
+				autoTopUpAmount: "10",
+				plan: "free" as const,
+				planExpiresAt: null,
+				seats: null,
+				apiKeyLimit: null,
+				subscriptionCancelled: false,
+				trialStartDate: null,
+				trialEndDate: null,
+				isTrialActive: false,
+				retentionLevel: "retain" as const,
+				providerCompliancePolicy: null,
+				ssoAutoJoinDomain: null,
+				status: "active" as const,
+				referralEarnings: "0",
+				referralBonusEnabled: false,
+				referralBonusPercent: "50",
+				paymentFailureCount: 0,
+				lastPaymentFailureAt: null,
+				paymentFailureStartedAt: null,
+				kind: "default",
+				devPlan: "none" as const,
+				devPlanPendingTier: null,
+				devPlanCreditsUsed: "0",
+				devPlanCreditsLimit: "0",
+				devPlanPremiumCreditsUsed: "0",
+				devPlanPremiumWeekStart: null,
+				devPlanResetPassesLite: 0,
+				devPlanResetPassesPro: 0,
+				devPlanResetPassesMax: 0,
+				devPlanIncludedResetPassesUsed: 0,
+				devPlanCreditsFrozen: false,
+				devPlanCreditsLimitBeforeFreeze: null,
+				devPlanBillingCycleStart: null,
+				devPlanTierChangeClaimedAt: null,
+				devPlanStripeSubscriptionId: null,
+				devPlanCancelled: false,
+				devPlanExpiresAt: null,
+				devPlanCycle: "monthly" as const,
+				devPlanServiceTier: "default" as const,
+				devPlanBillingOverride: false,
+				devPlanCardFingerprint: null,
+				chatPlan: "none" as const,
+				chatPlanCreditsUsed: "0",
+				chatPlanCreditsLimit: "0",
+				chatPlanBillingCycleStart: null,
+				chatPlanStripeSubscriptionId: null,
+				chatPlanCancelled: false,
+				chatPlanExpiresAt: null,
+				chatPlanCycle: "monthly" as const,
+				chatPlanCardFingerprint: null,
+				lastTopUpAmount: null,
+				endUserMarginBalance: "0",
+				stripeConnectAccountId: null,
+				stripeConnectOnboarded: false,
+				defaultDeveloperMaxApiKeys: null,
+				defaultDeveloperUsageLimit: null,
+				defaultDeveloperPeriodUsageLimit: null,
+				defaultDeveloperPeriodUsageDurationValue: null,
+				defaultDeveloperPeriodUsageDurationUnit: null,
+			});
+			vi.mocked(redis.zremrangebyscore).mockRejectedValue(
+				new Error("Redis error"),
+			);
+
+			const result = await checkFreeModelRateLimit(
+				organizationId,
+				model,
+				modelDefinition,
+			);
+
+			expect(result.allowed).toBe(true);
+		});
+	});
+});

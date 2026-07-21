@@ -1,0 +1,43 @@
+{
+	"$schema": "https://turbo.build/schema.json",
+	"remoteCache": {
+		"teamSlug": "ducktors",
+		"apiUrl": "https://trrc.ducktors.dev"
+	},
+	"dangerouslyDisablePackageManagerCheck": true,
+	"globalDependencies": [
+		".tool-versions",
+		".npmrc",
+		"turbo.json",
+		"package.json",
+		"pnpm-lock.yaml",
+		"tsconfig.json",
+		"pnpm-workspace.yaml"
+	],
+	"concurrency": "32",
+	"tasks": {
+		"build": {
+			"dependsOn": ["^build"],
+			"outputs": [
+				"dist/**",
+				".next/**",
+				".next-dev/**",
+				".vercel/**",
+				".output/**",
+				"out/**",
+				".source/**",
+				"openapi.json",
+				"**/src/lib/api/v1.d.ts"
+			]
+		},
+		"dev": {
+			"persistent": true,
+			"cache": false
+		},
+		"lint": {},
+		"format": {
+			"cache": false
+		},
+		"test": {}
+	}
+}

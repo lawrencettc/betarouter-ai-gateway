@@ -1,0 +1,31 @@
+{
+	"name": "@llmgateway/cache",
+	"version": "0.0.0",
+	"private": true,
+	"license": "SEE LICENSE IN ../../LICENSE",
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"files": [
+		"dist/"
+	],
+	"scripts": {
+		"build": "tsc && resolve-tspaths",
+		"dev": "tsc-watch --onSuccess 'resolve-tspaths'",
+		"format": "eslint --fix . && prettier --write .",
+		"lint": "eslint . && prettier --check ."
+	},
+	"dependencies": {
+		"@llmgateway/logger": "workspace:*",
+		"ioredis": "5.7.0"
+	},
+	"devDependencies": {
+		"@types/node": "^26.1.1"
+	}
+}

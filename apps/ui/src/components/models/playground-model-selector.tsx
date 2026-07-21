@@ -1,0 +1,597 @@
+"use client";
+
+import { AlertTriangle, Check, ChevronsUpDown, Filter } from "lucide-react";
+import * as React from "react";
+
+// import { Badge } from "@/lib/components/badge";
+import { Button } from "@/lib/components/button";
+import {
+	Command,
+	CommandEmpty,
+	CommandGroup,
+	CommandInput,
+	CommandItem,
+	CommandList,
+} from "@/lib/components/command";
+// import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/lib/components/hover-card";
+import { Label } from "@/lib/components/label";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/lib/components/popover";
+import { Separator } from "@/lib/components/separator";
+import { Switch } from "@/lib/components/switch";
+import { getProviderForModel } from "@/lib/model-utils";
+import { cn } from "@/lib/utils";
+
+import { getProviderIcon } from "@llmgateway/shared/components";
+
+import type {
+	ModelDefinition,
+	ProviderDefinition,
+	ProviderModelMapping,
+} from "@llmgateway/models";
+
+interface ModelSelectorProps {
+	models: ModelDefinition[];
+	providers: ProviderDefinition[];
+	value?: string;
+	onValueChange?: (value: string) => void;
+	placeholder?: string;
+	rootOnly?: boolean;
+	id?: string;
+}
+
+interface FilterState {
+	providers: string[];
+	capabilities: string[];
+	priceRange: "free" | "low" | "medium" | "high" | "all";
+}
+
+// helper to extract simple capability labels from a mapping
+function getMappingCapabilities(mapping?: ProviderModelMapping): string[] {
+	if (!mapping) {
+		return [];
+	}
+	const labels: string[] = [];
+	if (mapping.streaming) {
+		labels.push("Streaming");
+	}
+	if (mapping.vision) {
+		labels.push("Vision");
+	}
+	if (mapping.tools) {
+		labels.push("Tools");
+	}
+	if ((mapping as any).reasoning) {
+		labels.push("Reasoning");
+	}
+	return labels;
+}
+
+export function ModelSelector({
+	models,
+	providers,
+	value,
+	onValueChange,
+	placeholder = "Select model...",
+	rootOnly,
+	id,
+}: ModelSelectorProps) {
+	const [open, setOpen] = React.useState(false);
+	const [filterOpen, setFilterOpen] = React.useState(false);
+	const [searchQuery, setSearchQuery] = React.useState("");
+	const [filters, setFilters] = React.useState<FilterState>({
+		providers: [],
+		capabilities: [],
+		priceRange: "all",
+	});
+
+	// Parse value as provider/model-id (preferred). Fallback to model id only.
+	// Supports region suffix: "alibaba/deepseek-v3.2:cn-beijing" or
+	// "aws-bedrock/claude-haiku-4-5:global". The region is the substring after
+	// the last ":" (model.id never contains ":"; upstream modelNames may).
+	const raw = value ?? "";
+	const [selectedProviderId, selectedModelIdRaw] = raw.includes("/")
+		? (raw.split("/") as [string, string])
+		: ["", raw];
+	const lastColonIdx = selectedModelIdRaw.lastIndexOf(":");
+	const selectedRegion =
+		lastColonIdx > -1 ? selectedModelIdRaw.slice(lastColonIdx + 1) : undefined;
+	const selectedModelId =
+		lastColonIdx > -1
+			? selectedModelIdRaw.slice(0, lastColonIdx)
+			: selectedModelIdRaw;
+	const selectedModel = models.find((m) => m.id === selectedModelId);
+	const selectedProviderDef = providers.find(
+		(p) => p.id === selectedProviderId,
+	);
+	// Strict (providerId, region) match — no loose fallbacks that would pick
+	// the first regional variant when no region was requested.
+	const selectedMapping = selectedRegion
+		? selectedModel?.providers.find(
+				(p) =>
+					p.providerId === selectedProviderId && p.region === selectedRegion,
+			)
+		: selectedModel?.providers.find(
+				(p) => p.providerId === selectedProviderId && !p.region,
+			);
+	const selectedEntryKey =
+		selectedModel && selectedProviderId && selectedMapping
+			? `${selectedProviderId}-${selectedModel.id}-${selectedMapping.region ?? ""}`
+			: "";
+
+	// Build entries of model per provider mapping
+	const allEntries = React.useMemo(() => {
+		const out: {
+			model: ModelDefinition;
+			mapping: ProviderModelMapping;
+			provider?: ProviderDefinition;
+		}[] = [];
+		const now = new Date();
+		for (const m of models) {
+			if (m.id === "custom") {
+				continue;
+			}
+			if (rootOnly) {
+				const activeProviders = m.providers.filter(
+					(mp) => !mp.deactivatedAt || new Date(mp.deactivatedAt) > now,
+				);
+				const stableProviders = activeProviders.filter(
+					(mp) =>
+						!mp.stability ||
+						mp.stability === "stable" ||
+						mp.stability === "beta",
+				);
+				const candidates =
+					stableProviders.length > 0 ? stableProviders : activeProviders;
+				const cheapest = candidates.sort(
+					(a, b) => Number(a.inputPrice ?? "0") - Number(b.inputPrice ?? "0"),
+				)[0];
+				if (cheapest) {
+					out.push({
+						model: m,
+						mapping: cheapest,
+						provider: providers.find((p) => p.id === cheapest.providerId),
+					});
+				}
+			} else {
+				for (const mp of m.providers) {
+					const isDeactivated =
+						mp.deactivatedAt && new Date(mp.deactivatedAt) <= now;
+					if (!isDeactivated) {
+						out.push({
+							model: m,
+							mapping: mp,
+							provider: providers.find((p) => p.id === mp.providerId),
+						});
+					}
+				}
+			}
+		}
+		return out;
+	}, [models, providers, rootOnly]);
+
+	const availableProviders = React.useMemo(() => {
+		const ids = new Set(allEntries.map((e) => e.mapping.providerId));
+		return providers.filter((p) => ids.has(p.id as any));
+	}, [allEntries, providers]);
+
+	const availableCapabilities = React.useMemo(() => {
+		const set = new Set<string>();
+		allEntries.forEach((e) =>
+			getMappingCapabilities(e.mapping).forEach((c) => set.add(c)),
+		);
+		return Array.from(set).sort();
+	}, [allEntries]);
+
+	const filteredEntries = React.useMemo(() => {
+		let list = allEntries;
+		if (searchQuery) {
+			const normalize = (s: string) => s.toLowerCase().replace(/[-_\s]+/g, "");
+			const q = normalize(searchQuery);
+			list = list.filter(({ model, provider }) => {
+				const candidates = [
+					model.name ?? "",
+					model.family,
+					model.id,
+					provider?.name ?? "",
+					...(model.aliases ?? []),
+				];
+				return candidates.some((c) => normalize(c).includes(q));
+			});
+		}
+		if (filters.providers.length > 0) {
+			list = list.filter((e) =>
+				filters.providers.includes(e.mapping.providerId),
+			);
+		}
+		if (filters.capabilities.length > 0) {
+			list = list.filter((e) => {
+				const caps = getMappingCapabilities(e.mapping);
+				return filters.capabilities.every((c) => caps.includes(c));
+			});
+		}
+		if (filters.priceRange !== "all") {
+			list = list.filter((e) => {
+				const price = Number(e.mapping.inputPrice ?? "0");
+				switch (filters.priceRange) {
+					case "free":
+						return price === 0;
+					case "low":
+						return price > 0 && price <= 0.000001;
+					case "medium":
+						return price > 0.000001 && price <= 0.00001;
+					case "high":
+						return price > 0.00001;
+					default:
+						return true;
+				}
+			});
+		}
+		return list;
+	}, [allEntries, searchQuery, filters]);
+
+	const updateFilter = (key: keyof FilterState, value: any) => {
+		setFilters((prev) => ({ ...prev, [key]: value }));
+	};
+
+	const toggleProviderFilter = (providerId: string) => {
+		setFilters((prev) => ({
+			...prev,
+			providers: prev.providers.includes(providerId)
+				? prev.providers.filter((id) => id !== providerId)
+				: [...prev.providers, providerId],
+		}));
+	};
+
+	const toggleCapabilityFilter = (capability: string) => {
+		setFilters((prev) => ({
+			...prev,
+			capabilities: prev.capabilities.includes(capability)
+				? prev.capabilities.filter((cap) => cap !== capability)
+				: [...prev.capabilities, capability],
+		}));
+	};
+
+	const clearFilters = () => {
+		setFilters({
+			providers: [],
+			capabilities: [],
+			priceRange: "all",
+		});
+	};
+
+	const hasActiveFilters =
+		filters.providers.length > 0 ||
+		filters.capabilities.length > 0 ||
+		filters.priceRange !== "all";
+
+	return (
+		<Popover open={open} onOpenChange={setOpen}>
+			<PopoverTrigger asChild>
+				<Button
+					id={id}
+					variant="outline"
+					role="combobox"
+					aria-expanded={open}
+					className="w-full justify-between h-12 px-4 bg-transparent"
+				>
+					{selectedModel ? (
+						<div className="flex items-center gap-3">
+							{(() => {
+								const iconId = rootOnly
+									? selectedModel.family
+									: (
+											selectedProviderDef ??
+											getProviderForModel(selectedModel, providers)
+										)?.id;
+								const IconComp = iconId
+									? getProviderIcon(iconId as string)
+									: null;
+								const iconColor = rootOnly
+									? undefined
+									: (
+											(selectedProviderDef ??
+												getProviderForModel(selectedModel, providers)) as any
+										)?.color;
+								return IconComp ? (
+									<IconComp
+										className="h-5 w-5"
+										style={iconColor ? { color: iconColor } : undefined}
+									/>
+								) : null;
+							})()}
+							<div className="flex flex-col items-start">
+								<div className="flex items-center gap-1">
+									<span className="font-medium max-w-40 truncate">
+										{selectedModel.name}
+									</span>
+									{(() => {
+										const mapping = selectedModel.providers.find(
+											(p) => p.providerId === selectedProviderId,
+										);
+										const isDeprecated =
+											mapping?.deprecatedAt &&
+											new Date(mapping.deprecatedAt) <= new Date();
+										return isDeprecated ? (
+											<AlertTriangle className="h-3.5 w-3.5 text-yellow-600 dark:text-yellow-500" />
+										) : null;
+									})()}
+								</div>
+								{!rootOnly && (
+									<span className="text-xs text-muted-foreground">
+										{
+											(
+												selectedProviderDef ??
+												getProviderForModel(selectedModel, providers)
+											)?.name
+										}
+										{(() => {
+											const mapping = selectedModel.providers.find(
+												(p) => p.providerId === selectedProviderId,
+											);
+											return mapping?.region ? ` (${mapping.region})` : null;
+										})()}
+									</span>
+								)}
+							</div>
+						</div>
+					) : (
+						placeholder
+					)}
+					<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+				</Button>
+			</PopoverTrigger>
+			<PopoverContent
+				className="w-[600px] p-0"
+				style={{ zIndex: 99999 }}
+				sideOffset={4}
+			>
+				<div className="flex">
+					{/* Main content */}
+					<div className="flex-1">
+						<Command shouldFilter={false}>
+							<div className="flex items-center border-b px-3 w-full">
+								<CommandInput
+									placeholder="Search models..."
+									value={searchQuery}
+									onValueChange={setSearchQuery}
+									className="h-12 border-0"
+								/>
+								<Popover open={filterOpen} onOpenChange={setFilterOpen}>
+									<PopoverTrigger asChild>
+										<Button
+											variant="ghost"
+											size="sm"
+											className={cn(
+												"ml-2 h-8 w-8 p-0",
+												hasActiveFilters && "text-primary",
+											)}
+										>
+											<Filter className="h-4 w-4" />
+										</Button>
+									</PopoverTrigger>
+									<PopoverContent
+										className="w-80"
+										style={{ zIndex: 100000 }}
+										side="right"
+										align="start"
+									>
+										<div className="space-y-4">
+											<div className="flex items-center justify-between">
+												<h4 className="font-medium">Filters</h4>
+												{hasActiveFilters && (
+													<Button
+														variant="ghost"
+														size="sm"
+														onClick={clearFilters}
+													>
+														Clear all
+													</Button>
+												)}
+											</div>
+
+											{/* Provider filter */}
+											<div className="space-y-2">
+												<Label className="text-sm font-medium">Providers</Label>
+												<div className="space-y-2 max-h-32 overflow-y-auto">
+													{availableProviders.map((provider, index) => {
+														const ProviderIcon = getProviderIcon(provider.id);
+														return (
+															<div
+																key={`${provider.id}-${index}`}
+																className="flex items-center space-x-2"
+															>
+																<Switch
+																	id={`provider-${provider.id}`}
+																	checked={filters.providers.includes(
+																		provider.id,
+																	)}
+																	onCheckedChange={() =>
+																		toggleProviderFilter(provider.id)
+																	}
+																/>
+																<Label
+																	htmlFor={`provider-${provider.id}`}
+																	className="flex items-center gap-2 text-sm cursor-pointer"
+																>
+																	{ProviderIcon && (
+																		<ProviderIcon
+																			className="h-3 w-3"
+																			style={{ color: provider.color }}
+																		/>
+																	)}
+																	{provider.name}
+																</Label>
+															</div>
+														);
+													})}
+												</div>
+											</div>
+
+											<Separator />
+
+											{/* Capabilities filter */}
+											<div className="space-y-2">
+												<Label className="text-sm font-medium">
+													Capabilities
+												</Label>
+												<div className="space-y-2 max-h-32 overflow-y-auto">
+													{availableCapabilities.map((capability) => (
+														<div
+															key={capability}
+															className="flex items-center space-x-2"
+														>
+															<Switch
+																id={`capability-${capability}`}
+																checked={filters.capabilities.includes(
+																	capability,
+																)}
+																onCheckedChange={() =>
+																	toggleCapabilityFilter(capability)
+																}
+															/>
+															<Label
+																htmlFor={`capability-${capability}`}
+																className="text-sm cursor-pointer"
+															>
+																{capability}
+															</Label>
+														</div>
+													))}
+												</div>
+											</div>
+
+											<Separator />
+
+											{/* Price range filter */}
+											<div className="space-y-2">
+												<Label className="text-sm font-medium">
+													Price Range
+												</Label>
+												<div className="space-y-2">
+													{[
+														{ value: "all", label: "All models" },
+														{ value: "free", label: "Free models" },
+														{ value: "low", label: "Low cost (≤ $0.000001)" },
+														{
+															value: "medium",
+															label: "Medium cost (≤ $0.00001)",
+														},
+														{ value: "high", label: "High cost (> $0.00001)" },
+													].map((option) => (
+														<div
+															key={option.value}
+															className="flex items-center space-x-2"
+														>
+															<Switch
+																id={`price-${option.value}`}
+																checked={filters.priceRange === option.value}
+																onCheckedChange={() =>
+																	updateFilter("priceRange", option.value)
+																}
+															/>
+															<Label
+																htmlFor={`price-${option.value}`}
+																className="text-sm cursor-pointer"
+															>
+																{option.label}
+															</Label>
+														</div>
+													))}
+												</div>
+											</div>
+										</div>
+									</PopoverContent>
+								</Popover>
+							</div>
+							<CommandList className="max-h-[400px]">
+								<CommandEmpty>
+									No models found.
+									{hasActiveFilters && (
+										<Button
+											variant="link"
+											size="sm"
+											onClick={clearFilters}
+											className="mt-2"
+										>
+											Clear filters to see all models
+										</Button>
+									)}
+								</CommandEmpty>
+								<CommandGroup>
+									<div className="px-2 py-1 text-xs text-muted-foreground">
+										{filteredEntries.length} model
+										{filteredEntries.length !== 1 ? "s" : ""} found
+									</div>
+									{filteredEntries.map(({ model, mapping, provider }) => {
+										const IconComp = rootOnly
+											? getProviderIcon(model.family)
+											: provider
+												? getProviderIcon(provider.id)
+												: null;
+										const entryKey = `${mapping.providerId}-${model.id}-${mapping.region ?? ""}`;
+										const isDeprecated =
+											mapping.deprecatedAt &&
+											new Date(mapping.deprecatedAt) <= new Date();
+										return (
+											<CommandItem
+												key={entryKey}
+												value={entryKey}
+												onSelect={() => {
+													onValueChange?.(
+														`${mapping.providerId}/${model.id}${mapping.region ? `:${mapping.region}` : ""}`,
+													);
+													setOpen(false);
+												}}
+												className="p-3 cursor-pointer"
+											>
+												<Check
+													className={cn(
+														"h-4 w-4",
+														entryKey === selectedEntryKey
+															? "opacity-100"
+															: "opacity-0",
+													)}
+												/>
+												<div className="flex items-center justify-between w-full">
+													<div className="flex items-center gap-2">
+														{IconComp ? (
+															<IconComp className="h-6 w-6 flex-shrink-0" />
+														) : null}
+														<div className="flex flex-col">
+															<div className="flex items-center gap-1">
+																<span className="font-medium">
+																	{model.name}
+																</span>
+																{isDeprecated && (
+																	<AlertTriangle className="h-3.5 w-3.5 text-yellow-600 dark:text-yellow-500" />
+																)}
+															</div>
+															{!rootOnly && (
+																<span className="text-xs text-muted-foreground">
+																	{provider?.name}
+																	{mapping.region && (
+																		<span className="ml-1">
+																			({mapping.region})
+																		</span>
+																	)}
+																</span>
+															)}
+														</div>
+													</div>
+												</div>
+											</CommandItem>
+										);
+									})}
+								</CommandGroup>
+							</CommandList>
+						</Command>
+					</div>
+				</div>
+			</PopoverContent>
+		</Popover>
+	);
+}

@@ -1,0 +1,803 @@
+"use client";
+
+import {
+	Activity,
+	Blocks,
+	BookOpen,
+	Bot,
+	Boxes,
+	Building2,
+	Calculator,
+	ChevronDown,
+	Clock,
+	Code,
+	GitCompare,
+	Gift,
+	Github,
+	KeyRound,
+	LayoutGrid,
+	Menu,
+	MessagesSquare,
+	Network,
+	Newspaper,
+	ScrollText,
+	Server,
+	Shield,
+	ShieldCheck,
+	Sparkles,
+	Wrench,
+	X,
+	Zap,
+} from "lucide-react";
+import Link from "next/link";
+import { usePostHog } from "posthog-js/react";
+import { useEffect, useState } from "react";
+
+import { AuthLink } from "@/components/shared/auth-link";
+import { ModelSearch } from "@/components/shared/model-search";
+import { useSessionStatus } from "@/hooks/useUser";
+import { Button } from "@/lib/components/button";
+import {
+	NavigationMenu,
+	NavigationMenuContent,
+	NavigationMenuItem,
+	NavigationMenuLink,
+	NavigationMenuList,
+	NavigationMenuTrigger,
+} from "@/lib/components/navigation-menu";
+import { useAppConfig } from "@/lib/config";
+import Logo from "@/lib/icons/Logo";
+import { cn } from "@/lib/utils";
+
+import { MARKETING_STATS } from "@llmgateway/shared";
+
+import { ThemeToggle } from "./theme-toggle";
+
+import type { ApiModel, ApiProvider } from "@/lib/fetch-models";
+import type { Route } from "next";
+
+function IconMenuItem({
+	title,
+	href,
+	description,
+	icon: IconComponent,
+	gradient,
+	external,
+}: {
+	title: string;
+	href: string;
+	description: string;
+	icon: React.ElementType;
+	gradient: string;
+	external?: boolean;
+}) {
+	const posthog = usePostHog();
+	const linkClassName = cn(
+		// flex-row is load-bearing: NavigationMenuLink's base classes include
+		// flex-col and are concatenated onto this link via Radix Slot, so the
+		// direction must be asserted explicitly or the card stacks vertically.
+		"group/product flex flex-row items-start gap-3 select-none rounded-lg p-3 no-underline outline-none transition-all duration-300 bg-linear-to-br from-transparent to-transparent",
+		gradient,
+		"hover:shadow-lg focus:shadow-md",
+	);
+	const iconColor = gradient.split(" ").slice(-2).join(" ");
+
+	const inner = (
+		<>
+			<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted/80 transition-colors">
+				<IconComponent
+					className={cn(
+						"h-4 w-4 text-muted-foreground transition-colors",
+						iconColor,
+					)}
+				/>
+			</div>
+			<div className="space-y-0.5">
+				<div className="text-sm font-medium leading-none">{title}</div>
+				<p className="line-clamp-2 text-xs leading-snug text-muted-foreground">
+					{description}
+				</p>
+			</div>
+		</>
+	);
+
+	const handleClick = () => {
+		posthog.capture("nav_link_clicked", { link: title, area: "dropdown" });
+	};
+
+	return (
+		<li>
+			<NavigationMenuLink asChild>
+				{external ? (
+					<a
+						href={href}
+						target="_blank"
+						rel="noopener noreferrer"
+						className={linkClassName}
+						onClick={handleClick}
+					>
+						{inner}
+					</a>
+				) : (
+					<Link
+						href={href as Route}
+						prefetch={true}
+						className={linkClassName}
+						onClick={handleClick}
+					>
+						{inner}
+					</Link>
+				)}
+			</NavigationMenuLink>
+		</li>
+	);
+}
+
+export const Navbar = ({
+	children,
+	sticky = true,
+	models,
+	providers,
+}: {
+	children?: React.ReactNode;
+	sticky?: boolean;
+	models?: ApiModel[];
+	providers?: ApiProvider[];
+}) => {
+	const config = useAppConfig();
+	const posthog = usePostHog();
+	const { isAuthenticated: hasSession, isLoading } = useSessionStatus();
+	const isAuthenticated = hasSession && !isLoading;
+
+	const trackNav = (link: string) => {
+		posthog.capture("nav_link_clicked", { link, area: "navbar" });
+	};
+
+	const productsLinks: Array<{
+		title: string;
+		href: string;
+		description: string;
+		icon: React.ElementType;
+		gradient: string;
+		external?: boolean;
+	}> = [
+		{
+			title: "AI Gateway",
+			href: "/features/unified-api-interface",
+			description: `Route requests to ${MARKETING_STATS.models} LLMs through a single, unified API endpoint.`,
+			icon: Network,
+			gradient:
+				"hover:from-violet-500/20 hover:to-purple-600/30 hover:shadow-violet-500/10 group-hover/product:text-violet-500 dark:group-hover/product:text-violet-400",
+		},
+		{
+			title: "DevPass",
+			href: "https://devpass.llmgateway.io",
+			description:
+				"Fixed-price monthly plans for Claude Code, Cursor, and every coding tool.",
+			icon: Code,
+			gradient:
+				"hover:from-indigo-500/20 hover:to-blue-600/30 hover:shadow-indigo-500/10 group-hover/product:text-indigo-500 dark:group-hover/product:text-indigo-400",
+			external: true,
+		},
+		{
+			title: "Chat Playground",
+			href: config.playgroundUrl ?? "#",
+			description:
+				"Test prompts and compare model responses side by side, instantly.",
+			icon: MessagesSquare,
+			gradient:
+				"hover:from-blue-500/20 hover:to-cyan-600/30 hover:shadow-blue-500/10 group-hover/product:text-blue-500 dark:group-hover/product:text-blue-400",
+			external: true,
+		},
+		{
+			title: "Observability",
+			href: "/features/performance-monitoring",
+			description:
+				"Monitor usage, costs, and latency with real-time analytics dashboards.",
+			icon: Activity,
+			gradient:
+				"hover:from-emerald-500/20 hover:to-teal-600/30 hover:shadow-emerald-500/10 group-hover/product:text-emerald-500 dark:group-hover/product:text-emerald-400",
+		},
+	];
+
+	const resourcesLinks: Array<{
+		title: string;
+		href: string;
+		description: string;
+		icon: React.ElementType;
+		gradient: string;
+		external?: boolean;
+	}> = [
+		{
+			title: "Enterprise",
+			href: "/enterprise",
+			description:
+				"Custom billing, extended retention, and priority support for teams.",
+			icon: Building2,
+			gradient:
+				"hover:from-blue-500/20 hover:to-blue-600/30 hover:shadow-blue-500/10 group-hover/product:text-blue-500 dark:group-hover/product:text-blue-400",
+		},
+		{
+			title: "Blog",
+			href: "/blog",
+			description: "Product updates, tutorials, benchmarks, and announcements.",
+			icon: Newspaper,
+			gradient:
+				"hover:from-amber-500/20 hover:to-orange-600/30 hover:shadow-amber-500/10 group-hover/product:text-amber-500 dark:group-hover/product:text-amber-400",
+		},
+		{
+			title: "Changelog",
+			href: "/changelog",
+			description: "What's new in LLM Gateway across releases.",
+			icon: ScrollText,
+			gradient:
+				"hover:from-violet-500/20 hover:to-purple-600/30 hover:shadow-violet-500/10 group-hover/product:text-violet-500 dark:group-hover/product:text-violet-400",
+		},
+		{
+			title: "Integrations",
+			href: "/guides",
+			description:
+				"Connect seamlessly with popular frameworks, SDKs, and tools.",
+			icon: Blocks,
+			gradient:
+				"hover:from-indigo-500/20 hover:to-blue-600/30 hover:shadow-indigo-500/10 group-hover/product:text-indigo-500 dark:group-hover/product:text-indigo-400",
+		},
+		{
+			title: "Reliability",
+			href: "/reliability",
+			description:
+				"Automatic failover and 99.9999% effective uptime across providers.",
+			icon: ShieldCheck,
+			gradient:
+				"hover:from-emerald-500/20 hover:to-teal-600/30 hover:shadow-emerald-500/10 group-hover/product:text-emerald-500 dark:group-hover/product:text-emerald-400",
+		},
+		{
+			title: "Guardrails",
+			href: "/features/guardrails",
+			description:
+				"Protect your AI with content moderation and safety filters.",
+			icon: Shield,
+			gradient:
+				"hover:from-rose-500/20 hover:to-red-600/30 hover:shadow-rose-500/10 group-hover/product:text-rose-500 dark:group-hover/product:text-rose-400",
+		},
+		{
+			title: "Providers",
+			href: "/providers",
+			description: "Connect and manage your provider API keys.",
+			icon: KeyRound,
+			gradient:
+				"hover:from-cyan-500/20 hover:to-blue-600/30 hover:shadow-cyan-500/10 group-hover/product:text-cyan-500 dark:group-hover/product:text-cyan-400",
+		},
+		{
+			title: "Apps",
+			href: "/apps",
+			description: "Browse apps and tools that work with LLM Gateway.",
+			icon: LayoutGrid,
+			gradient:
+				"hover:from-pink-500/20 hover:to-rose-600/30 hover:shadow-pink-500/10 group-hover/product:text-pink-500 dark:group-hover/product:text-pink-400",
+		},
+		{
+			title: "Models",
+			href: "/models",
+			description: "Browse all available LLM models and capabilities.",
+			icon: Boxes,
+			gradient:
+				"hover:from-purple-500/20 hover:to-fuchsia-600/30 hover:shadow-purple-500/10 group-hover/product:text-purple-500 dark:group-hover/product:text-purple-400",
+		},
+		{
+			title: "Model Timeline",
+			href: "/timeline",
+			description: "Track the release history of all models.",
+			icon: Clock,
+			gradient:
+				"hover:from-teal-500/20 hover:to-cyan-600/30 hover:shadow-teal-500/10 group-hover/product:text-teal-500 dark:group-hover/product:text-teal-400",
+		},
+		{
+			title: "Compare",
+			href: "/models/compare",
+			description: "Compare models side by side.",
+			icon: GitCompare,
+			gradient:
+				"hover:from-sky-500/20 hover:to-blue-600/30 hover:shadow-sky-500/10 group-hover/product:text-sky-500 dark:group-hover/product:text-sky-400",
+		},
+		{
+			title: "Token Cost Calculator",
+			href: "/token-cost-calculator",
+			description: "Calculate your LLM token costs and savings instantly.",
+			icon: Calculator,
+			gradient:
+				"hover:from-green-500/20 hover:to-emerald-600/30 hover:shadow-green-500/10 group-hover/product:text-green-500 dark:group-hover/product:text-green-400",
+		},
+		{
+			title: "Referral Program",
+			href: "/referrals",
+			description: "Earn 1% of LLM spending.",
+			icon: Gift,
+			gradient:
+				"hover:from-yellow-500/20 hover:to-amber-600/30 hover:shadow-yellow-500/10 group-hover/product:text-yellow-500 dark:group-hover/product:text-yellow-400",
+		},
+	];
+
+	const aiLinks: Array<{
+		title: string;
+		href: string;
+		description: string;
+		icon: React.ElementType;
+		gradient: string;
+		external?: boolean;
+	}> = [
+		{
+			title: "MCP Server",
+			href: "/mcp",
+			description: `Connect AI assistants to ${MARKETING_STATS.models} LLMs via MCP protocol.`,
+			icon: Server,
+			gradient:
+				"hover:from-cyan-500/20 hover:to-blue-600/30 hover:shadow-cyan-500/10 group-hover/product:text-cyan-500 dark:group-hover/product:text-cyan-400",
+		},
+		{
+			title: "Agents",
+			href: "/agents",
+			description: "Pre-built AI agents with tool calling capabilities.",
+			icon: Bot,
+			gradient:
+				"hover:from-violet-500/20 hover:to-purple-600/30 hover:shadow-violet-500/10 group-hover/product:text-violet-500 dark:group-hover/product:text-violet-400",
+		},
+		{
+			title: "AI SDK Provider",
+			href: "https://github.com/theopenco/llmgateway-ai-sdk-provider",
+			description: "Use LLM Gateway with Vercel's AI SDK.",
+			icon: Zap,
+			gradient:
+				"hover:from-amber-500/20 hover:to-orange-600/30 hover:shadow-amber-500/10 group-hover/product:text-amber-500 dark:group-hover/product:text-amber-400",
+			external: true,
+		},
+		{
+			title: "Agent Skills",
+			href: "https://github.com/theopenco/agent-skills",
+			description: "Skills for Claude Code and other AI agents.",
+			icon: Sparkles,
+			gradient:
+				"hover:from-pink-500/20 hover:to-rose-600/30 hover:shadow-pink-500/10 group-hover/product:text-pink-500 dark:group-hover/product:text-pink-400",
+			external: true,
+		},
+		{
+			title: "Templates",
+			href: "/templates",
+			description: "Production-ready templates for AI applications.",
+			icon: Wrench,
+			gradient:
+				"hover:from-emerald-500/20 hover:to-teal-600/30 hover:shadow-emerald-500/10 group-hover/product:text-emerald-500 dark:group-hover/product:text-emerald-400",
+		},
+		{
+			title: "Guides",
+			href: "/guides",
+			description: "Integration and usage guides for every framework.",
+			icon: BookOpen,
+			gradient:
+				"hover:from-blue-500/20 hover:to-indigo-600/30 hover:shadow-blue-500/10 group-hover/product:text-blue-500 dark:group-hover/product:text-blue-400",
+		},
+	];
+
+	const mobileSections = [
+		{
+			label: "Products",
+			items: productsLinks.map((i) => ({
+				name: i.title,
+				href: i.href,
+				external: i.external,
+			})),
+		},
+		{
+			label: "Resources",
+			items: resourcesLinks.map((i) => ({
+				name: i.title,
+				href: i.href,
+				external: i.external,
+			})),
+		},
+		{
+			label: "AI",
+			items: aiLinks.map((i) => ({
+				name: i.title,
+				href: i.href,
+				external: i.external,
+			})),
+		},
+	];
+
+	const [menuState, setMenuState] = useState(false);
+	const [isScrolled, setIsScrolled] = useState(false);
+	const [openMobileSection, setOpenMobileSection] = useState<string | null>(
+		null,
+	);
+
+	useEffect(() => {
+		const handleScroll = () => {
+			setIsScrolled(window.scrollY > 50);
+		};
+		window.addEventListener("scroll", handleScroll);
+		return () => window.removeEventListener("scroll", handleScroll);
+	}, []);
+
+	return (
+		<header>
+			<nav
+				data-state={menuState && "active"}
+				className={cn("z-20 w-full px-2 group", sticky && "fixed")}
+			>
+				<div
+					className={cn(
+						"mt-2 mx-auto max-w-[1400px] px-6 transition-all duration-300",
+						isScrolled &&
+							"bg-background/50 max-w-[1400px] rounded-2xl border backdrop-blur-lg lg:px-5",
+					)}
+				>
+					<div className="relative flex flex-wrap items-center justify-between gap-6 py-3 nav:flex-nowrap nav:gap-0 nav:py-4">
+						{/* Logo */}
+						<div className="flex w-full justify-between nav:w-auto">
+							<Link
+								href="/"
+								className="flex items-center space-x-2"
+								prefetch={true}
+							>
+								<Logo className="h-8 w-8 rounded-full text-black dark:text-white" />
+								<span className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white whitespace-nowrap">
+									LLM Gateway
+								</span>
+							</Link>
+
+							<button
+								onClick={() => setMenuState(!menuState)}
+								aria-label={menuState ? "Close Menu" : "Open Menu"}
+								className="relative z-20 -m-2.5 -mr-4 block cursor-pointer p-2.5 nav:hidden"
+							>
+								<Menu className="group-data-[state=active]:scale-0 group-data-[state=active]:opacity-0 size-6 duration-200" />
+								<X className="absolute inset-0 m-auto size-6 -rotate-180 scale-0 opacity-0 group-data-[state=active]:rotate-0 group-data-[state=active]:scale-100 group-data-[state=active]:opacity-100 duration-200" />
+							</button>
+						</div>
+
+						{/* Desktop center nav */}
+						<div className="m-auto hidden items-center gap-1 nav:flex min-w-0">
+							<div className="w-[140px] xl:w-[160px]">
+								<ModelSearch models={models} providers={providers} />
+							</div>
+							<NavigationMenu viewport={false} delayDuration={300}>
+								<NavigationMenuList className="flex gap-0.5 text-sm">
+									{/* Most-clicked destinations surfaced as direct links —
+									    DevPass (top product) and Models (top resource) per
+									    PostHog page traffic; Chat joins on wider screens. */}
+									<NavigationMenuItem>
+										<NavigationMenuLink asChild>
+											<a
+												href="https://devpass.llmgateway.io"
+												onClick={() => trackNav("DevPass")}
+												className="text-muted-foreground hover:text-accent-foreground block duration-150 px-3 py-2 whitespace-nowrap"
+											>
+												DevPass
+											</a>
+										</NavigationMenuLink>
+									</NavigationMenuItem>
+
+									<NavigationMenuItem className="hidden min-[1360px]:block">
+										<NavigationMenuLink asChild>
+											<a
+												href={config.playgroundUrl ?? "#"}
+												onClick={() => trackNav("Chat")}
+												className="text-muted-foreground hover:text-accent-foreground block duration-150 px-3 py-2 whitespace-nowrap"
+											>
+												Chat
+											</a>
+										</NavigationMenuLink>
+									</NavigationMenuItem>
+
+									<NavigationMenuItem>
+										<NavigationMenuLink asChild>
+											<Link
+												href="/models"
+												prefetch={true}
+												onClick={() => trackNav("Models")}
+												className="text-muted-foreground hover:text-accent-foreground block duration-150 px-3 py-2 whitespace-nowrap"
+											>
+												Models
+											</Link>
+										</NavigationMenuLink>
+									</NavigationMenuItem>
+
+									{/* Products dropdown */}
+									<NavigationMenuItem>
+										<NavigationMenuTrigger className="text-muted-foreground hover:text-accent-foreground px-3 py-2 bg-transparent">
+											Products
+										</NavigationMenuTrigger>
+										<NavigationMenuContent className="md:left-1/2 md:-translate-x-1/2">
+											<ul className="grid grid-cols-2 gap-2 p-4 md:w-[520px] lg:w-[580px]">
+												{productsLinks.map((product) => (
+													<IconMenuItem
+														key={product.title}
+														title={product.title}
+														href={product.href}
+														description={product.description}
+														icon={product.icon}
+														gradient={product.gradient}
+														external={product.external}
+													/>
+												))}
+											</ul>
+										</NavigationMenuContent>
+									</NavigationMenuItem>
+
+									{/* Resources dropdown */}
+									<NavigationMenuItem>
+										<NavigationMenuTrigger className="text-muted-foreground hover:text-accent-foreground px-3 py-2 bg-transparent">
+											Resources
+										</NavigationMenuTrigger>
+										<NavigationMenuContent className="md:left-1/2 md:-translate-x-1/2">
+											<ul className="grid grid-cols-2 gap-2 p-4 md:w-[680px] lg:w-[820px] lg:grid-cols-3">
+												{resourcesLinks.map((link) => (
+													<IconMenuItem
+														key={link.title}
+														title={link.title}
+														href={link.href}
+														description={link.description}
+														icon={link.icon}
+														gradient={link.gradient}
+														external={link.external}
+													/>
+												))}
+											</ul>
+										</NavigationMenuContent>
+									</NavigationMenuItem>
+
+									{/* AI dropdown */}
+									<NavigationMenuItem>
+										<NavigationMenuTrigger className="text-muted-foreground hover:text-accent-foreground px-3 py-2 bg-transparent">
+											AI
+										</NavigationMenuTrigger>
+										<NavigationMenuContent className="md:left-1/2 md:-translate-x-1/2">
+											<ul className="grid grid-cols-2 gap-2 p-4 md:w-[520px] lg:w-[580px]">
+												{aiLinks.map((item) => (
+													<IconMenuItem
+														key={item.title}
+														title={item.title}
+														href={item.href}
+														description={item.description}
+														icon={item.icon}
+														gradient={item.gradient}
+														external={item.external}
+													/>
+												))}
+											</ul>
+										</NavigationMenuContent>
+									</NavigationMenuItem>
+
+									{/* Docs link */}
+									<NavigationMenuItem>
+										<NavigationMenuLink asChild>
+											<a
+												href={config.docsUrl ?? ""}
+												target="_blank"
+												rel="noopener noreferrer"
+												onClick={() => trackNav("Docs")}
+												className="text-muted-foreground hover:text-accent-foreground block duration-150 px-3 py-2"
+											>
+												Docs
+											</a>
+										</NavigationMenuLink>
+									</NavigationMenuItem>
+
+									{/* Pricing link */}
+									<NavigationMenuItem>
+										<NavigationMenuLink asChild>
+											<Link
+												href="/pricing"
+												prefetch={true}
+												onClick={() => trackNav("Pricing")}
+												className="text-muted-foreground hover:text-accent-foreground block duration-150 px-3 py-2"
+											>
+												Pricing
+											</Link>
+										</NavigationMenuLink>
+									</NavigationMenuItem>
+								</NavigationMenuList>
+							</NavigationMenu>
+						</div>
+
+						{/* Right side */}
+						<div className="bg-background group-data-[state=active]:block nav:group-data-[state=active]:flex mb-6 hidden max-h-[calc(100dvh-7rem)] w-full flex-wrap items-center justify-end space-y-6 overflow-y-auto overscroll-contain rounded-3xl border p-6 shadow-2xl shadow-zinc-300/20 md:flex-nowrap nav:m-0 nav:flex nav:max-h-none nav:w-fit nav:shrink-0 nav:gap-3 nav:space-y-0 nav:overflow-visible nav:border-transparent nav:bg-transparent nav:p-0 nav:shadow-none dark:shadow-none dark:nav:bg-transparent">
+							{/* Mobile nav */}
+							<div className="nav:hidden">
+								<div className="mb-4">
+									<ModelSearch models={models} providers={providers} />
+								</div>
+								<ul className="text-base">
+									<li>
+										<a
+											href="https://devpass.llmgateway.io"
+											onClick={() => trackNav("DevPass")}
+											className="text-muted-foreground hover:text-accent-foreground block py-2.5 duration-150"
+										>
+											DevPass
+										</a>
+									</li>
+									<li>
+										<a
+											href={config.playgroundUrl ?? "#"}
+											onClick={() => trackNav("Chat")}
+											className="text-muted-foreground hover:text-accent-foreground block py-2.5 duration-150"
+										>
+											Chat
+										</a>
+									</li>
+									<li>
+										<Link
+											href="/pricing"
+											className="text-muted-foreground hover:text-accent-foreground block py-2.5 duration-150"
+											prefetch={true}
+										>
+											Pricing
+										</Link>
+									</li>
+									<li>
+										<a
+											href={config.docsUrl ?? ""}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="text-muted-foreground hover:text-accent-foreground block py-2.5 duration-150"
+										>
+											Docs
+										</a>
+									</li>
+									<li>
+										<Link
+											href="/models"
+											className="text-muted-foreground hover:text-accent-foreground block py-2.5 duration-150"
+											prefetch={true}
+										>
+											Models
+										</Link>
+									</li>
+
+									{mobileSections.map((section) => (
+										<li key={section.label}>
+											<button
+												type="button"
+												onClick={() =>
+													setOpenMobileSection(
+														openMobileSection === section.label
+															? null
+															: section.label,
+													)
+												}
+												className="flex w-full items-center justify-between gap-2 py-2.5 text-left"
+												aria-expanded={openMobileSection === section.label}
+											>
+												<span className="text-muted-foreground">
+													{section.label}
+												</span>
+												<ChevronDown
+													className={cn(
+														"h-4 w-4 text-muted-foreground transition-transform duration-200",
+														openMobileSection === section.label && "rotate-180",
+													)}
+												/>
+											</button>
+											<ul
+												className={cn(
+													"grid grid-cols-2 gap-x-4 rounded-xl bg-muted/40 px-3 py-2 mb-2",
+													openMobileSection !== section.label && "hidden",
+												)}
+											>
+												{section.items.map((item) => (
+													<li key={item.name}>
+														{item.external ? (
+															<a
+																href={item.href}
+																target="_blank"
+																rel="noopener noreferrer"
+																className="text-muted-foreground hover:text-accent-foreground block py-2 duration-150 text-sm"
+															>
+																{item.name}
+															</a>
+														) : (
+															<Link
+																href={item.href as Route}
+																className="text-muted-foreground hover:text-accent-foreground block py-2 duration-150 text-sm"
+																prefetch={true}
+															>
+																{item.name}
+															</Link>
+														)}
+													</li>
+												))}
+											</ul>
+										</li>
+									))}
+
+									<li className="flex items-center gap-4 pt-3 mt-2 border-t border-border">
+										<a
+											href={config.githubUrl}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="text-muted-foreground hover:text-accent-foreground p-2 rounded-md transition-colors"
+											aria-label="GitHub"
+										>
+											<Github className="h-5 w-5" />
+										</a>
+										<a
+											href={config.discordUrl}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="text-muted-foreground hover:text-accent-foreground p-2 rounded-md transition-colors"
+											aria-label="Discord"
+										>
+											<svg
+												className="h-5 w-5"
+												viewBox="0 0 24 24"
+												fill="currentColor"
+											>
+												<path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
+											</svg>
+										</a>
+									</li>
+								</ul>
+							</div>
+
+							<div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit items-center">
+								{/* GitHub stars (compact) + Discord — hidden in the narrow
+								    band above the nav breakpoint so the promoted nav links
+								    don't collide with the right-side controls. */}
+								<div className="hidden min-[1280px]:flex items-center gap-1">
+									{children}
+									<a
+										href={config.discordUrl}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="text-muted-foreground hover:text-foreground p-1.5 transition-colors"
+										aria-label="Discord"
+									>
+										<svg
+											className="h-5 w-5"
+											viewBox="0 0 24 24"
+											fill="currentColor"
+										>
+											<path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
+										</svg>
+									</a>
+								</div>
+
+								<ThemeToggle />
+
+								{isAuthenticated ? (
+									<Button
+										asChild
+										className="bg-zinc-900 dark:bg-white text-white dark:text-black hover:bg-zinc-700 dark:hover:bg-zinc-200 font-medium w-full md:w-fit"
+									>
+										<Link href="/dashboard" prefetch={true}>
+											Dashboard
+										</Link>
+									</Button>
+								) : (
+									<>
+										<Link
+											href="/login"
+											prefetch={true}
+											className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden nav:block whitespace-nowrap"
+										>
+											Log In
+										</Link>
+
+										<Button
+											asChild
+											className="bg-zinc-900 dark:bg-white text-white dark:text-black hover:bg-zinc-700 dark:hover:bg-zinc-200 font-medium w-full md:w-fit"
+										>
+											<AuthLink href="/signup">Get Started</AuthLink>
+										</Button>
+									</>
+								)}
+							</div>
+						</div>
+					</div>
+				</div>
+			</nav>
+		</header>
+	);
+};

@@ -1,0 +1,335 @@
+import "dotenv/config";
+import { afterAll, afterEach, beforeAll, describe, expect, test } from "vitest";
+
+import { app } from "@/index.js";
+import { deleteAll } from "@/testing.js";
+
+import { db, tables } from "@llmgateway/db";
+import {
+	getProviderEnvVar,
+	getTestOptions,
+	isStealthProvider,
+	models,
+	providers,
+} from "@llmgateway/models";
+
+// Helper function to generate unique IDs for tests
+function generateTestId(): string {
+	return `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
+// Helper function to check if a provider has any active models
+function hasActiveModels(providerId: string): boolean {
+	const currentDate = new Date();
+	for (const model of models) {
+		for (const providerInfo of model.providers) {
+			if (providerInfo.providerId === providerId) {
+				const deactivatedAt =
+					"deactivatedAt" in providerInfo
+						? (providerInfo.deactivatedAt as Date | undefined)
+						: undefined;
+				const deactivated = deactivatedAt && currentDate >= deactivatedAt;
+				if (!deactivated) {
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
+describe(
+	"e2e tests for provider keys",
+	getTestOptions({ completions: false }),
+	() => {
+		beforeAll(async () => {
+			// Clean the database once before all tests
+			await deleteAll();
+		});
+
+		afterAll(async () => {
+			// Clean up after all tests are done
+			await deleteAll();
+		});
+
+		async function setupTestData() {
+			const testId = generateTestId();
+			const userId = `user-${testId}`;
+			const orgId = `org-${testId}`;
+			const projectId = `project-${testId}`;
+			const userOrgId = `user-org-${testId}`;
+
+			// Create test user with unique ID
+			await db.insert(tables.user).values({
+				id: userId,
+				name: "Test User",
+				email: `admin-${testId}@example.com`,
+				emailVerified: true,
+			});
+
+			// Create test account with unique ID
+			await db.insert(tables.account).values({
+				id: `account-${testId}`,
+				providerId: "credential",
+				accountId: `account-${testId}`,
+				userId: userId,
+				password:
+					"c11ef27a7f9264be08db228ebb650888:a4d985a9c6bd98608237fd507534424950aa7fc255930d972242b81cbe78594f8568feb0d067e95ddf7be242ad3e9d013f695f4414fce68bfff091079f1dc460",
+			});
+
+			const auth = await app.request("/auth/sign-in/email", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					email: `admin-${testId}@example.com`,
+					password: "admin@example.com1A",
+				}),
+			});
+
+			if (auth.status !== 200) {
+				throw new Error(`Failed to authenticate: ${auth.status}`);
+			}
+
+			const token = auth.headers.get("set-cookie")!;
+
+			await db.insert(tables.organization).values({
+				id: orgId,
+				name: "Test Organization",
+				billingEmail: `admin-${testId}@example.com`,
+				plan: "pro",
+			});
+
+			await db.insert(tables.userOrganization).values({
+				id: userOrgId,
+				userId: userId,
+				organizationId: orgId,
+			});
+
+			await db.insert(tables.project).values({
+				id: projectId,
+				name: "Test Project",
+				organizationId: orgId,
+				mode: "api-keys",
+			});
+
+			return { token, orgId };
+		}
+
+		// Stealth providers have no default base URL and are rejected by
+		// POST /keys/provider, so exclude them from the happy-path table (their
+		// rejection is asserted separately below). Otherwise a CI-provided stealth
+		// key (e.g. LLM_GRANITE_API_KEY) would make the 200 expectation fail.
+		const testProviders = providers
+			.filter(
+				(provider) =>
+					provider.id !== "llmgateway" && !isStealthProvider(provider),
+			)
+			.map((provider) => ({
+				providerId: provider.id,
+				name: provider.name,
+			}));
+
+		const stealthProviders = providers
+			.filter((provider) => isStealthProvider(provider))
+			.map((provider) => ({
+				providerId: provider.id,
+				name: provider.name,
+			}));
+
+		test.each(testProviders)(
+			"POST /keys/provider with $name key",
+			async ({ providerId }) => {
+				// TODO temporarily skip nanogpt
+				if (providerId === "inference.net" || providerId === "nanogpt") {
+					return;
+				}
+				const envVarName = getProviderEnvVar(providerId);
+				const envVarValue = envVarName ? process.env[envVarName] : undefined;
+				if (!envVarValue) {
+					console.log(`Skipping ${providerId} test - no API key provided`);
+					return;
+				}
+
+				if (!hasActiveModels(providerId)) {
+					console.log(
+						`Skipping ${providerId} test - no active models available`,
+					);
+					return;
+				}
+
+				const { token, orgId } = await setupTestData();
+
+				const res = await app.request("/keys/provider", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Cookie: token,
+					},
+					body: JSON.stringify({
+						provider: providerId,
+						token: envVarValue,
+						organizationId: orgId,
+						...(providerId === "azure"
+							? {
+									options: {
+										azure_validation_model: "gpt-4o-mini",
+									},
+								}
+							: {}),
+					}),
+				});
+
+				const json = await res.json();
+				console.log("json", { json });
+				expect(res.status).toBe(200);
+				expect(json).toHaveProperty("providerKey");
+				expect(json.providerKey.provider).toBe(providerId);
+				expect(json.providerKey.maskedToken).toBeDefined();
+				expect(json.providerKey.maskedToken).toContain("•");
+				expect(json.providerKey.token).toBeUndefined();
+
+				const providerKey = await db.query.providerKey.findFirst({
+					where: {
+						provider: {
+							eq: providerId,
+						},
+						organizationId: {
+							eq: orgId,
+						},
+					},
+				});
+				expect(providerKey).not.toBeNull();
+				expect(providerKey?.provider).toBe(providerId);
+				expect(providerKey?.token).toBe(envVarValue);
+			},
+		);
+
+		test.each(stealthProviders)(
+			"POST /keys/provider rejects stealth $name key",
+			async ({ providerId }) => {
+				const { token, orgId } = await setupTestData();
+
+				const res = await app.request("/keys/provider", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Cookie: token,
+					},
+					body: JSON.stringify({
+						provider: providerId,
+						token: "stealth-test-token",
+						organizationId: orgId,
+					}),
+				});
+
+				expect(res.status).toBe(400);
+
+				const providerKey = await db.query.providerKey.findFirst({
+					where: {
+						provider: {
+							eq: providerId,
+						},
+						organizationId: {
+							eq: orgId,
+						},
+					},
+				});
+				expect(providerKey).toBeUndefined();
+			},
+		);
+
+		describe("SSRF protection at registration", () => {
+			const originalFlag = process.env.ALLOW_INSECURE_PROVIDER_URLS;
+
+			afterEach(() => {
+				if (originalFlag === undefined) {
+					delete process.env.ALLOW_INSECURE_PROVIDER_URLS;
+				} else {
+					process.env.ALLOW_INSECURE_PROVIDER_URLS = originalFlag;
+				}
+			});
+
+			async function createCustomProvider(baseUrl: string) {
+				const { token, orgId } = await setupTestData();
+				return await app.request("/keys/provider", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Cookie: token,
+					},
+					body: JSON.stringify({
+						provider: "custom",
+						name: "evilprovider",
+						token: "dummy-token",
+						baseUrl,
+						organizationId: orgId,
+					}),
+				});
+			}
+
+			test.each([
+				"http://127.0.0.1:9999", // not https
+				"https://127.0.0.1:9999", // loopback literal
+				"https://169.254.169.254", // cloud metadata
+				"https://10.0.0.5", // RFC-1918
+				"https://[::1]:443", // IPv6 loopback
+				"http://api.example.com", // public but not https
+			])("rejects internal/non-https baseUrl %s", async (baseUrl) => {
+				process.env.ALLOW_INSECURE_PROVIDER_URLS = "false";
+				const res = await createCustomProvider(baseUrl);
+				expect(res.status).toBe(400);
+			});
+
+			test("allows an internal baseUrl when explicitly opted out", async () => {
+				process.env.ALLOW_INSECURE_PROVIDER_URLS = "true";
+				const res = await createCustomProvider("http://127.0.0.1:9999");
+				expect(res.status).toBe(200);
+			});
+		});
+
+		// test.skip("POST /keys/provider with custom baseUrl", async () => {
+		// 	if (!process.env.OPENAI_API_KEY) {
+		// 		console.log("Skipping custom baseUrl test - no API key provided");
+		// 		return;
+		// 	}
+		//
+		// 	const { token, orgId } = await setupTestData();
+		// 	const customBaseUrl = "https://api.custom-openai.example.com";
+		// 	const res = await app.request("/keys/provider", {
+		// 		method: "POST",
+		// 		headers: {
+		// 			"Content-Type": "application/json",
+		// 			Cookie: token,
+		// 		},
+		// 		body: JSON.stringify({
+		// 			provider: "openai",
+		// 			token: process.env.OPENAI_API_KEY,
+		// 			baseUrl: customBaseUrl,
+		// 			organizationId: orgId,
+		// 		}),
+		// 	});
+		//
+		// 	expect(res.status).toBe(200);
+		// 	const json = await res.json();
+		// 	expect(json).toHaveProperty("providerKey");
+		// 	expect(json.providerKey.provider).toBe("openai");
+		// 	expect(json.providerKey.baseUrl).toBe(customBaseUrl);
+		//
+		// 	const providerKey = await db.query.providerKey.findFirst({
+		// 		where: {
+		// 			provider: {
+		// 				eq: "openai",
+		// 			},
+		// 			organizationId: {
+		// 				eq: orgId,
+		// 			},
+		// 		},
+		// 	});
+		// 	expect(providerKey).not.toBeNull();
+		// 	expect(providerKey?.provider).toBe("openai");
+		// 	expect(providerKey?.baseUrl).toBe(customBaseUrl);
+		// });
+	},
+);

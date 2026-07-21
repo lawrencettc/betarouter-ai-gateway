@@ -1,0 +1,94 @@
+"use client";
+
+import { usePostHog } from "posthog-js/react";
+import { type ReactNode, useEffect } from "react";
+
+import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
+import { MobileHeader } from "@/components/dashboard/mobile-header";
+import { TopBar } from "@/components/dashboard/top-bar";
+import { EmailVerificationBanner } from "@/components/email-verification-banner";
+import { DashboardProvider } from "@/lib/dashboard-context";
+import { useDashboardState } from "@/lib/dashboard-state";
+
+import type { AnnouncementEntry } from "@/components/dashboard/changelog-notifications";
+
+interface DashboardLayoutClientProps {
+	children: ReactNode;
+	initialOrganizationsData?: unknown;
+	initialProjectsData?: unknown;
+	selectedOrgId?: string;
+	selectedProjectId?: string;
+	announcementEntries?: AnnouncementEntry[];
+}
+
+export function DashboardLayoutClient({
+	children,
+	initialOrganizationsData,
+	initialProjectsData,
+	selectedOrgId,
+	selectedProjectId,
+	announcementEntries = [],
+}: DashboardLayoutClientProps) {
+	const posthog = usePostHog();
+
+	const {
+		organizations,
+		projects,
+		selectedProject,
+		selectedOrganization,
+		handleOrganizationSelect,
+		handleProjectSelect,
+		handleOrganizationCreated,
+		handleProjectCreated,
+	} = useDashboardState({
+		initialOrganizationsData,
+		initialProjectsData,
+		selectedOrgId,
+		selectedProjectId,
+	});
+
+	useEffect(() => {
+		posthog.capture("page_viewed_dashboard");
+	}, [posthog]);
+
+	return (
+		<DashboardProvider
+			value={{
+				organizations,
+				projects,
+				selectedOrganization,
+				selectedProject,
+				handleOrganizationSelect,
+				handleProjectSelect,
+				handleOrganizationCreated,
+				handleProjectCreated,
+			}}
+		>
+			<div className="flex min-h-screen w-full flex-col">
+				<MobileHeader />
+				<div className="flex flex-1">
+					<DashboardSidebar
+						organizations={organizations}
+						onSelectOrganization={handleOrganizationSelect}
+						onOrganizationCreated={handleOrganizationCreated}
+						selectedOrganization={selectedOrganization}
+					/>
+					<div className="flex flex-1 flex-col justify-center min-w-0">
+						<TopBar
+							projects={projects}
+							selectedProject={selectedProject}
+							onSelectProject={handleProjectSelect}
+							selectedOrganization={selectedOrganization}
+							onProjectCreated={handleProjectCreated}
+							announcementEntries={announcementEntries}
+						/>
+						<EmailVerificationBanner />
+						<main className="bg-background relative w-full flex-1 overflow-y-auto overflow-x-hidden pt-10 pb-4 px-4 md:p-6 lg:p-8">
+							{children}
+						</main>
+					</div>
+				</div>
+			</div>
+		</DashboardProvider>
+	);
+}

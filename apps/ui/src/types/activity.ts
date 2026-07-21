@@ -1,0 +1,111 @@
+import type { paths } from "@/lib/api/v1";
+
+export interface ActivityModelUsage {
+	id: string;
+	provider: string;
+	requestCount: number;
+	inputTokens: number;
+	outputTokens: number;
+	totalTokens: number;
+	cost: number;
+}
+
+export interface ActivityApiKeyUsage {
+	id: string;
+	description: string;
+	requestCount: number;
+	inputTokens: number;
+	outputTokens: number;
+	totalTokens: number;
+	cost: number;
+}
+
+export interface DailyActivity {
+	date: string;
+	requestCount: number;
+	inputTokens: number;
+	outputTokens: number;
+	cachedTokens: number;
+	cacheWriteTokens: number;
+	totalTokens: number;
+	cost: number;
+	outputCost: number;
+	inputCost: number;
+	requestCost: number;
+	dataStorageCost: number;
+	imageInputCost: number;
+	audioInputCost: number;
+	imageOutputCost: number;
+	videoOutputCost: number;
+	cachedInputCost: number;
+	cacheWriteInputCost: number;
+	errorCount: number;
+	errorRate: number;
+	cacheCount: number;
+	cacheRate: number;
+	discountSavings: number;
+	creditsRequestCount: number;
+	apiKeysRequestCount: number;
+	creditsCost: number;
+	apiKeysCost: number;
+	creditsDataStorageCost: number;
+	apiKeysDataStorageCost: number;
+	modelBreakdown: ActivityModelUsage[];
+	apiKeyBreakdown: ActivityApiKeyUsage[];
+}
+
+export interface ActivityResponse {
+	activity: DailyActivity[];
+}
+
+export type ActivitT =
+	| {
+			activity: {
+				date: string;
+				requestCount: number;
+				inputTokens: number;
+				outputTokens: number;
+				cachedTokens: number;
+				cacheWriteTokens: number;
+				totalTokens: number;
+				cost: number;
+				inputCost: number;
+				outputCost: number;
+				requestCost: number;
+				dataStorageCost: number;
+				imageInputCost: number;
+				audioInputCost: number;
+				imageOutputCost: number;
+				videoOutputCost: number;
+				cachedInputCost: number;
+				cacheWriteInputCost: number;
+				errorCount: number;
+				errorRate: number;
+				cacheCount: number;
+				cacheRate: number;
+				discountSavings: number;
+				creditsRequestCount: number;
+				apiKeysRequestCount: number;
+				creditsCost: number;
+				apiKeysCost: number;
+				creditsDataStorageCost: number;
+				apiKeysDataStorageCost: number;
+				modelBreakdown: ActivityModelUsage[];
+				apiKeyBreakdown: ActivityApiKeyUsage[];
+			}[];
+	  }
+	| undefined;
+
+export interface LogsData {
+	message?: string;
+	logs: paths["/logs"]["get"]["responses"][200]["content"]["application/json"]["logs"];
+	pagination: paths["/logs"]["get"]["responses"][200]["content"]["application/json"]["pagination"];
+}
+
+export type LogDetailData =
+	paths["/logs/{id}"]["get"]["responses"][200]["content"]["application/json"];
+
+export type SourceActivityData =
+	paths["/activity/sources"]["get"]["responses"][200]["content"]["application/json"];
+
+export type SourceUsage = SourceActivityData["sources"][number];

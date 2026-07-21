@@ -1,0 +1,181 @@
+import { extractReasoningDetailsText } from "./reasoning-details.js";
+
+/**
+ * Helper function to normalize usage object for OpenAI SDK compatibility
+ * Extracts reasoning_tokens from completion_tokens_details to top level
+ * and removes non-standard fields that could cause validation errors
+ */
+function normalizeUsage(usage: any): any {
+	if (!usage) {
+		return usage;
+	}
+
+	// Some upstreams (e.g. SGLang-served deepseek-v3.2-maas on Vertex AI) emit an
+	// intermediate streaming chunk carrying a partial `usage` object that only has
+	// `prompt_tokens_details` and omits the core token counts. Forwarding it would
+	// produce `usage.prompt_tokens: undefined`, which fails strict client schemas
+	// (e.g. the AI SDK). Treat a usage object without the required token counts as
+	// "no usage" for this chunk rather than emitting an invalid one.
+	const promptTokens = usage.prompt_tokens;
+	const completionTokens = usage.completion_tokens;
+	if (
+		typeof promptTokens !== "number" ||
+		typeof completionTokens !== "number"
+	) {
+		return null;
+	}
+	const totalTokens =
+		typeof usage.total_tokens === "number"
+			? usage.total_tokens
+			: promptTokens + completionTokens;
+
+	const normalizedUsage: any = {
+		prompt_tokens: promptTokens,
+		completion_tokens: completionTokens,
+		total_tokens: totalTokens,
+	};
+
+	// Extract reasoning_tokens from completion_tokens_details if present
+	// This handles providers like Cerebras/GLM that nest it differently
+	if (usage.completion_tokens_details?.reasoning_tokens !== undefined) {
+		normalizedUsage.reasoning_tokens =
+			usage.completion_tokens_details.reasoning_tokens;
+	}
+
+	// Preserve top-level reasoning_tokens if already present
+	if (usage.reasoning_tokens !== undefined) {
+		normalizedUsage.reasoning_tokens = usage.reasoning_tokens;
+	}
+
+	// Preserve prompt_tokens_details if present. Alibaba's explicit-cache field
+	// `cache_creation_input_tokens` is nested under prompt_tokens_details; rename
+	// it to `cache_write_tokens` / `cache_creation_tokens` so downstream
+	// Anthropic-style consumers pick it up.
+	if (usage.prompt_tokens_details) {
+		const existing = usage.prompt_tokens_details;
+		const cacheCreation = existing.cache_creation_input_tokens;
+		normalizedUsage.prompt_tokens_details = {
+			...existing,
+			...(cacheCreation !== undefined &&
+				cacheCreation > 0 && {
+					cache_write_tokens: cacheCreation,
+					cache_creation_tokens: cacheCreation,
+				}),
+		};
+	}
+
+	// Note: We intentionally don't pass through completion_tokens_details
+	// as it may contain non-standard fields (accepted_prediction_tokens,
+	// rejected_prediction_tokens) that cause validation errors in AI SDK
+
+	return normalizedUsage;
+}
+
+/**
+ * Helper function to transform standard OpenAI streaming format
+ */
+export function transformOpenaiStreaming(
+	data: any,
+	usedModel: string,
+	supportsReasoning = true,
+): any {
+	// Helper to transform delta and normalize reasoning_content to reasoning
+	const transformDelta = (delta: any): any => {
+		if (!delta) {
+			return delta;
+		}
+
+		const newDelta = {
+			...delta,
+			role: delta.role ?? "assistant",
+		};
+
+		// Some upstreams (e.g. the Tundra endpoint) emit an empty
+		// `tool_calls: []` array in the leading delta chunk. OpenAI never sends an
+		// empty tool_calls array, and downstream consumers treat any present
+		// tool_calls field as an actual tool-call delta, so drop it when empty.
+		if (
+			Array.isArray(newDelta.tool_calls) &&
+			newDelta.tool_calls.length === 0
+		) {
+			delete newDelta.tool_calls;
+		}
+
+		const normalizedReasoning =
+			newDelta.reasoning ??
+			newDelta.reasoning_content ??
+			extractReasoningDetailsText(newDelta.reasoning_details);
+
+		// Normalize provider-specific reasoning fields to reasoning for OpenAI compatibility
+		if (normalizedReasoning) {
+			const {
+				reasoning_content: _reasoningContent,
+				reasoning_details: _reasoningDetails,
+				...rest
+			} = newDelta;
+			// If the model doesn't support reasoning, treat reasoning_content as
+			// regular content (some providers return the actual answer in
+			// reasoning_content for non-reasoning models).
+			// Only override content if it's not already set to avoid losing data.
+			if (!supportsReasoning) {
+				return {
+					...rest,
+					...(!rest.content && { content: normalizedReasoning }),
+				};
+			}
+			return {
+				...rest,
+				reasoning: normalizedReasoning,
+			};
+		}
+
+		// Preserve annotations (web search citations) if present
+		// OpenAI sends these in delta.annotations for web search results
+		if (delta.annotations && Array.isArray(delta.annotations)) {
+			newDelta.annotations = delta.annotations;
+		}
+
+		return newDelta;
+	};
+
+	// Transform choices if they exist
+	const transformedChoices = data.choices
+		? data.choices.map((choice: any) => ({
+				...choice,
+				delta: transformDelta(choice.delta),
+			}))
+		: null;
+
+	// If we don't have proper structure, build it
+	if (!data.id || !transformedChoices) {
+		const delta = data.delta
+			? transformDelta(data.delta)
+			: transformDelta({
+					content: data.content ?? "",
+					tool_calls: data.tool_calls ?? null,
+				});
+
+		return {
+			id: data.id ?? `chatcmpl-${Date.now()}`,
+			object: "chat.completion.chunk",
+			created: data.created ?? Math.floor(Date.now() / 1000),
+			model: data.model ?? usedModel,
+			choices: [
+				{
+					index: 0,
+					delta,
+					finish_reason: data.finish_reason ?? null,
+				},
+			],
+			usage: normalizeUsage(data.usage),
+		};
+	}
+
+	// Return with transformed choices and ensure object field is set
+	return {
+		...data,
+		object: "chat.completion.chunk",
+		choices: transformedChoices,
+		usage: normalizeUsage(data.usage),
+	};
+}

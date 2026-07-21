@@ -1,0 +1,607 @@
+import {
+	ArrowLeft,
+	Building2,
+	ChevronLeft,
+	ChevronRight,
+	FolderOpen,
+	Key,
+	KeyRound,
+	Receipt,
+	Users,
+} from "lucide-react";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+
+import { BlockOrgButton } from "@/components/block-org-button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+	blockOrganization,
+	giftCreditsToOrganization,
+	manageOrganization,
+	updateReferralBonus,
+} from "@/lib/admin-organizations";
+import { requireSession } from "@/lib/require-session";
+import { createServerApiClient } from "@/lib/server-api";
+
+import { ApiKeysTable } from "./api-keys-table";
+import { GiftCreditsDialog } from "./gift-credits-dialog";
+import { ManageOrgDialog } from "./manage-org-dialog";
+import { OrgCostByModel } from "./org-cost-by-model";
+import { OrgCostByModelTimeseries } from "./org-cost-by-model-timeseries";
+import { OrgMetricsSection } from "./org-metrics";
+import { ProviderKeysTable } from "./provider-keys-table";
+import { ReferralBonusDialog } from "./referral-bonus-dialog";
+import { SendEmailDialog } from "./send-email-dialog";
+
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+	style: "currency",
+	currency: "USD",
+	maximumFractionDigits: 4,
+});
+
+const creditsFormatter = new Intl.NumberFormat("en-US", {
+	style: "currency",
+	currency: "USD",
+	maximumFractionDigits: 2,
+});
+
+function formatDate(dateString: string) {
+	return new Date(dateString).toLocaleDateString("en-US", {
+		year: "numeric",
+		month: "short",
+		day: "numeric",
+	});
+}
+
+function SignInPrompt() {
+	return (
+		<div className="flex min-h-screen items-center justify-center px-4">
+			<div className="w-full max-w-md text-center">
+				<div className="mb-8">
+					<h1 className="text-3xl font-semibold tracking-tight">
+						Admin Dashboard
+					</h1>
+					<p className="mt-2 text-sm text-muted-foreground">
+						Sign in to access the admin dashboard
+					</p>
+				</div>
+				<Button asChild size="lg" className="w-full">
+					<Link href="/login">Sign In</Link>
+				</Button>
+			</div>
+		</div>
+	);
+}
+
+function getPlanBadgeVariant(plan: string) {
+	switch (plan) {
+		case "enterprise":
+			return "default";
+		case "pro":
+			return "secondary";
+		default:
+			return "outline";
+	}
+}
+
+function getDevPlanBadgeVariant(devPlan: string) {
+	switch (devPlan) {
+		case "max":
+			return "default";
+		case "pro":
+			return "secondary";
+		case "lite":
+			return "outline";
+		default:
+			return "outline";
+	}
+}
+
+function getTransactionTypeBadgeVariant(type: string) {
+	if (type.includes("cancel") || type.includes("refund")) {
+		return "destructive";
+	}
+	if (
+		type.includes("start") ||
+		type.includes("topup") ||
+		type.includes("gift")
+	) {
+		return "default";
+	}
+	if (type.includes("upgrade")) {
+		return "secondary";
+	}
+	return "outline";
+}
+
+function formatTransactionType(type: string) {
+	return type.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+export default async function OrganizationPage({
+	params,
+	searchParams,
+}: {
+	params: Promise<{ orgId: string }>;
+	searchParams?: Promise<{
+		txPage?: string;
+		akPage?: string;
+		tab?: string;
+	}>;
+}) {
+	await requireSession();
+
+	const { orgId } = await params;
+	const searchParamsData = await searchParams;
+	const txPage = Math.max(1, parseInt(searchParamsData?.txPage ?? "1", 10));
+	const akPage = Math.max(1, parseInt(searchParamsData?.akPage ?? "1", 10));
+	const activeTab = searchParamsData?.tab ?? "transactions";
+	const txLimit = 25;
+	const txOffset = (txPage - 1) * txLimit;
+	const akLimit = 25;
+	const akOffset = (akPage - 1) * akLimit;
+
+	const $api = await createServerApiClient();
+	const [
+		transactionsRes,
+		projectsRes,
+		apiKeysRes,
+		providerKeysRes,
+		membersRes,
+	] = await Promise.all([
+		$api.GET("/admin/organizations/{orgId}/transactions", {
+			params: {
+				path: { orgId },
+				query: { limit: txLimit, offset: txOffset },
+			},
+		}),
+		$api.GET("/admin/organizations/{orgId}/projects", {
+			params: { path: { orgId } },
+		}),
+		$api.GET("/admin/organizations/{orgId}/api-keys", {
+			params: {
+				path: { orgId },
+				query: { limit: akLimit, offset: akOffset },
+			},
+		}),
+		$api.GET("/admin/organizations/{orgId}/provider-keys", {
+			params: { path: { orgId } },
+		}),
+		$api.GET("/admin/organizations/{orgId}/members", {
+			params: { path: { orgId } },
+		}),
+	]);
+	const transactionsData = transactionsRes.data;
+	const projectsData = projectsRes.data;
+	const apiKeysData = apiKeysRes.data;
+	const providerKeysData = providerKeysRes.data;
+	const membersData = membersRes.data;
+
+	if (transactionsData === null) {
+		return <SignInPrompt />;
+	}
+
+	if (!transactionsData) {
+		notFound();
+	}
+
+	const org = transactionsData.organization;
+	const transactions = transactionsData.transactions;
+	const txTotal = transactionsData.total;
+	const txTotalPages = Math.ceil(txTotal / txLimit);
+
+	const projects = projectsData?.projects ?? [];
+	const apiKeys = apiKeysData?.apiKeys ?? [];
+	const akTotal = apiKeysData?.total ?? 0;
+	const akTotalPages = Math.ceil(akTotal / akLimit);
+	const providerKeys = providerKeysData?.providerKeys ?? [];
+	const providerKeysTotal = providerKeysData?.total ?? 0;
+	const members = membersData?.members ?? [];
+	const membersTotal = membersData?.total ?? 0;
+
+	return (
+		<div className="mx-auto flex w-full max-w-[1920px] flex-col gap-6 px-4 py-8 md:px-8">
+			<div className="flex items-center gap-2">
+				<Button variant="ghost" size="sm" asChild>
+					<Link href="/organizations">
+						<ArrowLeft className="h-4 w-4" />
+						Back
+					</Link>
+				</Button>
+			</div>
+
+			<header className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-start">
+				<div className="space-y-2">
+					<div className="flex items-center gap-3">
+						<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+							<Building2 className="h-5 w-5" />
+						</div>
+						<div>
+							<h1 className="text-2xl font-semibold tracking-tight">
+								{org.name}
+							</h1>
+							<p className="text-sm text-muted-foreground">{org.id}</p>
+						</div>
+					</div>
+					<div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+						<span>{org.billingEmail}</span>
+						<span>•</span>
+						<span>Created {formatDate(org.createdAt)}</span>
+					</div>
+					<div className="flex flex-wrap items-center gap-2">
+						<Badge variant={getPlanBadgeVariant(org.plan)}>{org.plan}</Badge>
+						{org.devPlan !== "none" && (
+							<Badge variant={getDevPlanBadgeVariant(org.devPlan)}>
+								Dev: {org.devPlan}
+							</Badge>
+						)}
+						<Badge variant={org.status === "active" ? "secondary" : "outline"}>
+							{org.status ?? "active"}
+						</Badge>
+						{org.seats !== null && org.seats !== undefined && (
+							<Badge variant="outline">Seats: {org.seats}</Badge>
+						)}
+						{org.apiKeyLimit !== null && org.apiKeyLimit !== undefined && (
+							<Badge variant="outline">API keys: {org.apiKeyLimit}</Badge>
+						)}
+						<span className="text-sm font-medium">
+							Credits: {creditsFormatter.format(parseFloat(org.credits))}
+						</span>
+					</div>
+				</div>
+				<div className="flex flex-wrap items-center gap-2">
+					<ManageOrgDialog
+						orgName={org.name}
+						plan={org.plan}
+						seats={org.seats ?? null}
+						apiKeyLimit={org.apiKeyLimit ?? null}
+						onSave={async (data) => {
+							"use server";
+							return await manageOrganization(orgId, data);
+						}}
+					/>
+					<GiftCreditsDialog
+						orgId={orgId}
+						orgName={org.name}
+						onGift={async (data) => {
+							"use server";
+							return await giftCreditsToOrganization(orgId, data);
+						}}
+					/>
+					<ReferralBonusDialog
+						orgName={org.name}
+						enabled={org.referralBonusEnabled ?? false}
+						percent={org.referralBonusPercent ?? 50}
+						onSave={async (data) => {
+							"use server";
+							return await updateReferralBonus(orgId, data);
+						}}
+					/>
+					<Button variant="outline" size="sm" asChild>
+						<Link href={`/organizations/${orgId}/discounts`}>
+							Manage Discounts
+						</Link>
+					</Button>
+					<Button variant="outline" size="sm" asChild>
+						<Link href={`/organizations/${orgId}/rate-limits`}>
+							Manage Rate Limits
+						</Link>
+					</Button>
+					<BlockOrgButton
+						orgId={orgId}
+						orgName={org.name}
+						variant="full"
+						disabled={org.status === "deleted"}
+						onBlock={async (id) => {
+							"use server";
+							return await blockOrganization(id);
+						}}
+					/>
+				</div>
+			</header>
+
+			<OrgMetricsSection orgId={orgId} />
+
+			<OrgCostByModel orgId={orgId} />
+
+			<OrgCostByModelTimeseries orgId={orgId} />
+
+			{projects.length > 0 && (
+				<section className="space-y-4">
+					<div className="flex items-center gap-2">
+						<FolderOpen className="h-5 w-5 text-muted-foreground" />
+						<h2 className="text-lg font-semibold">Projects</h2>
+						<span className="text-sm text-muted-foreground">
+							({projects.length})
+						</span>
+					</div>
+					<div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+						{projects.map((project) => (
+							<Link
+								key={project.id}
+								href={`/organizations/${orgId}/projects/${project.id}`}
+								className="rounded-lg border border-border/60 bg-card p-4 transition-colors hover:border-border hover:bg-accent/50"
+							>
+								<div className="flex items-start justify-between gap-2">
+									<div>
+										<p className="font-medium">{project.name}</p>
+										<p className="text-xs text-muted-foreground">
+											{project.id}
+										</p>
+									</div>
+									<Badge
+										variant={
+											project.status === "active" ? "secondary" : "outline"
+										}
+									>
+										{project.status ?? "active"}
+									</Badge>
+								</div>
+								<div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+									<Badge variant="outline">{project.mode}</Badge>
+									{project.cachingEnabled && (
+										<Badge variant="outline">cached</Badge>
+									)}
+									<span>{formatDate(project.createdAt)}</span>
+								</div>
+							</Link>
+						))}
+					</div>
+				</section>
+			)}
+
+			<Tabs defaultValue={activeTab}>
+				<TabsList className="w-full justify-start overflow-x-auto sm:w-auto">
+					<TabsTrigger value="transactions">
+						<Receipt className="mr-1.5 h-4 w-4" />
+						Transactions ({txTotal})
+					</TabsTrigger>
+					<TabsTrigger value="api-keys">
+						<Key className="mr-1.5 h-4 w-4" />
+						API Keys ({akTotal})
+					</TabsTrigger>
+					<TabsTrigger value="provider-keys">
+						<KeyRound className="mr-1.5 h-4 w-4" />
+						Provider Keys ({providerKeysTotal})
+					</TabsTrigger>
+					<TabsTrigger value="members">
+						<Users className="mr-1.5 h-4 w-4" />
+						Members ({membersTotal})
+					</TabsTrigger>
+				</TabsList>
+
+				<TabsContent value="transactions">
+					<div className="space-y-4">
+						<div className="overflow-x-auto rounded-lg border border-border/60 bg-card">
+							<Table>
+								<TableHeader>
+									<TableRow>
+										<TableHead>Date</TableHead>
+										<TableHead>Type</TableHead>
+										<TableHead>Amount</TableHead>
+										<TableHead>Credits</TableHead>
+										<TableHead>Status</TableHead>
+										<TableHead>Description</TableHead>
+									</TableRow>
+								</TableHeader>
+								<TableBody>
+									{transactions.length === 0 ? (
+										<TableRow>
+											<TableCell
+												colSpan={6}
+												className="h-24 text-center text-muted-foreground"
+											>
+												No transactions found
+											</TableCell>
+										</TableRow>
+									) : (
+										transactions.map((transaction) => (
+											<TableRow key={transaction.id}>
+												<TableCell className="text-muted-foreground">
+													{formatDate(transaction.createdAt)}
+												</TableCell>
+												<TableCell>
+													<Badge
+														variant={getTransactionTypeBadgeVariant(
+															transaction.type,
+														)}
+													>
+														{formatTransactionType(transaction.type)}
+													</Badge>
+												</TableCell>
+												<TableCell className="tabular-nums">
+													{transaction.amount
+														? currencyFormatter.format(
+																parseFloat(transaction.amount),
+															)
+														: "—"}
+												</TableCell>
+												<TableCell className="tabular-nums">
+													{transaction.creditAmount
+														? creditsFormatter.format(
+																parseFloat(transaction.creditAmount),
+															)
+														: "—"}
+												</TableCell>
+												<TableCell>
+													<Badge
+														variant={
+															transaction.status === "completed"
+																? "secondary"
+																: transaction.status === "failed"
+																	? "destructive"
+																	: "outline"
+														}
+													>
+														{transaction.status}
+													</Badge>
+												</TableCell>
+												<TableCell className="max-w-[200px] truncate text-muted-foreground">
+													{transaction.description ?? "—"}
+												</TableCell>
+											</TableRow>
+										))
+									)}
+								</TableBody>
+							</Table>
+						</div>
+
+						{txTotalPages > 1 && (
+							<div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+								<p className="text-sm text-muted-foreground">
+									Showing {txOffset + 1} to{" "}
+									{Math.min(txOffset + txLimit, txTotal)} of {txTotal}
+								</p>
+								<div className="flex items-center gap-2">
+									<Button
+										variant="outline"
+										size="sm"
+										asChild
+										disabled={txPage <= 1}
+									>
+										<Link
+											href={`/organizations/${orgId}?tab=transactions&txPage=${txPage - 1}&akPage=${akPage}`}
+											className={
+												txPage <= 1 ? "pointer-events-none opacity-50" : ""
+											}
+										>
+											<ChevronLeft className="h-4 w-4" />
+											Previous
+										</Link>
+									</Button>
+									<span className="text-sm text-muted-foreground">
+										Page {txPage} of {txTotalPages}
+									</span>
+									<Button
+										variant="outline"
+										size="sm"
+										asChild
+										disabled={txPage >= txTotalPages}
+									>
+										<Link
+											href={`/organizations/${orgId}?tab=transactions&txPage=${txPage + 1}&akPage=${akPage}`}
+											className={
+												txPage >= txTotalPages
+													? "pointer-events-none opacity-50"
+													: ""
+											}
+										>
+											Next
+											<ChevronRight className="h-4 w-4" />
+										</Link>
+									</Button>
+								</div>
+							</div>
+						)}
+					</div>
+				</TabsContent>
+
+				<TabsContent value="api-keys">
+					<ApiKeysTable
+						apiKeys={apiKeys}
+						orgId={orgId}
+						txPage={txPage}
+						akPage={akPage}
+						akOffset={akOffset}
+						akLimit={akLimit}
+						akTotal={akTotal}
+						akTotalPages={akTotalPages}
+					/>
+				</TabsContent>
+
+				<TabsContent value="provider-keys">
+					<ProviderKeysTable providerKeys={providerKeys} />
+				</TabsContent>
+
+				<TabsContent value="members">
+					<div className="space-y-4">
+						<div className="overflow-x-auto rounded-lg border border-border/60 bg-card">
+							<Table>
+								<TableHeader>
+									<TableRow>
+										<TableHead>Name</TableHead>
+										<TableHead>Email</TableHead>
+										<TableHead>Verified</TableHead>
+										<TableHead>Role</TableHead>
+										<TableHead>Joined</TableHead>
+										<TableHead className="w-10">
+											<span className="sr-only">Actions</span>
+										</TableHead>
+									</TableRow>
+								</TableHeader>
+								<TableBody>
+									{members.length === 0 ? (
+										<TableRow>
+											<TableCell
+												colSpan={6}
+												className="h-24 text-center text-muted-foreground"
+											>
+												No members found
+											</TableCell>
+										</TableRow>
+									) : (
+										members.map((member) => (
+											<TableRow key={member.id}>
+												<TableCell className="font-medium">
+													{member.user.name ?? "—"}
+												</TableCell>
+												<TableCell>{member.user.email}</TableCell>
+												<TableCell>
+													<Badge
+														variant={
+															member.user.emailVerified
+																? "secondary"
+																: "outline"
+														}
+													>
+														{member.user.emailVerified
+															? "verified"
+															: "unverified"}
+													</Badge>
+												</TableCell>
+												<TableCell>
+													<Badge
+														variant={
+															member.role === "owner"
+																? "default"
+																: member.role === "admin"
+																	? "secondary"
+																	: "outline"
+														}
+													>
+														{member.role}
+													</Badge>
+												</TableCell>
+												<TableCell className="text-muted-foreground">
+													{formatDate(member.createdAt)}
+												</TableCell>
+												<TableCell>
+													<SendEmailDialog
+														userName={member.user.name ?? ""}
+														userEmail={member.user.email}
+														orgName={org.name}
+														plan={org.plan}
+													/>
+												</TableCell>
+											</TableRow>
+										))
+									)}
+								</TableBody>
+							</Table>
+						</div>
+					</div>
+				</TabsContent>
+			</Tabs>
+		</div>
+	);
+}

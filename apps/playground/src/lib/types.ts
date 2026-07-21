@@ -1,0 +1,94 @@
+export type User = {
+	id: string;
+	email: string;
+	name: string | null;
+} | null;
+
+export interface ApiKey {
+	id: string;
+	createdAt: string;
+	updatedAt: string;
+	maskedToken: string;
+	status: "active" | "inactive" | "deleted" | null;
+	usageLimit: string | null;
+	usage: string;
+	periodUsageLimit: string | null;
+	periodUsageDurationValue: number | null;
+	periodUsageDurationUnit: "hour" | "day" | "week" | "month" | null;
+	currentPeriodUsage: string;
+	currentPeriodStartedAt: string | null;
+	currentPeriodResetAt: string | null;
+	description: string;
+	projectId: string;
+	iamRules?: Array<{
+		id: string;
+		createdAt: string;
+		updatedAt: string;
+		ruleType:
+			| "allow_models"
+			| "deny_models"
+			| "allow_pricing"
+			| "deny_pricing"
+			| "allow_providers"
+			| "deny_providers";
+		ruleValue: {
+			models?: string[];
+			providers?: string[];
+			pricingType?: "free" | "paid";
+			maxInputPrice?: number;
+			maxOutputPrice?: number;
+		};
+		status: "active" | "inactive";
+	}>;
+}
+
+export interface ComboboxModel {
+	id: string; // providerId/modelId[:region] (value sent to API)
+	name?: string; // Friendly model name
+	provider?: string; // Provider display name
+	providerId?: string; // Provider id
+	family?: string; // Model family for icon fallback
+	context?: number;
+	inputPrice?: number;
+	outputPrice?: number;
+	vision?: boolean;
+	audio?: boolean;
+	tools?: boolean;
+	imageGen?: boolean;
+	supportsVideoAudio?: boolean;
+	supportsVideoWithoutAudio?: boolean;
+	imageInputRequired?: boolean;
+}
+
+export interface Project {
+	id: string;
+	createdAt: string;
+	updatedAt: string;
+	name: string;
+	organizationId: string;
+	cachingEnabled: boolean;
+	cacheDurationSeconds: number;
+	mode: "api-keys" | "credits" | "hybrid";
+	status: "active" | "inactive" | "deleted" | null;
+}
+
+export interface Organization {
+	id: string;
+	createdAt: string;
+	updatedAt: string;
+	name: string;
+	kind: "default" | "chat" | "devpass";
+	credits: string;
+	chatPlan?: "none" | "starter" | "plus" | "pro";
+	chatPlanCreditsLimit?: string | null;
+	chatPlanCreditsUsed?: string | null;
+	chatPlanCancelled?: boolean | null;
+	chatPlanExpiresAt?: string | null;
+	plan: "free" | "pro" | "enterprise";
+	planExpiresAt: string | null;
+	retentionLevel: "retain" | "none";
+	status: "active" | "inactive" | "deleted" | null;
+	autoTopUpEnabled: boolean;
+	autoTopUpThreshold: string | null;
+	autoTopUpAmount: string | null;
+}

@@ -1,0 +1,1029 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import React, { useMemo, type ReactNode, useRef, useState } from "react";
+
+import { ModelSelector } from "@/components/models/playground-model-selector";
+import { Badge } from "@/lib/components/badge";
+import { Button } from "@/lib/components/button";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/lib/components/card";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/lib/components/table";
+import { useAppConfig } from "@/lib/config";
+import Logo from "@/lib/icons/Logo";
+import { formatContextSize } from "@/lib/utils";
+
+import {
+	models,
+	providers as providerDefinitions,
+	type ModelDefinition,
+	type ProviderModelMapping,
+	type StabilityLevel,
+} from "@llmgateway/models";
+
+import type { Route } from "next";
+
+type ModelId = (typeof models)[number]["id"];
+
+const DEFAULT_LEFT_MODEL = "gpt-4o" as ModelId;
+const DEFAULT_RIGHT_MODEL = "claude-3-7-sonnet" as ModelId;
+
+const providerMap = new Map(
+	providerDefinitions.map((provider) => [provider.id, provider]),
+);
+
+const modelMap = new Map(models.map((model) => [model.id, model]));
+
+function parseProviderModel(value: string | null): {
+	providerId?: string;
+	modelId?: ModelId;
+	region?: string;
+} {
+	if (!value) {
+		return {};
+	}
+	// URL shape is `providerId_modelId[:region]` (the optional `:region`
+	// suffix mirrors the ModelSelector value contract). Older bookmarks
+	// without a provider prefix still parse as plain `modelId[:region]`.
+	const [first, rest] = value.includes("_")
+		? (value.split("_", 2) as [string, string])
+		: ["", value];
+	const providerId = first || undefined;
+	const colonIdx = rest.lastIndexOf(":");
+	const modelPart = colonIdx === -1 ? rest : rest.slice(0, colonIdx);
+	const region = colonIdx === -1 ? undefined : rest.slice(colonIdx + 1);
+	return { providerId, modelId: toModelId(modelPart), region };
+}
+
+function toModelId(value: string | null): ModelId | undefined {
+	if (!value) {
+		return undefined;
+	}
+
+	return modelMap.has(value as ModelId) ? (value as ModelId) : undefined;
+}
+
+type PriceField =
+	| "inputPrice"
+	| "outputPrice"
+	| "cachedInputPrice"
+	| "requestPrice"
+	| "imageInputPrice";
+
+type ProviderWithInfo = ProviderModelMapping & {
+	discount?: string | null;
+	providerInfo?: (typeof providerDefinitions)[number];
+};
+
+interface PricingSummary {
+	value: string;
+	providerLabel: string;
+	originalValue?: string;
+}
+
+interface ModelDetail {
+	id: string;
+	displayName: string;
+	family: string;
+	model: ModelDefinition;
+	providers: ProviderWithInfo[];
+	stability?: StabilityLevel;
+	jsonOutput: boolean;
+	aggregated: {
+		streaming: boolean;
+		vision: boolean;
+		reasoning: boolean;
+		tools: boolean;
+		parallelToolCalls: boolean;
+		maxContext?: number;
+		maxOutput?: number;
+		supportedParameters: string[];
+		inputPrice?: PricingSummary;
+		outputPrice?: PricingSummary;
+		cachedInputPrice?: PricingSummary;
+		requestPrice?: PricingSummary;
+		imageInputPrice?: PricingSummary;
+		hasTieredPricing?: boolean;
+	};
+}
+
+const stabilityLabels: Record<StabilityLevel, string> = {
+	stable: "Stable",
+	beta: "Beta",
+	unstable: "Unstable",
+	experimental: "Experimental",
+};
+
+type ComparisonRowKey =
+	| "modelId"
+	| "description"
+	| "family"
+	| "releasedAt"
+	| "stability"
+	| "providers"
+	| "maxContext"
+	| "maxOutput"
+	| "inputPrice"
+	| "outputPrice"
+	| "cachedInputPrice"
+	| "imageInputPrice"
+	| "requestPrice"
+	| "streaming"
+	| "vision"
+	| "tools"
+	| "parallelToolCalls"
+	| "reasoning"
+	| "jsonOutput"
+	| "jsonOutputSchema"
+	| "webSearch"
+	| "outputTypes"
+	| "supportedParameters";
+
+const groupedRows: Array<{
+	title: string;
+	rows: Array<{ key: ComparisonRowKey; label: string }>;
+}> = [
+	{
+		title: "Overview",
+		rows: [
+			{ key: "modelId", label: "Model ID" },
+			{ key: "description", label: "Description" },
+			{ key: "family", label: "Family" },
+			{ key: "releasedAt", label: "Released" },
+			{ key: "stability", label: "Stability" },
+			{ key: "providers", label: "Providers" },
+		],
+	},
+	{
+		title: "Pricing",
+		rows: [
+			{ key: "inputPrice", label: "Input Price" },
+			{ key: "outputPrice", label: "Output Price" },
+			{ key: "cachedInputPrice", label: "Cached Input Price" },
+			{ key: "imageInputPrice", label: "Image Input Price" },
+			{ key: "requestPrice", label: "Request Price" },
+		],
+	},
+	{
+		title: "Context",
+		rows: [
+			{ key: "maxContext", label: "Max Context" },
+			{ key: "maxOutput", label: "Max Output" },
+		],
+	},
+	{
+		title: "Capabilities",
+		rows: [
+			{ key: "streaming", label: "Streaming" },
+			{ key: "vision", label: "Vision" },
+			{ key: "tools", label: "Tool Calling" },
+			{ key: "parallelToolCalls", label: "Parallel Tool Calls" },
+			{ key: "reasoning", label: "Reasoning" },
+			{ key: "jsonOutput", label: "JSON Output" },
+			{ key: "jsonOutputSchema", label: "JSON Schema" },
+			{ key: "webSearch", label: "Web Search" },
+			{ key: "outputTypes", label: "Output Types" },
+		],
+	},
+	{
+		title: "Parameters",
+		rows: [{ key: "supportedParameters", label: "Supported Parameters" }],
+	},
+];
+
+const PLACEHOLDER: ReactNode = <span className="text-muted-foreground">—</span>;
+
+function pickMostUnstableStability(
+	model: ModelDefinition,
+): StabilityLevel | undefined {
+	const precedence: StabilityLevel[] = [
+		"experimental",
+		"unstable",
+		"beta",
+		"stable",
+	];
+
+	const stabilities = [
+		model.stability,
+		...model.providers.map((provider) => provider.stability ?? model.stability),
+	].filter(Boolean) as StabilityLevel[];
+
+	for (const level of precedence) {
+		if (stabilities.includes(level)) {
+			return level;
+		}
+	}
+
+	return undefined;
+}
+
+function formatPriceValue(value: number, field: PriceField) {
+	// Value is already in units based on field multiplier.
+	// For tokens pricing, show 2 decimals, for very small numbers bump precision.
+	const decimals = value < 1 ? (value < 0.1 ? 4 : 2) : 2;
+	const formatted = `$${value.toFixed(decimals)}`;
+
+	if (field === "requestPrice") {
+		return `${formatted}/1K requests`;
+	}
+	if (field === "imageInputPrice") {
+		return `${formatted}/image`;
+	}
+	return `${formatted}/1M tokens`;
+}
+
+function getPricingSummary(
+	providers: ProviderWithInfo[],
+	field: PriceField,
+): PricingSummary | undefined {
+	const entries = providers
+		.filter((provider) => {
+			const raw = provider[field];
+			if (raw === undefined || raw === null) {
+				return false;
+			}
+			const num = Number(raw);
+			return Number.isFinite(num) && num !== 0;
+		})
+		.map((provider) => {
+			const rawValue = Number(provider[field] as string);
+			const multiplier =
+				field === "requestPrice"
+					? 1000
+					: field === "imageInputPrice"
+						? 1
+						: 1_000_000;
+			const discountNum = Number(provider.discount ?? "0");
+			const discounted =
+				rawValue * multiplier * (discountNum ? 1 - discountNum : 1);
+			const original = rawValue * multiplier;
+
+			return {
+				provider,
+				discounted,
+				original,
+				hasDiscount: Boolean(discountNum),
+			};
+		});
+
+	if (!entries.length) {
+		return undefined;
+	}
+
+	const best = entries.reduce((currentBest, candidate) => {
+		if (!currentBest) {
+			return candidate;
+		}
+		return candidate.discounted < currentBest.discounted
+			? candidate
+			: currentBest;
+	});
+
+	return {
+		value: formatPriceValue(best.discounted, field),
+		providerLabel:
+			best.provider.providerInfo?.name ?? best.provider.providerId ?? "Unknown",
+		originalValue:
+			best.hasDiscount && best.original !== best.discounted
+				? formatPriceValue(best.original, field)
+				: undefined,
+	};
+}
+
+function collectModelDetail(modelId?: ModelId): ModelDetail | undefined {
+	if (!modelId) {
+		return undefined;
+	}
+	const model = modelMap.get(modelId) as ModelDefinition | undefined;
+
+	if (!model) {
+		return undefined;
+	}
+
+	const providersWithInfo = model.providers.map((provider) => ({
+		...provider,
+		providerInfo: providerMap.get(provider.providerId),
+	}));
+
+	const aggregated = {
+		streaming: providersWithInfo.some((provider) => provider.streaming),
+		vision: providersWithInfo.some((provider) => provider.vision),
+		reasoning: providersWithInfo.some((provider) => provider.reasoning),
+		tools: providersWithInfo.some((provider) => provider.tools),
+		parallelToolCalls: providersWithInfo.some(
+			(provider) => provider.parallelToolCalls,
+		),
+		maxContext: providersWithInfo.reduce<number | undefined>(
+			(acc, provider) => {
+				if (provider.contextSize) {
+					return Math.max(acc ?? 0, provider.contextSize);
+				}
+				return acc;
+			},
+			undefined,
+		),
+		maxOutput: providersWithInfo.reduce<number | undefined>((acc, provider) => {
+			if (provider.maxOutput) {
+				return Math.max(acc ?? 0, provider.maxOutput);
+			}
+			return acc;
+		}, undefined),
+		supportedParameters: Array.from(
+			new Set(
+				providersWithInfo.flatMap(
+					(provider) => provider.supportedParameters ?? [],
+				),
+			),
+		).sort(),
+		inputPrice: getPricingSummary(providersWithInfo, "inputPrice"),
+		outputPrice: getPricingSummary(providersWithInfo, "outputPrice"),
+		cachedInputPrice: getPricingSummary(providersWithInfo, "cachedInputPrice"),
+		requestPrice: getPricingSummary(providersWithInfo, "requestPrice"),
+		imageInputPrice: getPricingSummary(providersWithInfo, "imageInputPrice"),
+		hasTieredPricing: providersWithInfo.some(
+			(p) => p.pricingTiers && p.pricingTiers.length > 1,
+		),
+	};
+
+	return {
+		id: model.id,
+		displayName: model.name ?? model.id,
+		family: model.family,
+		model,
+		providers: providersWithInfo,
+		stability: pickMostUnstableStability(model),
+		jsonOutput: model.providers.some((p) => p.jsonOutput),
+		aggregated,
+	};
+}
+
+function BooleanBadge({ value }: { value: boolean | undefined }) {
+	if (value) {
+		return (
+			<Badge variant="secondary" className="px-2.5 py-0.5 text-sm">
+				Yes
+			</Badge>
+		);
+	}
+
+	return (
+		<Badge variant="outline" className="px-2.5 py-0.5 text-sm">
+			No
+		</Badge>
+	);
+}
+
+function StabilityBadge({ stability }: { stability?: StabilityLevel }) {
+	if (!stability) {
+		return (
+			<Badge variant="outline" className="text-sm">
+				Stable
+			</Badge>
+		);
+	}
+
+	const variant =
+		stability === "beta"
+			? "secondary"
+			: stability === "stable"
+				? "outline"
+				: "destructive";
+
+	return (
+		<Badge variant={variant} className="text-sm">
+			{stabilityLabels[stability]}
+		</Badge>
+	);
+}
+
+function ProvidersList({
+	providers,
+	modelId,
+}: {
+	providers: ProviderWithInfo[];
+	modelId: string;
+}) {
+	if (!providers.length) {
+		return <span className="text-muted-foreground">—</span>;
+	}
+
+	return (
+		<div className="flex flex-col gap-3">
+			{providers.map((provider) => (
+				<div
+					key={`${provider.providerId}-${provider.region ?? ""}`}
+					className="space-y-1"
+				>
+					<div className="flex items-center gap-2 text-base">
+						<span
+							className="h-2.5 w-2.5 rounded-full"
+							style={{
+								backgroundColor: provider.providerInfo?.color ?? "#9ca3af",
+							}}
+						/>
+						<span className="font-medium">
+							{provider.providerInfo?.name ?? provider.providerId}
+						</span>
+					</div>
+					<div className="text-sm text-muted-foreground">
+						API: {provider.providerId}/{modelId}
+						{provider.region ? `:${provider.region}` : ""}
+					</div>
+					<StabilityBadge stability={provider.stability} />
+				</div>
+			))}
+		</div>
+	);
+}
+
+function PricingCell({
+	summary,
+	hasTieredPricing,
+}: {
+	summary?: PricingSummary;
+	hasTieredPricing?: boolean;
+}) {
+	if (!summary) {
+		return <span className="text-muted-foreground">—</span>;
+	}
+
+	return (
+		<div className="flex flex-col gap-1 text-base">
+			<div className="font-medium">{summary.value}</div>
+			<div className="text-sm text-muted-foreground">
+				via {summary.providerLabel}
+			</div>
+			{summary.originalValue && summary.originalValue !== summary.value ? (
+				<div className="text-sm text-muted-foreground line-through">
+					{summary.originalValue}
+				</div>
+			) : null}
+			{hasTieredPricing && (
+				<div className="text-sm text-muted-foreground/70">(tiered pricing)</div>
+			)}
+		</div>
+	);
+}
+
+function ParametersList({ parameters }: { parameters: string[] }) {
+	if (!parameters.length) {
+		return <span className="text-muted-foreground">—</span>;
+	}
+
+	return (
+		<div className="flex flex-wrap gap-2">
+			{parameters.map((parameter) => (
+				<Badge key={parameter} variant="outline" className="text-sm font-mono">
+					{parameter}
+				</Badge>
+			))}
+		</div>
+	);
+}
+
+function getProviderPricingSummary(
+	provider: ProviderWithInfo | undefined,
+	field: PriceField,
+): PricingSummary | undefined {
+	if (!provider) {
+		return undefined;
+	}
+	const rawRaw = provider[field];
+	if (rawRaw === undefined || rawRaw === null) {
+		return undefined;
+	}
+	const raw = Number(rawRaw);
+	if (!Number.isFinite(raw)) {
+		return undefined;
+	}
+	const multiplier =
+		field === "requestPrice"
+			? 1000
+			: field === "imageInputPrice"
+				? 1
+				: 1_000_000;
+	const discountNum = Number(provider.discount ?? "0");
+	const discounted = raw * multiplier * (discountNum ? 1 - discountNum : 1);
+	const original = raw * multiplier;
+	return {
+		value: formatPriceValue(discounted, field),
+		providerLabel: provider.providerInfo?.name ?? provider.providerId,
+		originalValue:
+			discountNum && original !== discounted
+				? formatPriceValue(original, field)
+				: undefined,
+	};
+}
+
+function renderRowValue(
+	key: ComparisonRowKey,
+	detail: ModelDetail | undefined,
+	selectedProviderId?: string,
+): ReactNode {
+	if (!detail) {
+		return PLACEHOLDER;
+	}
+
+	const selectedProvider = selectedProviderId
+		? detail.providers.find((p) => p.providerId === selectedProviderId)
+		: undefined;
+
+	switch (key) {
+		case "modelId":
+			return detail.id;
+		case "description":
+			return detail.model.description ?? PLACEHOLDER;
+		case "family":
+			return detail.family;
+		case "releasedAt":
+			return detail.model.releasedAt
+				? detail.model.releasedAt.toLocaleDateString("en-US", {
+						year: "numeric",
+						month: "short",
+						day: "numeric",
+					})
+				: PLACEHOLDER;
+		case "stability":
+			return <StabilityBadge stability={detail.stability} />;
+		case "providers":
+			return <ProvidersList providers={detail.providers} modelId={detail.id} />;
+		case "maxContext": {
+			const ctx = selectedProvider?.contextSize ?? detail.aggregated.maxContext;
+			return ctx ? formatContextSize(ctx) : PLACEHOLDER;
+		}
+		case "maxOutput": {
+			const out = selectedProvider?.maxOutput ?? detail.aggregated.maxOutput;
+			return out ? out.toLocaleString() : PLACEHOLDER;
+		}
+		case "inputPrice": {
+			const summary =
+				getProviderPricingSummary(selectedProvider, "inputPrice") ??
+				detail.aggregated.inputPrice;
+			const tiers = selectedProvider
+				? selectedProvider.pricingTiers
+				: undefined;
+			const hasTiered = selectedProvider
+				? tiers && tiers.length > 1
+				: detail.aggregated.hasTieredPricing;
+			return <PricingCell summary={summary} hasTieredPricing={hasTiered} />;
+		}
+		case "outputPrice": {
+			const summary =
+				getProviderPricingSummary(selectedProvider, "outputPrice") ??
+				detail.aggregated.outputPrice;
+			const tiers = selectedProvider
+				? selectedProvider.pricingTiers
+				: undefined;
+			const hasTiered = selectedProvider
+				? tiers && tiers.length > 1
+				: detail.aggregated.hasTieredPricing;
+			return <PricingCell summary={summary} hasTieredPricing={hasTiered} />;
+		}
+		case "cachedInputPrice": {
+			const summary =
+				getProviderPricingSummary(selectedProvider, "cachedInputPrice") ??
+				detail.aggregated.cachedInputPrice;
+			return <PricingCell summary={summary} />;
+		}
+		case "imageInputPrice": {
+			const summary =
+				getProviderPricingSummary(selectedProvider, "imageInputPrice") ??
+				detail.aggregated.imageInputPrice;
+			return <PricingCell summary={summary} />;
+		}
+		case "requestPrice": {
+			const summary =
+				getProviderPricingSummary(selectedProvider, "requestPrice") ??
+				detail.aggregated.requestPrice;
+			return <PricingCell summary={summary} />;
+		}
+		case "streaming":
+			return <BooleanBadge value={detail.aggregated.streaming} />;
+		case "vision":
+			return <BooleanBadge value={detail.aggregated.vision} />;
+		case "tools":
+			return <BooleanBadge value={detail.aggregated.tools} />;
+		case "parallelToolCalls":
+			return <BooleanBadge value={detail.aggregated.parallelToolCalls} />;
+		case "reasoning":
+			return <BooleanBadge value={detail.aggregated.reasoning} />;
+		case "jsonOutput":
+			return <BooleanBadge value={detail.jsonOutput} />;
+		case "jsonOutputSchema":
+			return (
+				<BooleanBadge
+					value={detail.providers.some((p) => p.jsonOutputSchema)}
+				/>
+			);
+		case "webSearch":
+			return <BooleanBadge value={detail.providers.some((p) => p.webSearch)} />;
+		case "outputTypes": {
+			const outputs = detail.model.output ?? ["text"];
+			return (
+				<div className="flex flex-wrap gap-1.5">
+					{outputs.map((type) => (
+						<Badge
+							key={type}
+							variant="secondary"
+							className="px-2.5 py-0.5 text-sm capitalize"
+						>
+							{type}
+						</Badge>
+					))}
+				</div>
+			);
+		}
+		case "supportedParameters":
+			return (
+				<ParametersList parameters={detail.aggregated.supportedParameters} />
+			);
+		default:
+			return PLACEHOLDER;
+	}
+}
+
+export function ModelComparison() {
+	const config = useAppConfig();
+	const router = useRouter();
+	const pathname = usePathname();
+	const searchParams = useSearchParams();
+	const searchParamsString = searchParams.toString();
+
+	const containerRef = useRef<HTMLDivElement | null>(null);
+	const [isCapturing, setIsCapturing] = useState(false);
+
+	const fallbackLeftModel = modelMap.has(DEFAULT_LEFT_MODEL)
+		? DEFAULT_LEFT_MODEL
+		: (models[0]?.id as ModelId | undefined);
+	const fallbackRightModel = modelMap.has(DEFAULT_RIGHT_MODEL)
+		? DEFAULT_RIGHT_MODEL
+		: (models[1]?.id as ModelId | undefined);
+
+	const {
+		providerId: queryLeftProviderId,
+		modelId: queryLeft,
+		region: queryLeftRegion,
+	} = parseProviderModel(searchParams.get("left"));
+	const {
+		providerId: queryRightProviderId,
+		modelId: queryRight,
+		region: queryRightRegion,
+	} = parseProviderModel(searchParams.get("right"));
+
+	const leftModelId: ModelId | undefined = queryLeft ?? fallbackLeftModel;
+	const rightModelId: ModelId | undefined = queryRight ?? fallbackRightModel;
+
+	const updateParams = (
+		nextLeft?: ModelId,
+		nextRight?: ModelId,
+		leftProviderId?: string,
+		rightProviderId?: string,
+		leftRegion?: string,
+		rightRegion?: string,
+	) => {
+		const params = new URLSearchParams(searchParamsString);
+		const buildParam = (
+			model: ModelId,
+			providerId: string | undefined,
+			region: string | undefined,
+		) => {
+			const provider =
+				providerId ?? modelMap.get(model)?.providers[0]?.providerId ?? "";
+			const regionSuffix = region ? `:${region}` : "";
+			return `${provider}_${model}${regionSuffix}`;
+		};
+		if (nextLeft) {
+			params.set("left", buildParam(nextLeft, leftProviderId, leftRegion));
+		} else {
+			params.delete("left");
+		}
+		if (nextRight) {
+			params.set("right", buildParam(nextRight, rightProviderId, rightRegion));
+		} else {
+			params.delete("right");
+		}
+		const next = params.toString();
+		if (next !== searchParamsString) {
+			router.replace(
+				next ? (`${pathname}?${next}` as Route) : (pathname as Route),
+				{
+					scroll: false,
+				},
+			);
+		}
+	};
+
+	const leftModel = useMemo(
+		() => collectModelDetail(leftModelId),
+		[leftModelId],
+	);
+	const rightModel = useMemo(
+		() => collectModelDetail(rightModelId),
+		[rightModelId],
+	);
+
+	const buildPlaygroundUrl = (providerId?: string, modelId?: string) => {
+		if (!modelId) {
+			return config.playgroundUrl;
+		}
+		const modelParam = providerId ? `${providerId}/${modelId}` : modelId;
+
+		return `${config.playgroundUrl}/?model=${encodeURIComponent(modelParam)}`;
+	};
+
+	return (
+		<div ref={containerRef} className="relative space-y-8 bg-background">
+			<Card>
+				<CardHeader className="space-y-4">
+					<div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+						<div>
+							<CardTitle className="text-2xl md:text-3xl">
+								Compare AI Models
+							</CardTitle>
+							<CardDescription>
+								Select any two models from the directory to compare pricing,
+								context window, and key platform features side by side.
+							</CardDescription>
+						</div>
+						<div className="flex items-center gap-2">
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => updateParams(rightModelId, leftModelId)}
+								className="w-full md:w-auto"
+							>
+								Swap Models
+							</Button>
+							<Button
+								size="sm"
+								onClick={async () => {
+									if (isCapturing) {
+										return;
+									}
+									setIsCapturing(true);
+									try {
+										const { toPng } = await import("html-to-image");
+										const node = containerRef.current;
+										if (!node) {
+											return;
+										}
+										const dataUrl = await toPng(node, {
+											cacheBust: true,
+											pixelRatio: 2,
+										});
+										const a = document.createElement("a");
+										a.href = dataUrl;
+										a.download = "model-comparison.png";
+										a.click();
+									} finally {
+										setIsCapturing(false);
+									}
+								}}
+								className="w-full md:w-auto"
+							>
+								Download PNG
+							</Button>
+						</div>
+					</div>
+					<div className="grid gap-4 md:grid-cols-2">
+						<div className="space-y-2 md:pl-48">
+							<div className="text-sm font-medium text-muted-foreground">
+								Model A
+							</div>
+							<ModelSelector
+								models={models}
+								providers={providerDefinitions}
+								value={
+									leftModelId
+										? `${
+												queryLeftProviderId ??
+												providerDefinitions.find(
+													(p) =>
+														p.id ===
+														modelMap.get(leftModelId)?.providers[0]?.providerId,
+												)?.id ??
+												""
+											}/${leftModelId}${queryLeftRegion ? `:${queryLeftRegion}` : ""}`
+										: ""
+								}
+								onValueChange={(value) => {
+									const [prov, mod] = value.split("/");
+									const rest = mod ?? value;
+									const colonIdx = rest.lastIndexOf(":");
+									const modelPart =
+										colonIdx === -1 ? rest : rest.slice(0, colonIdx);
+									const region =
+										colonIdx === -1 ? undefined : rest.slice(colonIdx + 1);
+									const next = toModelId(modelPart) ?? fallbackLeftModel;
+									updateParams(
+										next,
+										rightModelId,
+										prov,
+										queryRightProviderId,
+										region,
+										queryRightRegion,
+									);
+								}}
+							/>
+						</div>
+						<div className="space-y-2 md:pl-24">
+							<div className="text-sm font-medium text-muted-foreground">
+								Model B
+							</div>
+							<ModelSelector
+								models={models}
+								providers={providerDefinitions}
+								value={
+									rightModelId
+										? `${
+												queryRightProviderId ??
+												providerDefinitions.find(
+													(p) =>
+														p.id ===
+														modelMap.get(rightModelId)?.providers[0]
+															?.providerId,
+												)?.id ??
+												""
+											}/${rightModelId}${queryRightRegion ? `:${queryRightRegion}` : ""}`
+										: ""
+								}
+								onValueChange={(value) => {
+									const [prov, mod] = value.split("/");
+									const rest = mod ?? value;
+									const colonIdx = rest.lastIndexOf(":");
+									const modelPart =
+										colonIdx === -1 ? rest : rest.slice(0, colonIdx);
+									const region =
+										colonIdx === -1 ? undefined : rest.slice(colonIdx + 1);
+									const next = toModelId(modelPart) ?? fallbackRightModel;
+									updateParams(
+										leftModelId,
+										next,
+										queryLeftProviderId,
+										prov,
+										queryLeftRegion,
+										region,
+									);
+								}}
+							/>
+						</div>
+					</div>
+					<div className="grid gap-4 md:grid-cols-2">
+						<div className="flex items-center gap-3 md:pl-48">
+							{leftModel && (
+								<>
+									<Button asChild size="sm" variant="outline">
+										<Link href={`/models/${encodeURIComponent(leftModel.id)}`}>
+											View {leftModel.displayName} details
+										</Link>
+									</Button>
+									<Button asChild size="sm">
+										<a
+											href={buildPlaygroundUrl(
+												queryLeftProviderId ??
+													leftModel.providers[0]?.providerId,
+												leftModel.id,
+											)}
+											target="_blank"
+											rel="noopener noreferrer"
+										>
+											Try in Chat
+										</a>
+									</Button>
+								</>
+							)}
+						</div>
+						<div className="flex items-center gap-3 md:pl-24">
+							{rightModel && (
+								<>
+									<Button asChild size="sm" variant="outline">
+										<Link href={`/models/${encodeURIComponent(rightModel.id)}`}>
+											View {rightModel.displayName} details
+										</Link>
+									</Button>
+									<Button asChild size="sm">
+										<a
+											href={buildPlaygroundUrl(
+												queryRightProviderId ??
+													rightModel.providers[0]?.providerId,
+												rightModel.id,
+											)}
+											target="_blank"
+											rel="noopener noreferrer"
+										>
+											Try in Chat
+										</a>
+									</Button>
+								</>
+							)}
+						</div>
+					</div>
+				</CardHeader>
+				<CardContent>
+					<div className="overflow-x-auto">
+						<Table className="table-fixed min-w-[900px] md:min-w-0">
+							<TableHeader>
+								<TableRow>
+									<TableHead className="w-40 md:w-52 text-base">
+										Feature
+									</TableHead>
+									<TableHead className="w-1/2">
+										<div className="flex items-center gap-2">
+											<div className="flex flex-col">
+												<span className="font-semibold text-base">
+													{leftModel?.displayName ?? "Select a model"}
+												</span>
+												{leftModel ? (
+													<Link
+														href={`/models/${encodeURIComponent(leftModel.id)}`}
+														className="text-sm text-primary hover:underline"
+													>
+														View model details
+													</Link>
+												) : null}
+											</div>
+										</div>
+									</TableHead>
+									<TableHead className="w-1/2">
+										<div className="flex items-center gap-2">
+											<div className="flex flex-col">
+												<span className="font-semibold text-base">
+													{rightModel?.displayName ?? "Select a model"}
+												</span>
+												{rightModel ? (
+													<Link
+														href={`/models/${encodeURIComponent(rightModel.id)}`}
+														className="text-sm text-primary hover:underline"
+													>
+														View model details
+													</Link>
+												) : null}
+											</div>
+										</div>
+									</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{groupedRows.map((group) => (
+									<React.Fragment key={`grp-${group.title}`}>
+										<TableRow>
+											<TableCell
+												colSpan={3}
+												className="bg-muted/40 text-sm font-semibold uppercase tracking-wider text-muted-foreground"
+											>
+												{group.title}
+											</TableCell>
+										</TableRow>
+										{group.rows.map((row) => (
+											<TableRow key={row.key}>
+												<TableCell className="font-medium text-sm md:text-base">
+													{row.label}
+												</TableCell>
+												<TableCell className="align-top whitespace-normal break-words pr-4 text-base">
+													{renderRowValue(
+														row.key,
+														leftModel,
+														queryLeftProviderId,
+													)}
+												</TableCell>
+												<TableCell className="align-top whitespace-normal break-words text-base">
+													{renderRowValue(
+														row.key,
+														rightModel,
+														queryRightProviderId,
+													)}
+												</TableCell>
+											</TableRow>
+										))}
+									</React.Fragment>
+								))}
+							</TableBody>
+						</Table>
+					</div>
+				</CardContent>
+			</Card>
+			{isCapturing ? (
+				<div className="pointer-events-none flex justify-center z-50">
+					<div className="bg-background/90 backdrop-blur border rounded-full px-6 py-3 text-base md:text-lg flex items-center gap-3 md:gap-4 shadow-md">
+						<span className="text-muted-foreground">Powered by</span>
+						<Logo className="h-6 w-6 md:h-7 md:w-7" />
+						<span className="font-semibold tracking-tight">LLMGateway</span>
+					</div>
+				</div>
+			) : null}
+		</div>
+	);
+}

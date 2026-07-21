@@ -1,0 +1,258 @@
+import { isSpanContextValid, trace, TraceFlags } from "@opentelemetry/api";
+import pino, { type Logger } from "pino";
+
+export type LogLevel = "trace" | "debug" | "info" | "warn" | "error" | "fatal";
+
+export interface TraceContext {
+	traceId?: string;
+	spanId?: string;
+	traceFlags?: string;
+}
+
+export interface LoggerOptions {
+	name?: string;
+	level?: LogLevel;
+	prettyPrint?: boolean;
+}
+
+// Google Cloud Logging severity mapping
+const PinoLevelToSeverityLookup: Record<string, string> = {
+	trace: "DEBUG",
+	debug: "DEBUG",
+	info: "INFO",
+	warn: "WARNING",
+	error: "ERROR",
+	fatal: "CRITICAL",
+};
+
+class LLMGatewayLogger {
+	private logger: Logger;
+
+	public constructor(options: LoggerOptions = {}) {
+		const {
+			name = "llmgateway",
+			level = this.getDefaultLevel(),
+			prettyPrint = this.shouldPrettyPrint(),
+		} = options;
+
+		this.logger = pino({
+			name,
+			level,
+			// Always ignore pid and hostname
+			base: undefined,
+			// Add Google Cloud Logging compatibility
+			...(!prettyPrint && {
+				formatters: {
+					level(label: string, number: number) {
+						return {
+							severity:
+								PinoLevelToSeverityLookup[label] ||
+								PinoLevelToSeverityLookup.info,
+							level: number,
+						};
+					},
+				},
+			}),
+			...(prettyPrint && {
+				transport: {
+					target: "pino-pretty",
+					options: {
+						colorize: true,
+						translateTime: "HH:MM:ss Z",
+						ignore: "pid,hostname",
+					},
+				},
+			}),
+		});
+	}
+
+	private getDefaultLevel(): LogLevel {
+		const nodeEnv = process.env.NODE_ENV;
+		if (nodeEnv === "test") {
+			return "warn";
+		}
+		if (nodeEnv === "production") {
+			return "info";
+		}
+		return "debug";
+	}
+
+	private shouldPrettyPrint(): boolean {
+		const nodeEnv = process.env.NODE_ENV;
+		const forcePretty = process.env.LOG_PRETTY === "true";
+		const forceJson = process.env.LOG_PRETTY === "false";
+
+		if (forceJson) {
+			return false;
+		}
+		if (forcePretty) {
+			return true;
+		}
+
+		// Pretty print in development, JSON in production
+		return nodeEnv !== "production";
+	}
+
+	private getTraceContext(): object {
+		const span = trace.getActiveSpan();
+		if (!span) {
+			return {};
+		}
+
+		const spanContext = span.spanContext();
+		if (!spanContext || !isSpanContextValid(spanContext)) {
+			return {};
+		}
+
+		const projectId = process.env.GOOGLE_CLOUD_PROJECT;
+		const traceId = spanContext.traceId;
+		const isProduction = process.env.NODE_ENV === "production";
+
+		// Only include Google Cloud Logging fields in production
+		if (isProduction) {
+			return {
+				// Google Cloud Logging trace correlation
+				"logging.googleapis.com/trace": projectId
+					? `projects/${projectId}/traces/${traceId}`
+					: traceId,
+				"logging.googleapis.com/spanId": spanContext.spanId,
+				"logging.googleapis.com/trace_sampled": Boolean(
+					spanContext.traceFlags & TraceFlags.SAMPLED,
+				),
+				// Additional context for manual correlation
+				traceId,
+				spanId: spanContext.spanId,
+				traceFlags: spanContext.traceFlags.toString(),
+			};
+		}
+
+		return {};
+	}
+
+	// Core logging methods
+	public trace(message: string, extra?: object | Error): void {
+		const traceContext = this.getTraceContext();
+		this.logger.trace(this.mergeOptionalArg(traceContext, extra), message);
+	}
+
+	public debug(message: string, extra?: object | Error): void {
+		const traceContext = this.getTraceContext();
+		this.logger.debug(this.mergeOptionalArg(traceContext, extra), message);
+	}
+
+	public info(message: string, extra?: object | Error): void {
+		const traceContext = this.getTraceContext();
+		this.logger.info(this.mergeOptionalArg(traceContext, extra), message);
+	}
+
+	public warn(message: string, ...args: unknown[]): void {
+		const traceContext = this.getTraceContext();
+		const merged = this.mergeArgs(traceContext, args);
+		this.logger.warn(merged, message);
+	}
+
+	public error(message: string, ...args: unknown[]): void {
+		const traceContext = this.getTraceContext();
+		const merged = this.mergeArgs(traceContext, args);
+		this.logger.error(merged, message);
+	}
+
+	public fatal(message: string, ...args: unknown[]): void {
+		const traceContext = this.getTraceContext();
+		const merged = this.mergeArgs(traceContext, args);
+		this.logger.fatal(merged, message);
+	}
+
+	private mergeArgs(
+		traceContext: object,
+		args: unknown[],
+	): Record<string, unknown> {
+		const result: Record<string, unknown> = { ...traceContext };
+		for (const arg of args) {
+			if (arg instanceof Error) {
+				result.err = arg;
+			} else if (arg && typeof arg === "object") {
+				Object.assign(result, arg);
+			} else if (arg !== undefined && arg !== null) {
+				result.err = new Error(String(arg));
+			}
+		}
+		return result;
+	}
+
+	private mergeOptionalArg(
+		traceContext: object,
+		extra?: object | Error,
+	): Record<string, unknown> {
+		if (extra instanceof Error) {
+			return { ...traceContext, err: extra };
+		}
+
+		if (extra && typeof extra === "object") {
+			return { ...traceContext, ...extra };
+		}
+
+		return { ...traceContext };
+	}
+
+	// Create child logger with additional context
+	public child(bindings: object): LLMGatewayLogger {
+		const childPino = this.logger.child(bindings);
+		const childLogger = Object.create(LLMGatewayLogger.prototype);
+		childLogger.logger = childPino;
+		return childLogger;
+	}
+}
+
+export function toError(value: unknown): Error {
+	if (value instanceof Error) {
+		return value;
+	}
+
+	if (value === null || value === undefined) {
+		return new Error("Unknown error");
+	}
+
+	if (typeof value === "string") {
+		return new Error(value);
+	}
+
+	if (typeof value !== "object") {
+		return new Error(String(value));
+	}
+
+	const candidate = value as { message?: unknown; error?: unknown };
+	if (typeof candidate.message === "string" && candidate.message.length > 0) {
+		const err = new Error(candidate.message);
+		(err as Error & { cause?: unknown }).cause = value;
+		return err;
+	}
+	if (typeof candidate.error === "string" && candidate.error.length > 0) {
+		return new Error(candidate.error);
+	}
+
+	try {
+		const serialized = JSON.stringify(value);
+		if (serialized && serialized !== "{}") {
+			return new Error(serialized);
+		}
+	} catch {
+		// fall through to constructor name fallback
+	}
+
+	const ctorName =
+		(value as { constructor?: { name?: string } }).constructor?.name ??
+		"Object";
+	return new Error(`[unserializable ${ctorName}]`);
+}
+
+// Default logger instance
+export const logger = new LLMGatewayLogger();
+
+// Factory function for creating named loggers
+export function createLogger(options: LoggerOptions): LLMGatewayLogger {
+	return new LLMGatewayLogger(options);
+}
+
+export { LLMGatewayLogger };
+export type { Logger };

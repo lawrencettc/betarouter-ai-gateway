@@ -1,0 +1,1513 @@
+"use client";
+
+import { format, formatDistanceToNow } from "date-fns";
+import {
+	AlertCircle,
+	ArrowLeft,
+	AudioWaveform,
+	Ban,
+	CheckCircle2,
+	Clock,
+	Coins,
+	Copy,
+	Check,
+	Filter,
+	Globe,
+	Info,
+	Package,
+	Plug,
+	RefreshCw,
+	Sparkles,
+	TriangleAlert,
+	Zap,
+} from "lucide-react";
+import Link from "next/link";
+import prettyBytes from "pretty-bytes";
+import { useState } from "react";
+
+import { Badge } from "@/lib/components/badge";
+import { Button } from "@/lib/components/button";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/lib/components/tooltip";
+import { useApi } from "@/lib/fetch-client";
+import { cn } from "@/lib/utils";
+
+import {
+	formatServiceTierMultiplier,
+	getServiceTier,
+} from "@llmgateway/models";
+
+import type { LogDetailData } from "@/types/activity";
+import type { Log } from "@llmgateway/db";
+
+type LogWithResources = Log & {
+	organizationName?: string | null;
+	projectName?: string | null;
+	apiKeyName?: string | null;
+};
+
+interface ImageConfig {
+	aspect_ratio?: string;
+	image_size?: string;
+	image_quality?: string;
+	n?: number;
+	output_format?: string;
+	output_compression?: number;
+	seed?: number;
+}
+
+interface LogDetailClientProps {
+	initialData: LogDetailData | null;
+	orgId: string;
+	projectId: string;
+	logId: string;
+}
+
+function CopyButton({ value, label }: { value: string; label: string }) {
+	const [copied, setCopied] = useState(false);
+	return (
+		<button
+			type="button"
+			aria-label={label}
+			title={label}
+			onClick={() => {
+				void navigator.clipboard.writeText(value);
+				setCopied(true);
+				setTimeout(() => setCopied(false), 1500);
+			}}
+			className="inline-flex items-center text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+		>
+			{copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+		</button>
+	);
+}
+
+function RelatedResourceValue({
+	id,
+	name,
+	copyLabel,
+}: {
+	id: string;
+	name?: string | null;
+	copyLabel: string;
+}) {
+	const displayName = name?.trim();
+
+	return (
+		<span className="min-w-0 space-y-0.5 text-right">
+			{displayName && <span className="block break-words">{displayName}</span>}
+			<span className="flex min-w-0 items-center justify-end gap-1.5 font-mono text-xs text-muted-foreground break-all">
+				<span className="min-w-0 break-all">
+					{displayName ? `ID: ${id}` : id}
+				</span>
+				<CopyButton value={id} label={copyLabel} />
+			</span>
+		</span>
+	);
+}
+
+function Section({
+	title,
+	children,
+	className,
+}: {
+	title: string;
+	children: React.ReactNode;
+	className?: string;
+}) {
+	return (
+		<div className={cn("space-y-3", className)}>
+			<h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+				{title}
+			</h3>
+			{children}
+		</div>
+	);
+}
+
+function Field({
+	label,
+	value,
+	mono,
+	muted,
+}: {
+	label: string;
+	value: React.ReactNode;
+	mono?: boolean;
+	muted?: boolean;
+}) {
+	return (
+		<div className="flex items-baseline justify-between gap-4 py-1.5 border-b border-border/50 last:border-0">
+			<span className="text-sm text-muted-foreground shrink-0">{label}</span>
+			<span
+				className={cn(
+					"text-sm text-right break-all",
+					mono && "font-mono text-xs",
+					muted && "text-muted-foreground",
+				)}
+			>
+				{value}
+			</span>
+		</div>
+	);
+}
+
+function StatusIndicator({ log }: { log: Partial<Log> }) {
+	let StatusIcon = CheckCircle2;
+	let color = "text-emerald-500";
+	let bgColor = "bg-emerald-500/10";
+	let label = "Completed";
+
+	if (log.hasError || log.unifiedFinishReason === "error") {
+		StatusIcon = AlertCircle;
+		color = "text-red-500";
+		bgColor = "bg-red-500/10";
+		label = "Error";
+	} else if (log.unifiedFinishReason === "content_filter") {
+		StatusIcon = TriangleAlert;
+		color = "text-amber-500";
+		bgColor = "bg-amber-500/10";
+		label = "Content Filter";
+	} else if (
+		log.unifiedFinishReason !== "completed" &&
+		log.unifiedFinishReason !== "tool_calls"
+	) {
+		StatusIcon = AlertCircle;
+		color = "text-yellow-500";
+		bgColor = "bg-yellow-500/10";
+		label = log.unifiedFinishReason ?? "Unknown";
+	} else if (log.unifiedFinishReason === "tool_calls") {
+		label = "Tool Calls";
+	}
+
+	return (
+		<div
+			className={cn(
+				"inline-flex items-center gap-2 rounded-full px-3 py-1.5",
+				bgColor,
+			)}
+		>
+			<StatusIcon className={cn("h-4 w-4", color)} />
+			<span className={cn("text-sm font-medium", color)}>{label}</span>
+		</div>
+	);
+}
+
+function formatDuration(ms: number) {
+	if (ms < 1000) {
+		return `${ms}ms`;
+	}
+	return `${(ms / 1000).toFixed(2)}s`;
+}
+
+// Selection reasons where the weighted-score formula is bypassed entirely, so
+// every provider's score is a hardcoded 0 placeholder rather than a real value.
+// "session-sticky" is intentionally excluded: it scores providers with the
+// normal weighted algorithm and pins the result for the session, so the logged
+// scores are real values worth surfacing. The all-zero fallback below hides
+// those scores when they couldn't be computed (no metrics available).
+const SCORE_BYPASSED_SELECTION_REASONS = new Set([
+	"random-exploration",
+	"price-only-no-metrics",
+]);
+
+// The per-provider score only carries information when scoring actually ran.
+// Exploration/price-only paths emit 0 for every provider, and "stable-preferred"
+// can layer on top of a sticky pick, so treat an all-zero set as "scoring did
+// not run" regardless of the reason.
+function isProviderScoreMeaningful(
+	selectionReason: string | null | undefined,
+	providerScores: { score: number }[],
+): boolean {
+	if (
+		selectionReason &&
+		SCORE_BYPASSED_SELECTION_REASONS.has(selectionReason)
+	) {
+		return false;
+	}
+	return providerScores.some((s) => s.score !== 0);
+}
+
+function isBase64ImageChar(char: string) {
+	return (
+		(char >= "A" && char <= "Z") ||
+		(char >= "a" && char <= "z") ||
+		(char >= "0" && char <= "9") ||
+		char === "+" ||
+		char === "/" ||
+		char === "="
+	);
+}
+
+function isWhitespace(char: string) {
+	return char === " " || char === "\n" || char === "\r" || char === "\t";
+}
+
+function compactBase64(value: string) {
+	let compacted = "";
+	for (const char of value) {
+		if (!isWhitespace(char)) {
+			compacted += char;
+		}
+	}
+	return compacted;
+}
+
+function findLikelyBase64Run(content: string, minLength = 200) {
+	let runLength = 0;
+	for (const char of content) {
+		if (isBase64ImageChar(char)) {
+			runLength++;
+			if (runLength >= minLength) {
+				return true;
+			}
+		} else if (!isWhitespace(char)) {
+			runLength = 0;
+		}
+	}
+	return false;
+}
+
+function isRawBase64ImageContent(content: string) {
+	let hasBase64Char = false;
+	for (const char of content) {
+		if (isWhitespace(char)) {
+			continue;
+		}
+		if (!isBase64ImageChar(char)) {
+			return false;
+		}
+		hasBase64Char = true;
+	}
+	return hasBase64Char;
+}
+
+function shouldTryRenderImageContent(content: string) {
+	return (
+		content.length > 500 &&
+		(content.includes("data:image/") || findLikelyBase64Run(content))
+	);
+}
+
+function extractBase64Images(
+	content: string,
+): Array<{ src: string; index: number }> {
+	const images: Array<{ src: string; index: number }> = [];
+
+	let searchFrom = 0;
+	while (searchFrom < content.length) {
+		const dataUrlStart = content.indexOf("data:image/", searchFrom);
+		if (dataUrlStart === -1) {
+			break;
+		}
+		const base64Start = content.indexOf(";base64,", dataUrlStart);
+		if (base64Start === -1) {
+			break;
+		}
+		let end = base64Start + ";base64,".length;
+		while (end < content.length) {
+			const char = content[end];
+			if (!isBase64ImageChar(char) && !isWhitespace(char)) {
+				break;
+			}
+			end++;
+		}
+		images.push({
+			src: compactBase64(content.slice(dataUrlStart, end)),
+			index: images.length,
+		});
+		searchFrom = end;
+	}
+
+	// If no data URLs found, try treating the entire content as raw base64
+	if (images.length === 0 && isRawBase64ImageContent(content)) {
+		images.push({
+			src: `data:image/png;base64,${compactBase64(content)}`,
+			index: 0,
+		});
+	}
+	return images;
+}
+
+function extractMessageImages(
+	messages: unknown,
+): Array<{ src: string; index: number }> {
+	const images: Array<{ src: string; index: number }> = [];
+
+	function visit(value: unknown) {
+		if (typeof value === "string") {
+			if (value.length > 500) {
+				for (const img of extractBase64Images(value)) {
+					images.push({ src: img.src, index: images.length });
+				}
+			}
+			return;
+		}
+		if (Array.isArray(value)) {
+			for (const item of value) {
+				visit(item);
+			}
+			return;
+		}
+		if (value && typeof value === "object") {
+			for (const v of Object.values(value)) {
+				visit(v);
+			}
+		}
+	}
+
+	visit(messages);
+	return images;
+}
+
+function stringifyMessagesCompact(messages: unknown): string {
+	return JSON.stringify(
+		messages,
+		(_key, value) => {
+			if (
+				typeof value === "string" &&
+				value.length > 500 &&
+				(value.includes(";base64,") || /[A-Za-z0-9+/=]{400,}/.test(value))
+			) {
+				return "[base64 image data]";
+			}
+			return value;
+		},
+		2,
+	);
+}
+
+function ImageContentRenderer({ content }: { content: string }) {
+	const images = extractBase64Images(content);
+
+	if (images.length === 0) {
+		return (
+			<pre className="max-h-80 text-xs overflow-auto whitespace-pre-wrap break-all font-mono bg-muted/30 rounded-md p-3">
+				{content}
+			</pre>
+		);
+	}
+
+	return (
+		<div className="space-y-4">
+			<div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+				{images.map((img) => (
+					<div
+						key={img.index}
+						className="rounded-md border overflow-hidden bg-muted/30"
+					>
+						<img
+							src={img.src}
+							alt={`Generated image ${img.index + 1}`}
+							className="w-full h-auto"
+						/>
+					</div>
+				))}
+			</div>
+		</div>
+	);
+}
+
+function formatApiKeyHash(hash: string) {
+	return hash.slice(0, 7);
+}
+
+export function LogDetailClient({
+	initialData,
+	orgId,
+	projectId,
+	logId,
+}: LogDetailClientProps) {
+	const api = useApi();
+
+	const { data } = api.useQuery(
+		"get",
+		"/logs/{id}",
+		{ params: { path: { id: logId } } },
+		{
+			initialData: initialData ?? undefined,
+			refetchOnWindowFocus: false,
+			staleTime: 5 * 60 * 1000,
+		},
+	);
+
+	if (!data?.log) {
+		return (
+			<div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+				<p className="text-muted-foreground">Log not found</p>
+				<Button asChild variant="outline" size="sm">
+					<Link href={`/dashboard/${orgId}/${projectId}/activity`}>
+						<ArrowLeft className="mr-2 h-4 w-4" />
+						Back to Activity
+					</Link>
+				</Button>
+			</div>
+		);
+	}
+
+	const log = {
+		...data.log,
+		createdAt: new Date(data.log.createdAt),
+		updatedAt: new Date(data.log.updatedAt),
+		lastVideoDownloadedAt: data.log.lastVideoDownloadedAt
+			? new Date(data.log.lastVideoDownloadedAt)
+			: null,
+		videoDownloadCount: data.log.videoDownloadCount ?? 0,
+	} as LogWithResources;
+
+	const imageConfig = (log.params as { image_config?: ImageConfig } | null)
+		?.image_config;
+
+	const inputImages = extractMessageImages(log.messages);
+
+	const retentionEnabled =
+		log.dataStorageCost !== null &&
+		log.dataStorageCost !== undefined &&
+		Number(log.dataStorageCost) > 0;
+
+	const throughput =
+		log.duration && log.completionTokens
+			? (Number(log.completionTokens) / (log.duration / 1000)).toFixed(1)
+			: null;
+
+	return (
+		<div className="flex flex-col">
+			<div className="flex-1 space-y-6 p-4 pt-6 md:p-8">
+				{/* Header */}
+				<div className="space-y-4">
+					<Button asChild variant="ghost" size="sm" className="-ml-2">
+						<Link href={`/dashboard/${orgId}/${projectId}/activity`}>
+							<ArrowLeft className="mr-2 h-4 w-4" />
+							Activity Logs
+						</Link>
+					</Button>
+
+					<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+						<div className="space-y-2">
+							<div className="flex items-center gap-3">
+								<h1 className="text-2xl font-bold tracking-tight">
+									{log.usedModel === "" ? "—" : log.usedModel}
+								</h1>
+								<StatusIndicator log={log} />
+								{log.retried && (
+									<div className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 bg-amber-500/10">
+										<RefreshCw className="h-4 w-4 text-amber-600" />
+										<span className="text-sm font-medium text-amber-600">
+											Retried
+										</span>
+									</div>
+								)}
+							</div>
+							<div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+								<span>
+									{format(log.createdAt, "MMM d, yyyy 'at' HH:mm:ss")}
+								</span>
+								<span>
+									({formatDistanceToNow(log.createdAt, { addSuffix: true })})
+								</span>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				{/* Quick stats row */}
+				<div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+					<div className="rounded-lg border bg-card p-3">
+						<div className="flex items-center gap-2 text-muted-foreground mb-1">
+							<Clock className="h-3.5 w-3.5" />
+							<span className="text-xs">Duration</span>
+						</div>
+						<p className="text-lg font-semibold tabular-nums">
+							{formatDuration(log.duration ?? 0)}
+						</p>
+					</div>
+					<div className="rounded-lg border bg-card p-3">
+						<div className="flex items-center gap-2 text-muted-foreground mb-1">
+							<Zap className="h-3.5 w-3.5" />
+							<span className="text-xs">Tokens</span>
+						</div>
+						<p className="text-lg font-semibold tabular-nums">
+							{Number(log.totalTokens ?? 0).toLocaleString()}
+						</p>
+					</div>
+					<div className="rounded-lg border bg-card p-3">
+						<div className="flex items-center gap-2 text-muted-foreground mb-1">
+							<AudioWaveform className="h-3.5 w-3.5" />
+							<span className="text-xs">Throughput</span>
+						</div>
+						<p className="text-lg font-semibold tabular-nums">
+							{throughput ? `${throughput} t/s` : "-"}
+						</p>
+					</div>
+					{log.timeToFirstToken && (
+						<div className="rounded-lg border bg-card p-3">
+							<div className="flex items-center gap-2 text-muted-foreground mb-1">
+								<Clock className="h-3.5 w-3.5" />
+								<span className="text-xs">TTFT</span>
+							</div>
+							<p className="text-lg font-semibold tabular-nums">
+								{formatDuration(log.timeToFirstToken)}
+							</p>
+						</div>
+					)}
+					<div className="rounded-lg border bg-card p-3">
+						<TooltipProvider>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<div>
+										<div className="flex items-center gap-2 text-muted-foreground mb-1">
+											<Coins className="h-3.5 w-3.5" />
+											<span className="text-xs">Inference Cost</span>
+											<Info className="h-3 w-3 text-muted-foreground/40" />
+										</div>
+										<p className="text-lg font-semibold tabular-nums text-muted-foreground">
+											${log.cost?.toFixed(6) ?? "0"}
+										</p>
+									</div>
+								</TooltipTrigger>
+								<TooltipContent>
+									<p>
+										Provider cost
+										{log.usedMode === "api-keys" &&
+											" — not deducted from your balance"}
+									</p>
+								</TooltipContent>
+							</Tooltip>
+						</TooltipProvider>
+					</div>
+					<div className="rounded-lg border bg-card p-3">
+						<div className="flex items-center gap-2 text-muted-foreground mb-1">
+							<Package className="h-3.5 w-3.5" />
+							<span className="text-xs">Cache</span>
+						</div>
+						<p className="text-lg font-semibold tabular-nums">
+							{log.cached
+								? "Full"
+								: log.cachedTokens && Number(log.cachedTokens) > 0
+									? "Partial"
+									: "None"}
+						</p>
+					</div>
+				</div>
+
+				{/* Main content grid */}
+				<div className="grid gap-6 lg:grid-cols-2">
+					{/* Left column */}
+					<div className="space-y-6">
+						<Section title="Request">
+							<div className="rounded-lg border bg-card p-4">
+								<Field
+									label="Requested Model"
+									value={log.requestedModel}
+									mono
+								/>
+								<Field
+									label="Used Model"
+									value={log.usedModel === "" ? "—" : log.usedModel}
+									mono
+								/>
+								{log.usedModelMapping && (
+									<Field
+										label="Model Mapping"
+										value={log.usedModelMapping}
+										mono
+									/>
+								)}
+								<Field label="Provider" value={log.usedProvider} />
+								{log.requestedProvider && (
+									<Field
+										label="Requested Provider"
+										value={log.requestedProvider}
+									/>
+								)}
+								<Field
+									label="Streamed"
+									value={
+										log.streamed ? (
+											<span className="inline-flex items-center gap-1">
+												<AudioWaveform className="h-3 w-3 text-emerald-500" />
+												Yes
+											</span>
+										) : (
+											"No"
+										)
+									}
+								/>
+								<Field
+									label="Canceled"
+									value={
+										log.canceled ? (
+											<span className="inline-flex items-center gap-1">
+												<Ban className="h-3 w-3 text-amber-500" />
+												Yes
+											</span>
+										) : (
+											"No"
+										)
+									}
+								/>
+								{log.source && <Field label="Source" value={log.source} />}
+							</div>
+						</Section>
+
+						{log.routingMetadata && (
+							<Section title="Routing">
+								<div className="rounded-lg border bg-card p-4">
+									{log.routingMetadata.selectionReason && (
+										<Field
+											label="Selection"
+											value={log.routingMetadata.selectionReason}
+											mono
+										/>
+									)}
+									{log.routingMetadata.usedApiKeyHash && (
+										<Field
+											label="Key"
+											value={formatApiKeyHash(
+												log.routingMetadata.usedApiKeyHash,
+											)}
+											mono
+										/>
+									)}
+									{log.routingMetadata.availableProviders &&
+										log.routingMetadata.availableProviders.length > 0 && (
+											<Field
+												label="Available"
+												value={log.routingMetadata.availableProviders.join(
+													", ",
+												)}
+												mono
+											/>
+										)}
+									{log.routingMetadata.providerScores &&
+										log.routingMetadata.providerScores.length > 0 &&
+										(() => {
+											const scores = log.routingMetadata?.providerScores ?? [];
+											const showScore = isProviderScoreMeaningful(
+												log.routingMetadata?.selectionReason,
+												scores,
+											);
+											return (
+												<div className="mt-3 pt-3 border-t border-border/50">
+													<p className="text-xs text-muted-foreground mb-2">
+														Provider Scores
+													</p>
+													<div className="space-y-1.5">
+														{scores.map((score) => (
+															<div
+																key={`${score.providerId}-${score.region ?? "default"}`}
+																className="flex items-center justify-between text-xs font-mono"
+															>
+																<span className="flex items-center gap-1.5">
+																	{score.providerId}
+																	{score.region && (
+																		<span className="text-muted-foreground">
+																			({score.region})
+																		</span>
+																	)}
+																	{score.failed && (
+																		<span className="inline-flex items-center gap-0.5 text-red-500">
+																			<AlertCircle className="h-3 w-3" />
+																			<span>
+																				{score.status_code}
+																				{score.error_type && (
+																					<span className="ml-0.5 text-red-400">
+																						{score.error_type}
+																					</span>
+																				)}
+																			</span>
+																		</span>
+																	)}
+																	{score.rate_limited && (
+																		<span className="inline-flex items-center gap-0.5 text-amber-500">
+																			<Clock className="h-3 w-3" />
+																			<span>rpm capped</span>
+																		</span>
+																	)}
+																	{score.excludedByContentFilter && (
+																		<span className="inline-flex items-center gap-0.5 text-amber-500">
+																			<Ban className="h-3 w-3" />
+																			<span>content filter</span>
+																		</span>
+																	)}
+																</span>
+																<span className="text-muted-foreground font-mono">
+																	{showScore && score.score.toFixed(2)}
+																	{score.uptime !== undefined && (
+																		<span className="ml-2">
+																			{score.uptime?.toFixed(0)}% up
+																		</span>
+																	)}
+																	{score.throughput !== undefined && (
+																		<span className="ml-2">
+																			{score.throughput?.toFixed(0)}t/s
+																		</span>
+																	)}
+																	{score.latency !== undefined && (
+																		<span className="ml-2">
+																			{score.latency?.toFixed(0)}ms
+																		</span>
+																	)}
+																	{score.price !== undefined && (
+																		<span className="ml-2">${score.price}</span>
+																	)}
+																	{score.cacheSupported && (
+																		<span className="ml-2">cache</span>
+																	)}
+																</span>
+															</div>
+														))}
+													</div>
+												</div>
+											);
+										})()}
+									{log.routingMetadata.routing &&
+										log.routingMetadata.routing.length > 0 && (
+											<div className="mt-3 pt-3 border-t border-border/50">
+												<p className="text-xs text-muted-foreground mb-2">
+													Request Attempts
+												</p>
+												<div className="space-y-1.5">
+													{log.routingMetadata.routing.map((attempt, i) => (
+														<div
+															key={`${attempt.provider}-${i}`}
+															className={`flex items-center justify-between text-xs font-mono ${attempt.succeeded ? "text-green-600" : "text-red-500"}`}
+														>
+															<span className="flex items-center gap-1">
+																{attempt.succeeded ? (
+																	<CheckCircle2 className="h-3 w-3" />
+																) : (
+																	<AlertCircle className="h-3 w-3" />
+																)}
+																{attempt.provider}/{attempt.model}
+																{attempt.region && (
+																	<span className="text-muted-foreground">
+																		({attempt.region})
+																	</span>
+																)}
+																{attempt.apiKeyHash && (
+																	<span className="text-muted-foreground">
+																		key {formatApiKeyHash(attempt.apiKeyHash)}
+																	</span>
+																)}
+																{attempt.logId && (
+																	<Link
+																		href={`/dashboard/${orgId}/${projectId}/activity/${attempt.logId}`}
+																		className="text-muted-foreground hover:underline"
+																	>
+																		log {attempt.logId}
+																	</Link>
+																)}
+															</span>
+															<span>
+																{attempt.status_code}{" "}
+																{attempt.succeeded ? "ok" : attempt.error_type}
+															</span>
+														</div>
+													))}
+												</div>
+											</div>
+										)}
+									{log.routingMetadata.filteredProviders &&
+										log.routingMetadata.filteredProviders.length > 0 && (
+											<div className="mt-3 pt-3 border-t border-border/50">
+												<p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+													<Filter className="h-3 w-3" />
+													Filtered Providers
+												</p>
+												<div className="space-y-1.5">
+													{log.routingMetadata.filteredProviders.map(
+														(filtered) => (
+															<div
+																key={filtered.providerId}
+																className="flex items-center justify-between text-xs font-mono"
+															>
+																<span className="text-amber-600">
+																	{filtered.providerId}
+																</span>
+																<span className="text-muted-foreground text-right">
+																	{filtered.reasons.join(", ")}
+																</span>
+															</div>
+														),
+													)}
+												</div>
+											</div>
+										)}
+									{log.routingMetadata.strippedParameters &&
+										log.routingMetadata.strippedParameters.length > 0 && (
+											<div className="mt-3 pt-3 border-t border-border/50">
+												<p className="text-xs text-muted-foreground mb-2">
+													Stripped Parameters
+												</p>
+												<p className="text-xs font-mono text-amber-600">
+													{log.routingMetadata.strippedParameters.join(", ")}
+												</p>
+											</div>
+										)}
+								</div>
+							</Section>
+						)}
+
+						<Section title="Cost Information">
+							<div className="rounded-lg border bg-card p-4 space-y-4">
+								<div>
+									<p className="text-xs text-muted-foreground mb-2">
+										Provider pricing
+										{log.usedMode === "api-keys" &&
+											" — not deducted from your balance"}
+									</p>
+									<div className="text-muted-foreground">
+										<Field
+											label="Input Cost"
+											value={
+												log.inputCost ? `$${log.inputCost.toFixed(8)}` : "$0"
+											}
+											muted
+										/>
+										<Field
+											label="Output Cost"
+											value={
+												log.outputCost ? `$${log.outputCost.toFixed(8)}` : "$0"
+											}
+											muted
+										/>
+										{!!log.cachedInputCost &&
+											Number(log.cachedInputCost) > 0 && (
+												<Field
+													label="Cached Input Cost"
+													value={`$${Number(log.cachedInputCost).toFixed(8)}`}
+													muted
+												/>
+											)}
+										{!!log.cacheWriteInputCost &&
+											Number(log.cacheWriteInputCost) > 0 && (
+												<Field
+													label="Cache Write Cost"
+													value={`$${Number(log.cacheWriteInputCost).toFixed(8)}`}
+													muted
+												/>
+											)}
+										<Field
+											label="Request Cost"
+											value={
+												log.requestCost
+													? `$${log.requestCost.toFixed(8)}`
+													: "$0"
+											}
+											muted
+										/>
+										{!!log.webSearchCost && Number(log.webSearchCost) > 0 && (
+											<Field
+												label="Web Search Cost"
+												value={`$${Number(log.webSearchCost).toFixed(8)}`}
+												muted
+											/>
+										)}
+										{!!log.contentFilterCost &&
+											Number(log.contentFilterCost) > 0 && (
+												<Field
+													label="Content Filter Cost"
+													value={`$${Number(log.contentFilterCost).toFixed(8)}`}
+													muted
+												/>
+											)}
+										{!!log.imageInputCost && Number(log.imageInputCost) > 0 && (
+											<Field
+												label="Image Input Cost"
+												value={`$${Number(log.imageInputCost).toFixed(8)}`}
+												muted
+											/>
+										)}
+										{!!log.imageOutputCost &&
+											Number(log.imageOutputCost) > 0 && (
+												<Field
+													label="Image Output Cost"
+													value={`$${Number(log.imageOutputCost).toFixed(8)}`}
+													muted
+												/>
+											)}
+										{!!log.videoOutputCost &&
+											Number(log.videoOutputCost) > 0 && (
+												<Field
+													label="Video Output Cost"
+													value={`$${Number(log.videoOutputCost).toFixed(8)}`}
+													muted
+												/>
+											)}
+										{!!log.audioInputCost && Number(log.audioInputCost) > 0 && (
+											<Field
+												label="Audio Input Cost"
+												value={`$${Number(log.audioInputCost).toFixed(8)}`}
+												muted
+											/>
+										)}
+										<Field
+											label="Inference Total"
+											value={log.cost ? `$${log.cost.toFixed(8)}` : "$0"}
+											muted
+										/>
+										{log.discount && log.discount !== 1 && (
+											<Field
+												label="Discount"
+												value={
+													<span className="text-emerald-500">
+														{(log.discount * 100).toFixed(0)}% off
+													</span>
+												}
+											/>
+										)}
+										{log.pricingTier && (
+											<Field label="Pricing Tier" value={log.pricingTier} />
+										)}
+										{log.requestedServiceTier && (
+											<Field
+												label="Requested Service Tier"
+												value={
+													log.requestedServiceTier.charAt(0).toUpperCase() +
+													log.requestedServiceTier.slice(1)
+												}
+											/>
+										)}
+										{log.usedServiceTier &&
+											(() => {
+												const tierName =
+													log.usedServiceTier.charAt(0).toUpperCase() +
+													log.usedServiceTier.slice(1);
+												const tier = getServiceTier(
+													log.usedProvider ?? "",
+													log.usedServiceTier,
+												);
+												const multiplier = tier
+													? formatServiceTierMultiplier(tier.multiplier)
+													: "";
+												return (
+													<Field
+														label="Used Service Tier"
+														value={
+															multiplier
+																? `${tierName} (${multiplier})`
+																: tierName
+														}
+													/>
+												);
+											})()}
+									</div>
+								</div>
+								<div className="border-t border-border/50 pt-4">
+									<p className="text-xs font-medium mb-2">
+										Billed to your organization
+									</p>
+									<Field
+										label="Data Storage"
+										value={
+											log.dataStorageCost
+												? `$${Number(log.dataStorageCost).toFixed(8)}`
+												: "$0"
+										}
+									/>
+								</div>
+							</div>
+						</Section>
+					</div>
+
+					{/* Right column */}
+					<div className="space-y-6">
+						<Section title="Tokens">
+							<div className="rounded-lg border bg-card p-4">
+								<Field label="Prompt Tokens" value={log.promptTokens} />
+								<Field label="Completion Tokens" value={log.completionTokens} />
+								<Field label="Total Tokens" value={log.totalTokens} />
+								{log.cachedTokens && Number(log.cachedTokens) > 0 && (
+									<Field label="Cached Input Tokens" value={log.cachedTokens} />
+								)}
+								{log.cacheWriteTokens && Number(log.cacheWriteTokens) > 0 && (
+									<Field
+										label="Cache Write Tokens"
+										value={log.cacheWriteTokens}
+									/>
+								)}
+								{log.cacheWrite5mTokens &&
+									Number(log.cacheWrite5mTokens) > 0 && (
+										<Field
+											label="Cache Write Tokens (5m TTL)"
+											value={log.cacheWrite5mTokens}
+										/>
+									)}
+								{log.cacheWrite1hTokens &&
+									Number(log.cacheWrite1hTokens) > 0 && (
+										<Field
+											label="Cache Write Tokens (1h TTL)"
+											value={log.cacheWrite1hTokens}
+										/>
+									)}
+								{log.reasoningTokens && (
+									<Field label="Reasoning Tokens" value={log.reasoningTokens} />
+								)}
+								{log.imageInputTokens && Number(log.imageInputTokens) > 0 && (
+									<Field
+										label="Image Input Tokens"
+										value={log.imageInputTokens}
+									/>
+								)}
+								{log.imageOutputTokens && Number(log.imageOutputTokens) > 0 && (
+									<Field
+										label="Image Output Tokens"
+										value={log.imageOutputTokens}
+									/>
+								)}
+								{log.audioInputTokens && Number(log.audioInputTokens) > 0 && (
+									<Field
+										label="Audio Input Tokens"
+										value={log.audioInputTokens}
+									/>
+								)}
+								<Field
+									label="Response Size"
+									value={
+										log.responseSize
+											? `${prettyBytes(log.responseSize)} (${log.responseSize} bytes)`
+											: "Unknown"
+									}
+								/>
+							</div>
+						</Section>
+
+						<Section title="Parameters">
+							<div className="rounded-lg border bg-card p-4">
+								<TooltipProvider>
+									<Field label="Temperature" value={log.temperature ?? "-"} />
+									<Field label="Max Tokens" value={log.maxTokens ?? "-"} />
+									<Field label="Top P" value={log.topP ?? "-"} />
+									<Field
+										label="Frequency Penalty"
+										value={log.frequencyPenalty ?? "-"}
+									/>
+									<Field
+										label="Reasoning Effort"
+										value={log.reasoningEffort ?? "-"}
+									/>
+									{log.effort && <Field label="Effort" value={log.effort} />}
+									<Field
+										label="Response Format"
+										value={
+											log.responseFormat
+												? typeof log.responseFormat === "object"
+													? ((log.responseFormat as any).type ?? "-")
+													: "-"
+												: "-"
+										}
+									/>
+									<Field
+										label="Finish Reason"
+										value={log.finishReason ?? "-"}
+									/>
+									<Field
+										label="Unified Finish Reason"
+										value={log.unifiedFinishReason ?? "-"}
+									/>
+								</TooltipProvider>
+							</div>
+						</Section>
+
+						{imageConfig && (
+							<Section title="Image Generation">
+								<div className="rounded-lg border bg-card p-4">
+									{imageConfig.aspect_ratio && (
+										<Field
+											label="Aspect Ratio"
+											value={imageConfig.aspect_ratio}
+										/>
+									)}
+									{imageConfig.image_size && (
+										<Field label="Image Size" value={imageConfig.image_size} />
+									)}
+									<Field
+										label="Image Quality"
+										value={imageConfig.image_quality ?? "-"}
+									/>
+									{imageConfig.n !== undefined && imageConfig.n !== null && (
+										<Field label="Image Count" value={imageConfig.n} />
+									)}
+									{imageConfig.output_format && (
+										<Field
+											label="Output Format"
+											value={imageConfig.output_format}
+										/>
+									)}
+									{imageConfig.output_compression !== undefined &&
+										imageConfig.output_compression !== null && (
+											<Field
+												label="Compression"
+												value={imageConfig.output_compression}
+											/>
+										)}
+									{imageConfig.seed !== undefined &&
+										imageConfig.seed !== null && (
+											<Field label="Seed" value={imageConfig.seed} />
+										)}
+								</div>
+							</Section>
+						)}
+
+						<Section title="Metadata">
+							<div className="rounded-lg border bg-card p-4">
+								<Field
+									label="Request ID"
+									value={
+										<span className="inline-flex items-center gap-2">
+											<span className="font-mono text-xs">{log.requestId}</span>
+											<CopyButton
+												value={log.requestId}
+												label="Copy request ID"
+											/>
+										</span>
+									}
+								/>
+								<Field
+									label="Trace ID"
+									value={
+										log.traceId ? (
+											<span className="inline-flex items-center gap-2">
+												<span className="font-mono text-xs">{log.traceId}</span>
+												<CopyButton value={log.traceId} label="Copy trace ID" />
+											</span>
+										) : (
+											"—"
+										)
+									}
+								/>
+								<Field
+									label="Log ID"
+									value={
+										<span className="inline-flex items-center gap-2">
+											<span className="font-mono text-xs">{log.id}</span>
+											<CopyButton value={log.id} label="Copy log ID" />
+										</span>
+									}
+								/>
+								<Field
+									label="Project"
+									value={
+										<RelatedResourceValue
+											id={log.projectId}
+											name={log.projectName}
+											copyLabel="Copy project ID"
+										/>
+									}
+								/>
+								<Field
+									label="API Key"
+									value={
+										<RelatedResourceValue
+											id={log.apiKeyId}
+											name={log.apiKeyName}
+											copyLabel="Copy API key ID"
+										/>
+									}
+								/>
+								<Field label="Mode" value={log.mode || "?"} />
+								<Field label="Used Mode" value={log.usedMode || "?"} />
+								<Field
+									label="Date"
+									value={format(log.createdAt, "dd.MM.yyyy HH:mm:ss")}
+									mono
+								/>
+							</div>
+							{log.customHeaders &&
+								Object.keys(log.customHeaders).length > 0 && (
+									<div className="rounded-lg border bg-card p-4 mt-3">
+										<p className="text-xs text-muted-foreground mb-2">
+											Custom Headers
+										</p>
+										{Object.entries(log.customHeaders).map(([key, value]) => (
+											<Field key={key} label={key} value={String(value)} mono />
+										))}
+									</div>
+								)}
+						</Section>
+					</div>
+				</div>
+
+				{/* Full-width sections */}
+				{log.plugins && log.plugins.length > 0 && (
+					<Section title="Plugins">
+						<div className="rounded-lg border bg-card p-4 space-y-3">
+							<div className="flex flex-wrap gap-2">
+								{log.plugins.map((plugin) => (
+									<Badge key={plugin} variant="secondary" className="gap-1">
+										<Plug className="h-3 w-3" />
+										{plugin}
+									</Badge>
+								))}
+							</div>
+							{log.pluginResults?.responseHealing && (
+								<div className="pt-3 border-t border-border/50">
+									<div className="flex items-center gap-2 text-sm">
+										<Sparkles
+											className={cn(
+												"h-3.5 w-3.5",
+												log.pluginResults.responseHealing.healed
+													? "text-emerald-500"
+													: "text-muted-foreground",
+											)}
+										/>
+										<span>
+											Response Healing:{" "}
+											{log.pluginResults.responseHealing.healed ? (
+												<span className="text-emerald-500 font-medium">
+													Applied
+													{log.pluginResults.responseHealing.healingMethod && (
+														<span className="text-muted-foreground font-normal ml-1">
+															(
+															{log.pluginResults.responseHealing.healingMethod
+																.replace(/_/g, " ")
+																.replace(/\b\w/g, (l: string) =>
+																	l.toUpperCase(),
+																)}
+															)
+														</span>
+													)}
+												</span>
+											) : (
+												<span className="text-muted-foreground">
+													Not needed
+												</span>
+											)}
+										</span>
+									</div>
+								</div>
+							)}
+						</div>
+					</Section>
+				)}
+
+				{(log.tools ?? log.toolChoice ?? log.toolResults) && (
+					<Section title="Tools">
+						<div className="space-y-3">
+							{log.tools && (
+								<div className="rounded-lg border bg-card p-4">
+									<p className="text-xs text-muted-foreground mb-2">
+										Available Tools
+									</p>
+									<pre className="max-h-48 text-xs overflow-auto whitespace-pre-wrap break-all font-mono bg-muted/30 rounded-md p-3">
+										{JSON.stringify(log.tools, null, 2)}
+									</pre>
+								</div>
+							)}
+							{log.toolChoice && (
+								<div className="rounded-lg border bg-card p-4">
+									<p className="text-xs text-muted-foreground mb-2">
+										Tool Choice
+									</p>
+									<pre className="max-h-48 text-xs overflow-auto whitespace-pre-wrap break-all font-mono bg-muted/30 rounded-md p-3">
+										{JSON.stringify(log.toolChoice, null, 2)}
+									</pre>
+								</div>
+							)}
+							{log.toolResults && (
+								<div className="rounded-lg border bg-card p-4">
+									<p className="text-xs text-muted-foreground mb-2">
+										Tool Calls
+									</p>
+									<div className="space-y-2">
+										{Array.isArray(log.toolResults) ? (
+											log.toolResults
+												.filter(
+													(tc): tc is NonNullable<typeof tc> =>
+														tc !== null && tc !== undefined,
+												)
+												.map((toolCall, index: number) => (
+													<div
+														key={index}
+														className="rounded-md bg-muted/30 p-3"
+													>
+														<div className="flex justify-between items-center mb-2">
+															<span className="text-sm font-medium">
+																{toolCall.function?.name || "Unknown"}
+															</span>
+															<span className="text-xs text-muted-foreground font-mono">
+																{toolCall.id || "N/A"}
+															</span>
+														</div>
+														{toolCall.function?.arguments && (
+															<pre className="text-xs overflow-auto whitespace-pre-wrap break-all font-mono bg-background rounded border p-2 max-h-32">
+																{typeof toolCall.function.arguments === "string"
+																	? toolCall.function.arguments
+																	: JSON.stringify(
+																			toolCall.function.arguments,
+																			null,
+																			2,
+																		)}
+															</pre>
+														)}
+													</div>
+												))
+										) : (
+											<pre className="max-h-48 text-xs overflow-auto whitespace-pre-wrap break-all font-mono bg-muted/30 rounded-md p-3">
+												{JSON.stringify(log.toolResults, null, 2)}
+											</pre>
+										)}
+									</div>
+								</div>
+							)}
+						</div>
+					</Section>
+				)}
+
+				{!!log.webSearchCost && Number(log.webSearchCost) > 0 && (
+					<Section title="Builtin Tools">
+						<div className="rounded-lg border bg-card p-4">
+							<div className="flex items-center gap-2 text-sm">
+								<Globe className="h-4 w-4 text-sky-500" />
+								<span>Web search was used in this request</span>
+								<span className="ml-auto text-muted-foreground">
+									Cost: ${Number(log.webSearchCost).toFixed(4)}
+								</span>
+							</div>
+						</div>
+					</Section>
+				)}
+
+				{log.hasError && !!log.errorDetails && (
+					<Section title="Error Details">
+						<div className="rounded-lg border border-red-500/20 bg-red-500/5 p-4 space-y-3">
+							<div className="flex gap-6">
+								<div>
+									<p className="text-xs text-red-400 mb-0.5">Status Code</p>
+									<p className="text-sm font-semibold">
+										{log.errorDetails.statusCode}
+									</p>
+								</div>
+								<div>
+									<p className="text-xs text-red-400 mb-0.5">Status Text</p>
+									<p className="text-sm font-semibold">
+										{log.errorDetails.statusText}
+									</p>
+								</div>
+							</div>
+							<div>
+								<p className="text-xs text-red-400 mb-1">Error Message</p>
+								<pre className="text-xs overflow-auto whitespace-pre-wrap break-all font-mono bg-background rounded border p-3">
+									{log.errorDetails.responseText}
+								</pre>
+							</div>
+							{log.retried && log.retriedByLogId && (
+								<div className="flex items-center gap-2 rounded-md border border-amber-500/20 bg-amber-500/10 p-3 text-sm">
+									<RefreshCw className="h-4 w-4 text-amber-600" />
+									<span className="text-amber-700">
+										This request was retried and succeeded.
+									</span>
+									<Link
+										href={`/dashboard/${orgId}/${projectId}/activity/${log.retriedByLogId}`}
+										className="text-amber-600 underline hover:text-amber-800 ml-auto"
+									>
+										View successful request
+									</Link>
+								</div>
+							)}
+						</div>
+					</Section>
+				)}
+
+				<Section title="Messages">
+					<div className="rounded-lg border bg-card p-4 space-y-4">
+						{inputImages.length > 0 && (
+							<div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+								{inputImages.map((img) => (
+									<div
+										key={img.index}
+										className="rounded-md border overflow-hidden bg-muted/30"
+									>
+										<img
+											src={img.src}
+											alt={`Input image ${img.index + 1}`}
+											className="w-full h-auto"
+										/>
+									</div>
+								))}
+							</div>
+						)}
+						{log.messages ? (
+							<pre className="max-h-80 text-xs overflow-auto whitespace-pre-wrap break-all font-mono bg-muted/30 rounded-md p-3">
+								{stringifyMessagesCompact(log.messages)}
+							</pre>
+						) : !retentionEnabled ? (
+							<p className="text-sm text-muted-foreground italic">
+								Message data not retained. Enable retention in organization
+								policies to store request messages.
+							</p>
+						) : (
+							<p className="text-sm text-muted-foreground italic">
+								No message data available.
+							</p>
+						)}
+						{!!log.responseFormat && (
+							<div className="mt-3 pt-3 border-t border-border/50">
+								<p className="text-xs text-muted-foreground mb-2">
+									Response Format
+								</p>
+								<pre className="max-h-40 text-xs overflow-auto whitespace-pre-wrap break-all font-mono bg-muted/30 rounded-md p-3">
+									{JSON.stringify(log.responseFormat, null, 2)}
+								</pre>
+							</div>
+						)}
+					</div>
+				</Section>
+
+				{log.reasoningContent && (
+					<Section title="Reasoning Content">
+						<div className="rounded-lg border bg-card p-4">
+							<pre className="max-h-80 text-xs overflow-auto whitespace-pre-wrap break-all font-mono bg-muted/30 rounded-md p-3">
+								{log.reasoningContent}
+							</pre>
+						</div>
+					</Section>
+				)}
+
+				<Section title="Response">
+					<div className="rounded-lg border bg-card p-4">
+						{log.content && shouldTryRenderImageContent(log.content) ? (
+							<ImageContentRenderer content={log.content} />
+						) : log.content ? (
+							<pre className="max-h-80 text-xs overflow-auto whitespace-pre-wrap break-all font-mono bg-muted/30 rounded-md p-3">
+								{log.content}
+							</pre>
+						) : !retentionEnabled ? (
+							<p className="text-sm text-muted-foreground italic">
+								Response content not retained. Enable retention in organization
+								policies to store response data.
+							</p>
+						) : (
+							<p className="text-sm text-muted-foreground italic">
+								No response content available.
+							</p>
+						)}
+					</div>
+				</Section>
+
+				{log.params &&
+					(() => {
+						const remaining = Object.fromEntries(
+							Object.entries(log.params).filter(
+								([key]) => key !== "image_config",
+							),
+						);
+						return Object.keys(remaining).length > 0 ? (
+							<Section title="Additional Parameters">
+								<div className="rounded-lg border bg-card p-4">
+									<pre className="max-h-48 text-xs overflow-auto whitespace-pre-wrap break-all font-mono bg-muted/30 rounded-md p-3">
+										{JSON.stringify(remaining, null, 2)}
+									</pre>
+								</div>
+							</Section>
+						) : null;
+					})()}
+			</div>
+		</div>
+	);
+}

@@ -1,0 +1,1422 @@
+import { redisClient } from "@llmgateway/cache";
+import { logger } from "@llmgateway/logger";
+
+import { calculatePromptTokensFromMessages } from "./calculate-prompt-tokens.js";
+import { extractImages } from "./extract-images.js";
+import {
+	adjustGoogleCandidateTokens,
+	extractBedrockCacheCreationDetails,
+} from "./extract-token-usage.js";
+import { mapFinishReasonToOpenai } from "./map-finish-reason-to-openai.js";
+import { transformOpenaiStreaming } from "./transform-openai-streaming.js";
+
+import type { Annotation, StreamingDelta } from "./types.js";
+import type { Provider } from "@llmgateway/models";
+
+function normalizeAnthropicUsage(usage: any): any {
+	if (!usage || typeof usage !== "object") {
+		return null;
+	}
+	const hasInputUsage =
+		usage.input_tokens !== undefined ||
+		usage.cache_creation_input_tokens !== undefined ||
+		usage.cache_read_input_tokens !== undefined;
+	const outputTokens = usage.output_tokens;
+	if (!hasInputUsage && outputTokens === undefined) {
+		return null;
+	}
+
+	const inputTokens = hasInputUsage ? (usage.input_tokens ?? 0) : null;
+	const cacheCreation = hasInputUsage
+		? (usage.cache_creation_input_tokens ?? 0)
+		: null;
+	const cacheRead = hasInputUsage ? (usage.cache_read_input_tokens ?? 0) : null;
+	const promptTokens = hasInputUsage
+		? (inputTokens ?? 0) + (cacheCreation ?? 0) + (cacheRead ?? 0)
+		: null;
+	const normalizedUsage: Record<string, any> = {
+		...(promptTokens !== null && { prompt_tokens: promptTokens }),
+		...(outputTokens !== undefined && { completion_tokens: outputTokens }),
+		...(promptTokens !== null &&
+			outputTokens !== undefined && {
+				total_tokens: promptTokens + outputTokens,
+			}),
+		...(cacheRead !== null &&
+			cacheCreation !== null &&
+			(cacheRead > 0 || cacheCreation > 0) && {
+				prompt_tokens_details: {
+					cached_tokens: cacheRead,
+					...(cacheCreation > 0 && {
+						cache_write_tokens: cacheCreation,
+						cache_creation_tokens: cacheCreation,
+					}),
+				},
+			}),
+	};
+	return normalizedUsage;
+}
+
+export function transformStreamingToOpenai(
+	usedProvider: Provider,
+	usedModel: string,
+	data: any,
+	messages: any[],
+	serverToolUseIndices?: Set<number>,
+	supportsReasoning = true,
+): any {
+	let transformedData = data;
+
+	const isKnownNonRenderableAwsBedrockDelta = (delta: any): boolean => {
+		if (!delta || typeof delta !== "object") {
+			return false;
+		}
+
+		if (delta.toolResult || delta.citation || delta.image) {
+			return true;
+		}
+
+		if (delta.reasoningContent) {
+			const reasoningContent = delta.reasoningContent;
+			return (
+				typeof reasoningContent === "object" &&
+				reasoningContent !== null &&
+				!reasoningContent.text
+			);
+		}
+
+		return false;
+	};
+
+	switch (usedProvider) {
+		case "anthropic":
+		case "vertex-anthropic": {
+			const usage = data.message?.usage ?? data.usage;
+			if (data.type === "message_start") {
+				transformedData = {
+					id: data.message?.id ?? data.id ?? `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: data.created ?? Math.floor(Date.now() / 1000),
+					model: data.message?.model ?? data.model ?? usedModel,
+					choices: [
+						{
+							index: 0,
+							delta: {
+								role: "assistant",
+							},
+							finish_reason: null,
+						},
+					],
+					usage: normalizeAnthropicUsage(usage),
+				};
+			} else if (data.type === "content_block_delta" && data.delta?.text) {
+				transformedData = {
+					id: data.id ?? `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: data.created ?? Math.floor(Date.now() / 1000),
+					model: data.model ?? usedModel,
+					choices: [
+						{
+							index: 0,
+							delta: {
+								content: data.delta.text,
+								role: "assistant",
+							},
+							finish_reason: null,
+						},
+					],
+					usage: normalizeAnthropicUsage(usage),
+				};
+			} else if (
+				data.type === "content_block_delta" &&
+				data.delta?.type === "thinking_delta" &&
+				data.delta?.thinking
+			) {
+				transformedData = {
+					id: data.id ?? `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: data.created ?? Math.floor(Date.now() / 1000),
+					model: data.model ?? usedModel,
+					choices: [
+						{
+							index: 0,
+							delta: {
+								reasoning: data.delta.thinking,
+								role: "assistant",
+							},
+							finish_reason: null,
+						},
+					],
+					usage: normalizeAnthropicUsage(usage),
+				};
+			} else if (
+				data.type === "content_block_start" &&
+				data.content_block?.type === "server_tool_use"
+			) {
+				// Track server_tool_use blocks (e.g. web search) so their
+				// partial_json deltas are suppressed — these are internal to
+				// Anthropic and should not be forwarded as tool_calls.
+				if (serverToolUseIndices && data.index !== undefined) {
+					serverToolUseIndices.add(data.index);
+				}
+				transformedData = {
+					id: data.id ?? `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: data.created ?? Math.floor(Date.now() / 1000),
+					model: data.model ?? usedModel,
+					choices: [
+						{
+							index: 0,
+							delta: {
+								role: "assistant",
+							},
+							finish_reason: null,
+						},
+					],
+					usage: normalizeAnthropicUsage(usage),
+				};
+			} else if (
+				data.type === "content_block_start" &&
+				data.content_block?.type === "tool_use"
+			) {
+				transformedData = {
+					id: data.id ?? `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: data.created ?? Math.floor(Date.now() / 1000),
+					model: data.model ?? usedModel,
+					choices: [
+						{
+							index: 0,
+							delta: {
+								tool_calls: [
+									{
+										index: data.index ?? 0,
+										id: data.content_block.id,
+										type: "function",
+										function: {
+											name: data.content_block.name,
+											arguments: "",
+										},
+									},
+								],
+								role: "assistant",
+							},
+							finish_reason: null,
+						},
+					],
+					usage: normalizeAnthropicUsage(usage),
+				};
+			} else if (
+				data.type === "content_block_delta" &&
+				(data.delta?.type === "input_json_delta" ||
+					data.delta?.partial_json !== undefined)
+			) {
+				// input_json_delta carries the tool-call arguments. The first delta
+				// of a tool_use block often has an empty partial_json (""), so match
+				// on the delta type rather than the truthiness of partial_json.
+				const partialJson = data.delta.partial_json ?? "";
+				// Skip partial_json deltas for server_tool_use blocks (e.g. web search)
+				if (
+					serverToolUseIndices &&
+					data.index !== undefined &&
+					serverToolUseIndices.has(data.index)
+				) {
+					transformedData = {
+						id: data.id ?? `chatcmpl-${Date.now()}`,
+						object: "chat.completion.chunk",
+						created: data.created ?? Math.floor(Date.now() / 1000),
+						model: data.model ?? usedModel,
+						choices: [
+							{
+								index: 0,
+								delta: {
+									role: "assistant",
+								},
+								finish_reason: null,
+							},
+						],
+						usage: normalizeAnthropicUsage(usage),
+					};
+				} else {
+					transformedData = {
+						id: data.id ?? `chatcmpl-${Date.now()}`,
+						object: "chat.completion.chunk",
+						created: data.created ?? Math.floor(Date.now() / 1000),
+						model: data.model ?? usedModel,
+						choices: [
+							{
+								index: 0,
+								delta: {
+									tool_calls: [
+										{
+											index: data.index ?? 0,
+											function: {
+												arguments: partialJson,
+											},
+										},
+									],
+									role: "assistant",
+								},
+								finish_reason: null,
+							},
+						],
+						usage: normalizeAnthropicUsage(usage),
+					};
+				}
+			} else if (
+				data.type === "content_block_start" &&
+				data.content_block?.type === "web_search_tool_result"
+			) {
+				// Handle web search tool result start - extract citations
+				const webSearchResults = data.content_block?.content ?? [];
+				const annotations: Annotation[] = [];
+				for (const result of webSearchResults) {
+					if (result.type === "web_search_result") {
+						annotations.push({
+							type: "url_citation",
+							url_citation: {
+								url: result.url ?? "",
+								title: result.title,
+							},
+						});
+					}
+				}
+				transformedData = {
+					id: data.id ?? `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: data.created ?? Math.floor(Date.now() / 1000),
+					model: data.model ?? usedModel,
+					choices: [
+						{
+							index: 0,
+							delta: {
+								role: "assistant",
+								...(annotations.length > 0 && { annotations }),
+							},
+							finish_reason: null,
+						},
+					],
+					usage: normalizeAnthropicUsage(usage),
+				};
+			} else if (
+				data.type === "content_block_start" ||
+				data.type === "content_block_stop"
+			) {
+				// Text/thinking/redacted_thinking blocks open with a
+				// content_block_start and close with a content_block_stop. Neither
+				// carries renderable content or usage (that arrives in the
+				// content_block_delta and message_delta chunks), so drop them
+				// instead of forwarding an empty assistant delta.
+				return null;
+			} else if (data.type === "message_delta" && data.delta?.stop_reason) {
+				const stopReason = data.delta.stop_reason;
+				transformedData = {
+					id: data.id ?? `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: data.created ?? Math.floor(Date.now() / 1000),
+					model: data.model ?? usedModel,
+					choices: [
+						{
+							index: 0,
+							delta: {
+								role: "assistant",
+							},
+							finish_reason: mapFinishReasonToOpenai(stopReason, usedProvider),
+						},
+					],
+					usage: normalizeAnthropicUsage(usage),
+				};
+			} else if (data.type === "message_stop" || data.stop_reason) {
+				const stopReason = data.stop_reason ?? "end_turn";
+				transformedData = {
+					id: data.id ?? `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: data.created ?? Math.floor(Date.now() / 1000),
+					model: data.model ?? usedModel,
+					choices: [
+						{
+							index: 0,
+							delta: {
+								role: "assistant",
+							},
+							finish_reason: mapFinishReasonToOpenai(stopReason, usedProvider),
+						},
+					],
+					usage: normalizeAnthropicUsage(usage),
+				};
+			} else if (data.delta?.text) {
+				transformedData = {
+					id: data.id ?? `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: data.created ?? Math.floor(Date.now() / 1000),
+					model: data.model ?? usedModel,
+					choices: [
+						{
+							index: 0,
+							delta: {
+								content: data.delta.text,
+								role: "assistant",
+							},
+							finish_reason: null,
+						},
+					],
+					usage: normalizeAnthropicUsage(usage),
+				};
+			} else if (data.type === "ping") {
+				return null;
+			} else {
+				logger.warn("[streaming] Unrecognized Anthropic chunk", {
+					provider: usedProvider,
+					model: usedModel,
+					type: data.type,
+					deltaType: data.delta?.type,
+					dataKeys: Object.keys(data),
+				});
+				transformedData = {
+					id: data.id ?? `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: data.created ?? Math.floor(Date.now() / 1000),
+					model: data.model ?? usedModel,
+					choices: [
+						{
+							index: 0,
+							delta: {
+								role: "assistant",
+							},
+							finish_reason: null,
+						},
+					],
+					usage: normalizeAnthropicUsage(usage),
+				};
+			}
+			break;
+		}
+
+		case "google-ai-studio":
+		case "glacier":
+		case "google-vertex":
+		case "quartz": {
+			const buildUsage = (
+				usageMetadata: any | undefined,
+				messagesForFallback: any[],
+			) => {
+				if (!usageMetadata) {
+					return null;
+				}
+
+				const promptTokenCount =
+					typeof usageMetadata.promptTokenCount === "number" &&
+					usageMetadata.promptTokenCount > 0
+						? usageMetadata.promptTokenCount
+						: calculatePromptTokensFromMessages(messagesForFallback);
+
+				const rawCandidates = usageMetadata.candidatesTokenCount ?? 0;
+
+				const reasoningTokenCount = usageMetadata.thoughtsTokenCount ?? 0;
+
+				// Adjust for inconsistent Google API behavior where
+				// candidatesTokenCount may already include thoughtsTokenCount
+				const adjustedCandidates = adjustGoogleCandidateTokens(
+					rawCandidates,
+					reasoningTokenCount,
+					promptTokenCount,
+					usageMetadata.totalTokenCount,
+				);
+
+				// completionTokenCount includes reasoning for correct totals
+				const completionTokenCount = adjustedCandidates + reasoningTokenCount;
+
+				const toolUsePromptTokenCount =
+					usageMetadata.toolUsePromptTokenCount ?? 0;
+
+				// Extract cached tokens from Google's implicit caching
+				const cachedContentTokenCount =
+					usageMetadata.cachedContentTokenCount ?? 0;
+
+				const totalTokenCount =
+					promptTokenCount + completionTokenCount + toolUsePromptTokenCount;
+
+				const usage: any = {
+					prompt_tokens: promptTokenCount,
+					completion_tokens: completionTokenCount,
+					total_tokens: totalTokenCount,
+				};
+
+				if (reasoningTokenCount) {
+					usage.reasoning_tokens = reasoningTokenCount;
+				}
+
+				// Include cached tokens in OpenAI-compatible format
+				if (cachedContentTokenCount > 0) {
+					usage.prompt_tokens_details = {
+						cached_tokens: cachedContentTokenCount,
+					};
+				}
+
+				// I am exposing this google-specific metric under a provider-specific namespace
+				// please remove it if you don't need it :)
+				usage._provider_google = {
+					tool_use_prompt_tokens: toolUsePromptTokenCount,
+				};
+
+				return usage;
+			};
+
+			const hasCandidatesArray = Array.isArray(data.candidates);
+			const firstCandidate = hasCandidatesArray
+				? data.candidates[0]
+				: undefined;
+
+			if (
+				(!data.candidates || data.candidates.length === 0) &&
+				!data.promptFeedback?.blockReason
+			) {
+				logger.error(
+					"[transform-streaming-to-openai] Google streaming chunk missing candidates",
+					{
+						hasCandidates: !!data.candidates,
+						candidatesLength: data.candidates?.length ?? 0,
+						hasPromptFeedback: !!data.promptFeedback,
+						promptBlockReason: data.promptFeedback?.blockReason,
+						dataKeys: Object.keys(data),
+					},
+				);
+			}
+
+			const candidates: any[] = hasCandidatesArray ? data.candidates : [];
+
+			let anyHasContent = false;
+
+			const choices: any[] = candidates.map((candidate, candidateIdx) => {
+				const parts: any[] = candidate?.content?.parts ?? [];
+
+				const textParts = parts.filter(
+					(part) => typeof part.text === "string" && !part.thought,
+				);
+				const thoughtParts = parts.filter(
+					(part) => part.thought && typeof part.text === "string",
+				);
+				const hasImages = parts.some((part) => part.inlineData);
+				const hasFunctionCalls = parts.some((part) => part.functionCall);
+
+				const hasThoughtSignature = parts.some(
+					(part) => part.thoughtSignature ?? part.thought_signature,
+				);
+
+				const hasAnyContent =
+					textParts.length ||
+					thoughtParts.length ||
+					hasImages ||
+					hasFunctionCalls ||
+					hasThoughtSignature;
+
+				if (hasAnyContent) {
+					anyHasContent = true;
+				}
+
+				const delta: StreamingDelta & { provider_extra?: any } = {
+					role: "assistant",
+				};
+
+				if (textParts.length) {
+					delta.content = textParts.map((p) => p.text as string).join("");
+				}
+
+				if (thoughtParts.length) {
+					delta.reasoning = thoughtParts.map((p) => p.text as string).join("");
+				}
+
+				if (hasImages) {
+					delta.images = extractImages(data, "google-ai-studio");
+				}
+
+				const toolCalls: any[] = [];
+				const thoughtSignatures: string[] = [];
+
+				parts.forEach((part, partIndex) => {
+					const sig: string | undefined =
+						part.thoughtSignature ?? part.thought_signature;
+
+					// Check for unrecognized part types
+					const isKnownPartType =
+						(typeof part.text === "string" || part.functionCall) ??
+						part.inlineData ??
+						part.thoughtSignature ??
+						part.thought_signature;
+
+					if (!isKnownPartType) {
+						logger.warn("[streaming] Unrecognized Google part type", {
+							provider: usedProvider,
+							model: usedModel,
+							partIndex,
+							partKeys: Object.keys(part),
+						});
+					}
+
+					if (part.functionCall) {
+						const callIndex = toolCalls.length;
+						const toolCallId =
+							part.functionCall.name + "_" + Date.now() + "_" + callIndex;
+						toolCalls.push({
+							id: toolCallId,
+							type: "function",
+							index: partIndex,
+							function: {
+								name: part.functionCall.name,
+								arguments: JSON.stringify(part.functionCall.args ?? {}),
+							},
+							// provider-specific metadata we re-inject the signature later
+							// this is following the latest Google tool call schema
+							// as long as we need a response, sending back the signature is required
+							// it represents the thought process that led to the tool call
+							provider_extra: sig
+								? {
+										google: {
+											thought_signature: sig,
+										},
+									}
+								: undefined,
+						});
+
+						// Cache thoughtSignature in Redis for server-side retrieval in multi-turn conversations
+						// This is especially important when OpenAI SDKs don't preserve extra_content/provider_extra
+						if (sig) {
+							redisClient
+								.setex(
+									`thought_signature:${toolCallId}`,
+									86400, // 1 day expiration
+									sig,
+								)
+								.catch((err) => {
+									logger.error(
+										"Failed to cache thought_signature in streaming transform",
+										{ err },
+									);
+								});
+						}
+					}
+
+					if (sig) {
+						thoughtSignatures.push(sig);
+					}
+				});
+
+				if (toolCalls.length > 0) {
+					(delta as any).tool_calls = toolCalls;
+				}
+
+				if (thoughtSignatures.length > 0) {
+					delta.provider_extra = {
+						...(delta.provider_extra ?? {}),
+						google: {
+							...(delta.provider_extra?.google ?? {}),
+							thought_signatures: thoughtSignatures,
+						},
+					};
+				}
+
+				// Extract grounding metadata citations for web search
+				const groundingMetadata = candidate.groundingMetadata;
+				if (groundingMetadata?.groundingChunks) {
+					const annotationsList: Annotation[] = [];
+					for (const chunk of groundingMetadata.groundingChunks) {
+						if (chunk.web) {
+							annotationsList.push({
+								type: "url_citation",
+								url_citation: {
+									url: chunk.web.uri ?? "",
+									title: chunk.web.title,
+								},
+							});
+						}
+					}
+					if (annotationsList.length > 0) {
+						delta.annotations = annotationsList;
+					}
+				}
+
+				return {
+					index:
+						typeof candidate.index === "number"
+							? candidate.index
+							: candidateIdx,
+					delta,
+					finish_reason: null,
+				};
+			});
+
+			if (anyHasContent) {
+				transformedData = {
+					id: data.responseId ?? `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: Math.floor(Date.now() / 1000),
+					model: data.modelVersion ?? usedModel,
+					choices,
+					usage: buildUsage(data.usageMetadata, messages),
+				};
+			} else if (
+				data.promptFeedback?.blockReason ||
+				firstCandidate?.finishReason
+			) {
+				const promptBlockReason: string | undefined =
+					data.promptFeedback?.blockReason;
+
+				const finishChoices = candidates.length
+					? candidates.map((candidate, candidateIdx) => {
+							const candidateParts: any[] = candidate?.content?.parts ?? [];
+							const candidateHasFunctionCalls = candidateParts.some(
+								(part) => part.functionCall,
+							);
+							const finishReason = candidate.finishReason as string | undefined;
+
+							return {
+								index:
+									typeof candidate.index === "number"
+										? candidate.index
+										: candidateIdx,
+								delta: { role: "assistant" },
+								finish_reason: mapFinishReasonToOpenai(
+									finishReason,
+									usedProvider,
+									candidateHasFunctionCalls,
+									promptBlockReason,
+								),
+							};
+						})
+					: [
+							{
+								index: 0,
+								delta: { role: "assistant" },
+								finish_reason: mapFinishReasonToOpenai(
+									firstCandidate?.finishReason,
+									usedProvider,
+									false,
+									promptBlockReason,
+								),
+							},
+						];
+
+				transformedData = {
+					id: data.responseId ?? `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: Math.floor(Date.now() / 1000),
+					model: data.modelVersion ?? usedModel,
+					choices: finishChoices,
+					usage: buildUsage(data.usageMetadata, messages),
+				};
+			} else {
+				logger.warn("[streaming] Google chunk with no content", {
+					provider: usedProvider,
+					model: usedModel,
+					hasCandidates: hasCandidatesArray,
+					candidatesCount: candidates.length,
+					firstCandidateKeys: firstCandidate ? Object.keys(firstCandidate) : [],
+					hasContentParts: !!(firstCandidate?.content?.parts?.length > 0),
+					partsCount: firstCandidate?.content?.parts?.length ?? 0,
+					hasUsageMetadata: !!data.usageMetadata,
+					dataKeys: Object.keys(data),
+				});
+				transformedData = {
+					id: data.responseId ?? `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: Math.floor(Date.now() / 1000),
+					model: data.modelVersion ?? usedModel,
+					choices: [
+						{
+							index: firstCandidate?.index ?? 0,
+							delta: { role: "assistant" },
+							finish_reason: null,
+						},
+					],
+					usage: buildUsage(data.usageMetadata, messages),
+				};
+			}
+
+			break;
+		}
+
+		case "azure":
+		case "sakana":
+		case "meta":
+		case "openai": {
+			// Azure precedes every stream with a prompt-filter-only chunk that has
+			// empty id/object/model and no choices. The default OpenAI fallback
+			// path passes the empty values through and breaks downstream
+			// hasOpenAIFormat checks. Drop it — if any prompt filter actually
+			// fires, Azure surfaces it via a content_filter error/finish_reason.
+			// Responses API events also lack top-level id/object/choices/usage
+			// but always carry a `type` field, so guard against dropping them.
+			if (
+				usedProvider === "azure" &&
+				!data.type &&
+				!data.id &&
+				!data.object &&
+				(!data.choices || data.choices.length === 0) &&
+				!data.usage
+			) {
+				transformedData = null;
+				break;
+			}
+			if (data.type) {
+				switch (data.type) {
+					case "keepalive":
+						transformedData = null;
+						break;
+
+					case "response.created":
+					case "response.in_progress":
+						transformedData = {
+							id: data.response?.id ?? `chatcmpl-${Date.now()}`,
+							object: "chat.completion.chunk",
+							created:
+								data.response?.created_at ?? Math.floor(Date.now() / 1000),
+							model: data.response?.model ?? usedModel,
+							choices: [
+								{
+									index: 0,
+									delta: { role: "assistant" },
+									finish_reason: null,
+								},
+							],
+							usage: null,
+						};
+						break;
+
+					case "response.output_item.added": {
+						// Check if this is a function_call item
+						const item = data.item;
+						if (item?.type === "function_call") {
+							// First chunk for function call - emit id, type, name
+							transformedData = {
+								id: data.response?.id ?? `chatcmpl-${Date.now()}`,
+								object: "chat.completion.chunk",
+								created:
+									data.response?.created_at ?? Math.floor(Date.now() / 1000),
+								model: data.response?.model ?? usedModel,
+								choices: [
+									{
+										index: 0,
+										delta: {
+											tool_calls: [
+												{
+													index: data.output_index ?? 0,
+													id: item.call_id ?? `call_${Date.now()}`,
+													type: "function",
+													function: {
+														name: item.name ?? "",
+														arguments: "",
+													},
+												},
+											],
+											role: "assistant",
+										},
+										finish_reason: null,
+									},
+								],
+								usage: null,
+							};
+						} else {
+							transformedData = {
+								id: data.response?.id ?? `chatcmpl-${Date.now()}`,
+								object: "chat.completion.chunk",
+								created:
+									data.response?.created_at ?? Math.floor(Date.now() / 1000),
+								model: data.response?.model ?? usedModel,
+								choices: [
+									{
+										index: 0,
+										delta: { role: "assistant" },
+										finish_reason: null,
+									},
+								],
+								usage: null,
+							};
+						}
+						break;
+					}
+					case "response.output_item.done":
+					case "response.content_part.done":
+					case "response.output_text.done":
+					case "response.reasoning_summary_text.done":
+					case "response.reasoning_summary_part.done":
+					case "response.web_search_call.in_progress":
+					case "response.web_search_call.searching":
+					case "response.web_search_call.completed":
+						transformedData = {
+							id: data.response?.id ?? `chatcmpl-${Date.now()}`,
+							object: "chat.completion.chunk",
+							created:
+								data.response?.created_at ?? Math.floor(Date.now() / 1000),
+							model: data.response?.model ?? usedModel,
+							choices: [
+								{
+									index: 0,
+									delta: { role: "assistant" },
+									finish_reason: null,
+								},
+							],
+							usage: null,
+						};
+						break;
+
+					case "response.reasoning_summary_part.added":
+					case "response.reasoning_summary_text.delta":
+						transformedData = {
+							id: data.response?.id ?? `chatcmpl-${Date.now()}`,
+							object: "chat.completion.chunk",
+							created:
+								data.response?.created_at ?? Math.floor(Date.now() / 1000),
+							model: data.response?.model ?? usedModel,
+							choices: [
+								{
+									index: 0,
+									delta: {
+										role: "assistant",
+										reasoning: data.delta ?? data.part?.text ?? "",
+									},
+									finish_reason: null,
+								},
+							],
+							usage: null,
+						};
+						break;
+
+					case "response.content_part.added":
+					case "response.output_text.delta":
+					case "response.text.delta":
+						transformedData = {
+							id: data.response?.id ?? `chatcmpl-${Date.now()}`,
+							object: "chat.completion.chunk",
+							created:
+								data.response?.created_at ?? Math.floor(Date.now() / 1000),
+							model: data.response?.model ?? usedModel,
+							choices: [
+								{
+									index: 0,
+									delta: {
+										role: "assistant",
+										content: data.delta ?? data.part?.text ?? "",
+									},
+									finish_reason: null,
+								},
+							],
+							usage: null,
+						};
+						break;
+
+					case "response.function_call_arguments.delta":
+						// Streaming function call arguments from Responses API
+						transformedData = {
+							id: data.response?.id ?? `chatcmpl-${Date.now()}`,
+							object: "chat.completion.chunk",
+							created:
+								data.response?.created_at ?? Math.floor(Date.now() / 1000),
+							model: data.response?.model ?? usedModel,
+							choices: [
+								{
+									index: 0,
+									delta: {
+										tool_calls: [
+											{
+												index: data.output_index ?? 0,
+												function: {
+													arguments: data.delta ?? "",
+												},
+											},
+										],
+										role: "assistant",
+									},
+									finish_reason: null,
+								},
+							],
+							usage: null,
+						};
+						break;
+
+					case "response.function_call_arguments.done":
+						// Function call arguments complete - just emit empty delta
+						// (id/type/name already sent in output_item.added, args sent in deltas)
+						transformedData = {
+							id: data.response?.id ?? `chatcmpl-${Date.now()}`,
+							object: "chat.completion.chunk",
+							created:
+								data.response?.created_at ?? Math.floor(Date.now() / 1000),
+							model: data.response?.model ?? usedModel,
+							choices: [
+								{
+									index: 0,
+									delta: { role: "assistant" },
+									finish_reason: null,
+								},
+							],
+							usage: null,
+						};
+						break;
+
+					case "response.output_text.annotation.added":
+					case "response.output_item.annotations.added":
+					case "response.content_part.annotations.added": {
+						// Handle web search annotations/citations from OpenAI Responses API.
+						// Annotations arrive flat ({type, url, title, ...}) and must be
+						// mapped to the chat-completions nested url_citation shape.
+						const rawAnnotations = data.annotation
+							? [data.annotation]
+							: (data.annotations ?? data.part?.annotations ?? []);
+						const annotations: Annotation[] = [];
+						for (const annotation of rawAnnotations) {
+							if (annotation?.type !== "url_citation") {
+								continue;
+							}
+							annotations.push({
+								type: "url_citation",
+								url_citation: {
+									url: annotation.url ?? annotation.url_citation?.url ?? "",
+									title: annotation.title ?? annotation.url_citation?.title,
+									start_index:
+										annotation.start_index ??
+										annotation.url_citation?.start_index,
+									end_index:
+										annotation.end_index ?? annotation.url_citation?.end_index,
+								},
+							});
+						}
+						transformedData = {
+							id: data.response?.id ?? `chatcmpl-${Date.now()}`,
+							object: "chat.completion.chunk",
+							created:
+								data.response?.created_at ?? Math.floor(Date.now() / 1000),
+							model: data.response?.model ?? usedModel,
+							choices: [
+								{
+									index: 0,
+									delta: {
+										role: "assistant",
+										...(annotations.length > 0 && { annotations }),
+									},
+									finish_reason: null,
+								},
+							],
+							usage: null,
+						};
+						break;
+					}
+
+					case "response.completed": {
+						const responseUsage = data.response?.usage;
+						let usage = null;
+						if (responseUsage) {
+							usage = {
+								prompt_tokens: responseUsage.input_tokens ?? 0,
+								completion_tokens: responseUsage.output_tokens ?? 0,
+								total_tokens: responseUsage.total_tokens ?? 0,
+								...(responseUsage.output_tokens_details?.reasoning_tokens && {
+									reasoning_tokens:
+										responseUsage.output_tokens_details.reasoning_tokens,
+								}),
+								...(responseUsage.input_tokens_details?.cached_tokens && {
+									prompt_tokens_details: {
+										cached_tokens:
+											responseUsage.input_tokens_details.cached_tokens,
+									},
+								}),
+							};
+						}
+						transformedData = {
+							id: data.response?.id ?? `chatcmpl-${Date.now()}`,
+							object: "chat.completion.chunk",
+							created:
+								data.response?.created_at ?? Math.floor(Date.now() / 1000),
+							model: data.response?.model ?? usedModel,
+							choices: [
+								{
+									index: 0,
+									delta: {},
+									finish_reason: "stop",
+								},
+							],
+							usage,
+							...(typeof data.response?.service_tier === "string" && {
+								service_tier: data.response.service_tier,
+							}),
+						};
+						break;
+					}
+
+					case "response.incomplete": {
+						const incompleteUsage = data.response?.usage;
+						let usage = null;
+						if (incompleteUsage) {
+							usage = {
+								prompt_tokens: incompleteUsage.input_tokens ?? 0,
+								completion_tokens: incompleteUsage.output_tokens ?? 0,
+								total_tokens: incompleteUsage.total_tokens ?? 0,
+								...(incompleteUsage.output_tokens_details?.reasoning_tokens && {
+									reasoning_tokens:
+										incompleteUsage.output_tokens_details.reasoning_tokens,
+								}),
+								...(incompleteUsage.input_tokens_details?.cached_tokens && {
+									prompt_tokens_details: {
+										cached_tokens:
+											incompleteUsage.input_tokens_details.cached_tokens,
+									},
+								}),
+							};
+						}
+						const reason = data.response?.incomplete_details?.reason;
+						// Map incomplete reason to appropriate finish_reason
+						const mappedFinishReason =
+							reason === "content_filter" ? "content_filter" : "incomplete";
+						transformedData = {
+							id: data.response?.id ?? `chatcmpl-${Date.now()}`,
+							object: "chat.completion.chunk",
+							created:
+								data.response?.created_at ?? Math.floor(Date.now() / 1000),
+							model: data.response?.model ?? usedModel,
+							choices: [
+								{
+									index: 0,
+									delta: {},
+									finish_reason: mappedFinishReason,
+								},
+							],
+							usage,
+							...(typeof data.response?.service_tier === "string" && {
+								service_tier: data.response.service_tier,
+							}),
+						};
+						break;
+					}
+
+					default:
+						logger.warn("[streaming] Unrecognized OpenAI event type", {
+							provider: usedProvider,
+							model: usedModel,
+							eventType: data.type,
+							dataKeys: Object.keys(data),
+						});
+						transformedData = {
+							id: data.response?.id ?? `chatcmpl-${Date.now()}`,
+							object: "chat.completion.chunk",
+							created:
+								data.response?.created_at ?? Math.floor(Date.now() / 1000),
+							model: data.response?.model ?? usedModel,
+							choices: [
+								{
+									index: 0,
+									delta: { role: "assistant" },
+									finish_reason: null,
+								},
+							],
+							usage: null,
+						};
+						break;
+				}
+			} else {
+				transformedData = transformOpenaiStreaming(
+					data,
+					usedModel,
+					supportsReasoning,
+				);
+			}
+			break;
+		}
+
+		case "aws-bedrock": {
+			const eventType = data.__aws_event_type;
+
+			if (eventType === "contentBlockDelta" && data.delta?.text) {
+				transformedData = {
+					id: `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: Math.floor(Date.now() / 1000),
+					model: usedModel,
+					choices: [
+						{
+							index: 0,
+							delta: {
+								content: data.delta.text,
+								role: "assistant",
+							},
+							finish_reason: null,
+						},
+					],
+				};
+			} else if (
+				eventType === "contentBlockDelta" &&
+				data.delta?.reasoningContent?.text
+			) {
+				transformedData = {
+					id: `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: Math.floor(Date.now() / 1000),
+					model: usedModel,
+					choices: [
+						{
+							index: 0,
+							delta: {
+								reasoning: data.delta.reasoningContent.text,
+								role: "assistant",
+							},
+							finish_reason: null,
+						},
+					],
+				};
+			} else if (eventType === "contentBlockStart" && data.start?.toolUse) {
+				// Tool use start event contains the tool id and name
+				const toolUse = data.start.toolUse;
+				transformedData = {
+					id: `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: Math.floor(Date.now() / 1000),
+					model: usedModel,
+					choices: [
+						{
+							index: 0,
+							delta: {
+								tool_calls: [
+									{
+										index: data.contentBlockIndex ?? 0,
+										id: toolUse.toolUseId,
+										type: "function",
+										function: {
+											name: toolUse.name,
+											arguments: "",
+										},
+									},
+								],
+								role: "assistant",
+							},
+							finish_reason: null,
+						},
+					],
+				};
+			} else if (eventType === "contentBlockDelta" && data.delta?.toolUse) {
+				// Tool use delta event contains partial JSON arguments
+				// Per OpenAI spec, subsequent chunks omit id/type/name - only index and arguments
+				const toolUse = data.delta.toolUse;
+				// toolUse.input is a string (partial JSON), not an object
+				const args =
+					typeof toolUse.input === "string"
+						? toolUse.input
+						: JSON.stringify(toolUse.input ?? {});
+				transformedData = {
+					id: `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: Math.floor(Date.now() / 1000),
+					model: usedModel,
+					choices: [
+						{
+							index: 0,
+							delta: {
+								tool_calls: [
+									{
+										index: data.contentBlockIndex ?? 0,
+										function: {
+											arguments: args,
+										},
+									},
+								],
+								role: "assistant",
+							},
+							finish_reason: null,
+						},
+					],
+				};
+			} else if (
+				eventType === "contentBlockDelta" &&
+				isKnownNonRenderableAwsBedrockDelta(data.delta)
+			) {
+				// Bedrock contentBlockDelta is a documented union. Some known members
+				// like reasoning signatures, citations, images, or tool results don't
+				// have a direct OpenAI chat chunk representation, so we treat them as handled.
+				transformedData = null;
+			} else if (eventType === "contentBlockStop") {
+				transformedData = null;
+			} else if (eventType === "messageStart") {
+				transformedData = {
+					id: `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: Math.floor(Date.now() / 1000),
+					model: usedModel,
+					choices: [
+						{
+							index: 0,
+							delta: {
+								role: "assistant",
+							},
+							finish_reason: null,
+						},
+					],
+				};
+			} else if (eventType === "messageStop") {
+				const stopReason = data.stopReason;
+				let finishReason = "stop";
+				if (stopReason === "max_tokens") {
+					finishReason = "length";
+				} else if (stopReason === "tool_use") {
+					finishReason = "tool_calls";
+				} else if (
+					stopReason === "content_filtered" ||
+					stopReason === "refusal"
+				) {
+					finishReason = "content_filter";
+				}
+
+				transformedData = {
+					id: `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: Math.floor(Date.now() / 1000),
+					model: usedModel,
+					choices: [
+						{
+							index: 0,
+							delta: {},
+							finish_reason: finishReason,
+						},
+					],
+				};
+			} else if (eventType === "metadata" && data.usage) {
+				const inputTokens = data.usage.inputTokens ?? 0;
+				const cacheReadTokens = data.usage.cacheReadInputTokens ?? 0;
+				const cacheWriteTokens = data.usage.cacheWriteInputTokens ?? 0;
+				const cacheDetails = extractBedrockCacheCreationDetails(data.usage);
+				const promptTokens = inputTokens + cacheReadTokens + cacheWriteTokens;
+				const hasCacheCreationDetails =
+					cacheDetails.cacheCreation5mTokens !== null ||
+					cacheDetails.cacheCreation1hTokens !== null;
+
+				transformedData = {
+					id: `chatcmpl-${Date.now()}`,
+					object: "chat.completion.chunk",
+					created: Math.floor(Date.now() / 1000),
+					model: usedModel,
+					choices: [
+						{
+							index: 0,
+							delta: {},
+							finish_reason: null,
+						},
+					],
+					usage: {
+						prompt_tokens: promptTokens,
+						completion_tokens: data.usage.outputTokens ?? 0,
+						total_tokens: data.usage.totalTokens ?? 0,
+						...((cacheReadTokens > 0 || cacheWriteTokens > 0) && {
+							prompt_tokens_details: {
+								cached_tokens: cacheReadTokens,
+								...(cacheWriteTokens > 0 && {
+									cache_write_tokens: cacheWriteTokens,
+									cache_creation_tokens: cacheWriteTokens,
+								}),
+								...(cacheWriteTokens > 0 &&
+									hasCacheCreationDetails && {
+										cache_creation: {
+											ephemeral_5m_input_tokens:
+												cacheDetails.cacheCreation5mTokens ??
+												Math.max(
+													0,
+													cacheWriteTokens -
+														(cacheDetails.cacheCreation1hTokens ?? 0),
+												),
+											ephemeral_1h_input_tokens:
+												cacheDetails.cacheCreation1hTokens ?? 0,
+										},
+									}),
+							},
+						}),
+					},
+				};
+			} else {
+				logger.warn("[streaming] Unrecognized AWS Bedrock event type", {
+					provider: usedProvider,
+					model: usedModel,
+					eventType,
+					dataKeys: Object.keys(data),
+				});
+				transformedData = null;
+			}
+			break;
+		}
+
+		case "mistral":
+		case "novita":
+		case "zai":
+		case "groq":
+		case "cerebras":
+		case "xai":
+		case "deepseek":
+		case "alibaba":
+		case "moonshot":
+		case "perplexity":
+		case "nebius":
+		case "canopywave":
+		case "inference.net":
+		case "together-ai":
+		case "deepinfra":
+		case "custom":
+		case "nanogpt":
+		case "bytedance":
+		case "minimax":
+		case "embercloud":
+		case "granite":
+		case "tundra":
+		case "xiaomi":
+		case "azure-ai-foundry":
+		case "vertex-openai":
+		case "llmgateway": {
+			// Azure AI Foundry mirrors Azure OpenAI's prompt-filter-only leading
+			// chunk on some models — empty id/object/choices, no usage. Drop it
+			// for the same reason: it breaks downstream hasOpenAIFormat checks.
+			// Skip the guard for Responses API events (identified by `data.type`).
+			if (
+				usedProvider === "azure-ai-foundry" &&
+				!data.type &&
+				!data.id &&
+				!data.object &&
+				(!data.choices || data.choices.length === 0) &&
+				!data.usage
+			) {
+				transformedData = null;
+				break;
+			}
+			// Transform standard OpenAI streaming format with finish reason mapping
+			transformedData = transformOpenaiStreaming(
+				data,
+				usedModel,
+				supportsReasoning,
+			);
+
+			// Map non-standard finish reasons to OpenAI-compatible values
+			if (transformedData?.choices?.[0]?.finish_reason === "end_turn") {
+				transformedData.choices[0].finish_reason = "stop";
+			} else if (transformedData?.choices?.[0]?.finish_reason === "abort") {
+				logger.warn("[streaming] Upstream sent abort finish_reason", {
+					provider: usedProvider,
+					model: usedModel,
+					chunk: data,
+				});
+				// "abort" is an upstream-initiated interruption, not a client
+				// cancellation, so it counts as an upstream error.
+				transformedData.choices[0].finish_reason = "upstream_error";
+			} else if (transformedData?.choices?.[0]?.finish_reason === "tool_use") {
+				transformedData.choices[0].finish_reason = "tool_calls";
+			}
+			break;
+		}
+
+		default: {
+			logger.warn("[streaming] Unknown provider using OpenAI fallback", {
+				provider: usedProvider,
+				model: usedModel,
+				dataKeys: Object.keys(data),
+			});
+			transformedData = transformOpenaiStreaming(
+				data,
+				usedModel,
+				supportsReasoning,
+			);
+			break;
+		}
+	}
+
+	return transformedData;
+}

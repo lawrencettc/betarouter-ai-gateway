@@ -1,0 +1,3020 @@
+import {
+	afterAll,
+	afterEach,
+	beforeEach,
+	beforeAll,
+	describe,
+	expect,
+	test,
+	vi,
+} from "vitest";
+
+import { db, eq, tables, type Log } from "@llmgateway/db";
+import { getProviderDefinition } from "@llmgateway/models";
+
+import { app } from "./app.js";
+import { SAME_KEY_RETRY_DELAY_MS } from "./chat/tools/retry-with-fallback.js";
+import { getApiKeyFingerprint } from "./lib/api-key-fingerprint.js";
+import {
+	isTrackedKeyHealthy,
+	reportTrackedKeyError,
+	resetKeyHealth,
+} from "./lib/api-key-health.js";
+import {
+	startMockServer,
+	stopMockServer,
+	resetFailOnceCounter,
+} from "./test-utils/mock-openai-server.js";
+import { clearCache, waitForLogs, readAll } from "./test-utils/test-helpers.js";
+
+describe("fallback and error status code handling", () => {
+	let mockServerUrl: string;
+
+	async function ensureBaseFixtures() {
+		await db
+			.insert(tables.user)
+			.values({
+				id: "user-id",
+				name: "user",
+				email: "user",
+			})
+			.onConflictDoNothing();
+
+		await db
+			.insert(tables.organization)
+			.values({
+				id: "org-id",
+				name: "Test Organization",
+				billingEmail: "user",
+				plan: "pro",
+				retentionLevel: "retain",
+				credits: "100.00",
+			})
+			.onConflictDoNothing();
+
+		await db
+			.insert(tables.userOrganization)
+			.values({
+				id: "user-org-id",
+				userId: "user-id",
+				organizationId: "org-id",
+			})
+			.onConflictDoNothing();
+
+		await db
+			.insert(tables.project)
+			.values({
+				id: "project-id",
+				name: "Test Project",
+				organizationId: "org-id",
+				mode: "api-keys",
+			})
+			.onConflictDoNothing();
+	}
+
+	async function ensureProviders(providerIds: string[]) {
+		for (const providerId of providerIds) {
+			const providerDefinition = getProviderDefinition(providerId);
+			await db
+				.insert(tables.provider)
+				.values({
+					id: providerId,
+					name: providerDefinition?.name ?? providerId,
+					description:
+						providerDefinition?.description ?? `${providerId} provider`,
+					streaming: providerDefinition?.streaming ?? true,
+					cancellation: providerDefinition?.cancellation ?? false,
+					color: providerDefinition?.color ?? "#000000",
+					website: providerDefinition?.website ?? `https://${providerId}.com`,
+					announcement: providerDefinition?.announcement,
+					status: "active",
+				})
+				.onConflictDoNothing();
+		}
+	}
+
+	async function resetTestState() {
+		resetFailOnceCounter();
+		resetKeyHealth();
+		await clearCache();
+		await db.delete(tables.modelProviderMappingHistory);
+
+		// Sequential, children before parents: concurrent deletes on
+		// cascade-linked tables (e.g. user -> account) deadlock in postgres.
+		await db.delete(tables.log);
+		await db.delete(tables.apiKeyIamRule);
+		await db.delete(tables.apiKey);
+		await db.delete(tables.providerKey);
+		await db.delete(tables.userOrganization);
+		await db.delete(tables.project);
+		await db.delete(tables.session);
+		await db.delete(tables.account);
+		await db.delete(tables.verification);
+		await db.delete(tables.organization);
+		await db.delete(tables.user);
+	}
+
+	beforeAll(async () => {
+		mockServerUrl = await startMockServer();
+	});
+
+	afterAll(() => {
+		stopMockServer();
+	});
+
+	beforeEach(async () => {
+		await resetTestState();
+	});
+
+	beforeEach(async () => {
+		await ensureBaseFixtures();
+	});
+
+	afterEach(async () => {
+		await resetTestState();
+	});
+
+	// Helper to set up API key and provider key
+	async function setupKeys(provider = "openai") {
+		await ensureBaseFixtures();
+
+		await db.insert(tables.apiKey).values({
+			id: "token-id",
+			token: "real-token",
+			projectId: "project-id",
+			description: "Test API Key",
+			createdBy: "user-id",
+		});
+
+		await db.insert(tables.providerKey).values({
+			id: "provider-key-id",
+			token: "sk-test-key",
+			provider,
+			organizationId: "org-id",
+			baseUrl: mockServerUrl,
+		});
+	}
+
+	// Helper to set up API key and llmgateway custom provider key
+	async function setupCustomKeys() {
+		await ensureBaseFixtures();
+
+		await db.insert(tables.apiKey).values({
+			id: "token-id",
+			token: "real-token",
+			projectId: "project-id",
+			description: "Test API Key",
+			createdBy: "user-id",
+		});
+
+		await db.insert(tables.providerKey).values({
+			id: "provider-key-id",
+			token: "sk-test-key",
+			provider: "llmgateway",
+			organizationId: "org-id",
+			baseUrl: mockServerUrl,
+		});
+	}
+
+	async function setupMultiProviderKeys() {
+		await ensureBaseFixtures();
+
+		await db.insert(tables.apiKey).values({
+			id: "token-id",
+			token: "real-token",
+			projectId: "project-id",
+			description: "Test API Key",
+			createdBy: "user-id",
+		});
+
+		await db.insert(tables.providerKey).values([
+			{
+				id: "provider-key-together",
+				token: "sk-together-key",
+				provider: "together-ai",
+				organizationId: "org-id",
+				baseUrl: mockServerUrl,
+			},
+			{
+				id: "provider-key-cerebras",
+				token: "sk-cerebras-key",
+				provider: "cerebras",
+				organizationId: "org-id",
+				baseUrl: mockServerUrl,
+			},
+		]);
+	}
+
+	async function setupSingleProviderWithMultipleKeys(provider = "together-ai") {
+		await ensureBaseFixtures();
+
+		await db.insert(tables.apiKey).values({
+			id: "token-id",
+			token: "real-token",
+			projectId: "project-id",
+			description: "Test API Key",
+			createdBy: "user-id",
+		});
+
+		await db.insert(tables.providerKey).values([
+			{
+				id: `${provider}-key-primary`,
+				token: `${provider}-primary-token`,
+				provider,
+				organizationId: "org-id",
+				baseUrl: mockServerUrl,
+			},
+			{
+				id: `${provider}-key-secondary`,
+				token: `${provider}-secondary-token`,
+				provider,
+				organizationId: "org-id",
+				baseUrl: mockServerUrl,
+			},
+		]);
+	}
+
+	async function setupSingleProviderWithRegionalKeys(provider = "alibaba") {
+		await ensureBaseFixtures();
+
+		await db.insert(tables.apiKey).values({
+			id: "token-id",
+			token: "real-token",
+			projectId: "project-id",
+			description: "Test API Key",
+			createdBy: "user-id",
+		});
+
+		await db.insert(tables.providerKey).values([
+			{
+				id: `${provider}-key-singapore`,
+				token: `${provider}-singapore-token`,
+				provider,
+				organizationId: "org-id",
+				baseUrl: mockServerUrl,
+				options: {
+					alibaba_region: "singapore",
+				},
+			},
+			{
+				id: `${provider}-key-beijing`,
+				token: `${provider}-beijing-token`,
+				provider,
+				organizationId: "org-id",
+				baseUrl: mockServerUrl,
+				options: {
+					alibaba_region: "cn-beijing",
+				},
+			},
+		]);
+	}
+
+	async function setRoutingMetrics(
+		modelId: string,
+		providerId: string,
+		routingUptime: number,
+		options?: {
+			region?: string;
+			routingLatency?: number;
+			routingThroughput?: number;
+			routingTotalRequests?: number;
+		},
+	) {
+		// Seed a recent model_provider_mapping_history row whose unweighted
+		// aggregates reproduce the requested uptime/latency/throughput.
+		// Routing reads from this table on-demand
+		// (see packages/db/src/provider-metrics-history.ts).
+		const totalRequests = options?.routingTotalRequests ?? 100;
+		const latency = options?.routingLatency ?? 100;
+		const throughput = options?.routingThroughput ?? 100;
+		const uptimeFraction = routingUptime / 100;
+		const errorRate = 1 - uptimeFraction;
+		const errorsCount = Math.round(totalRequests * errorRate);
+		const totalDurationMs = 1000;
+		const totalOutputTokens = Math.round((throughput * totalDurationMs) / 1000);
+		const totalTimeToFirstToken = latency * totalRequests;
+		const minuteTimestamp = new Date(Math.floor(Date.now() / 60000) * 60000);
+		const mappingId = options?.region
+			? `${modelId}::${providerId}::${options.region}`
+			: `${modelId}::${providerId}`;
+
+		await db
+			.insert(tables.modelProviderMappingHistory)
+			.values({
+				modelId,
+				providerId,
+				modelProviderMappingId: mappingId,
+				minuteTimestamp,
+				logsCount: totalRequests,
+				errorsCount,
+				clientErrorsCount: 0,
+				gatewayErrorsCount: 0,
+				upstreamErrorsCount: errorsCount,
+				cachedCount: 0,
+				totalOutputTokens,
+				totalDuration: totalDurationMs,
+				totalTimeToFirstToken,
+				totalTimeToFirstReasoningToken: 0,
+			})
+			.onConflictDoUpdate({
+				target: [
+					tables.modelProviderMappingHistory.modelProviderMappingId,
+					tables.modelProviderMappingHistory.minuteTimestamp,
+				],
+				set: {
+					logsCount: totalRequests,
+					errorsCount,
+					clientErrorsCount: 0,
+					gatewayErrorsCount: 0,
+					upstreamErrorsCount: errorsCount,
+					cachedCount: 0,
+					totalOutputTokens,
+					totalDuration: totalDurationMs,
+					totalTimeToFirstToken,
+					totalTimeToFirstReasoningToken: 0,
+				},
+			});
+	}
+
+	/** Ensure a regional modelProviderMapping row exists for routing tests. */
+	async function ensureRegionalMapping(
+		modelId: string,
+		providerId: string,
+		region: string,
+	) {
+		const id = `${modelId}::${providerId}::${region}`;
+		// Ensure the parent model row exists (seed may not include it)
+		await db
+			.insert(tables.model)
+			.values({
+				id: modelId,
+				name: modelId,
+				description: modelId,
+				family: "test",
+				status: "active",
+			})
+			.onConflictDoNothing();
+		await db
+			.insert(tables.modelProviderMapping)
+			.values({
+				id,
+				modelId,
+				providerId,
+				externalId: modelId,
+				region,
+				status: "active",
+			})
+			.onConflictDoNothing();
+	}
+
+	async function insertIamRules(
+		rules: Array<{
+			id: string;
+			ruleType: "allow_providers" | "deny_providers";
+			providers: string[];
+		}>,
+	) {
+		await db.insert(tables.apiKeyIamRule).values(
+			rules.map((rule) => ({
+				id: rule.id,
+				apiKeyId: "token-id",
+				ruleType: rule.ruleType,
+				ruleValue: { providers: rule.providers },
+				status: "active" as const,
+			})),
+		);
+	}
+
+	describe("error status code classification", () => {
+		test("500 upstream error is classified as upstream_error with correct metadata in response and DB log", async () => {
+			await setupCustomKeys();
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "llmgateway/custom",
+					messages: [{ role: "user", content: "TRIGGER_STATUS_500" }],
+				}),
+			});
+
+			expect(res.status).toBe(500);
+			const json = await res.json();
+			expect(json).toHaveProperty("error");
+			expect(json.error.type).toBe("upstream_error");
+
+			const logs = await waitForLogs(1);
+			expect(logs.length).toBe(1);
+
+			const log = logs[0];
+			expect(log.finishReason).toBe("upstream_error");
+			expect(log.hasError).toBe(true);
+			expect(log.errorDetails).toBeTruthy();
+			expect(log.errorDetails?.statusCode).toBe(500);
+			expect(log.usedProvider).toBe("llmgateway");
+			expect(log.requestedModel).toBe("llmgateway/custom");
+		});
+
+		test("upstream socket close while reading the response body is classified as upstream_error (502), not an unhandled 500", async () => {
+			await setupCustomKeys();
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "llmgateway/custom",
+					messages: [{ role: "user", content: "TRIGGER_BODY_ABORT" }],
+				}),
+			});
+
+			expect(res.status).toBe(502);
+			const json = await res.json();
+			expect(json).toHaveProperty("error");
+			expect(json.error.type).toBe("upstream_error");
+			expect(json.error.code).toBe("fetch_failed");
+
+			const logs = await waitForLogs(1);
+			expect(logs.length).toBe(1);
+
+			const log = logs[0];
+			expect(log.finishReason).toBe("upstream_error");
+			expect(log.hasError).toBe(true);
+			expect(log.errorDetails).toBeTruthy();
+			expect(log.usedProvider).toBe("llmgateway");
+			expect(log.requestedModel).toBe("llmgateway/custom");
+		});
+
+		test("mid-body failure marks the routed provider attempt as failed, not a succeeded routing attempt", async () => {
+			await setupMultiProviderKeys();
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					// Auto-routed (no provider prefix) so routingMetadata is populated.
+					model: "glm-4.7",
+					messages: [{ role: "user", content: "TRIGGER_BODY_ABORT" }],
+				}),
+			});
+
+			expect(res.status).toBe(502);
+
+			const logs = await waitForLogs(1);
+			expect(logs.length).toBe(1);
+			const log = logs[0];
+			expect(log.hasError).toBe(true);
+			expect(log.finishReason).toBe("upstream_error");
+
+			// The headers arrived (2xx) but the body read failed, so the provider
+			// must not be recorded as a succeeded (green) routing attempt.
+			const routing = log.routingMetadata?.routing ?? [];
+			expect(routing.length).toBeGreaterThanOrEqual(1);
+			expect(routing.every((a) => a.succeeded === false)).toBe(true);
+			expect(routing.some((a) => a.error_type === "upstream_error")).toBe(true);
+
+			// The used provider's score is flagged as failed.
+			const usedScore = log.routingMetadata?.providerScores?.find(
+				(s) => s.providerId === log.usedProvider,
+			);
+			expect(usedScore?.failed).toBe(true);
+		});
+
+		test("429 rate limit is classified as upstream_error with correct error details in DB log", async () => {
+			await setupCustomKeys();
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "llmgateway/custom",
+					messages: [{ role: "user", content: "TRIGGER_STATUS_429" }],
+				}),
+			});
+
+			expect(res.status).toBe(500);
+			const json = await res.json();
+			expect(json).toHaveProperty("error");
+			expect(json.error.type).toBe("upstream_error");
+
+			const logs = await waitForLogs(1);
+			expect(logs.length).toBe(1);
+
+			const log = logs[0];
+			expect(log.finishReason).toBe("upstream_error");
+			expect(log.hasError).toBe(true);
+			expect(log.errorDetails).toBeTruthy();
+			expect(log.errorDetails?.statusCode).toBe(429);
+			expect(log.errorDetails?.responseText).toContain("rate_limit");
+		});
+
+		test("404 not found is classified as upstream_error with correct error details in DB log", async () => {
+			await setupCustomKeys();
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "llmgateway/custom",
+					messages: [{ role: "user", content: "TRIGGER_STATUS_404" }],
+				}),
+			});
+
+			expect(res.status).toBe(500);
+			const json = await res.json();
+			expect(json).toHaveProperty("error");
+			expect(json.error.type).toBe("upstream_error");
+
+			const logs = await waitForLogs(1);
+			expect(logs.length).toBe(1);
+
+			const log = logs[0];
+			expect(log.finishReason).toBe("upstream_error");
+			expect(log.hasError).toBe(true);
+			expect(log.errorDetails).toBeTruthy();
+			expect(log.errorDetails?.statusCode).toBe(404);
+			expect(log.errorDetails?.responseText).toContain("model_not_found");
+		});
+
+		test("401 auth error is classified as gateway_error with correct error details in DB log", async () => {
+			await setupCustomKeys();
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "llmgateway/custom",
+					messages: [{ role: "user", content: "TRIGGER_STATUS_401" }],
+				}),
+			});
+
+			expect(res.status).toBe(500);
+			const json = await res.json();
+			expect(json).toHaveProperty("error");
+			expect(json.error.type).toBe("gateway_error");
+
+			const logs = await waitForLogs(1);
+			expect(logs.length).toBe(1);
+
+			const log = logs[0];
+			expect(log.finishReason).toBe("gateway_error");
+			expect(log.hasError).toBe(true);
+			expect(log.errorDetails).toBeTruthy();
+			expect(log.errorDetails?.statusCode).toBe(401);
+			expect(log.errorDetails?.responseText).toContain("authentication_error");
+		});
+
+		test("403 forbidden is classified as gateway_error with correct error details in DB log", async () => {
+			await setupCustomKeys();
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "llmgateway/custom",
+					messages: [{ role: "user", content: "TRIGGER_STATUS_403" }],
+				}),
+			});
+
+			expect(res.status).toBe(500);
+			const json = await res.json();
+			expect(json).toHaveProperty("error");
+			expect(json.error.type).toBe("gateway_error");
+
+			const logs = await waitForLogs(1);
+			expect(logs.length).toBe(1);
+
+			const log = logs[0];
+			expect(log.finishReason).toBe("gateway_error");
+			expect(log.hasError).toBe(true);
+			expect(log.errorDetails).toBeTruthy();
+			expect(log.errorDetails?.statusCode).toBe(403);
+		});
+
+		test("503 service unavailable is classified as upstream_error", async () => {
+			await setupCustomKeys();
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "llmgateway/custom",
+					messages: [{ role: "user", content: "TRIGGER_STATUS_503" }],
+				}),
+			});
+
+			expect(res.status).toBe(500);
+			const json = await res.json();
+			expect(json).toHaveProperty("error");
+			expect(json.error.type).toBe("upstream_error");
+
+			const logs = await waitForLogs(1);
+			expect(logs.length).toBe(1);
+
+			const log = logs[0];
+			expect(log.finishReason).toBe("upstream_error");
+			expect(log.hasError).toBe(true);
+			expect(log.errorDetails).toBeTruthy();
+			expect(log.errorDetails?.statusCode).toBe(503);
+		});
+	});
+
+	describe("response metadata on successful requests", () => {
+		test("non-streaming success includes metadata with requested and used model/provider", async () => {
+			await setupKeys("openai");
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "openai/gpt-4o-mini",
+					messages: [{ role: "user", content: "Hello!" }],
+				}),
+			});
+
+			expect(res.status).toBe(200);
+			const responseRequestId = res.headers.get("x-request-id");
+			expect(responseRequestId).toBeTruthy();
+			const json = await res.json();
+
+			// Verify response metadata
+			expect(json).toHaveProperty("metadata");
+			expect(json.metadata).toHaveProperty("request_id", responseRequestId);
+			expect(json.metadata).toHaveProperty(
+				"requested_model",
+				"openai/gpt-4o-mini",
+			);
+			expect(json.metadata).toHaveProperty("requested_provider", "openai");
+			expect(json.metadata).toHaveProperty("used_provider", "openai");
+			expect(json.metadata).toHaveProperty("used_model");
+			expect(json.metadata).toHaveProperty("underlying_used_model");
+
+			// Verify DB log entry
+			const logs = await waitForLogs(1);
+			expect(logs.length).toBe(1);
+
+			const log = logs[0];
+			expect(log.requestedModel).toBe("openai/gpt-4o-mini");
+			expect(log.requestedProvider).toBe("openai");
+			expect(log.usedProvider).toBe("openai");
+			expect(log.finishReason).toBe("stop");
+			expect(log.hasError).toBe(false);
+			expect(log.streamed).toBe(false);
+		});
+
+		test("non-streaming success with llmgateway/custom includes correct metadata", async () => {
+			await setupCustomKeys();
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "llmgateway/custom",
+					messages: [{ role: "user", content: "Hello!" }],
+				}),
+			});
+
+			expect(res.status).toBe(200);
+			const json = await res.json();
+
+			expect(json).toHaveProperty(["choices", 0, "message", "content"]);
+			expect(json.choices[0].message.content).toContain("Hello!");
+
+			// Verify DB log entry has correct model info
+			const logs = await waitForLogs(1);
+			expect(logs.length).toBe(1);
+
+			const log = logs[0];
+			expect(log.requestedModel).toBe("llmgateway/custom");
+			expect(log.usedProvider).toBe("llmgateway");
+			expect(log.finishReason).toBe("stop");
+			expect(log.hasError).toBe(false);
+		});
+	});
+
+	describe("streaming error handling", () => {
+		test("streaming 500 error returns error SSE event and logs upstream_error", async () => {
+			await setupCustomKeys();
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "llmgateway/custom",
+					messages: [{ role: "user", content: "TRIGGER_STATUS_500" }],
+					stream: true,
+				}),
+			});
+
+			// Streaming responses return 200 even on error
+			expect(res.status).toBe(200);
+
+			const streamResult = await readAll(res.body);
+			expect(streamResult.hasError).toBe(true);
+			expect(streamResult.errorEvents.length).toBeGreaterThan(0);
+
+			const errorEvent = streamResult.errorEvents[0];
+			expect(errorEvent.error.type).toBe("upstream_error");
+
+			const logs = await waitForLogs(1);
+			expect(logs.length).toBe(1);
+
+			const log = logs[0];
+			expect(log.finishReason).toBe("upstream_error");
+			expect(log.hasError).toBe(true);
+			expect(log.streamed).toBe(true);
+			expect(log.errorDetails).toBeTruthy();
+			expect(log.errorDetails?.statusCode).toBe(500);
+		});
+
+		test("streaming 429 rate limit returns error SSE event and logs upstream_error", async () => {
+			await setupCustomKeys();
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "llmgateway/custom",
+					messages: [{ role: "user", content: "TRIGGER_STATUS_429" }],
+					stream: true,
+				}),
+			});
+
+			expect(res.status).toBe(200);
+
+			const streamResult = await readAll(res.body);
+			expect(streamResult.hasError).toBe(true);
+			expect(streamResult.errorEvents.length).toBeGreaterThan(0);
+
+			const errorEvent = streamResult.errorEvents[0];
+			expect(errorEvent.error.type).toBe("upstream_error");
+
+			const logs = await waitForLogs(1);
+			expect(logs.length).toBe(1);
+
+			const log = logs[0];
+			expect(log.finishReason).toBe("upstream_error");
+			expect(log.hasError).toBe(true);
+			expect(log.streamed).toBe(true);
+			expect(log.errorDetails?.statusCode).toBe(429);
+		});
+
+		test("streaming aws-bedrock 400 surfaces x-amzn error headers", async () => {
+			await setupKeys("aws-bedrock");
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "aws-bedrock/claude-sonnet-4-6",
+					messages: [{ role: "user", content: "TRIGGER_BEDROCK_HEADER_ERROR" }],
+					stream: true,
+				}),
+			});
+
+			expect(res.status).toBe(200);
+
+			const streamResult = await readAll(res.body);
+			expect(streamResult.hasError).toBe(true);
+			expect(streamResult.errorEvents.length).toBeGreaterThan(0);
+
+			const errorEvent = streamResult.errorEvents[0];
+			const errorPayload = errorEvent.error ?? errorEvent;
+			expect(errorPayload.type).toBe("ValidationException");
+			expect(errorPayload.message).toContain(
+				"The provided model identifier is invalid for this account.",
+			);
+
+			const logs = await waitForLogs(1);
+			const log = logs[0];
+			expect(log.finishReason).toBe("client_error");
+			expect(log.hasError).toBe(true);
+			expect(log.streamed).toBe(true);
+			expect(log.errorDetails?.statusCode).toBe(400);
+			expect(log.errorDetails?.responseText).toContain("ValidationException");
+			expect(log.errorDetails?.responseText).toContain(
+				"The provided model identifier is invalid for this account.",
+			);
+		});
+
+		test("/v1/messages budget thinking on adaptive model logs a client_error", async () => {
+			await setupKeys("anthropic");
+
+			const res = await app.request("/v1/messages", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "claude-opus-4-8",
+					max_tokens: 1024,
+					thinking: { type: "enabled", budget_tokens: 8000 },
+					messages: [{ role: "user", content: "What is 2+2?" }],
+				}),
+			});
+
+			expect(res.status).toBe(400);
+			const body = (await res.json()) as {
+				type: string;
+				error: { type: string; message: string };
+			};
+			expect(body.type).toBe("error");
+			expect(body.error.message).toContain("thinking.type.adaptive");
+
+			// The rejection must be visible in the activity feed as a client_error,
+			// not silently dropped by the global error handler.
+			const logs = await waitForLogs(1);
+			const log = logs[0];
+			expect(log.finishReason).toBe("client_error");
+			expect(log.hasError).toBe(true);
+			expect(log.errorDetails?.statusCode).toBe(400);
+			expect(log.errorDetails?.responseText).toContain(
+				"thinking.type.adaptive",
+			);
+		});
+
+		test("streaming aws-bedrock success closes cleanly", async () => {
+			await setupKeys("aws-bedrock");
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "aws-bedrock/claude-opus-4-6",
+					messages: [{ role: "user", content: "Reply with exactly: hi" }],
+					stream: true,
+				}),
+			});
+
+			expect(res.status).toBe(200);
+
+			const streamResult = await readAll(res.body);
+			expect(streamResult.hasContent).toBe(true);
+			expect(streamResult.hasError).toBe(false);
+			expect(streamResult.errorEvents).toHaveLength(0);
+			expect(streamResult.hasUsage).toBe(true);
+			expect(
+				streamResult.chunks.some(
+					(chunk) => chunk.choices?.[0]?.finish_reason === "stop",
+				),
+			).toBe(true);
+
+			const logs = await waitForLogs(1);
+			const log = logs[0];
+			expect(log.finishReason).toBe("stop");
+			expect(log.unifiedFinishReason).toBe("completed");
+			expect(log.hasError).toBe(false);
+			expect(log.streamed).toBe(true);
+			expect(log.usedProvider).toBe("aws-bedrock");
+		});
+	});
+
+	describe("deactivated provider fallback with metadata", () => {
+		// Use fake timers to set the date between the two deactivation dates:
+		// google-ai-studio deactivatedAt: 2026-01-17
+		// google-vertex deactivatedAt: 2026-01-27
+		// At 2026-01-20, google-ai-studio is deactivated but google-vertex is still active
+		let originalGoogleCloudProject: string | undefined;
+
+		beforeAll(() => {
+			originalGoogleCloudProject = process.env.LLM_GOOGLE_CLOUD_PROJECT;
+			process.env.LLM_GOOGLE_CLOUD_PROJECT = "test-project";
+		});
+
+		afterAll(() => {
+			if (originalGoogleCloudProject !== undefined) {
+				process.env.LLM_GOOGLE_CLOUD_PROJECT = originalGoogleCloudProject;
+			} else {
+				delete process.env.LLM_GOOGLE_CLOUD_PROJECT;
+			}
+		});
+
+		test("deactivated provider falls back and sets metadata in response and DB log", async () => {
+			vi.useFakeTimers({ shouldAdvanceTime: true });
+			vi.setSystemTime(new Date("2026-01-20T12:00:00Z"));
+
+			try {
+				await db.insert(tables.apiKey).values({
+					id: "token-id",
+					token: "real-token",
+					projectId: "project-id",
+					description: "Test API Key",
+					createdBy: "user-id",
+				});
+
+				// Create provider key for google-vertex (active at 2026-01-20) with mock server URL
+				await db.insert(tables.providerKey).values({
+					id: "provider-key-google",
+					token: "google-test-key",
+					provider: "google-vertex",
+					organizationId: "org-id",
+					baseUrl: mockServerUrl,
+				});
+
+				// Request with google-ai-studio (deactivated at 2026-01-17)
+				// Should fall back to google-vertex (still active until 2026-01-27)
+				const res = await app.request("/v1/chat/completions", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: "Bearer real-token",
+					},
+					body: JSON.stringify({
+						model: "google-ai-studio/gemini-2.5-flash-preview-09-2025",
+						messages: [
+							{
+								role: "user",
+								content: "Hello with deactivated provider!",
+							},
+						],
+					}),
+				});
+
+				expect(res.status).toBe(200);
+				const json = await res.json();
+
+				// Verify response metadata shows correct fallback
+				expect(json).toHaveProperty("metadata");
+				expect(json.metadata.used_provider).toBe("google-vertex");
+				// The requested provider should be cleared since it was deactivated
+				expect(json.metadata.requested_provider).toBeNull();
+
+				// Verify DB log entry
+				const logs = await waitForLogs(1);
+				expect(logs.length).toBe(1);
+
+				const log = logs[0];
+				expect(log.usedProvider).toBe("google-vertex");
+				expect(log.hasError).toBe(false);
+				expect(log.finishReason).toBeTruthy();
+			} finally {
+				vi.useRealTimers();
+			}
+		});
+	});
+
+	describe("low-uptime fallback respects IAM provider rules", () => {
+		const modelId = "glm-4.7";
+
+		beforeEach(async () => {
+			await setupMultiProviderKeys();
+			await setRoutingMetrics(modelId, "together-ai", 0);
+			await setRoutingMetrics(modelId, "cerebras", 100);
+		});
+
+		test("does not reroute a 0% uptime provider when IAM only allows the requested provider", async () => {
+			await insertIamRules([
+				{
+					id: "iam-allow-together",
+					ruleType: "allow_providers",
+					providers: ["together-ai"],
+				},
+			]);
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "together-ai/glm-4.7",
+					messages: [{ role: "user", content: "Hello!" }],
+				}),
+			});
+
+			expect(res.status).toBe(200);
+			const json = await res.json();
+			expect(json.metadata.used_provider).toBe("together-ai");
+			expect(json.metadata.requested_provider).toBe("together-ai");
+
+			const logs = await waitForLogs(1);
+			expect(logs).toHaveLength(1);
+			expect(logs[0].usedProvider).toBe("together-ai");
+			expect(logs[0].routingMetadata?.selectedProvider).toBe("together-ai");
+			expect(logs[0].routingMetadata?.selectionReason).not.toBe(
+				"low-uptime-fallback",
+			);
+		});
+
+		test("does not reroute a 0% uptime provider when IAM denies the fallback provider", async () => {
+			await insertIamRules([
+				{
+					id: "iam-deny-cerebras",
+					ruleType: "deny_providers",
+					providers: ["cerebras"],
+				},
+			]);
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "together-ai/glm-4.7",
+					messages: [{ role: "user", content: "Hello!" }],
+				}),
+			});
+
+			expect(res.status).toBe(200);
+			const json = await res.json();
+			expect(json.metadata.used_provider).toBe("together-ai");
+
+			const logs = await waitForLogs(1);
+			expect(logs).toHaveLength(1);
+			expect(logs[0].usedProvider).toBe("together-ai");
+			expect(logs[0].routingMetadata?.selectedProvider).toBe("together-ai");
+			expect(logs[0].routingMetadata?.selectionReason).not.toBe(
+				"low-uptime-fallback",
+			);
+		});
+
+		test("does not reroute a 0% uptime provider when IAM both allows one provider and denies the rest", async () => {
+			await insertIamRules([
+				{
+					id: "iam-allow-together-combo",
+					ruleType: "allow_providers",
+					providers: ["together-ai"],
+				},
+				{
+					id: "iam-deny-cerebras-combo",
+					ruleType: "deny_providers",
+					providers: ["cerebras"],
+				},
+			]);
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "together-ai/glm-4.7",
+					messages: [{ role: "user", content: "Hello!" }],
+				}),
+			});
+
+			expect(res.status).toBe(200);
+			const json = await res.json();
+			expect(json.metadata.used_provider).toBe("together-ai");
+
+			const logs = await waitForLogs(1);
+			expect(logs).toHaveLength(1);
+			expect(logs[0].usedProvider).toBe("together-ai");
+			expect(logs[0].routingMetadata?.selectedProvider).toBe("together-ai");
+			expect(logs[0].routingMetadata?.selectionReason).not.toBe(
+				"low-uptime-fallback",
+			);
+		});
+
+		test("low-uptime fallback ignores synthetic root region mappings", async () => {
+			await ensureProviders(["zai", "alibaba", "novita"]);
+
+			await db.insert(tables.providerKey).values([
+				{
+					id: "provider-key-zai",
+					token: "sk-zai-key",
+					provider: "zai",
+					organizationId: "org-id",
+					baseUrl: mockServerUrl,
+				},
+				{
+					id: "provider-key-alibaba",
+					token: "sk-alibaba-key",
+					provider: "alibaba",
+					organizationId: "org-id",
+					baseUrl: mockServerUrl,
+				},
+				{
+					id: "provider-key-novita",
+					token: "sk-novita-key",
+					provider: "novita",
+					organizationId: "org-id",
+					baseUrl: mockServerUrl,
+				},
+			]);
+
+			await db
+				.insert(tables.model)
+				.values({
+					id: "glm-5",
+					name: "GLM-5",
+					family: "zai",
+					releasedAt: new Date("2025-09-30"),
+				})
+				.onConflictDoNothing();
+
+			await db
+				.insert(tables.modelProviderMapping)
+				.values([
+					{
+						id: "glm-5-zai-root",
+						modelId: "glm-5",
+						providerId: "zai",
+						externalId: "glm-5",
+						streaming: true,
+					},
+					{
+						id: "glm-5-alibaba-root",
+						modelId: "glm-5",
+						providerId: "alibaba",
+						externalId: "glm-5",
+						streaming: true,
+					},
+					{
+						id: "glm-5-alibaba-cn-beijing",
+						modelId: "glm-5",
+						providerId: "alibaba",
+						externalId: "glm-5",
+						region: "cn-beijing",
+						streaming: true,
+					},
+					{
+						id: "glm-5-novita-root",
+						modelId: "glm-5",
+						providerId: "novita",
+						externalId: "zai-org/glm-5",
+						streaming: true,
+					},
+				])
+				.onConflictDoNothing();
+
+			await setRoutingMetrics("glm-5", "zai", 55, {
+				routingLatency: 238,
+				routingThroughput: 65,
+			});
+			await setRoutingMetrics("glm-5", "alibaba", 100, {
+				routingLatency: 10,
+				routingThroughput: 1000,
+			});
+			await setRoutingMetrics("glm-5", "alibaba", 100, {
+				region: "cn-beijing",
+				routingLatency: 400,
+				routingThroughput: 80,
+			});
+			await setRoutingMetrics("glm-5", "novita", 100, {
+				routingLatency: 1200,
+				routingThroughput: 30,
+			});
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "zai/glm-5",
+					messages: [{ role: "user", content: "Hello!" }],
+				}),
+			});
+
+			expect(res.status).toBe(200);
+
+			const logs = await waitForLogs(1);
+			expect(logs).toHaveLength(1);
+			expect(logs[0].usedProvider).toBe("alibaba");
+			expect(logs[0].usedModel).toBe("alibaba/glm-5:cn-beijing");
+			expect(logs[0].routingMetadata?.selectedProvider).toBe("alibaba");
+			expect(logs[0].routingMetadata?.selectionReason).toBe(
+				"low-uptime-fallback",
+			);
+			expect(
+				logs[0].routingMetadata?.providerScores?.some(
+					(score) => score.providerId === "alibaba" && !score.region,
+				),
+			).toBe(false);
+			expect(
+				logs[0].routingMetadata?.providerScores?.some(
+					(score) =>
+						score.providerId === "alibaba" && score.region === "singapore",
+				),
+			).toBe(false);
+		});
+
+		test("auto routing ignores synthetic root region mappings", async () => {
+			await ensureProviders(["zai", "alibaba", "novita"]);
+
+			// zai carries a default provider-priority bonus that would otherwise win
+			// auto-routing outright. Neutralize provider priorities via an enterprise
+			// routing config so this test exercises pure metric-based selection of
+			// the regional mapping.
+			await db
+				.update(tables.organization)
+				.set({ plan: "enterprise" })
+				.where(eq(tables.organization.id, "org-id"));
+			await db.insert(tables.routingConfig).values({
+				projectId: "project-id",
+				enabled: true,
+				providerPriorities: { zai: 1, alibaba: 1, novita: 1 },
+			});
+
+			await db.insert(tables.providerKey).values([
+				{
+					id: "provider-key-zai",
+					token: "sk-zai-key",
+					provider: "zai",
+					organizationId: "org-id",
+					baseUrl: mockServerUrl,
+				},
+				{
+					id: "provider-key-alibaba",
+					token: "sk-alibaba-key",
+					provider: "alibaba",
+					organizationId: "org-id",
+					baseUrl: mockServerUrl,
+				},
+				{
+					id: "provider-key-novita",
+					token: "sk-novita-key",
+					provider: "novita",
+					organizationId: "org-id",
+					baseUrl: mockServerUrl,
+				},
+			]);
+
+			await db
+				.insert(tables.model)
+				.values({
+					id: "glm-5",
+					name: "GLM-5",
+					family: "zai",
+					releasedAt: new Date("2025-09-30"),
+				})
+				.onConflictDoNothing();
+
+			await db
+				.insert(tables.modelProviderMapping)
+				.values([
+					{
+						id: "glm-5-zai-auto-root",
+						modelId: "glm-5",
+						providerId: "zai",
+						externalId: "glm-5",
+						streaming: true,
+					},
+					{
+						id: "glm-5-alibaba-auto-root",
+						modelId: "glm-5",
+						providerId: "alibaba",
+						externalId: "glm-5",
+						streaming: true,
+					},
+					{
+						id: "glm-5-alibaba-auto-cn-beijing",
+						modelId: "glm-5",
+						providerId: "alibaba",
+						externalId: "glm-5",
+						region: "cn-beijing",
+						streaming: true,
+					},
+					{
+						id: "glm-5-novita-auto-root",
+						modelId: "glm-5",
+						providerId: "novita",
+						externalId: "zai-org/glm-5",
+						streaming: true,
+					},
+				])
+				.onConflictDoNothing();
+
+			await setRoutingMetrics("glm-5", "zai", 100, {
+				routingLatency: 250,
+				routingThroughput: 90,
+			});
+			await setRoutingMetrics("glm-5", "alibaba", 100, {
+				routingLatency: 1,
+				routingThroughput: 1000,
+			});
+			await setRoutingMetrics("glm-5", "alibaba", 100, {
+				region: "cn-beijing",
+				routingLatency: 20,
+				routingThroughput: 400,
+			});
+			await setRoutingMetrics("glm-5", "novita", 100, {
+				routingLatency: 1200,
+				routingThroughput: 30,
+			});
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "glm-5",
+					messages: [{ role: "user", content: "Hello!" }],
+				}),
+			});
+
+			expect(res.status).toBe(200);
+
+			const logs = await waitForLogs(1);
+			const log =
+				logs.find((entry) => entry.requestedModel === "glm-5") ?? logs.at(-1);
+			expect(log).toBeTruthy();
+			expect(log?.usedProvider).toBe("alibaba");
+			expect(log?.usedModel).toBe("alibaba/glm-5:cn-beijing");
+			expect(
+				log?.routingMetadata?.providerScores?.some(
+					(score) => score.providerId === "alibaba" && !score.region,
+				),
+			).toBe(false);
+			expect(
+				log?.routingMetadata?.providerScores?.some(
+					(score) =>
+						score.providerId === "alibaba" && score.region === "singapore",
+				),
+			).toBe(false);
+		});
+
+		test("routing excludes providers whose maxOutput is below max_tokens", async () => {
+			await ensureProviders(["zai", "alibaba", "novita"]);
+
+			await db.insert(tables.providerKey).values([
+				{
+					id: "provider-key-zai",
+					token: "sk-zai-key",
+					provider: "zai",
+					organizationId: "org-id",
+					baseUrl: mockServerUrl,
+				},
+				{
+					id: "provider-key-alibaba",
+					token: "sk-alibaba-key",
+					provider: "alibaba",
+					organizationId: "org-id",
+					baseUrl: mockServerUrl,
+				},
+				{
+					id: "provider-key-novita",
+					token: "sk-novita-key",
+					provider: "novita",
+					organizationId: "org-id",
+					baseUrl: mockServerUrl,
+				},
+			]);
+
+			await db
+				.insert(tables.model)
+				.values({
+					id: "glm-4.6",
+					name: "GLM-4.6",
+					family: "zai",
+					releasedAt: new Date("2025-09-30"),
+				})
+				.onConflictDoNothing();
+
+			await db
+				.insert(tables.modelProviderMapping)
+				.values([
+					{
+						id: "glm-4-6-zai-root-max-tokens",
+						modelId: "glm-4.6",
+						providerId: "zai",
+						externalId: "glm-4.6",
+						maxOutput: 32768,
+						streaming: true,
+					},
+					{
+						id: "glm-4-6-alibaba-cn-beijing-max-tokens",
+						modelId: "glm-4.6",
+						providerId: "alibaba",
+						externalId: "glm-4.6",
+						region: "cn-beijing",
+						maxOutput: 16384,
+						streaming: true,
+					},
+					{
+						id: "glm-4-6-novita-root-max-tokens",
+						modelId: "glm-4.6",
+						providerId: "novita",
+						externalId: "zai-org/glm-4.6",
+						maxOutput: 32768,
+						streaming: true,
+					},
+				])
+				.onConflictDoNothing();
+
+			await setRoutingMetrics("glm-4.6", "zai", 100, {
+				routingLatency: 20,
+				routingThroughput: 500,
+			});
+			await setRoutingMetrics("glm-4.6", "alibaba", 100, {
+				region: "cn-beijing",
+				routingLatency: 5,
+				routingThroughput: 1000,
+			});
+			await setRoutingMetrics("glm-4.6", "novita", 70, {
+				routingLatency: 1200,
+				routingThroughput: 20,
+			});
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "zai/glm-4.6",
+					max_tokens: 20000,
+					messages: [{ role: "user", content: "Hello!" }],
+				}),
+			});
+
+			expect(res.status).not.toBe(400);
+
+			const logs = await waitForLogs(1);
+			const log =
+				logs.find((entry) => entry.requestedModel === "glm-4.6") ?? logs.at(-1);
+			expect(log).toBeTruthy();
+			expect(log?.usedProvider).not.toBe("alibaba");
+			expect(log?.usedModel).not.toBe("alibaba/glm-4.6:cn-beijing");
+			expect(log?.routingMetadata?.providerScores).not.toContainEqual(
+				expect.objectContaining({
+					providerId: "alibaba",
+					region: "cn-beijing",
+				}),
+			);
+		});
+	});
+
+	describe("routing metadata in DB log entries", () => {
+		test("direct provider selection picks the best available region", async () => {
+			await setupKeys("alibaba");
+
+			await ensureRegionalMapping("deepseek-v4-flash", "alibaba", "singapore");
+			await ensureRegionalMapping("deepseek-v4-flash", "alibaba", "cn-beijing");
+
+			await setRoutingMetrics("deepseek-v4-flash", "alibaba", 100, {
+				region: "singapore",
+				routingLatency: 1200,
+				routingThroughput: 10,
+			});
+			await setRoutingMetrics("deepseek-v4-flash", "alibaba", 100, {
+				region: "cn-beijing",
+				routingLatency: 900,
+				routingThroughput: 20,
+			});
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "alibaba/deepseek-v4-flash",
+					messages: [{ role: "user", content: "Hello!" }],
+				}),
+			});
+
+			expect(res.status).toBe(200);
+
+			const logs = await waitForLogs(1);
+			const singaporeScore = logs[0].routingMetadata?.providerScores?.find(
+				(score) =>
+					score.providerId === "alibaba" && score.region === "singapore",
+			);
+			const beijingScore = logs[0].routingMetadata?.providerScores?.find(
+				(score) =>
+					score.providerId === "alibaba" && score.region === "cn-beijing",
+			);
+
+			expect(logs[0].usedModel).toBe("alibaba/deepseek-v4-flash:cn-beijing");
+			expect(logs[0].routingMetadata?.selectionReason).toBe(
+				"direct-provider-specified",
+			);
+			expect(singaporeScore).toBeTruthy();
+			expect(beijingScore).toBeTruthy();
+			expect(beijingScore?.score).not.toBeUndefined();
+			expect(singaporeScore?.score).not.toBeUndefined();
+			expect(logs[0].routingMetadata?.routing).toEqual([
+				expect.objectContaining({
+					provider: "alibaba",
+					model: "deepseek-v4-flash",
+					region: "cn-beijing",
+					status_code: 200,
+					succeeded: true,
+				}),
+			]);
+		});
+
+		test("direct provider selection only records the direct region", async () => {
+			await setupKeys("alibaba");
+			await db
+				.update(tables.providerKey)
+				.set({
+					options: {
+						alibaba_region: "singapore",
+					},
+				})
+				.where(eq(tables.providerKey.id, "provider-key-id"));
+
+			await setRoutingMetrics("deepseek-v4-flash", "alibaba", 100, {
+				region: "singapore",
+				routingLatency: 866,
+				routingThroughput: 1,
+			});
+			await setRoutingMetrics("deepseek-v4-flash", "alibaba", 100, {
+				region: "cn-beijing",
+				routingLatency: 1767,
+				routingThroughput: 0.5,
+			});
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "alibaba/deepseek-v4-flash",
+					messages: [{ role: "user", content: "Hello!" }],
+				}),
+			});
+
+			expect(res.status).toBe(200);
+
+			const logs = await waitForLogs(1);
+			const singaporeScore = logs[0].routingMetadata?.providerScores?.find(
+				(score) =>
+					score.providerId === "alibaba" && score.region === "singapore",
+			);
+			const beijingScore = logs[0].routingMetadata?.providerScores?.find(
+				(score) =>
+					score.providerId === "alibaba" && score.region === "cn-beijing",
+			);
+			expect(logs[0].routingMetadata?.selectionReason).toBe(
+				"direct-provider-specified",
+			);
+			expect(singaporeScore).toBeTruthy();
+			expect(beijingScore).toBeFalsy();
+			expect(
+				logs[0].routingMetadata?.providerScores?.some(
+					(score) => score.providerId === "alibaba" && !score.region,
+				),
+			).toBe(false);
+			expect(logs[0].routingMetadata?.routing).toEqual([
+				expect.objectContaining({
+					provider: "alibaba",
+					model: "deepseek-v4-flash",
+					region: "singapore",
+					status_code: 200,
+					succeeded: true,
+				}),
+			]);
+			expect(logs[0].routingMetadata?.providerScores).toEqual([
+				expect.objectContaining({
+					providerId: "alibaba",
+					region: "singapore",
+					score: 1,
+				}),
+			]);
+		});
+
+		test("direct provider selection follows the scoped key region after failover", async () => {
+			await setupSingleProviderWithRegionalKeys("alibaba");
+			await ensureRegionalMapping("deepseek-v4-flash", "alibaba", "singapore");
+			await ensureRegionalMapping("deepseek-v4-flash", "alibaba", "cn-beijing");
+
+			reportTrackedKeyError(
+				"alibaba-key-singapore",
+				500,
+				undefined,
+				"deepseek-v4-flash",
+			);
+			reportTrackedKeyError(
+				"alibaba-key-singapore",
+				500,
+				undefined,
+				"deepseek-v4-flash",
+			);
+			reportTrackedKeyError(
+				"alibaba-key-singapore",
+				500,
+				undefined,
+				"deepseek-v4-flash",
+			);
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "alibaba/deepseek-v4-flash",
+					messages: [{ role: "user", content: "Hello!" }],
+				}),
+			});
+
+			expect(res.status).toBe(200);
+
+			const logs = await waitForLogs(1);
+			expect(logs[0].usedModel).toBe("alibaba/deepseek-v4-flash:cn-beijing");
+			expect(logs[0].routingMetadata?.routing).toEqual([
+				expect.objectContaining({
+					provider: "alibaba",
+					model: "deepseek-v4-flash",
+					region: "cn-beijing",
+					status_code: 200,
+					succeeded: true,
+				}),
+			]);
+		});
+
+		test("provider-agnostic routing keeps regional mappings aggregated", async () => {
+			await setupKeys("alibaba");
+
+			await setRoutingMetrics("deepseek-v4-flash", "alibaba", 99, {
+				routingLatency: 950,
+				routingThroughput: 15,
+			});
+			await setRoutingMetrics("deepseek-v4-flash", "alibaba", 100, {
+				region: "singapore",
+				routingLatency: 1200,
+				routingThroughput: 10,
+			});
+			await setRoutingMetrics("deepseek-v4-flash", "alibaba", 100, {
+				region: "cn-beijing",
+				routingLatency: 900,
+				routingThroughput: 20,
+			});
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "deepseek-v4-flash",
+					messages: [{ role: "user", content: "Hello!" }],
+				}),
+			});
+
+			expect(res.status).toBe(200);
+
+			const logs = await waitForLogs(1);
+			expect(logs[0].routingMetadata?.providerScores).toContainEqual(
+				expect.objectContaining({
+					providerId: "alibaba",
+					region: "cn-beijing",
+					score: expect.any(Number),
+				}),
+			);
+			expect(
+				logs[0].routingMetadata?.providerScores?.some(
+					(score) =>
+						score.providerId === "alibaba" && score.region === "singapore",
+				),
+			).toBe(false);
+		});
+
+		test("successful request stores routing metadata with selection reason in DB log", async () => {
+			await setupKeys("openai");
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "openai/gpt-4o-mini",
+					messages: [{ role: "user", content: "Hello!" }],
+				}),
+			});
+
+			expect(res.status).toBe(200);
+
+			const logs = await waitForLogs(1);
+			expect(logs.length).toBe(1);
+
+			const log = logs[0];
+			// When a provider is directly specified, routing metadata should be set
+			expect(log.routingMetadata).toBeTruthy();
+			expect(log.routingMetadata).toHaveProperty("selectionReason");
+			expect(log.routingMetadata).toHaveProperty("selectedProvider", "openai");
+		});
+
+		test("error request stores routing metadata along with error details in DB log", async () => {
+			await setupKeys("openai");
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "openai/gpt-4o-mini",
+					messages: [{ role: "user", content: "TRIGGER_STATUS_500" }],
+				}),
+			});
+
+			expect(res.status).toBe(500);
+
+			const logs = await waitForLogs(1);
+			expect(logs.length).toBe(1);
+
+			const log = logs[0];
+			// Both routing metadata and error details should be present
+			expect(log.routingMetadata).toBeTruthy();
+			expect(log.routingMetadata).toHaveProperty("selectionReason");
+			expect(log.errorDetails).toBeTruthy();
+			expect(log.errorDetails?.statusCode).toBe(500);
+			expect(log.hasError).toBe(true);
+			expect(log.finishReason).toBe("upstream_error");
+		});
+
+		test("X-No-Fallback header is recorded in routing metadata", async () => {
+			await setupKeys("openai");
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+					"X-No-Fallback": "true",
+				},
+				body: JSON.stringify({
+					model: "openai/gpt-4o-mini",
+					messages: [{ role: "user", content: "Hello!" }],
+				}),
+			});
+
+			expect(res.status).toBe(200);
+
+			const logs = await waitForLogs(1);
+			expect(logs.length).toBe(1);
+
+			const log = logs[0];
+			expect(log.routingMetadata).toBeTruthy();
+			expect(log.routingMetadata).toHaveProperty("noFallback", true);
+			expect(log.routingMetadata).toHaveProperty("xNoFallbackHeaderSet", true);
+		});
+
+		test("content filter hit reroutes away from content-filter providers and records it in routing metadata", async () => {
+			await setupMultiProviderKeys();
+
+			const togetherProvider = getProviderDefinition("together-ai");
+			expect(togetherProvider).toBeDefined();
+			if (!togetherProvider) {
+				throw new Error("Missing together-ai provider fixture");
+			}
+
+			const originalContentFilterFlag = togetherProvider.contentFilter;
+			const previousContentFilterMode = process.env.LLM_CONTENT_FILTER_MODE;
+			const previousContentFilterMethod = process.env.LLM_CONTENT_FILTER_METHOD;
+			const previousContentFilterModels = process.env.LLM_CONTENT_FILTER_MODELS;
+			const previousContentFilterKeywords =
+				process.env.LLM_CONTENT_FILTER_KEYWORDS;
+
+			togetherProvider.contentFilter = true;
+			process.env.LLM_CONTENT_FILTER_MODE = "enabled";
+			process.env.LLM_CONTENT_FILTER_METHOD = "keywords";
+			process.env.LLM_CONTENT_FILTER_MODELS = "glm-4.7";
+			process.env.LLM_CONTENT_FILTER_KEYWORDS = "blocked";
+
+			try {
+				const res = await app.request("/v1/chat/completions", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: "Bearer real-token",
+					},
+					body: JSON.stringify({
+						model: "glm-4.7",
+						messages: [{ role: "user", content: "this request is blocked" }],
+					}),
+				});
+
+				expect(res.status).toBe(200);
+
+				const logs = await waitForLogs(1);
+				expect(logs.length).toBe(1);
+
+				const log = logs[0];
+				expect(log.usedProvider).toBe("cerebras");
+				expect(log.internalContentFilter).toBe(true);
+				expect(log.routingMetadata).toMatchObject({
+					selectedProvider: "cerebras",
+					contentFilterMatched: true,
+					contentFilterRerouted: true,
+					contentFilterExcludedProviders: ["together-ai"],
+				});
+				expect(log.routingMetadata?.providerScores).toContainEqual(
+					expect.objectContaining({
+						providerId: "together-ai",
+						contentFilterProvider: true,
+						excludedByContentFilter: true,
+					}),
+				);
+			} finally {
+				if (originalContentFilterFlag === undefined) {
+					delete togetherProvider.contentFilter;
+				} else {
+					togetherProvider.contentFilter = originalContentFilterFlag;
+				}
+
+				if (previousContentFilterMode === undefined) {
+					delete process.env.LLM_CONTENT_FILTER_MODE;
+				} else {
+					process.env.LLM_CONTENT_FILTER_MODE = previousContentFilterMode;
+				}
+
+				if (previousContentFilterMethod === undefined) {
+					delete process.env.LLM_CONTENT_FILTER_METHOD;
+				} else {
+					process.env.LLM_CONTENT_FILTER_METHOD = previousContentFilterMethod;
+				}
+
+				if (previousContentFilterModels === undefined) {
+					delete process.env.LLM_CONTENT_FILTER_MODELS;
+				} else {
+					process.env.LLM_CONTENT_FILTER_MODELS = previousContentFilterModels;
+				}
+
+				if (previousContentFilterKeywords === undefined) {
+					delete process.env.LLM_CONTENT_FILTER_KEYWORDS;
+				} else {
+					process.env.LLM_CONTENT_FILTER_KEYWORDS =
+						previousContentFilterKeywords;
+				}
+			}
+		});
+
+		test("content filter monitor mode does not reroute away from content-filter providers", async () => {
+			await setupMultiProviderKeys();
+
+			const togetherProvider = getProviderDefinition("together-ai");
+			expect(togetherProvider).toBeDefined();
+			if (!togetherProvider) {
+				throw new Error("Missing together-ai provider fixture");
+			}
+
+			const originalContentFilterFlag = togetherProvider.contentFilter;
+			const previousContentFilterMode = process.env.LLM_CONTENT_FILTER_MODE;
+			const previousContentFilterMethod = process.env.LLM_CONTENT_FILTER_METHOD;
+			const previousContentFilterModels = process.env.LLM_CONTENT_FILTER_MODELS;
+			const previousContentFilterKeywords =
+				process.env.LLM_CONTENT_FILTER_KEYWORDS;
+
+			togetherProvider.contentFilter = true;
+			process.env.LLM_CONTENT_FILTER_MODE = "monitor";
+			process.env.LLM_CONTENT_FILTER_METHOD = "keywords";
+			process.env.LLM_CONTENT_FILTER_MODELS = "glm-4.7";
+			process.env.LLM_CONTENT_FILTER_KEYWORDS = "blocked";
+
+			try {
+				const res = await app.request("/v1/chat/completions", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: "Bearer real-token",
+					},
+					body: JSON.stringify({
+						model: "glm-4.7",
+						messages: [{ role: "user", content: "this request is blocked" }],
+					}),
+				});
+
+				expect(res.status).toBe(200);
+
+				const logs = await waitForLogs(1);
+				expect(logs.length).toBe(1);
+
+				const log = logs[0];
+				expect(log.usedProvider).toBe("together-ai");
+				expect(log.internalContentFilter).toBe(true);
+				expect(log.routingMetadata).toMatchObject({
+					selectedProvider: "together-ai",
+					contentFilterMatched: true,
+					contentFilterRerouted: false,
+				});
+				expect(
+					log.routingMetadata?.contentFilterExcludedProviders,
+				).toBeUndefined();
+				expect(log.routingMetadata?.providerScores).not.toContainEqual(
+					expect.objectContaining({
+						providerId: "together-ai",
+						excludedByContentFilter: true,
+					}),
+				);
+			} finally {
+				if (originalContentFilterFlag === undefined) {
+					delete togetherProvider.contentFilter;
+				} else {
+					togetherProvider.contentFilter = originalContentFilterFlag;
+				}
+
+				if (previousContentFilterMode === undefined) {
+					delete process.env.LLM_CONTENT_FILTER_MODE;
+				} else {
+					process.env.LLM_CONTENT_FILTER_MODE = previousContentFilterMode;
+				}
+
+				if (previousContentFilterMethod === undefined) {
+					delete process.env.LLM_CONTENT_FILTER_METHOD;
+				} else {
+					process.env.LLM_CONTENT_FILTER_METHOD = previousContentFilterMethod;
+				}
+
+				if (previousContentFilterModels === undefined) {
+					delete process.env.LLM_CONTENT_FILTER_MODELS;
+				} else {
+					process.env.LLM_CONTENT_FILTER_MODELS = previousContentFilterModels;
+				}
+
+				if (previousContentFilterKeywords === undefined) {
+					delete process.env.LLM_CONTENT_FILTER_KEYWORDS;
+				} else {
+					process.env.LLM_CONTENT_FILTER_KEYWORDS =
+						previousContentFilterKeywords;
+				}
+			}
+		});
+	});
+
+	describe("unified finish reason in DB log entries", () => {
+		test("successful request has completed unified finish reason", async () => {
+			await setupKeys("openai");
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "openai/gpt-4o-mini",
+					messages: [{ role: "user", content: "Hello!" }],
+				}),
+			});
+
+			expect(res.status).toBe(200);
+
+			const logs = await waitForLogs(1);
+			expect(logs.length).toBe(1);
+
+			const log = logs[0];
+			expect(log.unifiedFinishReason).toBe("completed");
+		});
+
+		test("500 error has upstream_error unified finish reason", async () => {
+			await setupCustomKeys();
+
+			await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "llmgateway/custom",
+					messages: [{ role: "user", content: "TRIGGER_STATUS_500" }],
+				}),
+			});
+
+			const logs = await waitForLogs(1);
+			expect(logs.length).toBe(1);
+
+			const log = logs[0];
+			expect(log.unifiedFinishReason).toBe("upstream_error");
+		});
+
+		test("429 rate limit has upstream_error unified finish reason", async () => {
+			await setupCustomKeys();
+
+			await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "llmgateway/custom",
+					messages: [{ role: "user", content: "TRIGGER_STATUS_429" }],
+				}),
+			});
+
+			const logs = await waitForLogs(1);
+			expect(logs.length).toBe(1);
+
+			const log = logs[0];
+			expect(log.unifiedFinishReason).toBe("upstream_error");
+		});
+
+		test("401 auth error has gateway_error unified finish reason", async () => {
+			await setupCustomKeys();
+
+			await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "llmgateway/custom",
+					messages: [{ role: "user", content: "TRIGGER_STATUS_401" }],
+				}),
+			});
+
+			const logs = await waitForLogs(1);
+			expect(logs.length).toBe(1);
+
+			const log = logs[0];
+			expect(log.unifiedFinishReason).toBe("gateway_error");
+		});
+	});
+
+	describe("retry with fallback to alternate provider", () => {
+		test("non-streaming: retries on 500 and succeeds on fallback provider with failed_attempts in metadata", async () => {
+			await setupMultiProviderKeys();
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					// No provider prefix - auto-routing required for retry
+					model: "glm-4.7",
+					messages: [{ role: "user", content: "TRIGGER_FAIL_ONCE hello" }],
+				}),
+			});
+
+			expect(res.status).toBe(200);
+			const json = await res.json();
+
+			// Should have a successful response
+			expect(json).toHaveProperty(["choices", 0, "message", "content"]);
+
+			// Check metadata includes routing info with all attempts
+			expect(json).toHaveProperty("metadata");
+			expect(json.metadata).toHaveProperty("used_provider");
+			expect(json.metadata.routing).toBeDefined();
+			expect(json.metadata.routing.length).toBeGreaterThanOrEqual(2);
+			// First attempt should be the failed one
+			expect(json.metadata.routing[0]).toHaveProperty("provider");
+			expect(json.metadata.routing[0]).toHaveProperty("status_code", 500);
+			expect(json.metadata.routing[0]).toHaveProperty("error_type");
+			expect(json.metadata.routing[0]).toHaveProperty("succeeded", false);
+			// Last attempt should be the successful one
+			const lastAttempt =
+				json.metadata.routing[json.metadata.routing.length - 1];
+			expect(lastAttempt).toHaveProperty("succeeded", true);
+
+			// DB should have 2 logs: the failed attempt and the successful one
+			const logs = await waitForLogs(2);
+			expect(logs.length).toBeGreaterThanOrEqual(2);
+
+			// Find the successful log (the last one should be the final attempt)
+			const successLog = logs.find(
+				(l: Log) => l.finishReason === "stop" || !l.hasError,
+			);
+			expect(successLog).toBeDefined();
+			expect(successLog!.hasError).toBe(false);
+			// The routing metadata should contain all attempts
+			expect(successLog!.routingMetadata?.routing).toBeDefined();
+			expect(
+				successLog!.routingMetadata!.routing!.length,
+			).toBeGreaterThanOrEqual(2);
+			expect(successLog!.routingMetadata!.routing![0]).toHaveProperty(
+				"status_code",
+				500,
+			);
+			expect(successLog!.routingMetadata!.routing![0]).toHaveProperty(
+				"succeeded",
+				false,
+			);
+			// Last attempt should be successful
+			const lastDbAttempt =
+				successLog!.routingMetadata!.routing![
+					successLog!.routingMetadata!.routing!.length - 1
+				];
+			expect(lastDbAttempt).toHaveProperty("succeeded", true);
+
+			// Find the failed log - it should be marked as retried
+			const failedLog = logs.find((l: Log) => l.hasError);
+			expect(failedLog).toBeDefined();
+			expect(failedLog!.retried).toBe(true);
+			expect(failedLog!.retriedByLogId).toBe(successLog!.id);
+		});
+
+		test("non-streaming: does not retry when X-No-Fallback is set", async () => {
+			await setupMultiProviderKeys();
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+					"X-No-Fallback": "true",
+				},
+				body: JSON.stringify({
+					model: "glm-4.7",
+					messages: [{ role: "user", content: "TRIGGER_FAIL_ONCE hello" }],
+				}),
+			});
+
+			// Should fail since retry is disabled
+			expect(res.status).toBe(500);
+			const json = await res.json();
+			expect(json).toHaveProperty("error");
+		});
+
+		test("non-streaming: retries on 403 and succeeds on fallback provider", async () => {
+			await setupMultiProviderKeys();
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "glm-4.7",
+					messages: [{ role: "user", content: "TRIGGER_FAIL_ONCE_403 hello" }],
+				}),
+			});
+
+			expect(res.status).toBe(200);
+			const json = await res.json();
+
+			expect(json).toHaveProperty(["choices", 0, "message", "content"]);
+			expect(json.metadata.routing).toBeDefined();
+			expect(json.metadata.routing.length).toBeGreaterThanOrEqual(2);
+			expect(json.metadata.routing[0]).toMatchObject({
+				status_code: 403,
+				error_type: "gateway_error",
+				succeeded: false,
+			});
+			expect(
+				json.metadata.routing[json.metadata.routing.length - 1],
+			).toMatchObject({
+				succeeded: true,
+			});
+		});
+
+		test("non-streaming: retries on 404 and succeeds on fallback provider", async () => {
+			await setupMultiProviderKeys();
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "glm-4.7",
+					messages: [{ role: "user", content: "TRIGGER_FAIL_ONCE_404 hello" }],
+				}),
+			});
+
+			expect(res.status).toBe(200);
+			const json = await res.json();
+
+			expect(json).toHaveProperty(["choices", 0, "message", "content"]);
+			expect(json.metadata.routing).toBeDefined();
+			expect(json.metadata.routing.length).toBeGreaterThanOrEqual(2);
+			expect(json.metadata.routing[0]).toMatchObject({
+				status_code: 404,
+				error_type: "upstream_error",
+				succeeded: false,
+			});
+			expect(
+				json.metadata.routing[json.metadata.routing.length - 1],
+			).toMatchObject({
+				succeeded: true,
+			});
+
+			const logs = await waitForLogs(2);
+			const successLog = logs.find(
+				(l: Log) => l.finishReason === "stop" || !l.hasError,
+			);
+			const failedLog = logs.find((l: Log) => l.hasError);
+			const successRouting = successLog?.routingMetadata?.routing;
+			const lastSuccessAttempt = successRouting?.at(-1);
+
+			expect(successRouting?.[0]).toMatchObject({
+				status_code: 404,
+				error_type: "upstream_error",
+				succeeded: false,
+			});
+			expect(successRouting?.[0]?.logId).toBe(failedLog?.id);
+			expect(lastSuccessAttempt).toMatchObject({
+				succeeded: true,
+			});
+			expect(lastSuccessAttempt?.logId).toBe(successLog?.id);
+			expect(failedLog?.retried).toBe(true);
+			expect(failedLog?.retriedByLogId).toBe(successLog?.id);
+		});
+
+		test("non-streaming: retries after random exploration selects a bad provider", async () => {
+			await setupMultiProviderKeys();
+
+			const randomSpy = vi
+				.spyOn(Math, "random")
+				.mockReturnValueOnce(0)
+				.mockReturnValue(0);
+			const originalArgv = process.argv;
+			const originalNodeEnv = process.env.NODE_ENV;
+			const originalVitest = process.env.VITEST;
+			delete process.env.NODE_ENV;
+			delete process.env.VITEST;
+			process.argv = ["node", "/tmp/not-a-test-run.mjs"];
+
+			try {
+				const res = await app.request("/v1/chat/completions", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: "Bearer real-token",
+					},
+					body: JSON.stringify({
+						model: "glm-4.7",
+						messages: [
+							{ role: "user", content: "TRIGGER_FAIL_ONCE_404 hello" },
+						],
+					}),
+				});
+
+				expect(res.status).toBe(200);
+				const json = await res.json();
+
+				expect(json.metadata.routing).toBeDefined();
+				expect(json.metadata.routing.length).toBeGreaterThanOrEqual(2);
+				expect(json.metadata.routing[0]).toMatchObject({
+					status_code: 404,
+					error_type: "upstream_error",
+					succeeded: false,
+				});
+				expect(
+					json.metadata.routing[json.metadata.routing.length - 1],
+				).toMatchObject({
+					succeeded: true,
+				});
+
+				const logs = await waitForLogs(2);
+				const successLog = logs.find(
+					(l: Log) => l.finishReason === "stop" || !l.hasError,
+				);
+				const failedLog = logs.find((l: Log) => l.hasError);
+
+				expect(successLog?.routingMetadata?.selectionReason).toBe(
+					"random-exploration",
+				);
+				expect(
+					successLog?.routingMetadata?.providerScores?.length,
+				).toBeGreaterThan(1);
+				expect(successLog?.routingMetadata?.routing?.[0]?.logId).toBe(
+					failedLog?.id,
+				);
+				expect(successLog?.routingMetadata?.routing?.at(-1)?.logId).toBe(
+					successLog?.id,
+				);
+				expect(failedLog?.retried).toBe(true);
+			} finally {
+				randomSpy.mockRestore();
+				process.argv = originalArgv;
+				if (originalNodeEnv !== undefined) {
+					process.env.NODE_ENV = originalNodeEnv;
+				} else {
+					delete process.env.NODE_ENV;
+				}
+				if (originalVitest !== undefined) {
+					process.env.VITEST = originalVitest;
+				} else {
+					delete process.env.VITEST;
+				}
+			}
+		});
+
+		test("non-streaming: does not retry when specific provider is requested", async () => {
+			await setupMultiProviderKeys();
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					// Explicit provider prefix - retry disabled
+					model: "together-ai/glm-4.7",
+					messages: [{ role: "user", content: "TRIGGER_FAIL_ONCE hello" }],
+				}),
+			});
+
+			// Should fail since retry is disabled for explicit provider
+			expect(res.status).toBe(500);
+			const json = await res.json();
+			expect(json).toHaveProperty("error");
+		});
+
+		test("non-streaming: retries another key for the same explicit provider before provider fallback", async () => {
+			await setupSingleProviderWithMultipleKeys("together-ai");
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "together-ai/glm-4.7",
+					messages: [{ role: "user", content: "TRIGGER_FAIL_ONCE hello" }],
+				}),
+			});
+
+			expect(res.status).toBe(200);
+			const json = await res.json();
+
+			expect(json.metadata.used_provider).toBe("together-ai");
+			expect(json.metadata.routing).toBeDefined();
+			expect(json.metadata.routing).toHaveLength(2);
+			expect(json.metadata.routing[0]).toMatchObject({
+				provider: "together-ai",
+				status_code: 500,
+				succeeded: false,
+			});
+			expect(json.metadata.routing[1]).toMatchObject({
+				provider: "together-ai",
+				succeeded: true,
+			});
+
+			const logs = await waitForLogs(2);
+			const successLog = logs.find(
+				(l: Log) => l.finishReason === "stop" || !l.hasError,
+			);
+			expect(successLog?.routingMetadata?.routing).toHaveLength(2);
+			expect(successLog?.routingMetadata?.routing?.[0]?.provider).toBe(
+				"together-ai",
+			);
+			expect(successLog?.routingMetadata?.routing?.[1]?.provider).toBe(
+				"together-ai",
+			);
+		});
+
+		test("non-streaming: retries another key for the same provider when X-No-Fallback is set", async () => {
+			await setupSingleProviderWithMultipleKeys("together-ai");
+			const primaryKeyHash = getApiKeyFingerprint("together-ai-primary-token");
+			const secondaryKeyHash = getApiKeyFingerprint(
+				"together-ai-secondary-token",
+			);
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+					"X-No-Fallback": "true",
+				},
+				body: JSON.stringify({
+					model: "together-ai/glm-4.7",
+					messages: [{ role: "user", content: "TRIGGER_FAIL_ONCE hello" }],
+				}),
+			});
+
+			expect(res.status).toBe(200);
+			const json = await res.json();
+
+			expect(json.metadata.used_provider).toBe("together-ai");
+			expect(json.metadata.routing).toBeDefined();
+			expect(json.metadata.routing).toHaveLength(2);
+			const jsonRoutingHashes = json.metadata.routing.map(
+				(attempt: { apiKeyHash?: string }) => attempt.apiKeyHash,
+			);
+			expect(new Set(jsonRoutingHashes)).toEqual(
+				new Set([primaryKeyHash, secondaryKeyHash]),
+			);
+			expect(json.metadata.routing[0]).toMatchObject({
+				provider: "together-ai",
+				status_code: 500,
+				succeeded: false,
+			});
+			expect(json.metadata.routing[1]).toMatchObject({
+				provider: "together-ai",
+				succeeded: true,
+			});
+
+			const logs = await waitForLogs(2);
+			const successLog = logs.find(
+				(l: Log) => l.finishReason === "stop" || !l.hasError,
+			);
+			expect(successLog?.routingMetadata?.noFallback).toBe(true);
+			expect(successLog?.routingMetadata?.usedApiKeyHash).toBe(
+				successLog?.routingMetadata?.routing?.[1]?.apiKeyHash,
+			);
+			expect(successLog?.routingMetadata?.routing).toHaveLength(2);
+			expect(
+				new Set(
+					successLog?.routingMetadata?.routing?.map(
+						(attempt) => attempt.apiKeyHash,
+					),
+				),
+			).toEqual(new Set([primaryKeyHash, secondaryKeyHash]));
+			expect(successLog?.routingMetadata?.routing?.[0]).toMatchObject({
+				provider: "together-ai",
+			});
+			expect(successLog?.routingMetadata?.routing?.[1]).toMatchObject({
+				provider: "together-ai",
+			});
+		});
+
+		test("non-streaming: retries another key for auth failures on the same explicit provider", async () => {
+			await setupSingleProviderWithMultipleKeys("together-ai");
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "together-ai/glm-4.7",
+					messages: [{ role: "user", content: "TRIGGER_STATUS_401" }],
+				}),
+			});
+
+			expect(res.status).toBe(500);
+			const json = await res.json();
+			expect(json.error.type).toBe("gateway_error");
+
+			const logs = await waitForLogs(2);
+			const authLogs = logs.filter(
+				(log: Log) => log.errorDetails?.statusCode === 401,
+			);
+			expect(authLogs).toHaveLength(2);
+			expect(authLogs.some((log: Log) => log.retried)).toBe(true);
+			expect(isTrackedKeyHealthy("together-ai-key-primary", "glm-4.7")).toBe(
+				false,
+			);
+			expect(isTrackedKeyHealthy("together-ai-key-secondary", "glm-4.7")).toBe(
+				false,
+			);
+		});
+
+		test("non-streaming: retries another key for invalid API key payloads", async () => {
+			await setupSingleProviderWithMultipleKeys("together-ai");
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "together-ai/glm-4.7",
+					messages: [
+						{ role: "user", content: "TRIGGER_FAIL_ONCE_INVALID_KEY" },
+					],
+				}),
+			});
+
+			expect(res.status).toBe(200);
+			const json = await res.json();
+			expect(json.metadata.routing).toHaveLength(2);
+			expect(json.metadata.routing[0]).toMatchObject({
+				provider: "together-ai",
+				status_code: 400,
+				succeeded: false,
+			});
+			expect(json.metadata.routing[1]).toMatchObject({
+				provider: "together-ai",
+				succeeded: true,
+			});
+
+			const logs = await waitForLogs(2);
+			const failedLog = logs.find(
+				(log: Log) => log.errorDetails?.statusCode === 400,
+			);
+			const successLog = logs.find(
+				(log: Log) => log.finishReason === "stop" || !log.hasError,
+			);
+			expect(failedLog?.finishReason).toBe("gateway_error");
+			expect(failedLog?.retried).toBe(true);
+			expect(successLog?.routingMetadata?.routing).toHaveLength(2);
+			expect(isTrackedKeyHealthy("together-ai-key-primary", "glm-4.7")).toBe(
+				false,
+			);
+			expect(isTrackedKeyHealthy("together-ai-key-secondary", "glm-4.7")).toBe(
+				true,
+			);
+		});
+
+		test("non-streaming: retries the same env key when a single-key provider fails transiently", async () => {
+			const originalApiKey = process.env.LLM_GOOGLE_AI_STUDIO_API_KEY;
+			const originalBaseUrl = process.env.LLM_GOOGLE_AI_STUDIO_BASE_URL;
+			// Single value → no alternate key to rotate to; the only recovery
+			// path is retrying the same key.
+			process.env.LLM_GOOGLE_AI_STUDIO_API_KEY = "google-env-single-key";
+			process.env.LLM_GOOGLE_AI_STUDIO_BASE_URL = mockServerUrl;
+			try {
+				await ensureBaseFixtures();
+				await ensureProviders(["google-ai-studio"]);
+				await db
+					.update(tables.project)
+					.set({ mode: "credits" })
+					.where(eq(tables.project.id, "project-id"));
+				await db.insert(tables.apiKey).values({
+					id: "token-id",
+					token: "real-token",
+					projectId: "project-id",
+					description: "Test API Key",
+					createdBy: "user-id",
+				});
+
+				const startedAt = Date.now();
+				const res = await app.request("/v1/chat/completions", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: "Bearer real-token",
+					},
+					body: JSON.stringify({
+						model: "google-ai-studio/gemini-2.5-flash",
+						messages: [{ role: "user", content: "TRIGGER_FAIL_ONCE hello" }],
+					}),
+				});
+
+				expect(res.status).toBe(200);
+				// One same-key retry → one fixed delay before the second attempt.
+				expect(Date.now() - startedAt).toBeGreaterThanOrEqual(
+					SAME_KEY_RETRY_DELAY_MS,
+				);
+				const json = await res.json();
+				expect(json.metadata.used_provider).toBe("google-ai-studio");
+				expect(json.metadata.routing).toHaveLength(2);
+
+				// Both attempts used the same provider AND the same key.
+				const envKeyHash = getApiKeyFingerprint("google-env-single-key");
+				expect(json.metadata.routing[0]).toMatchObject({
+					provider: "google-ai-studio",
+					status_code: 500,
+					succeeded: false,
+					apiKeyHash: envKeyHash,
+				});
+				expect(json.metadata.routing[1]).toMatchObject({
+					provider: "google-ai-studio",
+					succeeded: true,
+					apiKeyHash: envKeyHash,
+				});
+
+				const logs = await waitForLogs(2);
+				const failedLog = logs.find((log: Log) => log.hasError);
+				const successLog = logs.find((log: Log) => !log.hasError);
+				expect(failedLog?.retried).toBe(true);
+				expect(failedLog?.retriedByLogId).toBeTruthy();
+				expect(successLog?.routingMetadata?.routing).toHaveLength(2);
+			} finally {
+				if (originalApiKey !== undefined) {
+					process.env.LLM_GOOGLE_AI_STUDIO_API_KEY = originalApiKey;
+				} else {
+					delete process.env.LLM_GOOGLE_AI_STUDIO_API_KEY;
+				}
+				if (originalBaseUrl !== undefined) {
+					process.env.LLM_GOOGLE_AI_STUDIO_BASE_URL = originalBaseUrl;
+				} else {
+					delete process.env.LLM_GOOGLE_AI_STUDIO_BASE_URL;
+				}
+			}
+		});
+
+		test("non-streaming: same-key retries stop after the retry budget is exhausted", async () => {
+			const originalApiKey = process.env.LLM_GOOGLE_AI_STUDIO_API_KEY;
+			const originalBaseUrl = process.env.LLM_GOOGLE_AI_STUDIO_BASE_URL;
+			process.env.LLM_GOOGLE_AI_STUDIO_API_KEY = "google-env-single-key";
+			process.env.LLM_GOOGLE_AI_STUDIO_BASE_URL = mockServerUrl;
+			try {
+				await ensureBaseFixtures();
+				await ensureProviders(["google-ai-studio"]);
+				await db
+					.update(tables.project)
+					.set({ mode: "credits" })
+					.where(eq(tables.project.id, "project-id"));
+				await db.insert(tables.apiKey).values({
+					id: "token-id",
+					token: "real-token",
+					projectId: "project-id",
+					description: "Test API Key",
+					createdBy: "user-id",
+				});
+
+				// TRIGGER_ERROR fails on every call: initial attempt + 2 same-key
+				// retries (default retry.maxRetries = 2), then the error is
+				// returned to the client.
+				const startedAt = Date.now();
+				const res = await app.request("/v1/chat/completions", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: "Bearer real-token",
+					},
+					body: JSON.stringify({
+						model: "google-ai-studio/gemini-2.5-flash",
+						messages: [{ role: "user", content: "TRIGGER_ERROR" }],
+					}),
+				});
+
+				expect(res.status).toBe(500);
+				// Two same-key retries → two fixed delays before giving up.
+				expect(Date.now() - startedAt).toBeGreaterThanOrEqual(
+					2 * SAME_KEY_RETRY_DELAY_MS,
+				);
+				const json = await res.json();
+				expect(json).toHaveProperty("error");
+
+				const logs = await waitForLogs(3);
+				const errorLogs = logs.filter((log: Log) => log.hasError);
+				expect(errorLogs).toHaveLength(3);
+				// The first two attempts are marked as retried; the final one is
+				// returned to the client unretried.
+				expect(errorLogs.filter((log: Log) => log.retried)).toHaveLength(2);
+				expect(errorLogs.filter((log: Log) => !log.retried)).toHaveLength(1);
+			} finally {
+				if (originalApiKey !== undefined) {
+					process.env.LLM_GOOGLE_AI_STUDIO_API_KEY = originalApiKey;
+				} else {
+					delete process.env.LLM_GOOGLE_AI_STUDIO_API_KEY;
+				}
+				if (originalBaseUrl !== undefined) {
+					process.env.LLM_GOOGLE_AI_STUDIO_BASE_URL = originalBaseUrl;
+				} else {
+					delete process.env.LLM_GOOGLE_AI_STUDIO_BASE_URL;
+				}
+			}
+		});
+
+		test("streaming: retries on 500 and delivers response on fallback provider", async () => {
+			await setupMultiProviderKeys();
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "glm-4.7",
+					messages: [{ role: "user", content: "TRIGGER_FAIL_ONCE hello" }],
+					stream: true,
+				}),
+			});
+
+			// Streaming always returns 200 initially
+			expect(res.status).toBe(200);
+
+			const streamResult = await readAll(res.body);
+			// The mock server doesn't return SSE format, so the gateway may
+			// treat the response differently. The key assertion is that
+			// the stream does NOT contain an unrecovered error event,
+			// meaning the retry succeeded rather than giving up.
+			expect(streamResult.hasError).toBe(false);
+
+			// DB should have 2 logs: the failed streaming attempt and the successful one
+			const logs = await waitForLogs(2);
+			expect(logs.length).toBeGreaterThanOrEqual(2);
+
+			// Verify routing metadata in log shows all attempts
+			const logWithRouting = logs.find((l: Log) => l.routingMetadata?.routing);
+			expect(logWithRouting).toBeDefined();
+			expect(
+				logWithRouting!.routingMetadata!.routing!.length,
+			).toBeGreaterThanOrEqual(2);
+			expect(logWithRouting!.routingMetadata!.routing![0]).toHaveProperty(
+				"status_code",
+				500,
+			);
+			expect(logWithRouting!.routingMetadata!.routing![0]).toHaveProperty(
+				"succeeded",
+				false,
+			);
+			const lastStreamAttempt =
+				logWithRouting!.routingMetadata!.routing![
+					logWithRouting!.routingMetadata!.routing!.length - 1
+				];
+			expect(lastStreamAttempt).toHaveProperty("succeeded", true);
+
+			// Find the failed log - it should be marked as retried
+			const successLog = logs.find((l: Log) => !l.hasError);
+			const failedLog = logs.find((l: Log) => l.hasError);
+			expect(failedLog).toBeDefined();
+			expect(failedLog!.retried).toBe(true);
+			expect(failedLog!.retriedByLogId).toBe(successLog!.id);
+		});
+
+		test("streaming: retries when provider sends immediate 404 SSE error", async () => {
+			await setupMultiProviderKeys();
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "glm-4.7",
+					messages: [
+						{ role: "user", content: "TRIGGER_STREAM_FAIL_ONCE_404 hello" },
+					],
+					stream: true,
+				}),
+			});
+
+			expect(res.status).toBe(200);
+
+			const streamResult = await readAll(res.body);
+			expect(streamResult.hasError).toBe(false);
+			expect(streamResult.hasContent).toBe(true);
+
+			const logs = await waitForLogs(2);
+			expect(logs.length).toBeGreaterThanOrEqual(2);
+
+			const failedLog = logs.find(
+				(log: Log) =>
+					log.hasError === true && log.errorDetails?.statusCode === 404,
+			);
+			expect(failedLog).toBeDefined();
+			expect(failedLog!.retried).toBe(true);
+
+			const successLog = logs.find(
+				(log: Log) =>
+					log.hasError === false &&
+					log.routingMetadata?.routing &&
+					log.content?.includes("mock response from the test server"),
+			);
+			expect(successLog).toBeDefined();
+			expect(successLog!.routingMetadata!.routing).toHaveLength(2);
+			expect(successLog!.routingMetadata!.routing![0]).toMatchObject({
+				status_code: 404,
+				error_type: "upstream_error",
+				succeeded: false,
+			});
+			expect(successLog!.routingMetadata!.routing![1]).toMatchObject({
+				succeeded: true,
+			});
+			expect(failedLog!.retriedByLogId).toBe(successLog!.id);
+		});
+
+		test("streaming: retries another key for the same provider after timeout", async () => {
+			await setupSingleProviderWithMultipleKeys("together-ai");
+			const primaryKeyHash = getApiKeyFingerprint("together-ai-primary-token");
+			const secondaryKeyHash = getApiKeyFingerprint(
+				"together-ai-secondary-token",
+			);
+			const originalStreamingTimeout = process.env.AI_STREAMING_TIMEOUT_MS;
+			process.env.AI_STREAMING_TIMEOUT_MS = "75";
+
+			try {
+				const res = await app.request("/v1/chat/completions", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: "Bearer real-token",
+						"X-No-Fallback": "true",
+					},
+					body: JSON.stringify({
+						model: "together-ai/glm-4.7",
+						messages: [{ role: "user", content: "TRIGGER_TIMEOUT_FAIL_ONCE" }],
+						stream: true,
+					}),
+				});
+
+				expect(res.status).toBe(200);
+
+				const streamResult = await readAll(res.body);
+				expect(streamResult.hasError).toBe(false);
+				expect(streamResult.hasContent).toBe(true);
+
+				const logs = await waitForLogs(2);
+				const failedLog = logs.find(
+					(log: Log) => log.hasError && log.errorDetails?.statusCode === 0,
+				);
+				const successLog = logs.find(
+					(log: Log) => !log.hasError && log.routingMetadata?.routing,
+				);
+
+				expect(failedLog?.retried).toBe(true);
+				expect(successLog?.routingMetadata?.noFallback).toBe(true);
+				expect(successLog?.routingMetadata?.routing).toHaveLength(2);
+				expect(
+					new Set(
+						successLog?.routingMetadata?.routing?.map(
+							(attempt) => attempt.apiKeyHash,
+						),
+					),
+				).toEqual(new Set([primaryKeyHash, secondaryKeyHash]));
+				expect(successLog?.routingMetadata?.routing?.[0]).toMatchObject({
+					provider: "together-ai",
+					status_code: 0,
+					succeeded: false,
+				});
+				expect(successLog?.routingMetadata?.routing?.[1]).toMatchObject({
+					provider: "together-ai",
+					succeeded: true,
+				});
+			} finally {
+				if (originalStreamingTimeout === undefined) {
+					delete process.env.AI_STREAMING_TIMEOUT_MS;
+				} else {
+					process.env.AI_STREAMING_TIMEOUT_MS = originalStreamingTimeout;
+				}
+			}
+		});
+
+		test("streaming: retries when immediate SSE error omits status fields", async () => {
+			await setupMultiProviderKeys();
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "glm-4.7",
+					messages: [
+						{ role: "user", content: "TRIGGER_STREAM_FAIL_ONCE_NO_STATUS" },
+					],
+					stream: true,
+				}),
+			});
+
+			expect(res.status).toBe(200);
+
+			const streamResult = await readAll(res.body);
+			expect(streamResult.hasError).toBe(false);
+			expect(streamResult.hasContent).toBe(true);
+
+			const logs = await waitForLogs(2);
+			const failedLog = logs.find(
+				(log: Log) => log.hasError && log.errorDetails?.statusCode === 500,
+			);
+			const successLog = logs.find(
+				(log: Log) =>
+					!log.hasError &&
+					log.routingMetadata?.routing &&
+					log.content?.includes("mock response from the test server"),
+			);
+
+			expect(failedLog).toBeDefined();
+			expect(failedLog?.retried).toBe(true);
+			expect(successLog?.routingMetadata?.routing).toHaveLength(2);
+			expect(successLog?.routingMetadata?.routing?.[0]).toMatchObject({
+				status_code: 500,
+				error_type: "upstream_error",
+				succeeded: false,
+			});
+			expect(successLog?.routingMetadata?.routing?.[1]).toMatchObject({
+				succeeded: true,
+			});
+		});
+
+		test("non-streaming: IAM allow_providers prevents retry fallback to a different provider", async () => {
+			await setupMultiProviderKeys();
+			await insertIamRules([
+				{
+					id: "iam-retry-allow-together",
+					ruleType: "allow_providers",
+					providers: ["together-ai"],
+				},
+			]);
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "glm-4.7",
+					messages: [{ role: "user", content: "TRIGGER_FAIL_ONCE hello" }],
+				}),
+			});
+
+			expect(res.status).toBe(502);
+
+			const logs = await waitForLogs(1);
+			expect(logs).toHaveLength(1);
+			expect(logs[0].usedProvider).toBe("together-ai");
+			expect(logs.some((log) => log.usedProvider === "cerebras")).toBe(false);
+		});
+
+		test("non-streaming: IAM deny_providers prevents retry fallback to a denied provider", async () => {
+			await setupMultiProviderKeys();
+			await insertIamRules([
+				{
+					id: "iam-retry-deny-cerebras",
+					ruleType: "deny_providers",
+					providers: ["cerebras"],
+				},
+			]);
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "glm-4.7",
+					messages: [{ role: "user", content: "TRIGGER_FAIL_ONCE hello" }],
+				}),
+			});
+
+			expect(res.status).toBe(500);
+
+			const logs = await waitForLogs(1);
+			expect(logs).toHaveLength(1);
+			expect(logs[0].usedProvider).toBe("together-ai");
+			expect(logs.some((log) => log.usedProvider === "cerebras")).toBe(false);
+		});
+
+		test("non-streaming: combined IAM allow and deny rules prevent retry fallback to any disallowed provider", async () => {
+			await setupMultiProviderKeys();
+			await insertIamRules([
+				{
+					id: "iam-retry-allow-together-combo",
+					ruleType: "allow_providers",
+					providers: ["together-ai"],
+				},
+				{
+					id: "iam-retry-deny-cerebras-combo",
+					ruleType: "deny_providers",
+					providers: ["cerebras"],
+				},
+			]);
+
+			const res = await app.request("/v1/chat/completions", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: "Bearer real-token",
+				},
+				body: JSON.stringify({
+					model: "glm-4.7",
+					messages: [{ role: "user", content: "TRIGGER_FAIL_ONCE hello" }],
+				}),
+			});
+
+			expect(res.status).toBe(502);
+
+			const logs = await waitForLogs(1);
+			expect(logs).toHaveLength(1);
+			expect(logs[0].usedProvider).toBe("together-ai");
+			expect(logs.some((log) => log.usedProvider === "cerebras")).toBe(false);
+		});
+	});
+});

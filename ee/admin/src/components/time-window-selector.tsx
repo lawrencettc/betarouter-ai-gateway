@@ -1,0 +1,60 @@
+"use client";
+
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback } from "react";
+
+import { Button } from "@/components/ui/button";
+import { pageBucketSource, pageWindowOptions } from "@/lib/page-window";
+
+import type { PageWindow } from "@/lib/page-window";
+
+export function TimeWindowSelector({
+	current,
+	options = pageWindowOptions,
+}: {
+	current: PageWindow;
+	options?: { value: PageWindow; label: string }[];
+}) {
+	const router = useRouter();
+	const pathname = usePathname();
+	const searchParams = useSearchParams();
+
+	const handleSelect = useCallback(
+		(w: PageWindow) => {
+			const params = new URLSearchParams(searchParams.toString());
+			params.set("window", w);
+			params.delete("from");
+			params.delete("to");
+			params.delete("page");
+			router.push(`${pathname}?${params.toString()}`);
+		},
+		[router, pathname, searchParams],
+	);
+
+	return (
+		<div className="flex items-center gap-2">
+			<div className="flex items-center gap-1">
+				{options.map((opt) => (
+					<Button
+						key={opt.value}
+						variant={current === opt.value ? "default" : "outline"}
+						size="sm"
+						onClick={() => handleSelect(opt.value)}
+					>
+						{opt.label}
+					</Button>
+				))}
+			</div>
+			<span
+				className="rounded border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
+				title={
+					pageBucketSource(current) === "hourly"
+						? "Aggregated from the hourly rollup tables (windows > 24h)"
+						: "Aggregated from the per-minute history tables (windows ≤ 24h)"
+				}
+			>
+				{pageBucketSource(current)} buckets
+			</span>
+		</div>
+	);
+}

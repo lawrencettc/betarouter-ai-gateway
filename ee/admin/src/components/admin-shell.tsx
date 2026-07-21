@@ -1,0 +1,289 @@
+"use client";
+
+import { useQueryClient } from "@tanstack/react-query";
+import {
+	Activity,
+	AlertTriangle,
+	BarChart3,
+	Building2,
+	Cpu,
+	Gauge,
+	GitMerge,
+	LayoutDashboard,
+	LogOut,
+	Mail,
+	Menu,
+	MessageCircle,
+	MessageSquare,
+	Percent,
+	Server,
+	Sparkles,
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+
+import { Button } from "@/components/ui/button";
+import {
+	Sidebar,
+	SidebarContent,
+	SidebarFooter,
+	SidebarGroup,
+	SidebarGroupLabel,
+	SidebarHeader,
+	SidebarInset,
+	SidebarMenu,
+	SidebarMenuButton,
+	SidebarMenuItem,
+	SidebarProvider,
+	SidebarTrigger,
+	useSidebar,
+} from "@/components/ui/sidebar";
+import { useAuth } from "@/lib/auth-client";
+
+import { Logo } from "./ui/logo";
+
+import type { ReactNode } from "react";
+
+interface AdminShellProps {
+	children: ReactNode;
+}
+
+function MobileHeader() {
+	const { toggleSidebar } = useSidebar();
+
+	return (
+		<header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b border-border/60 bg-background px-4 md:hidden">
+			<Button
+				variant="ghost"
+				size="icon"
+				className="h-9 w-9"
+				onClick={toggleSidebar}
+			>
+				<Menu className="h-5 w-5" />
+				<span className="sr-only">Toggle menu</span>
+			</Button>
+			<div className="flex items-center gap-2">
+				<div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+					<Logo className="h-4 w-4" />
+				</div>
+				<div className="flex flex-col">
+					<span className="text-sm font-semibold leading-tight">
+						LLM Gateway
+					</span>
+					<span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+						Admin
+					</span>
+				</div>
+			</div>
+		</header>
+	);
+}
+
+export function AdminShell({ children }: AdminShellProps) {
+	const pathname = usePathname();
+	const router = useRouter();
+	const { signOut } = useAuth();
+	const queryClient = useQueryClient();
+
+	const isDashboard = pathname === "/" || pathname === "";
+	const isOrganizations = pathname.startsWith("/organizations");
+	const isDevpass = pathname.startsWith("/devpass");
+	const isChatPlans = pathname.startsWith("/chat-plans");
+	const isGlobalStats = pathname.startsWith("/global-stats");
+	const isDiscounts = pathname === "/discounts";
+	const isRateLimits = pathname === "/rate-limits";
+	const isProviders = pathname === "/providers";
+	const isModels = pathname === "/models";
+	const isModelProviderMappings = pathname === "/model-provider-mappings";
+	const isUnstableMappings = pathname.startsWith("/unstable-mappings");
+	const isContactSubmissions = pathname.startsWith("/contact-submissions");
+	const isProviderListingRequests = pathname.startsWith(
+		"/provider-listing-requests",
+	);
+	const isChatSupportLogs = pathname.startsWith("/chat-support-logs");
+	const isPaymentFailures = pathname.startsWith("/payment-failures");
+
+	const handleSignOut = async () => {
+		await signOut({
+			fetchOptions: {
+				onSuccess: () => {
+					queryClient.clear();
+					router.push("/login");
+				},
+			},
+		});
+	};
+
+	return (
+		<SidebarProvider>
+			<Sidebar variant="inset">
+				<SidebarHeader className="border-b border-sidebar-border/60">
+					<div className="flex h-12 items-center justify-between px-2">
+						<div className="flex items-center gap-2 px-1">
+							<div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+								<Logo className="h-4 w-4" />
+							</div>
+							<div className="flex flex-col">
+								<span className="text-sm font-semibold leading-tight">
+									LLM Gateway
+								</span>
+								<span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+									Admin
+								</span>
+							</div>
+						</div>
+						<SidebarTrigger className="hidden md:flex" />
+					</div>
+				</SidebarHeader>
+				<SidebarContent>
+					<SidebarGroup>
+						<SidebarGroupLabel>Main</SidebarGroupLabel>
+						<SidebarMenu>
+							<SidebarMenuItem>
+								<Link href="/" className="block">
+									<SidebarMenuButton isActive={isDashboard} size="lg">
+										<LayoutDashboard className="h-4 w-4" />
+										<span>Dashboard</span>
+									</SidebarMenuButton>
+								</Link>
+							</SidebarMenuItem>
+							<SidebarMenuItem>
+								<Link href="/organizations" className="block">
+									<SidebarMenuButton isActive={isOrganizations} size="lg">
+										<Building2 className="h-4 w-4" />
+										<span>Organizations</span>
+									</SidebarMenuButton>
+								</Link>
+							</SidebarMenuItem>
+							<SidebarMenuItem>
+								<Link href="/devpass" className="block">
+									<SidebarMenuButton isActive={isDevpass} size="lg">
+										<Sparkles className="h-4 w-4" />
+										<span>DevPass</span>
+									</SidebarMenuButton>
+								</Link>
+							</SidebarMenuItem>
+							<SidebarMenuItem>
+								<Link href="/chat-plans" className="block">
+									<SidebarMenuButton isActive={isChatPlans} size="lg">
+										<MessageSquare className="h-4 w-4" />
+										<span>Chat Plans</span>
+									</SidebarMenuButton>
+								</Link>
+							</SidebarMenuItem>
+							<SidebarMenuItem>
+								<Link href="/global-stats" className="block">
+									<SidebarMenuButton isActive={isGlobalStats} size="lg">
+										<BarChart3 className="h-4 w-4" />
+										<span>Global Stats</span>
+									</SidebarMenuButton>
+								</Link>
+							</SidebarMenuItem>
+							<SidebarMenuItem>
+								<Link href="/discounts" className="block">
+									<SidebarMenuButton isActive={isDiscounts} size="lg">
+										<Percent className="h-4 w-4" />
+										<span>Discounts</span>
+									</SidebarMenuButton>
+								</Link>
+							</SidebarMenuItem>
+							<SidebarMenuItem>
+								<Link href="/rate-limits" className="block">
+									<SidebarMenuButton isActive={isRateLimits} size="lg">
+										<Gauge className="h-4 w-4" />
+										<span>Global Rate Limits</span>
+									</SidebarMenuButton>
+								</Link>
+							</SidebarMenuItem>
+							<SidebarMenuItem>
+								<Link href="/providers" className="block">
+									<SidebarMenuButton isActive={isProviders} size="lg">
+										<Server className="h-4 w-4" />
+										<span>Providers</span>
+									</SidebarMenuButton>
+								</Link>
+							</SidebarMenuItem>
+							<SidebarMenuItem>
+								<Link href="/models" className="block">
+									<SidebarMenuButton isActive={isModels} size="lg">
+										<Cpu className="h-4 w-4" />
+										<span>Models</span>
+									</SidebarMenuButton>
+								</Link>
+							</SidebarMenuItem>
+							<SidebarMenuItem>
+								<Link href="/model-provider-mappings" className="block">
+									<SidebarMenuButton
+										isActive={isModelProviderMappings}
+										size="lg"
+									>
+										<GitMerge className="h-4 w-4" />
+										<span>Model Mappings</span>
+									</SidebarMenuButton>
+								</Link>
+							</SidebarMenuItem>
+							<SidebarMenuItem>
+								<Link href="/unstable-mappings" className="block">
+									<SidebarMenuButton isActive={isUnstableMappings} size="lg">
+										<Activity className="h-4 w-4" />
+										<span>Unstable Mappings</span>
+									</SidebarMenuButton>
+								</Link>
+							</SidebarMenuItem>
+							<SidebarMenuItem>
+								<Link href="/contact-submissions" className="block">
+									<SidebarMenuButton isActive={isContactSubmissions} size="lg">
+										<Mail className="h-4 w-4" />
+										<span>Contact Submissions</span>
+									</SidebarMenuButton>
+								</Link>
+							</SidebarMenuItem>
+							<SidebarMenuItem>
+								<Link href="/provider-listing-requests" className="block">
+									<SidebarMenuButton
+										isActive={isProviderListingRequests}
+										size="lg"
+									>
+										<Building2 className="h-4 w-4" />
+										<span>Provider Requests</span>
+									</SidebarMenuButton>
+								</Link>
+							</SidebarMenuItem>
+							<SidebarMenuItem>
+								<Link href="/chat-support-logs" className="block">
+									<SidebarMenuButton isActive={isChatSupportLogs} size="lg">
+										<MessageCircle className="h-4 w-4" />
+										<span>Chat Support Logs</span>
+									</SidebarMenuButton>
+								</Link>
+							</SidebarMenuItem>
+							<SidebarMenuItem>
+								<Link href="/payment-failures" className="block">
+									<SidebarMenuButton isActive={isPaymentFailures} size="lg">
+										<AlertTriangle className="h-4 w-4" />
+										<span>Payment Failures</span>
+									</SidebarMenuButton>
+								</Link>
+							</SidebarMenuItem>
+						</SidebarMenu>
+					</SidebarGroup>
+				</SidebarContent>
+				<SidebarFooter className="border-t border-sidebar-border/60">
+					<Button
+						variant="ghost"
+						size="sm"
+						className="w-full justify-start gap-2 text-xs text-muted-foreground"
+						onClick={handleSignOut}
+					>
+						<LogOut className="h-3.5 w-3.5" />
+						<span>Sign out</span>
+					</Button>
+				</SidebarFooter>
+			</Sidebar>
+			<SidebarInset>
+				<MobileHeader />
+				{children}
+			</SidebarInset>
+		</SidebarProvider>
+	);
+}

@@ -1,0 +1,628 @@
+/**
+ * Comprehensive TypeScript types for provider API messages and tool definitions
+ */
+
+import type { ProviderId } from "./providers.js";
+
+/**
+ * OpenAI explicit prompt cache breakpoint marker (GPT-5.6 and later families).
+ * Placed on a content part to end a cacheable prefix when the request uses
+ * `prompt_cache_options.mode: "explicit"`.
+ */
+export interface PromptCacheBreakpoint {
+	mode?: "explicit";
+}
+
+// Base content types
+export interface TextContent {
+	type: "text";
+	text: string;
+	cache_control?: {
+		type: "ephemeral";
+		ttl?: "5m" | "1h";
+	};
+	prompt_cache_breakpoint?: PromptCacheBreakpoint;
+}
+
+export interface ImageUrlContent {
+	type: "image_url";
+	image_url: {
+		url: string;
+		detail?: "low" | "high" | "auto";
+	};
+	prompt_cache_breakpoint?: PromptCacheBreakpoint;
+}
+
+export interface ImageContent {
+	type: "image";
+	source: {
+		type: "base64";
+		media_type: string;
+		data: string;
+	};
+}
+
+export interface InputAudioContent {
+	type: "input_audio";
+	input_audio: {
+		data: string;
+		format:
+			| "wav"
+			| "mp3"
+			| "aiff"
+			| "aac"
+			| "ogg"
+			| "flac"
+			| "m4a"
+			| "mpeg"
+			| "mpga"
+			| "mp4"
+			| "pcm"
+			| "webm";
+	};
+	prompt_cache_breakpoint?: PromptCacheBreakpoint;
+}
+
+export interface FileContent {
+	type: "file";
+	file: {
+		filename?: string;
+		file_data?: string;
+		file_id?: string;
+	};
+	prompt_cache_breakpoint?: PromptCacheBreakpoint;
+}
+
+export interface ToolUseContent {
+	type: "tool_use";
+	id: string;
+	name: string;
+	input: Record<string, unknown>;
+}
+
+export interface ToolResultContent {
+	type: "tool_result";
+	tool_use_id: string;
+	content: string;
+}
+
+export type MessageContent =
+	| TextContent
+	| ImageUrlContent
+	| ImageContent
+	| InputAudioContent
+	| FileContent
+	| ToolUseContent
+	| ToolResultContent;
+
+// OpenAI-style tool call structure
+export interface ToolCall {
+	id: string;
+	type: "function";
+	function: {
+		name: string;
+		arguments: string;
+	};
+}
+
+export interface ReasoningDetail {
+	text?: string;
+	type?: string;
+	[key: string]: unknown;
+}
+
+// Base message structure
+export interface BaseMessage {
+	role: "system" | "user" | "assistant" | "tool";
+	content: string | MessageContent[];
+	name?: string;
+	tool_calls?: ToolCall[];
+	tool_call_id?: string;
+	reasoning?: string;
+	reasoning_content?: string;
+	reasoning_details?: ReasoningDetail[];
+}
+
+// Provider-specific message formats
+export interface OpenAIMessage extends BaseMessage {
+	role: "system" | "user" | "assistant" | "tool";
+}
+
+export interface AnthropicMessage {
+	role: "user" | "assistant";
+	content: MessageContent[];
+}
+
+export interface GoogleMessage {
+	role: "user" | "model";
+	parts: Array<{
+		text?: string;
+		inline_data?: {
+			mime_type: string;
+			data: string;
+		};
+	}>;
+}
+
+// Tool definition structures
+export interface FunctionParameter {
+	type: string;
+	description?: string;
+	enum?: string[];
+	items?: FunctionParameter;
+	properties?: Record<string, FunctionParameter>;
+	required?: string[];
+}
+
+export interface FunctionDefinition {
+	name: string;
+	description?: string;
+	parameters: FunctionParameter;
+}
+
+export interface OpenAITool {
+	type: "function";
+	function: FunctionDefinition;
+}
+
+// Function tool input type for API requests where parameters can be optional
+export interface OpenAIFunctionToolInput {
+	type: "function";
+	function: {
+		name: string;
+		description?: string;
+		parameters?: FunctionParameter | Record<string, any>;
+	};
+}
+
+// Web search tool input type
+export interface OpenAIWebSearchToolInput {
+	type: "web_search";
+	user_location?: {
+		city?: string;
+		region?: string;
+		country?: string;
+		timezone?: string;
+	};
+	search_context_size?: "low" | "medium" | "high";
+	max_uses?: number;
+}
+
+// Compatible type for API requests - accepts both function and web_search tools
+export type OpenAIToolInput =
+	| OpenAIFunctionToolInput
+	| OpenAIWebSearchToolInput;
+
+export interface AnthropicTool {
+	name: string;
+	description?: string;
+	input_schema: FunctionParameter;
+}
+
+export interface GoogleTool {
+	functionDeclarations: Array<{
+		name: string;
+		description?: string;
+		parameters: FunctionParameter;
+	}>;
+}
+
+// Tool choice types
+export type ToolChoiceType =
+	| "auto"
+	| "none"
+	| "required"
+	| {
+			type: "function";
+			function: {
+				name: string;
+			};
+	  };
+
+export type PromptCacheRetention = "in_memory" | "24h";
+
+/**
+ * OpenAI explicit prompt caching controls (GPT-5.6 and later families).
+ * `mode: "explicit"` disables the automatic breakpoint on the latest message
+ * and caches only content parts carrying a `prompt_cache_breakpoint` marker.
+ * `ttl` currently only supports "30m" upstream.
+ */
+export interface PromptCacheOptions {
+	mode?: "implicit" | "explicit";
+	ttl?: "30m";
+}
+
+export type AnthropicToolChoice =
+	| "auto"
+	| "any"
+	| "none"
+	| {
+			type: "tool";
+			name: string;
+	  };
+
+// Request body structures
+export interface BaseRequestBody {
+	model: string;
+	temperature?: number;
+	max_tokens?: number;
+	top_p?: number;
+	frequency_penalty?: number;
+	presence_penalty?: number;
+	stream?: boolean;
+	service_tier?: "auto" | "default" | "flex" | "priority";
+}
+
+export interface OpenAIRequestBody extends BaseRequestBody {
+	messages: OpenAIMessage[];
+	tools?: OpenAITool[];
+	tool_choice?: ToolChoiceType;
+	prompt_cache_key?: string;
+	prompt_cache_retention?: PromptCacheRetention;
+	prompt_cache_options?: PromptCacheOptions;
+	response_format?: {
+		type: "text" | "json_object" | "json_schema";
+		json_schema?: {
+			name: string;
+			description?: string;
+			schema: Record<string, unknown>;
+			strict?: boolean;
+		};
+	};
+	stream_options?: {
+		include_usage: boolean;
+	};
+	reasoning_effort?:
+		| "none"
+		| "minimal"
+		| "low"
+		| "medium"
+		| "high"
+		| "xhigh"
+		| "max";
+	verbosity?: "low" | "medium" | "high";
+	n?: number;
+	extra_body?: Record<string, unknown>;
+}
+
+export interface OpenAIResponsesFunctionCall {
+	type: "function_call";
+	call_id: string;
+	name: string;
+	arguments: string;
+}
+
+export interface OpenAIResponsesFunctionCallOutput {
+	type: "function_call_output";
+	call_id: string;
+	output: string;
+}
+
+export type OpenAIResponsesInputItem =
+	| OpenAIMessage
+	| OpenAIResponsesFunctionCall
+	| OpenAIResponsesFunctionCallOutput;
+
+export interface OpenAIResponsesRequestBody {
+	model: string;
+	input: OpenAIResponsesInputItem[];
+	service_tier?: "auto" | "default" | "flex" | "priority";
+	prompt_cache_key?: string;
+	prompt_cache_retention?: PromptCacheRetention;
+	prompt_cache_options?: PromptCacheOptions;
+	reasoning: {
+		effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+		summary: "detailed";
+	};
+	tools?: Array<{
+		type: "function";
+		name: string;
+		description?: string;
+		parameters: FunctionParameter;
+	}>;
+	tool_choice?: ToolChoiceType;
+	stream?: boolean;
+	temperature?: number;
+	max_output_tokens?: number;
+	text?: {
+		format?:
+			| { type: "text" }
+			| { type: "json_object" }
+			| {
+					type: "json_schema";
+					name: string;
+					schema: Record<string, unknown>;
+					strict?: boolean;
+			  };
+		verbosity?: "low" | "medium" | "high";
+	};
+}
+
+export interface AnthropicSystemContent {
+	type: "text";
+	text: string;
+	cache_control?: {
+		type: "ephemeral";
+		ttl?: "5m" | "1h";
+	};
+}
+
+export interface AnthropicRequestBody extends BaseRequestBody {
+	messages: AnthropicMessage[];
+	system?: string | AnthropicSystemContent[];
+	tools?: AnthropicTool[];
+	tool_choice?: AnthropicToolChoice;
+	thinking?:
+		| {
+				type: "enabled";
+				budget_tokens: number;
+				display?: "summarized" | "omitted";
+		  }
+		| {
+				type: "adaptive";
+				display?: "summarized" | "omitted";
+		  };
+	output_config?: {
+		effort?: "low" | "medium" | "high" | "xhigh" | "max";
+	};
+}
+
+export interface GoogleRequestBody {
+	contents: GoogleMessage[];
+	tools?: GoogleTool[];
+	/**
+	 * Processing tier for the Gemini Developer API (google-ai-studio / glacier).
+	 * "flex" / "priority" select Flex / Priority inference. The served tier is
+	 * returned in the `x-gemini-service-tier` response header.
+	 * Vertex AI uses the `X-Vertex-AI-LLM-Shared-Request-Type` header instead.
+	 */
+	service_tier?: "auto" | "default" | "flex" | "priority";
+	generationConfig?: {
+		temperature?: number;
+		maxOutputTokens?: number;
+		topP?: number;
+		thinkingConfig?: {
+			includeThoughts: boolean;
+		};
+		responseModalities?: string[];
+		imageConfig?: {
+			aspectRatio?: string;
+			imageSize?: string;
+		};
+	};
+}
+
+// Generic request body type
+export type ProviderRequestBody =
+	| OpenAIRequestBody
+	| OpenAIResponsesRequestBody
+	| AnthropicRequestBody
+	| GoogleRequestBody;
+
+// Image processing result
+export interface ProcessedImage {
+	data: string;
+	mimeType: string;
+}
+
+// Provider validation result
+export interface ProviderValidationResult {
+	valid: boolean;
+	error?: string;
+	statusCode?: number;
+	model?: string;
+}
+
+// Model with pricing information
+export interface ModelWithPricing {
+	providers: Array<{
+		providerId: string;
+		inputPrice?: string;
+		outputPrice?: string;
+		perSecondPrice?: Record<string, string>;
+		supportedParameters?: string[];
+		externalId: string;
+		region?: string;
+		stability?: string;
+	}>;
+}
+
+// Available model provider structure
+export interface AvailableModelProvider {
+	providerId: string;
+	externalId: string;
+	region?: string;
+}
+
+// Function type definitions
+export type MessageTransformer<T> = (
+	messages: BaseMessage[],
+	isProd?: boolean,
+) => Promise<T[]>;
+export type ToolTransformer<_T, U> = (tools: OpenAITool[]) => U;
+export type RequestBodyPreparer = (
+	usedProvider: ProviderId,
+	usedModel: string,
+	messages: BaseMessage[],
+	stream: boolean,
+	temperature?: number,
+	max_tokens?: number,
+	top_p?: number,
+	frequency_penalty?: number,
+	presence_penalty?: number,
+	response_format?: OpenAIRequestBody["response_format"],
+	tools?: OpenAIToolInput[],
+	tool_choice?: ToolChoiceType,
+	reasoning_effort?:
+		| "none"
+		| "minimal"
+		| "low"
+		| "medium"
+		| "high"
+		| "xhigh"
+		| "max",
+	supportsReasoning?: boolean,
+	isProd?: boolean,
+	maxImageSizeMB?: number,
+	userPlan?: "free" | "pro" | "enterprise" | null,
+	sensitive_word_check?: { status: "DISABLE" | "ENABLE" },
+	image_config?: {
+		aspect_ratio?: string;
+		image_size?: string;
+		image_quality?: string;
+		n?: number;
+		seed?: number;
+	},
+	effort?: "low" | "medium" | "high",
+	imageGenerations?: boolean,
+	webSearchTool?: WebSearchTool,
+	reasoning_max_tokens?: number,
+	useResponsesApi?: boolean,
+	prompt_cache_key?: string,
+	prompt_cache_retention?: PromptCacheRetention,
+	n?: number,
+) => Promise<ProviderRequestBody | FormData>;
+
+// Type guards
+export function isTextContent(content: MessageContent): content is TextContent {
+	return content.type === "text";
+}
+
+export function isImageUrlContent(
+	content: MessageContent,
+): content is ImageUrlContent {
+	return content.type === "image_url";
+}
+
+export function isImageContent(
+	content: MessageContent,
+): content is ImageContent {
+	return content.type === "image";
+}
+
+export function isInputAudioContent(
+	content: MessageContent,
+): content is InputAudioContent {
+	return content.type === "input_audio";
+}
+
+export function isFileContent(content: MessageContent): content is FileContent {
+	return content.type === "file";
+}
+
+export function isToolUseContent(
+	content: MessageContent,
+): content is ToolUseContent {
+	return content.type === "tool_use";
+}
+
+export function isToolResultContent(
+	content: MessageContent,
+): content is ToolResultContent {
+	return content.type === "tool_result";
+}
+
+export function isOpenAITool(
+	tool: OpenAITool | AnthropicTool | GoogleTool,
+): tool is OpenAITool {
+	return "type" in tool && tool.type === "function";
+}
+
+export function isAnthropicTool(
+	tool: OpenAITool | AnthropicTool | GoogleTool,
+): tool is AnthropicTool {
+	return "name" in tool && "input_schema" in tool;
+}
+
+export function isGoogleTool(
+	tool: OpenAITool | AnthropicTool | GoogleTool,
+): tool is GoogleTool {
+	return "functionDeclarations" in tool;
+}
+
+export function hasMaxTokens(
+	requestBody: ProviderRequestBody,
+): requestBody is OpenAIRequestBody | AnthropicRequestBody {
+	return "max_tokens" in requestBody;
+}
+
+// Web search types
+
+/**
+ * Web search tool configuration (unified format accepted by the API)
+ */
+export interface WebSearchTool {
+	type: "web_search";
+	/**
+	 * User location for localized search results (OpenAI and Anthropic)
+	 */
+	user_location?: {
+		type: "approximate";
+		city?: string;
+		region?: string;
+		country?: string;
+		timezone?: string;
+	};
+	/**
+	 * Controls how much context is retrieved from the web (OpenAI)
+	 * - low: Faster, cheaper, less accurate
+	 * - medium: Balanced (default)
+	 * - high: Slower, more expensive, more accurate
+	 */
+	search_context_size?: "low" | "medium" | "high";
+	/**
+	 * Maximum number of web searches to perform (Anthropic)
+	 */
+	max_uses?: number;
+	/**
+	 * Restrict search results to these domains (Anthropic). Mutually exclusive
+	 * with blocked_domains.
+	 */
+	allowed_domains?: string[];
+	/**
+	 * Exclude these domains from search results (Anthropic). Mutually exclusive
+	 * with allowed_domains.
+	 */
+	blocked_domains?: string[];
+}
+
+/**
+ * Web search citation returned in responses (unified format)
+ */
+export interface WebSearchCitation {
+	/**
+	 * URL of the source
+	 */
+	url: string;
+	/**
+	 * Title of the source page
+	 */
+	title?: string;
+	/**
+	 * Snippet or excerpt from the source
+	 */
+	snippet?: string;
+	/**
+	 * Start index in the response content where this citation applies
+	 */
+	start_index?: number;
+	/**
+	 * End index in the response content where this citation applies
+	 */
+	end_index?: number;
+}
+
+/**
+ * OpenAI web search options for Chat Completions API (search models only)
+ */
+export interface OpenAIWebSearchOptions {
+	user_location?: {
+		type: "approximate";
+		approximate?: {
+			city?: string;
+			region?: string;
+			country?: string;
+		};
+	};
+	search_context_size?: "low" | "medium" | "high";
+}

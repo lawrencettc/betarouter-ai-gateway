@@ -1,0 +1,31 @@
+{
+	"name": "@llmgateway/models",
+	"version": "0.0.1",
+	"private": false,
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/theopenco/llmgateway",
+		"directory": "packages/models"
+	},
+	"license": "SEE LICENSE IN ../../LICENSE",
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"files": [
+		"dist/"
+	],
+	"scripts": {
+		"build": "tsc && resolve-tspaths",
+		"dev": "tsc-watch --onSuccess 'resolve-tspaths'",
+		"format": "eslint --fix . && prettier --write .",
+		"lint": "eslint . && prettier --check ."
+	},
+	"dependencies": {},
+	"devDependencies": {}
+}

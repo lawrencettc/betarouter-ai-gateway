@@ -1,0 +1,242 @@
+---
+title: Cost Breakdown
+description: Get real-time cost information for each API request directly in the response.
+icon: DollarSign
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+# Cost Breakdown
+
+LLM Gateway provides real-time cost information for each API request directly in the response's `usage` object. This allows you to track costs programmatically without needing to query the dashboard.
+
+<Callout type="info">
+	Cost breakdown is available for all users on both hosted and self-hosted
+	deployments.
+</Callout>
+
+## Response Format
+
+When cost breakdown is enabled, your API responses will include additional cost fields in the `usage` object:
+
+```json
+{
+	"id": "chatcmpl-123",
+	"object": "chat.completion",
+	"created": 1234567890,
+	"model": "openai/gpt-4o",
+	"choices": [
+		{
+			"index": 0,
+			"message": {
+				"role": "assistant",
+				"content": "Hello! How can I help you today?"
+			},
+			"finish_reason": "stop"
+		}
+	],
+	"usage": {
+		"prompt_tokens": 10,
+		"completion_tokens": 15,
+		"total_tokens": 25,
+		"cost": 0.000125,
+		"cost_details": {
+			"upstream_inference_cost": 0.000125,
+			"upstream_inference_prompt_cost": 0.000025,
+			"upstream_inference_completions_cost": 0.0001,
+			"total_cost": 0.000125,
+			"input_cost": 0.000025,
+			"output_cost": 0.0001,
+			"cached_input_cost": 0,
+			"request_cost": 0,
+			"web_search_cost": 0,
+			"image_input_cost": null,
+			"image_output_cost": null,
+			"data_storage_cost": 0.00000025
+		},
+		"prompt_tokens_details": {
+			"cached_tokens": 0,
+			"cache_write_tokens": 0,
+			"audio_tokens": 0,
+			"video_tokens": 0
+		},
+		"completion_tokens_details": {
+			"reasoning_tokens": 0,
+			"image_tokens": 0,
+			"audio_tokens": 0
+		}
+	}
+}
+```
+
+## Cost Fields
+
+| Field                                              | Description                                                                                                                                            |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `cost`                                             | Total inference cost for the request in USD                                                                                                            |
+| `cost_details.upstream_inference_cost`             | Combined upstream inference cost in USD (prompt + completions)                                                                                         |
+| `cost_details.upstream_inference_prompt_cost`      | Upstream cost for prompt tokens in USD (includes cached prompt discount)                                                                               |
+| `cost_details.upstream_inference_completions_cost` | Upstream cost for completion tokens in USD                                                                                                             |
+| `cost_details.total_cost`                          | Total request cost in USD (LLM Gateway extended field)                                                                                                 |
+| `cost_details.input_cost`                          | Cost for non-cached prompt tokens in USD                                                                                                               |
+| `cost_details.output_cost`                         | Cost for completion tokens in USD                                                                                                                      |
+| `cost_details.cached_input_cost`                   | Cost for cached prompt tokens in USD                                                                                                                   |
+| `cost_details.cache_write_input_cost`              | Cost for prompt tokens written to the provider cache in USD, billed at the provider's cache-write premium (e.g. 1.25x for 5m / 2x for 1h on Anthropic) |
+| `cost_details.request_cost`                        | Per-request flat fee in USD (when the model applies one)                                                                                               |
+| `cost_details.web_search_cost`                     | Cost for web search tool calls in USD                                                                                                                  |
+| `cost_details.image_input_cost`                    | Cost for image inputs in USD                                                                                                                           |
+| `cost_details.image_output_cost`                   | Cost for image outputs in USD                                                                                                                          |
+| `cost_details.data_storage_cost`                   | Storage cost for retained request/response payloads in USD                                                                                             |
+
+## Token Detail Fields
+
+The `usage` object also includes detailed token counters that mirror OpenAI's extended format:
+
+| Field                                         | Description                                                                                                                        |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt_tokens_details.cached_tokens`         | Number of prompt tokens served from the provider's prompt cache                                                                    |
+| `prompt_tokens_details.cache_write_tokens`    | Number of prompt tokens written into the provider's prompt cache                                                                   |
+| `prompt_tokens_details.cache_creation_tokens` | Alias of `cache_write_tokens`, matching Anthropic's naming                                                                         |
+| `prompt_tokens_details.cache_creation`        | Per-TTL breakdown of cache writes (`ephemeral_5m_input_tokens` / `ephemeral_1h_input_tokens`), present when a cache write occurred |
+| `prompt_tokens_details.audio_tokens`          | Number of audio prompt tokens                                                                                                      |
+| `prompt_tokens_details.video_tokens`          | Number of video prompt tokens                                                                                                      |
+| `completion_tokens_details.reasoning_tokens`  | Number of reasoning tokens produced by reasoning models                                                                            |
+| `completion_tokens_details.image_tokens`      | Number of image tokens produced                                                                                                    |
+| `completion_tokens_details.audio_tokens`      | Number of audio tokens produced                                                                                                    |
+
+## Streaming Responses
+
+Cost information is also available in streaming responses. The cost fields are included in the final usage chunk sent before the `[DONE]` message:
+
+```
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","choices":[...],"usage":{"prompt_tokens":10,"completion_tokens":15,"total_tokens":25,"cost":0.000125,"cost_details":{"upstream_inference_cost":0.000125,"upstream_inference_prompt_cost":0.000025,"upstream_inference_completions_cost":0.0001,"total_cost":0.000125,"input_cost":0.000025,"output_cost":0.0001,"cached_input_cost":0,"request_cost":0,"web_search_cost":0,"image_input_cost":null,"image_output_cost":null,"data_storage_cost":0.00000025}}}
+
+data: [DONE]
+```
+
+## Example: Tracking Costs in Code
+
+Here's an example of how to track costs programmatically using the cost breakdown feature:
+
+```typescript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+	apiKey: process.env.LLM_GATEWAY_API_KEY,
+	baseURL: "https://api.llmgateway.io/v1",
+});
+
+async function trackCosts() {
+	const response = await client.chat.completions.create({
+		model: "gpt-4o",
+		messages: [{ role: "user", content: "Hello!" }],
+	});
+
+	const usage = response.usage as any;
+
+	if (usage.cost !== undefined) {
+		console.log(`Request cost: $${usage.cost.toFixed(6)}`);
+		console.log(
+			`  Prompt: $${usage.cost_details.upstream_inference_prompt_cost.toFixed(6)}`,
+		);
+		console.log(
+			`  Completions: $${usage.cost_details.upstream_inference_completions_cost.toFixed(6)}`,
+		);
+
+		const cachedTokens = usage.prompt_tokens_details?.cached_tokens ?? 0;
+		if (cachedTokens > 0) {
+			console.log(`  Cached prompt tokens: ${cachedTokens}`);
+		}
+	}
+
+	return response;
+}
+```
+
+## Use Cases
+
+### Budget Monitoring
+
+Track costs in real-time and implement budget limits in your application:
+
+```typescript
+let totalSpent = 0;
+const BUDGET_LIMIT = 10.0; // $10 budget
+
+async function makeRequest(messages: Message[]) {
+	const response = await client.chat.completions.create({
+		model: "gpt-4o",
+		messages,
+	});
+
+	const cost = (response.usage as any).cost || 0;
+	totalSpent += cost;
+
+	if (totalSpent > BUDGET_LIMIT) {
+		throw new Error(`Budget exceeded: $${totalSpent.toFixed(2)}`);
+	}
+
+	return response;
+}
+```
+
+### Per-User Cost Allocation
+
+Track costs per user for billing or analytics:
+
+```typescript
+const userCosts: Map<string, number> = new Map();
+
+async function makeRequestForUser(userId: string, messages: Message[]) {
+	const response = await client.chat.completions.create({
+		model: "gpt-4o",
+		messages,
+	});
+
+	const cost = (response.usage as any).cost || 0;
+	const currentCost = userCosts.get(userId) || 0;
+	userCosts.set(userId, currentCost + cost);
+
+	return response;
+}
+```
+
+### Cost Analytics
+
+Aggregate costs by model, time period, or any other dimension:
+
+```typescript
+interface CostEntry {
+	timestamp: Date;
+	model: string;
+	promptCost: number;
+	completionsCost: number;
+	totalCost: number;
+}
+
+const costLog: CostEntry[] = [];
+
+async function loggedRequest(model: string, messages: Message[]) {
+	const response = await client.chat.completions.create({
+		model,
+		messages,
+	});
+
+	const usage = response.usage as any;
+
+	costLog.push({
+		timestamp: new Date(),
+		model: response.model,
+		promptCost: usage.cost_details?.upstream_inference_prompt_cost || 0,
+		completionsCost:
+			usage.cost_details?.upstream_inference_completions_cost || 0,
+		totalCost: usage.cost || 0,
+	});
+
+	return response;
+}
+```
+
+## Self-Hosted Deployments
+
+If you're running a self-hosted LLM Gateway deployment, cost breakdown is always included in API responses regardless of plan. This allows you to track internal costs and allocate them across teams or projects.

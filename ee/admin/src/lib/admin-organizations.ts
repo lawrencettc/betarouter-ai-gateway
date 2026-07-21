@@ -1,0 +1,180 @@
+"use server";
+
+import { createServerApiClient } from "./server-api";
+
+import type { TokenWindow } from "./types";
+
+export async function loadMetricsAction(orgId: string, window: TokenWindow) {
+	const $api = await createServerApiClient();
+	const { data } = await $api.GET("/admin/organizations/{orgId}", {
+		params: { path: { orgId }, query: { window } },
+	});
+	return data ?? null;
+}
+
+export async function loadProjectMetricsAction(
+	orgId: string,
+	projectId: string,
+	window: TokenWindow,
+) {
+	const $api = await createServerApiClient();
+	const { data } = await $api.GET(
+		"/admin/organizations/{orgId}/projects/{projectId}/metrics",
+		{
+			params: { path: { orgId, projectId }, query: { window } },
+		},
+	);
+	return data ?? null;
+}
+
+export async function loadProjectLogsAction(
+	orgId: string,
+	projectId: string,
+	cursor?: string,
+	filters?: {
+		provider?: string;
+		model?: string;
+		source?: string;
+		unifiedFinishReason?: string;
+		hasError?: string;
+	},
+) {
+	const $api = await createServerApiClient();
+	const { data } = await $api.GET(
+		"/admin/organizations/{orgId}/projects/{projectId}/logs",
+		{
+			params: {
+				path: { orgId, projectId },
+				query: { limit: 50, cursor, ...filters },
+			},
+		},
+	);
+	return data ?? null;
+}
+
+export async function giftCreditsToOrganization(
+	orgId: string,
+	body: { creditAmount: number; comment?: string },
+): Promise<{ success: boolean; error?: string }> {
+	const $api = await createServerApiClient();
+	const { data, error } = await $api.POST(
+		"/admin/organizations/{orgId}/gift-credits",
+		{
+			params: { path: { orgId } },
+			body,
+		},
+	);
+
+	if (error || !data) {
+		return { success: false, error: "Failed to gift credits" };
+	}
+
+	return { success: true };
+}
+
+export async function updateReferralBonus(
+	orgId: string,
+	body: { enabled: boolean; percent: number },
+): Promise<{ success: boolean; error?: string }> {
+	const $api = await createServerApiClient();
+	const { data, error } = await $api.PATCH(
+		"/admin/organizations/{orgId}/referral-bonus",
+		{
+			params: { path: { orgId } },
+			body,
+		},
+	);
+
+	if (error || !data) {
+		const message =
+			(error as { message?: string } | undefined)?.message ??
+			"Failed to update referral bonus";
+		return { success: false, error: message };
+	}
+
+	return { success: true };
+}
+
+export async function manageOrganization(
+	orgId: string,
+	body: {
+		plan: "free" | "pro" | "enterprise";
+		seats: number | null;
+		apiKeyLimit: number | null;
+	},
+): Promise<{ success: boolean; error?: string }> {
+	const $api = await createServerApiClient();
+	const { data, error } = await $api.PATCH(
+		"/admin/organizations/{orgId}/manage",
+		{
+			params: { path: { orgId } },
+			body,
+		},
+	);
+
+	if (error || !data) {
+		const message =
+			(error as { message?: string } | undefined)?.message ??
+			"Failed to update organization";
+		return { success: false, error: message };
+	}
+
+	return { success: true };
+}
+
+export async function setOrganizationStatus(
+	orgId: string,
+	status: "active" | "deleted",
+): Promise<{ success: boolean; error?: string }> {
+	const $api = await createServerApiClient();
+	const { data, error } = await $api.PATCH(
+		"/admin/organizations/{orgId}/status",
+		{
+			params: { path: { orgId } },
+			body: { status },
+		},
+	);
+
+	if (error || !data) {
+		const message =
+			(error as { message?: string } | undefined)?.message ??
+			"Failed to update organization status";
+		return { success: false, error: message };
+	}
+
+	return { success: true };
+}
+
+export async function blockOrganization(orgId: string): Promise<{
+	success: boolean;
+	error?: string;
+	cancelledSubscriptionIds?: string[];
+}> {
+	const $api = await createServerApiClient();
+	const { data, error } = await $api.POST(
+		"/admin/organizations/{orgId}/block",
+		{
+			params: { path: { orgId } },
+		},
+	);
+
+	if (error || !data) {
+		const message =
+			(error as { message?: string } | undefined)?.message ??
+			"Failed to block organization";
+		return { success: false, error: message };
+	}
+
+	return {
+		success: true,
+		cancelledSubscriptionIds: data.cancelledSubscriptionIds,
+	};
+}
+
+export async function getLogContent(logId: string): Promise<string | null> {
+	const $api = await createServerApiClient();
+	const { data } = await $api.GET("/logs/{id}", {
+		params: { path: { id: logId } },
+	});
+	return data?.log?.content ?? null;
+}

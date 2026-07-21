@@ -1,0 +1,673 @@
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
+
+import { db, eq, tables } from "@llmgateway/db";
+
+import { apiAuth, isClientJsonError, redisClient } from "./config.js";
+
+describe("isClientJsonError", () => {
+	test("matches the real Better Auth malformed-JSON messages from production", () => {
+		const messages = [
+			"Expected ',' or '}' after property value in JSON at position 59 (line 1 column 60)",
+			"Expected ',' or '}' after property value in JSON at position 54 (line 1 column 55)",
+			"# SERVER_ERROR:  SyntaxError: Expected ',' or '}' after property value in JSON at position 49 (line 1 column 50)",
+		];
+		for (const message of messages) {
+			expect(isClientJsonError(message, [])).toBe(true);
+		}
+	});
+
+	test("matches other JSON.parse SyntaxError variants", () => {
+		expect(
+			isClientJsonError("Unexpected token o in JSON at position 1", []),
+		).toBe(true);
+		expect(isClientJsonError("Unexpected end of JSON input", [])).toBe(true);
+		expect(
+			isClientJsonError("Unexpected non-whitespace character after JSON", []),
+		).toBe(true);
+		expect(isClientJsonError('"[object Object]" is not valid JSON', [])).toBe(
+			true,
+		);
+	});
+
+	test("inspects Error args, not just the message string", () => {
+		const err = new SyntaxError(
+			"Expected ',' or '}' after property value in JSON at position 61",
+		);
+		expect(isClientJsonError("# SERVER_ERROR:", [err])).toBe(true);
+	});
+
+	test("does not match genuine server errors", () => {
+		expect(isClientJsonError("Database connection failed", [])).toBe(false);
+		expect(
+			isClientJsonError("Failed to send verification email", [
+				new Error("SMTP timeout"),
+			]),
+		).toBe(false);
+		expect(isClientJsonError("Redis pipeline execution failed", [])).toBe(
+			false,
+		);
+	});
+});
+
+describe("API auth configuration", () => {
+	test("should inherit basic auth configuration", () => {
+		expect(apiAuth.options).toBeDefined();
+		expect(apiAuth.options.emailAndPassword?.enabled).toBe(true);
+		expect(typeof apiAuth.options.emailAndPassword?.sendResetPassword).toBe(
+			"function",
+		);
+		expect(apiAuth.options.basePath).toBe("/auth");
+		expect(apiAuth.options.plugins).toBeDefined();
+		expect(Array.isArray(apiAuth.options.plugins)).toBe(true);
+	});
+
+	test("should have server-specific features", () => {
+		// The API auth should have emailVerification and hooks
+		expect(apiAuth.options.emailVerification).toBeDefined();
+		expect(apiAuth.options.hooks).toBeDefined();
+	});
+
+	test("should have email verification configured based on HOSTED flag", () => {
+		const isHosted = process.env.HOSTED === "true";
+
+		if (isHosted) {
+			expect(apiAuth.options.emailVerification?.sendOnSignUp).toBe(true);
+			expect(
+				apiAuth.options.emailVerification?.autoSignInAfterVerification,
+			).toBe(true);
+			expect(
+				apiAuth.options.emailVerification?.sendVerificationEmail,
+			).toBeDefined();
+			expect(
+				typeof apiAuth.options.emailVerification?.sendVerificationEmail,
+			).toBe("function");
+		} else {
+			expect(apiAuth.options.emailVerification?.sendOnSignUp).toBe(false);
+			expect(
+				apiAuth.options.emailVerification?.autoSignInAfterVerification,
+			).toBe(false);
+		}
+	});
+
+	test("should have before and after hooks configured", () => {
+		expect(apiAuth.options.hooks?.before).toBeDefined();
+		expect(apiAuth.options.hooks?.after).toBeDefined();
+		expect(typeof apiAuth.options.hooks?.before).toBe("function");
+		expect(typeof apiAuth.options.hooks?.after).toBe("function");
+	});
+});
+
+describe("API auth hooks functionality", () => {
+	beforeEach(async () => {
+		// Clean up any existing data (sequential to avoid deadlocks)
+		await db.delete(tables.userOrganization);
+		await db.delete(tables.project);
+		await db.delete(tables.account);
+		await db.delete(tables.organization);
+		await db.delete(tables.user);
+	});
+
+	afterEach(async () => {
+		// Clean up after tests (sequential to avoid deadlocks)
+		await db.delete(tables.userOrganization);
+		await db.delete(tables.project);
+		await db.delete(tables.account);
+		await db.delete(tables.organization);
+		await db.delete(tables.user);
+	});
+
+	test("should create default organization and project on signup", async () => {
+		// Simulate a signup by directly calling the API auth handler
+		const email = `test-${Date.now()}@example.com`;
+		const password = "Password123!";
+
+		// Sign up a new user
+		const signUpResponse = await apiAuth.handler(
+			new Request("http://localhost:4002/auth/sign-up/email", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ email, password, name: "Test User" }),
+			}),
+		);
+
+		expect(signUpResponse.status).toBe(200);
+
+		// Get the user from the database
+		const user = await db.query.user.findFirst({
+			where: {
+				email: {
+					eq: email,
+				},
+			},
+		});
+
+		expect(user).not.toBeNull();
+		expect(user?.email).toBe(email);
+
+		// Check if an organization was created for the user
+		const userOrganization = await db.query.userOrganization.findFirst({
+			where: {
+				userId: {
+					eq: user!.id,
+				},
+			},
+			with: {
+				organization: true,
+			},
+		});
+
+		expect(userOrganization).not.toBeNull();
+		expect(userOrganization?.organization?.name).toBe("Default Organization");
+
+		// Check if a project was created for the organization
+		const project = await db.query.project.findFirst({
+			where: {
+				organizationId: {
+					eq: userOrganization!.organization?.id,
+				},
+			},
+		});
+
+		expect(project).not.toBeNull();
+		expect(project?.name).toBe("Default Project");
+	});
+
+	test("should create personal organization for DevPass (code app) signup", async () => {
+		const codeUrl = process.env.CODE_URL ?? "http://localhost:3004";
+		const email = `test-devpass-${Date.now()}@example.com`;
+		const password = "Password123!";
+
+		// Sign up a new user with the code app as the request origin
+		const signUpResponse = await apiAuth.handler(
+			new Request("http://localhost:4002/auth/sign-up/email", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Origin: codeUrl,
+					"CF-Connecting-IP": `192.168.30.${Math.floor(Math.random() * 255)}`,
+				},
+				body: JSON.stringify({ email, password, name: "Dev User" }),
+			}),
+		);
+
+		expect(signUpResponse.status).toBe(200);
+
+		const user = await db.query.user.findFirst({
+			where: {
+				email: {
+					eq: email,
+				},
+			},
+		});
+
+		expect(user).not.toBeNull();
+
+		const userOrganization = await db.query.userOrganization.findFirst({
+			where: {
+				userId: {
+					eq: user!.id,
+				},
+			},
+			with: {
+				organization: true,
+			},
+		});
+
+		expect(userOrganization).not.toBeNull();
+		// DevPass signups get a "DevPass" org, not the shared "Default Organization"
+		expect(userOrganization?.organization?.name).toBe("DevPass");
+		expect(userOrganization?.organization?.kind).toBe("devpass");
+
+		const project = await db.query.project.findFirst({
+			where: {
+				organizationId: {
+					eq: userOrganization!.organization?.id,
+				},
+			},
+		});
+
+		expect(project).not.toBeNull();
+		expect(project?.mode).toBe("credits");
+	});
+
+	test("should create default organization when DevPass user signs in to main app", async () => {
+		const codeUrl = process.env.CODE_URL ?? "http://localhost:3004";
+		const uiUrl = process.env.UI_URL ?? "http://localhost:3002";
+		const email = `test-devpass-main-${Date.now()}@example.com`;
+		const password = "Password123!";
+
+		const signUpResponse = await apiAuth.handler(
+			new Request("http://localhost:4002/auth/sign-up/email", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Origin: codeUrl,
+					"CF-Connecting-IP": `192.168.31.${Math.floor(Math.random() * 255)}`,
+				},
+				body: JSON.stringify({ email, password, name: "Dev User" }),
+			}),
+		);
+
+		expect(signUpResponse.status).toBe(200);
+
+		const user = await db.query.user.findFirst({
+			where: {
+				email: {
+					eq: email,
+				},
+			},
+		});
+
+		expect(user).not.toBeNull();
+
+		await db
+			.update(tables.user)
+			.set({ emailVerified: true })
+			.where(eq(tables.user.id, user!.id));
+
+		const signInResponse = await apiAuth.handler(
+			new Request("http://localhost:4002/auth/sign-in/email", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Origin: uiUrl,
+				},
+				body: JSON.stringify({ email, password }),
+			}),
+		);
+
+		expect(signInResponse.status).toBe(200);
+
+		const userOrganizations = await db.query.userOrganization.findMany({
+			where: {
+				userId: {
+					eq: user!.id,
+				},
+			},
+			with: {
+				organization: true,
+			},
+		});
+
+		const organizations = userOrganizations
+			.map((uo) => uo.organization)
+			.filter((org) => org?.status !== "deleted");
+
+		expect(organizations).toHaveLength(2);
+		expect(
+			organizations.some(
+				(org) => org?.name === "DevPass" && org.kind === "devpass",
+			),
+		).toBe(true);
+		expect(
+			organizations.some(
+				(org) => org?.name === "Default Organization" && org.kind === "default",
+			),
+		).toBe(true);
+	});
+
+	test("should automatically verify email for self-hosted installations", async () => {
+		const isHosted = process.env.HOSTED === "true";
+
+		// Skip this test if we're in hosted mode
+		if (isHosted) {
+			return;
+		}
+
+		// Sign up a new user in self-hosted mode
+		const email = `test-selfhosted-${Date.now()}@example.com`;
+		const password = "Password123!";
+
+		const signUpResponse = await apiAuth.handler(
+			new Request("http://localhost:4002/auth/sign-up/email", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"CF-Connecting-IP": `192.168.10.${Math.floor(Math.random() * 255)}`,
+				},
+				body: JSON.stringify({ email, password, name: "Test User" }),
+			}),
+		);
+
+		expect(signUpResponse.status).toBe(200);
+
+		// Get the user from the database
+		const user = await db.query.user.findFirst({
+			where: {
+				email: {
+					eq: email,
+				},
+			},
+		});
+
+		expect(user).not.toBeNull();
+		expect(user?.email).toBe(email);
+
+		// In self-hosted mode, email should be automatically verified
+		expect(user?.emailVerified).toBe(true);
+	});
+
+	test("should infer name from email when name is not provided", async () => {
+		const suffix = Date.now();
+		const email = `john.doe+${suffix}@example.com`;
+		const password = "Password123!";
+
+		const signUpResponse = await apiAuth.handler(
+			new Request("http://localhost:4002/auth/sign-up/email", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"CF-Connecting-IP": `192.168.20.${Math.floor(Math.random() * 255)}`,
+				},
+				body: JSON.stringify({ email, password }),
+			}),
+		);
+
+		expect(signUpResponse.status).toBe(200);
+
+		const user = await db.query.user.findFirst({
+			where: { email: { eq: email } },
+		});
+
+		expect(user).not.toBeNull();
+		expect(user?.name).toBe("John Doe");
+	});
+
+	test("should preserve a provided name on signup", async () => {
+		const email = `someone-${Date.now()}@example.com`;
+		const password = "Password123!";
+
+		const signUpResponse = await apiAuth.handler(
+			new Request("http://localhost:4002/auth/sign-up/email", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"CF-Connecting-IP": `192.168.21.${Math.floor(Math.random() * 255)}`,
+				},
+				body: JSON.stringify({ email, password, name: "Alice Wonder" }),
+			}),
+		);
+
+		expect(signUpResponse.status).toBe(200);
+
+		const user = await db.query.user.findFirst({
+			where: { email: { eq: email } },
+		});
+
+		expect(user).not.toBeNull();
+		expect(user?.name).toBe("Alice Wonder");
+	});
+});
+
+describe("Auth rate limiting", () => {
+	beforeEach(async () => {
+		// Clean up any existing data (sequential to avoid deadlocks)
+		await db.delete(tables.userOrganization);
+		await db.delete(tables.project);
+		await db.delete(tables.account);
+		await db.delete(tables.organization);
+		await db.delete(tables.user);
+
+		// Clear Redis rate limit data
+		await redisClient.flushdb();
+	});
+
+	afterEach(async () => {
+		// Clean up after tests (sequential to avoid deadlocks)
+		await db.delete(tables.userOrganization);
+		await db.delete(tables.project);
+		await db.delete(tables.account);
+		await db.delete(tables.organization);
+		await db.delete(tables.user);
+
+		// Clear Redis rate limit data
+		await redisClient.flushdb();
+	});
+
+	test("should allow first signup request", async () => {
+		const email = `test-${Date.now()}@example.com`;
+		const password = "Password123!";
+		const ipAddress = "192.168.1.100";
+
+		// First signup should succeed
+		const firstResponse = await apiAuth.handler(
+			new Request("http://localhost:4002/auth/sign-up/email", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"CF-Connecting-IP": ipAddress,
+				},
+				body: JSON.stringify({ email, password, name: "Test User" }),
+			}),
+		);
+
+		expect(firstResponse.status).toBe(200);
+	});
+
+	test("should return 429 with exponential backoff for repeated signup attempts", async () => {
+		const password = "Password123!";
+		const ipAddress = "192.168.1.101";
+
+		// First signup attempt should succeed
+		const email1 = `test1-${Date.now()}@example.com`;
+		const firstResponse = await apiAuth.handler(
+			new Request("http://localhost:4002/auth/sign-up/email", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"CF-Connecting-IP": ipAddress,
+				},
+				body: JSON.stringify({ email: email1, password, name: "Test User" }),
+			}),
+		);
+		expect(firstResponse.status).toBe(200); // Should succeed
+
+		// Second signup attempt should be rate limited for 1 minute
+		const email2 = `test2-${Date.now()}@example.com`;
+		const secondResponse = await apiAuth.handler(
+			new Request("http://localhost:4002/auth/sign-up/email", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"CF-Connecting-IP": ipAddress,
+				},
+				body: JSON.stringify({ email: email2, password, name: "Test User" }),
+			}),
+		);
+
+		expect(secondResponse.status).toBe(429);
+		const secondBody = await secondResponse.json();
+		expect(secondBody.error).toBe("too_many_requests");
+		expect(secondBody.message).toContain("Too many signup attempts");
+		expect(secondBody.retryAfter).toBeGreaterThan(50); // Should be around 60 seconds
+		expect(secondBody.retryAfter).toBeLessThan(70); // Allow some variance
+		expect(secondResponse.headers.get("Retry-After")).toBeDefined();
+
+		// Third signup attempt should still be rate limited for same duration
+		// (the count doesn't increase because the IP is already blocked)
+		const email3 = `test3-${Date.now()}@example.com`;
+		const thirdResponse = await apiAuth.handler(
+			new Request("http://localhost:4002/auth/sign-up/email", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"CF-Connecting-IP": ipAddress,
+				},
+				body: JSON.stringify({ email: email3, password, name: "Test User" }),
+			}),
+		);
+
+		expect(thirdResponse.status).toBe(429);
+		const thirdBody = await thirdResponse.json();
+		expect(thirdBody.error).toBe("too_many_requests");
+		expect(thirdBody.retryAfter).toBeGreaterThan(50); // Should still be around 60 seconds
+		expect(thirdBody.retryAfter).toBeLessThan(70); // Allow some variance
+	});
+
+	test("should handle different IP addresses independently", async () => {
+		const password = "Password123!";
+		const ipAddress1 = "192.168.1.102";
+		const ipAddress2 = "192.168.1.103";
+
+		// First request from first IP should succeed
+		const email1 = `test-ip1-${Date.now()}@example.com`;
+		const firstResponse = await apiAuth.handler(
+			new Request("http://localhost:4002/auth/sign-up/email", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"CF-Connecting-IP": ipAddress1,
+				},
+				body: JSON.stringify({ email: email1, password, name: "Test User" }),
+			}),
+		);
+		expect(firstResponse.status).toBe(200);
+
+		// Second request from first IP should be rate limited
+		const email2 = `test-ip1-2-${Date.now()}@example.com`;
+		const secondResponse = await apiAuth.handler(
+			new Request("http://localhost:4002/auth/sign-up/email", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"CF-Connecting-IP": ipAddress1,
+				},
+				body: JSON.stringify({ email: email2, password, name: "Test User" }),
+			}),
+		);
+		expect(secondResponse.status).toBe(429);
+
+		// But request from second IP should still work
+		const emailIp2 = `test-ip2-${Date.now()}@example.com`;
+		const ip2Response = await apiAuth.handler(
+			new Request("http://localhost:4002/auth/sign-up/email", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"CF-Connecting-IP": ipAddress2,
+				},
+				body: JSON.stringify({ email: emailIp2, password, name: "Test User" }),
+			}),
+		);
+		expect(ip2Response.status).toBe(200); // Should succeed (first attempt from this IP)
+	});
+
+	test("should prioritize CF-Connecting-IP over X-Forwarded-For header", async () => {
+		const password = "Password123!";
+		const cfIp = "192.168.1.104";
+		const forwardedFor = "10.0.0.1, 172.16.0.1";
+
+		// Test that CF-Connecting-IP takes precedence over X-Forwarded-For
+		const email = `test-${Date.now()}@example.com`;
+		const response = await apiAuth.handler(
+			new Request("http://localhost:4002/auth/sign-up/email", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"CF-Connecting-IP": cfIp,
+					"X-Forwarded-For": forwardedFor,
+				},
+				body: JSON.stringify({ email, password, name: "Test User" }),
+			}),
+		);
+
+		expect(response.status).toBe(200);
+
+		// Second request should be rate limited (using CF-Connecting-IP, not X-Forwarded-For)
+		const email2 = `test2-${Date.now()}@example.com`;
+		const response2 = await apiAuth.handler(
+			new Request("http://localhost:4002/auth/sign-up/email", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"CF-Connecting-IP": cfIp,
+					"X-Forwarded-For": forwardedFor,
+				},
+				body: JSON.stringify({ email: email2, password, name: "Test User" }),
+			}),
+		);
+
+		expect(response2.status).toBe(429);
+	});
+
+	test("should handle alternative IP headers", async () => {
+		const email = `test-${Date.now()}@example.com`;
+		const password = "Password123!";
+		const ipAddress = "192.168.1.105";
+
+		// Test with X-Real-IP header when CF-Connecting-IP is not present
+		const response = await apiAuth.handler(
+			new Request("http://localhost:4002/auth/sign-up/email", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"X-Real-IP": ipAddress,
+				},
+				body: JSON.stringify({ email, password, name: "Test User" }),
+			}),
+		);
+
+		expect(response.status).toBe(200);
+	});
+
+	test("should fallback to X-Forwarded-For when CF-Connecting-IP not present", async () => {
+		const password = "Password123!";
+		const forwardedFor = "192.168.1.107, 10.0.0.1, 172.16.0.1";
+
+		// Test fallback to X-Forwarded-For (should use first IP: 192.168.1.107)
+		const email = `test-${Date.now()}@example.com`;
+		const response = await apiAuth.handler(
+			new Request("http://localhost:4002/auth/sign-up/email", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"X-Forwarded-For": forwardedFor,
+				},
+				body: JSON.stringify({ email, password, name: "Test User" }),
+			}),
+		);
+
+		expect(response.status).toBe(200);
+
+		// Second request should be rate limited
+		const email2 = `test2-${Date.now()}@example.com`;
+		const response2 = await apiAuth.handler(
+			new Request("http://localhost:4002/auth/sign-up/email", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"X-Forwarded-For": forwardedFor,
+				},
+				body: JSON.stringify({ email: email2, password, name: "Test User" }),
+			}),
+		);
+
+		expect(response2.status).toBe(429);
+	});
+
+	test("should only rate limit signup endpoints", async () => {
+		const ipAddress = "192.168.1.106";
+
+		// Make 3 requests to a non-signup endpoint - should not be rate limited
+		for (let i = 0; i < 3; i++) {
+			const response = await apiAuth.handler(
+				new Request("http://localhost:4002/auth/sign-in/email", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						"CF-Connecting-IP": ipAddress,
+					},
+					body: JSON.stringify({
+						email: `test-${Date.now()}-${i}@example.com`,
+						password: "Password123!",
+						name: "Test User",
+					}),
+				}),
+			);
+			// These should fail due to invalid credentials, not rate limiting
+			expect(response.status).not.toBe(429);
+		}
+	});
+});

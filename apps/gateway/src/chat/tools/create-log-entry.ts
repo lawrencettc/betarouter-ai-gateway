@@ -1,0 +1,281 @@
+import { trace } from "@opentelemetry/api";
+
+import type { GatewayApiKey } from "@/lib/cached-queries.js";
+import type { RoutingMetadata } from "@llmgateway/actions";
+import type { GatewayContentFilterResponse, Project } from "@llmgateway/db";
+import type { OpenAIToolInput } from "@llmgateway/models";
+
+export interface PluginResults {
+	responseHealing?: {
+		healed: boolean;
+		healingMethod?: string;
+	};
+}
+
+export interface CreateLogEntryOptions {
+	requestId: string;
+	project: Project;
+	apiKey: GatewayApiKey;
+	providerKeyId?: string;
+	usedModel: string;
+	usedModelMapping?: string;
+	usedProvider: string;
+	requestedModel: string;
+	requestedProvider?: string;
+	messages: any[];
+	temperature?: number;
+	max_tokens?: number;
+	top_p?: number;
+	frequency_penalty?: number;
+	presence_penalty?: number;
+	reasoningEffort?:
+		| "none"
+		| "minimal"
+		| "low"
+		| "medium"
+		| "high"
+		| "xhigh"
+		| "max";
+	reasoningMaxTokens?: number;
+	effort?: "low" | "medium" | "high";
+	responseFormat?: any;
+	tools?: OpenAIToolInput[];
+	toolChoice?: any;
+	source?: string;
+	customHeaders: Record<string, string>;
+	debugMode: boolean;
+	userAgent?: string;
+	imageConfig?:
+		| {
+				aspect_ratio?: string;
+				image_size?: string;
+				image_quality?: string;
+		  }
+		| undefined;
+	routingMetadata?: RoutingMetadata;
+	rawRequest?: unknown;
+	rawResponse?: unknown;
+	upstreamRequest?: unknown;
+	upstreamResponse?: unknown;
+	plugins?: string[];
+	pluginResults?: PluginResults;
+	gatewayContentFilterResponse?: GatewayContentFilterResponse | null;
+}
+
+/**
+ * Creates a partial log entry with common fields to reduce duplication
+ */
+function buildLogEntry(options: CreateLogEntryOptions) {
+	const activeSpan = trace.getActiveSpan();
+	const traceId = activeSpan?.spanContext().traceId ?? null;
+
+	return {
+		requestId: options.requestId,
+		organizationId: options.project.organizationId,
+		projectId: options.apiKey.projectId,
+		apiKeyId: options.apiKey.id,
+		// LLM SDK: session tokens log against the project's stable
+		// aggregate API key while retaining the concrete browser session and
+		// wallet billing pointer.
+		endUserSessionId: options.apiKey.endUserSession?.id ?? null,
+		endCustomerWalletId: options.apiKey.endCustomerWalletId ?? null,
+		usedMode: options.providerKeyId ? "api-keys" : "credits",
+		usedModel: options.usedModel,
+		usedModelMapping: options.usedModelMapping,
+		usedProvider: options.usedProvider,
+		requestedModel: options.requestedModel,
+		requestedProvider: options.requestedProvider,
+		messages: options.messages,
+		temperature: options.temperature ?? null,
+		maxTokens: options.max_tokens ?? null,
+		topP: options.top_p ?? null,
+		frequencyPenalty: options.frequency_penalty ?? null,
+		presencePenalty: options.presence_penalty ?? null,
+		reasoningEffort: options.reasoningEffort ?? null,
+		reasoningMaxTokens: options.reasoningMaxTokens ?? null,
+		effort: options.effort ?? null,
+		responseFormat: options.responseFormat ?? null,
+		tools: options.tools ?? null,
+		toolChoice: options.toolChoice ?? null,
+		mode: options.project.mode,
+		source: options.source ?? null,
+		customHeaders:
+			Object.keys(options.customHeaders).length > 0
+				? options.customHeaders
+				: null,
+		params:
+			options.imageConfig?.aspect_ratio ||
+			options.imageConfig?.image_size ||
+			options.imageConfig?.image_quality
+				? { image_config: options.imageConfig }
+				: null,
+		routingMetadata: options.routingMetadata ?? null,
+		traceId,
+		userAgent: options.userAgent ?? null,
+		// Only include raw payloads if x-debug header is set to true
+		rawRequest: options.debugMode ? (options.rawRequest ?? null) : null,
+		rawResponse: options.debugMode ? (options.rawResponse ?? null) : null,
+		upstreamRequest: options.debugMode
+			? (options.upstreamRequest ?? null)
+			: null,
+		upstreamResponse: options.debugMode
+			? (options.upstreamResponse ?? null)
+			: null,
+		plugins:
+			options.plugins && options.plugins.length > 0 ? options.plugins : null,
+		pluginResults: options.pluginResults ?? null,
+		gatewayContentFilterResponse: options.gatewayContentFilterResponse ?? null,
+	} as const;
+}
+
+function requireDefined<T>(value: T | undefined, name: string): T {
+	if (value === undefined) {
+		throw new Error(`Missing createLogEntry legacy argument: ${name}`);
+	}
+
+	return value;
+}
+
+export function createLogEntry(
+	options: CreateLogEntryOptions,
+): ReturnType<typeof buildLogEntry>;
+export function createLogEntry(
+	requestId: string,
+	project: Project,
+	apiKey: GatewayApiKey,
+	providerKeyId: string | undefined,
+	usedModel: string,
+	usedModelMapping: string | undefined,
+	usedProvider: string,
+	requestedModel: string,
+	requestedProvider: string | undefined,
+	messages: any[],
+	temperature: number | undefined,
+	max_tokens: number | undefined,
+	top_p: number | undefined,
+	frequency_penalty: number | undefined,
+	presence_penalty: number | undefined,
+	reasoningEffort:
+		| "none"
+		| "minimal"
+		| "low"
+		| "medium"
+		| "high"
+		| "xhigh"
+		| "max"
+		| undefined,
+	reasoningMaxTokens: number | undefined,
+	effort: "low" | "medium" | "high" | undefined,
+	responseFormat: any | undefined,
+	tools: OpenAIToolInput[] | undefined,
+	toolChoice: any | undefined,
+	source: string | undefined,
+	customHeaders: Record<string, string>,
+	debugMode: boolean,
+	userAgent: string | undefined,
+	imageConfig?:
+		| {
+				aspect_ratio?: string;
+				image_size?: string;
+				image_quality?: string;
+		  }
+		| undefined,
+	routingMetadata?: RoutingMetadata,
+	rawRequest?: unknown,
+	rawResponse?: unknown,
+	upstreamRequest?: unknown,
+	upstreamResponse?: unknown,
+	plugins?: string[],
+	pluginResults?: PluginResults,
+	gatewayContentFilterResponse?: GatewayContentFilterResponse | null,
+): ReturnType<typeof buildLogEntry>;
+export function createLogEntry(
+	requestIdOrOptions: string | CreateLogEntryOptions,
+	project?: Project,
+	apiKey?: GatewayApiKey,
+	providerKeyId?: string,
+	usedModel?: string,
+	usedModelMapping?: string,
+	usedProvider?: string,
+	requestedModel?: string,
+	requestedProvider?: string,
+	messages?: any[],
+	temperature?: number,
+	max_tokens?: number,
+	top_p?: number,
+	frequency_penalty?: number,
+	presence_penalty?: number,
+	reasoningEffort?:
+		| "none"
+		| "minimal"
+		| "low"
+		| "medium"
+		| "high"
+		| "xhigh"
+		| "max",
+	reasoningMaxTokens?: number,
+	effort?: "low" | "medium" | "high",
+	responseFormat?: any,
+	tools?: OpenAIToolInput[],
+	toolChoice?: any,
+	source?: string,
+	customHeaders?: Record<string, string>,
+	debugMode?: boolean,
+	userAgent?: string,
+	imageConfig?:
+		| {
+				aspect_ratio?: string;
+				image_size?: string;
+				image_quality?: string;
+		  }
+		| undefined,
+	routingMetadata?: RoutingMetadata,
+	rawRequest?: unknown,
+	rawResponse?: unknown,
+	upstreamRequest?: unknown,
+	upstreamResponse?: unknown,
+	plugins?: string[],
+	pluginResults?: PluginResults,
+	gatewayContentFilterResponse?: GatewayContentFilterResponse | null,
+): ReturnType<typeof buildLogEntry> {
+	if (typeof requestIdOrOptions !== "string") {
+		return buildLogEntry(requestIdOrOptions);
+	}
+
+	return buildLogEntry({
+		requestId: requestIdOrOptions,
+		project: requireDefined(project, "project"),
+		apiKey: requireDefined(apiKey, "apiKey"),
+		providerKeyId,
+		usedModel: requireDefined(usedModel, "usedModel"),
+		usedModelMapping,
+		usedProvider: requireDefined(usedProvider, "usedProvider"),
+		requestedModel: requireDefined(requestedModel, "requestedModel"),
+		requestedProvider,
+		messages: requireDefined(messages, "messages"),
+		temperature,
+		max_tokens,
+		top_p,
+		frequency_penalty,
+		presence_penalty,
+		reasoningEffort,
+		reasoningMaxTokens,
+		effort,
+		responseFormat,
+		tools,
+		toolChoice,
+		source,
+		customHeaders: requireDefined(customHeaders, "customHeaders"),
+		debugMode: requireDefined(debugMode, "debugMode"),
+		userAgent,
+		imageConfig,
+		routingMetadata,
+		rawRequest,
+		rawResponse,
+		upstreamRequest,
+		upstreamResponse,
+		plugins,
+		pluginResults,
+		gatewayContentFilterResponse,
+	});
+}

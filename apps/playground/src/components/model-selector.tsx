@@ -1,0 +1,2881 @@
+"use client";
+
+import {
+	AlertTriangle,
+	Braces,
+	Check,
+	ChevronsUpDown,
+	Eye,
+	ExternalLink,
+	Filter,
+	Gift,
+	Globe,
+	ImagePlus,
+	Info,
+	MessageSquare,
+	Sparkles,
+	Star,
+	Wrench,
+	Zap,
+} from "lucide-react";
+import * as React from "react";
+import { List, type RowComponentProps } from "react-window";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Command, CommandInput } from "@/components/ui/command";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useFavoriteModels } from "@/hooks/useFavoriteModels";
+import { useApi } from "@/lib/fetch-client";
+import {
+	formatPrice,
+	formatContextSize,
+	getProviderForModel,
+} from "@/lib/model-utils";
+import { cn } from "@/lib/utils";
+
+import {
+	getProviderIcon,
+	providerLogoUrls,
+} from "@llmgateway/shared/components";
+
+import type {
+	ApiModel,
+	ApiModelProviderMapping,
+	ApiProvider,
+} from "@/lib/fetch-models";
+import type { ProviderId } from "@llmgateway/models";
+import type { LucideProps } from "lucide-react";
+
+interface ModelSelectorProps {
+	models: ApiModel[];
+	providers: ApiProvider[];
+	value?: string;
+	onValueChange?: (value: string) => void;
+	placeholder?: string;
+	mode?: "chat" | "video" | "image" | "audio";
+	isOptionDisabled?: (value: string) => boolean;
+	getOptionDisabledReason?: (value: string) => string | undefined;
+	/**
+	 * When true, regional provider mappings are listed as separate selectable
+	 * entries (each labeled with its region) instead of being collapsed into a
+	 * single base entry with a region dropdown. Used by group chat.
+	 */
+	showRegionalVariants?: boolean;
+}
+
+interface FilterState {
+	providers: string[];
+	capabilities: string[];
+	priceRange: "free" | "low" | "medium" | "high" | "all";
+	hideUnstable: boolean;
+	showOnlyRoot: boolean;
+	showFavoritesOnly: boolean;
+	showOnlyWithKeys: boolean;
+}
+
+// helper to extract simple capability labels from a mapping
+function getMappingCapabilities(
+	mapping?: ApiModelProviderMapping,
+	model?: ApiModel,
+): string[] {
+	const labels: string[] = [];
+
+	if (mapping) {
+		if (mapping.streaming) {
+			labels.push("Streaming");
+		}
+		if (mapping.vision) {
+			labels.push("Vision");
+		}
+		if (mapping.tools) {
+			labels.push("Tools");
+		}
+		if (mapping.reasoning) {
+			labels.push("Reasoning");
+		}
+		if (mapping.webSearch) {
+			labels.push("Web Search");
+		}
+	}
+
+	// Image Generation capability if model outputs include images
+	if (model?.output?.includes("image")) {
+		labels.push("Image Generation");
+	}
+	return labels;
+}
+
+function getCapabilityIconConfig(capability: string): {
+	Icon: React.ForwardRefExoticComponent<
+		Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>
+	> | null;
+	color: string;
+} {
+	switch (capability) {
+		case "Streaming":
+			return { Icon: Zap, color: "text-blue-500" };
+		case "Vision":
+			return { Icon: Eye, color: "text-green-500" };
+		case "Tools":
+			return { Icon: Wrench, color: "text-purple-500" };
+		case "Reasoning":
+			return { Icon: MessageSquare, color: "text-orange-500" };
+		case "JSON Output":
+			return { Icon: Braces, color: "text-cyan-500" };
+		case "Image Generation":
+			return { Icon: ImagePlus, color: "text-pink-500" };
+		case "Web Search":
+			return { Icon: Globe, color: "text-teal-500" };
+		default:
+			return { Icon: null, color: "" };
+	}
+}
+
+// helper to check if a model is unstable or experimental
+function isModelUnstable(
+	mapping: ApiModelProviderMapping,
+	model: ApiModel,
+): boolean {
+	return [mapping.stability, model.stability].some(
+		(stability) => stability === "unstable" || stability === "experimental",
+	);
+}
+
+type PriceField =
+	| "input"
+	| "output"
+	| "cachedInput"
+	| "request"
+	| "imageInput"
+	| "imageOutput";
+
+interface MappingPriceInfo {
+	label: string;
+	original?: string;
+	discounted?: string;
+}
+
+// Helper to format prices using any provider discount while reusing shared formatPrice logic.
+function getMappingPriceInfo(
+	mapping: ApiModelProviderMapping | undefined,
+	field: PriceField,
+): MappingPriceInfo {
+	if (!mapping) {
+		return { label: "Unknown" };
+	}
+
+	let basePriceStr: string | null | undefined;
+	if (field === "input") {
+		basePriceStr = mapping.inputPrice;
+	} else if (field === "output") {
+		basePriceStr = mapping.outputPrice;
+	} else if (field === "cachedInput") {
+		basePriceStr = mapping.cachedInputPrice;
+	} else if (field === "request") {
+		basePriceStr = mapping.requestPrice;
+	} else if (field === "imageInput") {
+		basePriceStr = mapping.imageInputPrice;
+	}
+
+	if (basePriceStr === null || basePriceStr === undefined) {
+		return { label: "Unknown" };
+	}
+
+	const basePrice = parseFloat(basePriceStr);
+
+	// Free models
+	if (basePrice === 0) {
+		return { label: "Free", original: "Free" };
+	}
+
+	const discountNum = mapping.discount ? parseFloat(mapping.discount) : 0;
+
+	// Request price is a flat per-request fee, not per-token
+	if (field === "request") {
+		const original = `$${basePrice.toFixed(3)}/req`;
+		if (discountNum > 0) {
+			const discountedPrice = basePrice * (1 - discountNum);
+			const discounted = `$${discountedPrice.toFixed(3)}/req`;
+			return { label: discounted, original, discounted };
+		}
+		return { label: original, original };
+	}
+
+	const original = formatPrice(basePrice);
+
+	// Apply discount if present
+	if (discountNum > 0) {
+		const discounted = formatPrice(basePrice * (1 - discountNum));
+		return {
+			label: discounted,
+			original,
+			discounted,
+		};
+	}
+
+	return { label: original, original };
+}
+
+interface RootAggregateInfo {
+	minInputPrice?: number;
+	minOutputPrice?: number;
+	minCachedInputPrice?: number;
+	minRequestPrice?: number;
+	minImageInputPrice?: number;
+	minImageOutputPrice?: number;
+	maxContextSize?: number;
+	maxOutput?: number;
+	capabilities: string[];
+}
+
+function getRootAggregateInfo(model: ApiModel): RootAggregateInfo {
+	const now = new Date();
+
+	let minInputPrice: number | undefined;
+	let minOutputPrice: number | undefined;
+	let minCachedInputPrice: number | undefined;
+	let minRequestPrice: number | undefined;
+	let minImageInputPrice: number | undefined;
+	let minImageOutputPrice: number | undefined;
+	let maxContextSize: number | undefined;
+	let maxOutput: number | undefined;
+	const capabilitySet = new Set<string>();
+
+	const applyDiscount = (
+		priceStr: string | null | undefined,
+		discountStr?: string | null,
+	) => {
+		if (priceStr === null || priceStr === undefined) {
+			return undefined;
+		}
+		const price = parseFloat(priceStr);
+		if (price === 0) {
+			return 0;
+		}
+		const discount = discountStr ? parseFloat(discountStr) : 0;
+		if (!discount || discount <= 0) {
+			return price;
+		}
+		return price * (1 - discount);
+	};
+
+	for (const mapping of model.mappings) {
+		// Skip deactivated providers when computing "best" supported values
+		const isDeactivated =
+			mapping.deactivatedAt && new Date(mapping.deactivatedAt) <= now;
+		if (isDeactivated) {
+			continue;
+		}
+
+		const effectiveInput = applyDiscount(mapping.inputPrice, mapping.discount);
+		if (
+			effectiveInput !== undefined &&
+			(minInputPrice === undefined || effectiveInput < minInputPrice)
+		) {
+			minInputPrice = effectiveInput;
+		}
+
+		const effectiveOutput = applyDiscount(
+			mapping.outputPrice,
+			mapping.discount,
+		);
+		if (
+			effectiveOutput !== undefined &&
+			(minOutputPrice === undefined || effectiveOutput < minOutputPrice)
+		) {
+			minOutputPrice = effectiveOutput;
+		}
+
+		const effectiveCached = applyDiscount(
+			mapping.cachedInputPrice,
+			mapping.discount,
+		);
+		if (
+			effectiveCached !== undefined &&
+			(minCachedInputPrice === undefined ||
+				effectiveCached < minCachedInputPrice)
+		) {
+			minCachedInputPrice = effectiveCached;
+		}
+
+		// Track image generation pricing
+		const effectiveRequest = applyDiscount(
+			mapping.requestPrice,
+			mapping.discount,
+		);
+		if (
+			effectiveRequest !== undefined &&
+			(minRequestPrice === undefined || effectiveRequest < minRequestPrice)
+		) {
+			minRequestPrice = effectiveRequest;
+		}
+
+		const effectiveImageInput = applyDiscount(
+			mapping.imageInputPrice,
+			mapping.discount,
+		);
+		if (
+			effectiveImageInput !== undefined &&
+			(minImageInputPrice === undefined ||
+				effectiveImageInput < minImageInputPrice)
+		) {
+			minImageInputPrice = effectiveImageInput;
+		}
+
+		if (
+			mapping.contextSize !== null &&
+			mapping.contextSize !== undefined &&
+			(maxContextSize === undefined || mapping.contextSize > maxContextSize)
+		) {
+			maxContextSize = mapping.contextSize;
+		}
+
+		if (
+			mapping.maxOutput !== null &&
+			mapping.maxOutput !== undefined &&
+			(maxOutput === undefined || mapping.maxOutput > maxOutput)
+		) {
+			maxOutput = mapping.maxOutput;
+		}
+
+		getMappingCapabilities(mapping, model).forEach((capability) =>
+			capabilitySet.add(capability),
+		);
+	}
+
+	// Ensure image generation capability is included if any provider supports image output
+	if (model.output?.includes("image")) {
+		capabilitySet.add("Image Generation");
+	}
+
+	return {
+		minInputPrice,
+		minOutputPrice,
+		minCachedInputPrice,
+		minRequestPrice,
+		minImageInputPrice,
+		minImageOutputPrice,
+		maxContextSize,
+		maxOutput,
+		capabilities: Array.from(capabilitySet),
+	};
+}
+
+// Removed old ModelItem; we render entries per provider below
+
+function formatPerSecondPrice(perSecondPrice: Record<string, string>): string {
+	const defaultAudio = perSecondPrice["default_audio"];
+	const defaultVideo = perSecondPrice["default_video"];
+	const defaultPrice = perSecondPrice["default"];
+	if (defaultAudio && defaultVideo) {
+		return `$${defaultVideo} – $${defaultAudio}/sec`;
+	}
+	if (defaultPrice) {
+		return `$${defaultPrice}/sec`;
+	}
+	const firstValue = Object.values(perSecondPrice)[0];
+	return firstValue ? `$${firstValue}/sec` : "Unknown";
+}
+
+// Estimate cost for generating one typical 1K/1024x1024 image based on
+// request fee + image output tokens * price.
+function estimateImageCost(
+	mapping: ApiModelProviderMapping | undefined,
+): { base: number; discounted: number } | null {
+	if (!mapping) {
+		return null;
+	}
+	const request = mapping.requestPrice ? parseFloat(mapping.requestPrice) : 0;
+	const discount = mapping.discount ? parseFloat(mapping.discount) : 0;
+	const imageOut = mapping.imageOutputPrice
+		? parseFloat(mapping.imageOutputPrice)
+		: 0;
+	const tokensMap = mapping.imageOutputTokensByResolution;
+	const tokens =
+		tokensMap?.default ?? tokensMap?.["1024x1024"] ?? tokensMap?.["1K"];
+	if (tokens === undefined) {
+		return null;
+	}
+	const outputCost = imageOut * tokens;
+	const base = request + outputCost;
+	if (!Number.isFinite(base) || base <= 0) {
+		return null;
+	}
+	const discounted = discount > 0 ? base * (1 - discount) : base;
+	return { base, discounted };
+}
+
+function getMinImageCostEstimate(
+	mappings: ApiModelProviderMapping[],
+): { base: number; discounted: number } | null {
+	const now = new Date();
+	let best: { base: number; discounted: number } | null = null;
+	for (const m of mappings) {
+		const isDeactivated = m.deactivatedAt && new Date(m.deactivatedAt) <= now;
+		if (isDeactivated) {
+			continue;
+		}
+		const est = estimateImageCost(m);
+		if (!est) {
+			continue;
+		}
+		if (!best || est.discounted < best.discounted) {
+			best = est;
+		}
+	}
+	return best;
+}
+
+function formatImageCost(cost: number): string {
+	if (cost >= 0.01) {
+		return `$${cost.toFixed(3)}`;
+	}
+	if (cost >= 0.001) {
+		return `$${cost.toFixed(4)}`;
+	}
+	return `$${cost.toFixed(5)}`;
+}
+
+function ImageEstimateCard({
+	estimate,
+	labelClassName,
+	valueClassName,
+	captionClassName,
+}: {
+	estimate: { base: number; discounted: number };
+	labelClassName?: string;
+	valueClassName?: string;
+	captionClassName?: string;
+}) {
+	return (
+		<div className="rounded-md border border-primary/30 bg-primary/5 p-2.5">
+			<span
+				className={
+					labelClassName ??
+					"text-[11px] font-medium text-muted-foreground uppercase tracking-wide"
+				}
+			>
+				Est. per Image
+			</span>
+			<p
+				className={
+					valueClassName ?? "text-sm font-mono font-semibold text-primary"
+				}
+			>
+				~{formatImageCost(estimate.discounted)}
+			</p>
+			<p className={captionClassName ?? "text-[10px] text-muted-foreground"}>
+				Typical 1024×1024 output
+			</p>
+		</div>
+	);
+}
+
+function getMinPerSecondPrice(
+	mappings: ApiModelProviderMapping[],
+): string | null {
+	let min: number | null = null;
+	for (const m of mappings) {
+		if (!m.perSecondPrice) {
+			continue;
+		}
+		for (const v of Object.values(m.perSecondPrice)) {
+			const n = parseFloat(v);
+			if (Number.isFinite(n) && (min === null || n < min)) {
+				min = n;
+			}
+		}
+	}
+	return min !== null ? `$${min}/sec` : null;
+}
+
+function getMaxPerSecondPrice(
+	mappings: ApiModelProviderMapping[],
+): string | null {
+	let max: number | null = null;
+	for (const m of mappings) {
+		if (!m.perSecondPrice) {
+			continue;
+		}
+		for (const v of Object.values(m.perSecondPrice)) {
+			const n = parseFloat(v);
+			if (Number.isFinite(n) && (max === null || n > max)) {
+				max = n;
+			}
+		}
+	}
+	return max !== null ? `$${max}/sec` : null;
+}
+
+interface ModelEntry {
+	model: ApiModel;
+	mapping?: ApiModelProviderMapping;
+	provider?: ApiProvider;
+	isRoot?: boolean;
+	searchText: string;
+}
+
+const ROW_HEIGHT = 56;
+
+interface ModelEntryRowProps {
+	entries: ModelEntry[];
+	focusedIndex: number;
+	setFocusedIndex: (index: number) => void;
+	selectedEntryKey: string;
+	isFavorite: (id: string) => boolean;
+	toggleFavorite: (id: string) => void;
+	onSelect: (value: string) => void;
+	setPreviewEntry: (
+		entry: {
+			model: ApiModel;
+			mapping?: ApiModelProviderMapping;
+			provider?: ApiProvider;
+			isRoot?: boolean;
+		} | null,
+	) => void;
+	setSelectedDetails: (
+		details: {
+			model: ApiModel;
+			mapping?: ApiModelProviderMapping;
+			provider?: ApiProvider;
+		} | null,
+	) => void;
+	setDetailsOpen: (open: boolean) => void;
+	isOptionDisabled?: (value: string) => boolean;
+	getOptionDisabledReason?: (value: string) => string | undefined;
+}
+
+function ModelEntryRowComponent({
+	ariaAttributes,
+	index,
+	style,
+	entries,
+	focusedIndex,
+	setFocusedIndex,
+	selectedEntryKey,
+	isFavorite,
+	toggleFavorite,
+	onSelect,
+	setPreviewEntry,
+	setSelectedDetails,
+	setDetailsOpen,
+	isOptionDisabled,
+	getOptionDisabledReason,
+}: RowComponentProps<ModelEntryRowProps>) {
+	const entry = entries[index];
+	if (!entry) {
+		return null;
+	}
+
+	const { model, mapping, provider, isRoot } = entry;
+	const isFocused = index === focusedIndex;
+
+	if (isRoot) {
+		const entryKey = model.id;
+		const disabled = isOptionDisabled?.(entryKey) ?? false;
+		const disabledReason = getOptionDisabledReason?.(entryKey);
+		const hasRequestPrice = model.mappings.some(
+			(p) => p.requestPrice && parseFloat(p.requestPrice) > 0,
+		);
+		const isFreeRoot =
+			model.free === true &&
+			!hasRequestPrice &&
+			model.mappings.every(
+				(p) =>
+					(!p.inputPrice || parseFloat(p.inputPrice) === 0) &&
+					(!p.outputPrice || parseFloat(p.outputPrice) === 0),
+			);
+		return (
+			<div {...ariaAttributes} style={style} className="px-1 py-0.5">
+				<div
+					title={disabledReason}
+					onMouseEnter={() => {
+						setFocusedIndex(index);
+						setPreviewEntry({ model, mapping, provider, isRoot });
+					}}
+					onClick={() => {
+						if (disabled) {
+							return;
+						}
+						onSelect(model.id);
+					}}
+					className={cn(
+						"relative flex h-full select-none items-center gap-2 rounded-sm px-2 text-sm outline-none",
+						isFocused
+							? "bg-accent text-accent-foreground"
+							: "hover:bg-accent hover:text-accent-foreground",
+						disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
+					)}
+				>
+					<Check
+						className={cn(
+							"h-4 w-4 shrink-0",
+							entryKey === selectedEntryKey ? "opacity-100" : "opacity-0",
+						)}
+					/>
+					<div className="flex items-center justify-between flex-1 min-w-0 gap-2">
+						<div className="flex items-center gap-2 min-w-0 flex-1">
+							<Sparkles className="h-6 w-6 shrink-0 text-primary" />
+							<div className="flex flex-col min-w-0 flex-1">
+								<div className="flex items-center gap-1 min-w-0">
+									<span className="font-medium truncate">{model.name}</span>
+									{isFreeRoot && (
+										<Gift className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+									)}
+								</div>
+								<span className="text-xs text-muted-foreground truncate">
+									Auto-select provider
+								</span>
+							</div>
+						</div>
+						<Button
+							variant="ghost"
+							size="sm"
+							aria-label={
+								isFavorite(model.id)
+									? "Remove from favorites"
+									: "Add to favorites"
+							}
+							aria-pressed={isFavorite(model.id)}
+							className="h-8 w-8 p-0 hover:bg-muted/50 shrink-0"
+							onClick={(e) => {
+								e.stopPropagation();
+								toggleFavorite(model.id);
+							}}
+						>
+							<Star
+								className={cn(
+									"h-4 w-4",
+									isFavorite(model.id)
+										? "fill-yellow-400 text-yellow-400"
+										: "text-muted-foreground",
+								)}
+							/>
+						</Button>
+						<Button
+							variant="ghost"
+							size="sm"
+							aria-label="Model details"
+							className="h-8 w-8 p-0 hover:bg-muted/50 shrink-0 md:hidden"
+							onClick={(e) => {
+								e.stopPropagation();
+								setSelectedDetails({ model });
+								setDetailsOpen(true);
+							}}
+						>
+							<Info className="h-4 w-4" />
+						</Button>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
+	const ProviderIcon = provider ? getProviderIcon(provider.id) : null;
+	const entryKey = `${mapping!.providerId}-${model.id}-${mapping!.region ?? ""}`;
+	const providerModelValue = `${mapping!.providerId}/${model.id}${mapping!.region ? `:${mapping!.region}` : ""}`;
+	const disabled = isOptionDisabled?.(providerModelValue) ?? false;
+	const disabledReason = getOptionDisabledReason?.(providerModelValue);
+	const isUnstable = isModelUnstable(mapping!, model);
+	const isDeprecated =
+		mapping!.deprecatedAt && new Date(mapping!.deprecatedAt) <= new Date();
+	const hasRequestPrice =
+		mapping!.requestPrice && parseFloat(mapping!.requestPrice) > 0;
+	const isFreeMapping =
+		model.free === true &&
+		!hasRequestPrice &&
+		(!mapping!.inputPrice || parseFloat(mapping!.inputPrice) === 0) &&
+		(!mapping!.outputPrice || parseFloat(mapping!.outputPrice) === 0);
+
+	return (
+		<div {...ariaAttributes} style={style} className="px-1 py-0.5">
+			<div
+				title={disabledReason}
+				onMouseEnter={() => {
+					setFocusedIndex(index);
+					setPreviewEntry({ model, mapping, provider, isRoot });
+				}}
+				onClick={() => {
+					if (disabled) {
+						return;
+					}
+					onSelect(providerModelValue);
+				}}
+				className={cn(
+					"relative flex h-full select-none items-center gap-2 rounded-sm px-2 text-sm outline-none",
+					isFocused
+						? "bg-accent text-accent-foreground"
+						: "hover:bg-accent hover:text-accent-foreground",
+					disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
+				)}
+			>
+				<Check
+					className={cn(
+						"h-4 w-4 shrink-0",
+						entryKey === selectedEntryKey ? "opacity-100" : "opacity-0",
+					)}
+				/>
+				<div className="flex items-center justify-between flex-1 min-w-0 gap-2">
+					<div className="flex items-center gap-2 min-w-0 flex-1">
+						{ProviderIcon ? (
+							<ProviderIcon className="h-6 w-6 shrink-0 dark:text-white" />
+						) : null}
+						<div className="flex flex-col min-w-0 flex-1">
+							<div className="flex items-center gap-1 min-w-0">
+								<span className="font-medium truncate">{model.name}</span>
+								{isFreeMapping && (
+									<Gift className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+								)}
+								{(isUnstable || isDeprecated) && (
+									<AlertTriangle className="h-3.5 w-3.5 shrink-0 text-yellow-600 dark:text-yellow-500" />
+								)}
+							</div>
+							<span className="text-xs text-muted-foreground truncate">
+								{disabledReason ?? provider?.name}
+								{!disabledReason && mapping?.region && (
+									<span className="ml-1">({mapping.region})</span>
+								)}
+							</span>
+						</div>
+					</div>
+					<Button
+						variant="ghost"
+						size="sm"
+						aria-label={
+							isFavorite(providerModelValue)
+								? "Remove from favorites"
+								: "Add to favorites"
+						}
+						aria-pressed={isFavorite(providerModelValue)}
+						className="h-8 w-8 p-0 hover:bg-muted/50 shrink-0"
+						onClick={(e) => {
+							e.stopPropagation();
+							toggleFavorite(providerModelValue);
+						}}
+					>
+						<Star
+							className={cn(
+								"h-4 w-4",
+								isFavorite(providerModelValue)
+									? "fill-yellow-400 text-yellow-400"
+									: "text-muted-foreground",
+							)}
+						/>
+					</Button>
+					<Button
+						variant="ghost"
+						size="sm"
+						aria-label="Model details"
+						className="h-8 w-8 p-0 hover:bg-muted/50 shrink-0 md:hidden"
+						onClick={(e) => {
+							e.stopPropagation();
+							setSelectedDetails({ model, mapping, provider });
+							setDetailsOpen(true);
+						}}
+					>
+						<Info className="h-4 w-4" />
+					</Button>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+export function ModelSelector({
+	models,
+	providers,
+	value,
+	onValueChange,
+	placeholder = "Select model...",
+	mode = "chat",
+	isOptionDisabled,
+	getOptionDisabledReason,
+	showRegionalVariants = false,
+}: ModelSelectorProps) {
+	const { isFavorite, toggleFavorite } = useFavoriteModels();
+	const isMobile = useIsMobile();
+	const api = useApi();
+	const { data: providerKeysData } = api.useQuery(
+		"get",
+		"/keys/provider/active",
+	);
+	const providersWithKeys = React.useMemo(() => {
+		const keys = providerKeysData?.providerKeys ?? [];
+		return new Set(
+			keys
+				.filter((k) => k.status === "active")
+				.map((k) => k.provider as string),
+		);
+	}, [providerKeysData]);
+	const [open, setOpen] = React.useState(false);
+	const [filterOpen, setFilterOpen] = React.useState(false);
+	const [searchQuery, setSearchQuery] = React.useState("");
+	const [focusedIndex, setFocusedIndex] = React.useState(-1);
+	const listContainerRef = React.useRef<HTMLDivElement>(null);
+	const [detailsOpen, setDetailsOpen] = React.useState(false);
+	const [selectedDetails, setSelectedDetails] = React.useState<{
+		model: ApiModel;
+		mapping?: ApiModelProviderMapping;
+		provider?: ApiProvider;
+	} | null>(null);
+	const [previewEntry, setPreviewEntry] = React.useState<{
+		model: ApiModel;
+		mapping?: ApiModelProviderMapping;
+		provider?: ApiProvider;
+		isRoot?: boolean;
+	} | null>(null);
+	const [filters, setFilters] = React.useState<FilterState>({
+		providers: [],
+		capabilities: [],
+		priceRange: "all",
+		hideUnstable: true,
+		showOnlyRoot: false,
+		showFavoritesOnly: false,
+		showOnlyWithKeys: false,
+	});
+	const [previewExpandTokens, setPreviewExpandTokens] = React.useState(false);
+	const [selectedExpandTokens, setSelectedExpandTokens] = React.useState(false);
+
+	const isImageGenModel = (model?: ApiModel | null) =>
+		!!model?.output && model.output.includes("image");
+	const previewIsImageGen = isImageGenModel(previewEntry?.model);
+	const selectedIsImageGen = isImageGenModel(selectedDetails?.model);
+
+	React.useEffect(() => {
+		setPreviewExpandTokens(false);
+	}, [previewEntry?.model]);
+
+	React.useEffect(() => {
+		setSelectedExpandTokens(false);
+	}, [selectedDetails?.model]);
+
+	// Parse value as provider/model-id (preferred). Fallback to model id only.
+	// Supports region suffix: "alibaba/deepseek-v3.2:cn-beijing" or
+	// "aws-bedrock/claude-haiku-4-5:global". The region is the substring after
+	// the last ":" (model.id never contains ":"; upstream modelNames may).
+	const raw = value ?? "";
+	const [selectedProviderId, selectedModelIdRaw] = raw.includes("/")
+		? (raw.split("/") as [string, string])
+		: ["", raw];
+	// model.id never contains ":", so split on ":" is safe for the URL form
+	// (provider/model.id[:region]). Look up by canonical (root) id only.
+	const lastColonIdx = selectedModelIdRaw.lastIndexOf(":");
+	const selectedRegion =
+		lastColonIdx > -1 ? selectedModelIdRaw.slice(lastColonIdx + 1) : undefined;
+	const selectedModelId =
+		lastColonIdx > -1
+			? selectedModelIdRaw.slice(0, lastColonIdx)
+			: selectedModelIdRaw;
+	const selectedModel = models.find((m) => m.id === selectedModelId);
+	const selectedProviderDef = providers.find(
+		(p) => p.id === selectedProviderId,
+	);
+	// Strict (providerId, region) match — no loose fallbacks that would pick
+	// the first regional variant when no region was requested.
+	const selectedMapping = selectedRegion
+		? selectedModel?.mappings.find(
+				(p) =>
+					p.providerId === selectedProviderId && p.region === selectedRegion,
+			)
+		: selectedModel?.mappings.find(
+				(p) => p.providerId === selectedProviderId && !p.region,
+			);
+	const selectedEntryKey =
+		selectedModel && selectedProviderId && selectedMapping
+			? `${selectedProviderId}-${selectedModel.id}-${selectedMapping.region ?? ""}`
+			: selectedModel
+				? selectedModel.id
+				: "";
+
+	// Simple normalizer for search matching
+	const normalize = (s: string) => s.toLowerCase().replace(/[-_\s]+/g, "");
+
+	// Build entries of model per provider mapping (include all, filter later)
+	const allEntries = React.useMemo(() => {
+		const out: {
+			model: ApiModel;
+			mapping?: ApiModelProviderMapping;
+			provider?: ApiProvider;
+			isRoot?: boolean;
+			searchText: string;
+		}[] = [];
+		const now = new Date();
+
+		// Sort by public release date first so newly released models surface
+		// before older models that were added to LLM Gateway more recently.
+		const sortedModels = [...models].sort((a, b) => {
+			const dateA = a.releasedAt
+				? new Date(a.releasedAt).getTime()
+				: a.createdAt
+					? new Date(a.createdAt).getTime()
+					: 0;
+			const dateB = b.releasedAt
+				? new Date(b.releasedAt).getTime()
+				: b.createdAt
+					? new Date(b.createdAt).getTime()
+					: 0;
+			return dateB - dateA;
+		});
+
+		// Always place the "auto" model at the very top
+		const autoModel = sortedModels.find((m) => m.id === "auto");
+		if (autoModel) {
+			out.push({
+				model: autoModel,
+				isRoot: true,
+				searchText: normalize(
+					[
+						autoModel.name ?? "",
+						autoModel.family ?? "",
+						autoModel.id,
+						autoModel.aliases?.join(" ") ?? "",
+					].join(" "),
+				),
+			});
+		}
+
+		for (const m of sortedModels) {
+			if (m.id === "custom" || m.id === "auto") {
+				continue;
+			}
+
+			// Hide fully deactivated models: if every provider mapping is
+			// deactivated there's nothing left to route to, so skip the model
+			// (including its root "auto-select" entry) entirely.
+			const hasActiveMapping = m.mappings.some(
+				(mp) => !(mp.deactivatedAt && new Date(mp.deactivatedAt) <= now),
+			);
+			if (!hasActiveMapping) {
+				continue;
+			}
+
+			// Add root model entry (auto-routing)
+			const aliasText = m.aliases?.join(" ") ?? "";
+			const rootSearchText = normalize(
+				[m.name ?? "", m.family ?? "", m.id, aliasText].join(" "),
+			);
+			out.push({
+				model: m,
+				isRoot: true,
+				searchText: rootSearchText,
+			});
+
+			for (const mp of m.mappings) {
+				if (mp.region && !showRegionalVariants) {
+					continue;
+				}
+				const isDeactivated =
+					mp.deactivatedAt && new Date(mp.deactivatedAt) <= now;
+				if (!isDeactivated) {
+					const provider = providers.find((p) => p.id === mp.providerId);
+					const searchText = normalize(
+						[
+							m.name ?? "",
+							m.family ?? "",
+							m.id,
+							provider?.name ?? "",
+							aliasText,
+						].join(" "),
+					);
+					out.push({
+						model: m,
+						mapping: mp,
+						provider,
+						isRoot: false,
+						searchText,
+					});
+				}
+			}
+		}
+		return out;
+	}, [models, providers, showRegionalVariants]);
+
+	// Defer search input value to keep typing responsive with large lists
+	const deferredSearch = React.useDeferredValue(searchQuery);
+
+	// Get unique providers and capabilities for filtering
+	const availableProviders = React.useMemo(() => {
+		const ids = new Set(
+			allEntries.filter((e) => e.mapping).map((e) => e.mapping!.providerId),
+		);
+		return providers.filter((p) => ids.has(p.id as any));
+	}, [allEntries, providers]);
+
+	const availableCapabilities = React.useMemo(() => {
+		const set = new Set<string>();
+		allEntries.forEach((e) =>
+			getMappingCapabilities(e.mapping, e.model).forEach((c) => set.add(c)),
+		);
+		return Array.from(set).sort();
+	}, [allEntries]);
+
+	const filteredEntries = React.useMemo(() => {
+		let list = allEntries;
+
+		if (filters.showOnlyRoot) {
+			list = list.filter((e) => e.isRoot);
+		}
+
+		if (filters.hideUnstable) {
+			list = list.filter((e) => {
+				// Root models are considered stable unless model itself is unstable
+				if (e.isRoot) {
+					return (
+						e.model.stability !== "unstable" &&
+						e.model.stability !== "experimental"
+					);
+				}
+				return (
+					e.mapping?.stability !== "unstable" &&
+					e.mapping?.stability !== "experimental" &&
+					e.model.stability !== "unstable" &&
+					e.model.stability !== "experimental"
+				);
+			});
+		}
+		if (deferredSearch) {
+			const tokens = deferredSearch
+				.toLowerCase()
+				.split(/[-_\s]+/)
+				.filter(Boolean);
+			if (tokens.length > 0) {
+				list = list.filter((entry) =>
+					tokens.every((t) => entry.searchText.includes(t)),
+				);
+			}
+		}
+		if (filters.providers.length > 0) {
+			list = list.filter(
+				(e) => e.mapping && filters.providers.includes(e.mapping.providerId),
+			);
+		}
+		if (filters.capabilities.length > 0) {
+			list = list.filter((e) => {
+				const caps = getMappingCapabilities(e.mapping, e.model);
+				return filters.capabilities.every((c) => caps.includes(c));
+			});
+		}
+		if (filters.priceRange !== "all") {
+			list = list.filter((e) => {
+				// Root models don't have fixed price, exclude from price filter or include?
+				// Let's exclude them if filtering by price, or maybe assume 'free' if unknown?
+				// Safest is to only filter items that have a mapping.
+				if (!e.mapping) {
+					return false;
+				}
+
+				const price = e.mapping.inputPrice
+					? parseFloat(e.mapping.inputPrice)
+					: 0;
+				const requestPrice = e.mapping.requestPrice
+					? parseFloat(e.mapping.requestPrice)
+					: 0;
+				switch (filters.priceRange) {
+					case "free":
+						return e.model.free === true && price === 0 && requestPrice === 0;
+					case "low":
+						return price > 0 && price <= 0.000001;
+					case "medium":
+						return price > 0.000001 && price <= 0.00001;
+					case "high":
+						return price > 0.00001;
+					default:
+						return true;
+				}
+			});
+		}
+		if (filters.showFavoritesOnly) {
+			list = list.filter((e) => {
+				if (e.isRoot) {
+					return isFavorite(e.model.id);
+				}
+				const mappingId = e.mapping
+					? `${e.mapping.providerId}/${e.model.id}${e.mapping.region ? `:${e.mapping.region}` : ""}`
+					: null;
+				return mappingId !== null && isFavorite(mappingId);
+			});
+		}
+		if (filters.showOnlyWithKeys) {
+			const now = new Date();
+			list = list.filter((e) => {
+				if (e.isRoot) {
+					return e.model.mappings?.some(
+						(m) =>
+							providersWithKeys.has(m.providerId) &&
+							!(m.deactivatedAt && new Date(m.deactivatedAt) <= now),
+					);
+				}
+				return e.mapping ? providersWithKeys.has(e.mapping.providerId) : false;
+			});
+		}
+		if (deferredSearch) {
+			const tokens = deferredSearch
+				.toLowerCase()
+				.split(/[-_\s]+/)
+				.filter(Boolean);
+			if (tokens.length > 0) {
+				list = [...list].sort((a, b) => {
+					if (a.isRoot === b.isRoot) {
+						return 0;
+					}
+					return a.isRoot ? -1 : 1;
+				});
+			}
+		}
+		return list;
+	}, [allEntries, deferredSearch, filters, isFavorite, providersWithKeys]);
+
+	const updateFilter = (key: keyof FilterState, value: any) => {
+		setFilters((prev) => ({ ...prev, [key]: value }));
+	};
+
+	const toggleProviderFilter = (providerId: string) => {
+		setFilters((prev) => ({
+			...prev,
+			providers: prev.providers.includes(providerId)
+				? prev.providers.filter((id) => id !== providerId)
+				: [...prev.providers, providerId],
+			// If selecting providers, we probably don't want to show root models only
+			showOnlyRoot: false,
+		}));
+	};
+
+	const toggleCapabilityFilter = (capability: string) => {
+		setFilters((prev) => ({
+			...prev,
+			capabilities: prev.capabilities.includes(capability)
+				? prev.capabilities.filter((cap) => cap !== capability)
+				: [...prev.capabilities, capability],
+		}));
+	};
+
+	const clearFilters = () => {
+		setFilters({
+			providers: [],
+			capabilities: [],
+			priceRange: "all",
+			hideUnstable: true,
+			showOnlyRoot: false,
+			showFavoritesOnly: false,
+			showOnlyWithKeys: false,
+		});
+	};
+
+	const hasActiveFilters =
+		filters.providers.length > 0 ||
+		filters.capabilities.length > 0 ||
+		filters.priceRange !== "all" ||
+		!filters.hideUnstable ||
+		filters.showOnlyRoot ||
+		filters.showFavoritesOnly ||
+		filters.showOnlyWithKeys;
+
+	const getProviderLogo = (providerId: ProviderId) => {
+		const LogoComponent = providerLogoUrls[providerId];
+
+		if (LogoComponent) {
+			return <LogoComponent className="h-10 w-10 object-contain" />;
+		}
+
+		const IconComponent = getProviderIcon(providerId);
+		return IconComponent ? (
+			<IconComponent className="h-10 w-10" />
+		) : (
+			<div className="h-10 w-10 bg-gray-200 rounded" />
+		);
+	};
+
+	// Keep desktop preview in sync with the currently selected model when opening
+	React.useEffect(() => {
+		if (!open) {
+			return;
+		}
+		if (!selectedModel) {
+			setPreviewEntry(null);
+			return;
+		}
+
+		// Prefer provider-specific entry when a provider is selected.
+		// Match on region to distinguish regional variants.
+		let entry =
+			selectedProviderId &&
+			allEntries.find(
+				(e) =>
+					!e.isRoot &&
+					e.model.id === selectedModel.id &&
+					e.mapping?.providerId === selectedProviderId &&
+					(!selectedMapping || e.mapping?.region === selectedMapping.region),
+			);
+
+		// Fallback to root entry for the selected model
+		entry ??= allEntries.find(
+			(e) => e.isRoot && e.model.id === selectedModel.id,
+		);
+
+		// Fallback to first filtered entry
+		if (!entry && filteredEntries.length > 0) {
+			entry = filteredEntries[0];
+		}
+
+		setPreviewEntry(
+			entry
+				? {
+						model: entry.model,
+						mapping: entry.mapping,
+						provider: entry.provider,
+						isRoot: entry.isRoot,
+					}
+				: null,
+		);
+	}, [
+		open,
+		selectedModel,
+		selectedProviderId,
+		selectedMapping,
+		allEntries,
+		filteredEntries,
+	]);
+
+	React.useEffect(() => {
+		setFocusedIndex(-1);
+	}, [open, searchQuery]);
+
+	const handleInputKeyDown = React.useCallback(
+		(e: React.KeyboardEvent<HTMLInputElement>) => {
+			if (e.key === "ArrowDown") {
+				e.preventDefault();
+				e.stopPropagation();
+				const next = Math.min(focusedIndex + 1, filteredEntries.length - 1);
+				setFocusedIndex(next);
+				const scrollEl = listContainerRef.current
+					?.firstElementChild as HTMLElement | null;
+				scrollEl?.scrollTo({ top: next * ROW_HEIGHT });
+			} else if (e.key === "ArrowUp") {
+				e.preventDefault();
+				e.stopPropagation();
+				const prev = Math.max(focusedIndex - 1, 0);
+				setFocusedIndex(prev);
+				const scrollEl = listContainerRef.current
+					?.firstElementChild as HTMLElement | null;
+				scrollEl?.scrollTo({ top: prev * ROW_HEIGHT });
+			} else if (e.key === "Enter") {
+				e.preventDefault();
+				e.stopPropagation();
+				const entry = filteredEntries[focusedIndex];
+				if (!entry) {
+					return;
+				}
+				const { model, mapping, isRoot } = entry;
+				const value = isRoot
+					? model.id
+					: `${mapping!.providerId}/${model.id}${mapping!.region ? `:${mapping!.region}` : ""}`;
+				const disabled = isRoot
+					? (isOptionDisabled?.(model.id) ?? false)
+					: (isOptionDisabled?.(value) ?? false);
+				if (disabled) {
+					return;
+				}
+				onValueChange?.(value);
+				setOpen(false);
+			}
+		},
+		[focusedIndex, filteredEntries, isOptionDisabled, onValueChange],
+	);
+
+	const rowProps = React.useMemo(
+		() => ({
+			entries: filteredEntries,
+			focusedIndex,
+			setFocusedIndex,
+			selectedEntryKey,
+			isFavorite,
+			toggleFavorite,
+			onSelect: (value: string) => {
+				onValueChange?.(value);
+				setOpen(false);
+			},
+			setPreviewEntry,
+			setSelectedDetails,
+			setDetailsOpen,
+			isOptionDisabled,
+			getOptionDisabledReason,
+		}),
+
+		[
+			filteredEntries,
+			focusedIndex,
+			selectedEntryKey,
+			isFavorite,
+			toggleFavorite,
+			onValueChange,
+			isOptionDisabled,
+			getOptionDisabledReason,
+		],
+	);
+
+	return (
+		<>
+			<Popover open={open} onOpenChange={setOpen}>
+				<PopoverTrigger asChild>
+					<Button
+						variant="outline"
+						role="combobox"
+						aria-expanded={open}
+						className="w-full justify-between h-12 px-3 sm:px-4 bg-transparent"
+					>
+						{selectedModel ? (
+							<div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+								{(() => {
+									if (
+										selectedModelId === selectedModel.id &&
+										!selectedProviderDef
+									) {
+										return (
+											<Sparkles className="h-5 w-5 shrink-0 text-primary" />
+										);
+									}
+									return getProviderLogo(
+										(selectedProviderId ||
+											selectedModel.mappings[0].providerId) as ProviderId,
+									);
+								})()}
+								<div className="flex flex-col items-start min-w-0 flex-1">
+									<div className="flex items-center gap-1 max-w-full">
+										<span className="font-medium truncate">
+											{selectedModel.name}
+										</span>
+										{(() => {
+											const mappingForWarning = selectedModel.mappings.find(
+												(p) => p.providerId === selectedProviderId,
+											);
+											const isUnstable =
+												mappingForWarning &&
+												isModelUnstable(mappingForWarning, selectedModel);
+											const isDeprecated =
+												mappingForWarning?.deprecatedAt &&
+												new Date(mappingForWarning.deprecatedAt) <= new Date();
+											return isUnstable || isDeprecated ? (
+												<AlertTriangle className="h-3.5 w-3.5 shrink-0 text-yellow-600 dark:text-yellow-500" />
+											) : null;
+										})()}
+									</div>
+									<span className="text-xs text-muted-foreground truncate max-w-full">
+										{selectedModelId === selectedModel.id &&
+										!selectedProviderDef
+											? "Auto-select provider"
+											: (
+													selectedProviderDef ??
+													getProviderForModel(selectedModel, providers)
+												)?.name}
+										{selectedMapping?.region && (
+											<span className="ml-1">({selectedMapping.region})</span>
+										)}
+									</span>
+								</div>
+							</div>
+						) : (
+							<span className="truncate">{placeholder}</span>
+						)}
+						<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+					</Button>
+				</PopoverTrigger>
+				<PopoverContent
+					className="w-[300px] sm:w-[720px] p-0 z-99999"
+					sideOffset={4}
+					align="start"
+				>
+					<div className="flex w-[300px] md:w-full">
+						{/* Main content - model list & filters */}
+						<div className="flex-1 w-[300px] md:w-[340px]">
+							<Command shouldFilter={false}>
+								<div className="flex items-center border-b px-3 w-[300px] md:w-full [&_[cmdk-input-wrapper]]:border-0">
+									<CommandInput
+										placeholder="Search models..."
+										value={searchQuery}
+										onValueChange={setSearchQuery}
+										onKeyDown={handleInputKeyDown}
+										className="h-12"
+									/>
+									<Popover open={filterOpen} onOpenChange={setFilterOpen}>
+										<PopoverTrigger asChild>
+											<Button
+												variant="ghost"
+												size="sm"
+												className={cn(
+													"ml-2 h-8 w-8 p-0",
+													hasActiveFilters && "text-primary",
+												)}
+											>
+												<Filter className="h-4 w-4" />
+											</Button>
+										</PopoverTrigger>
+										<PopoverContent
+											className="w-[calc(100vw-2rem)] sm:w-80 h-[400px] overflow-y-scroll md:h-full"
+											style={{ zIndex: 100000 }}
+											side={isMobile ? "bottom" : "right"}
+											align={isMobile ? "end" : "start"}
+										>
+											<div className="space-y-3">
+												<div className="flex items-center justify-between">
+													<h4 className="font-medium">Filters</h4>
+													{hasActiveFilters && (
+														<Button
+															variant="ghost"
+															size="sm"
+															onClick={clearFilters}
+														>
+															Clear all
+														</Button>
+													)}
+												</div>
+
+												{/* Toggle filters group */}
+												<div className="space-y-2">
+													<div className="flex items-center justify-between">
+														<Label
+															htmlFor="show-root"
+															className="text-sm cursor-pointer font-medium"
+														>
+															Show only root models
+														</Label>
+														<Switch
+															id="show-root"
+															checked={filters.showOnlyRoot}
+															onCheckedChange={(checked) =>
+																updateFilter("showOnlyRoot", checked)
+															}
+														/>
+													</div>
+													<div className="flex items-center justify-between">
+														<Label
+															htmlFor="show-favorites"
+															className="text-sm cursor-pointer font-medium"
+														>
+															Show favorites only
+														</Label>
+														<Switch
+															id="show-favorites"
+															checked={filters.showFavoritesOnly}
+															onCheckedChange={(checked) =>
+																updateFilter("showFavoritesOnly", checked)
+															}
+														/>
+													</div>
+													{providersWithKeys.size > 0 && (
+														<div className="flex items-center justify-between">
+															<Label
+																htmlFor="show-with-keys"
+																className="text-sm cursor-pointer font-medium"
+															>
+																Show only providers with keys
+															</Label>
+															<Switch
+																id="show-with-keys"
+																checked={filters.showOnlyWithKeys}
+																onCheckedChange={(checked) =>
+																	updateFilter("showOnlyWithKeys", checked)
+																}
+															/>
+														</div>
+													)}
+												</div>
+
+												<Separator />
+
+												{/* Provider filter */}
+												<div className="space-y-1.5">
+													<Label className="text-sm font-medium">
+														Providers
+													</Label>
+													<div className="space-y-1.5 max-h-28 overflow-y-auto">
+														{availableProviders.map((provider) => {
+															const ProviderIcon = getProviderIcon(provider.id);
+															return (
+																<div
+																	key={provider.id}
+																	className="flex items-center space-x-2"
+																>
+																	<Checkbox
+																		id={`provider-${provider.id}`}
+																		checked={filters.providers.includes(
+																			provider.id,
+																		)}
+																		onCheckedChange={() =>
+																			toggleProviderFilter(provider.id)
+																		}
+																	/>
+																	<Label
+																		htmlFor={`provider-${provider.id}`}
+																		className="flex items-center gap-2 text-sm cursor-pointer"
+																	>
+																		{ProviderIcon && (
+																			<ProviderIcon
+																				className="h-3 w-3"
+																				style={{
+																					color: provider.color ?? undefined,
+																				}}
+																			/>
+																		)}
+																		{provider.name}
+																	</Label>
+																</div>
+															);
+														})}
+													</div>
+												</div>
+
+												<Separator />
+
+												{/* Capabilities filter */}
+												<div className="space-y-1.5">
+													<Label className="text-sm font-medium">
+														Capabilities
+													</Label>
+													<div className="space-y-1.5 max-h-28 overflow-y-auto">
+														{availableCapabilities.map((capability) => (
+															<div
+																key={capability}
+																className="flex items-center space-x-2"
+															>
+																<Checkbox
+																	id={`capability-${capability}`}
+																	checked={filters.capabilities.includes(
+																		capability,
+																	)}
+																	onCheckedChange={() =>
+																		toggleCapabilityFilter(capability)
+																	}
+																/>
+																<Label
+																	htmlFor={`capability-${capability}`}
+																	className="text-sm cursor-pointer"
+																>
+																	{capability}
+																</Label>
+															</div>
+														))}
+													</div>
+												</div>
+
+												<Separator />
+
+												{/* Price range filter */}
+												<div className="space-y-1.5">
+													<Label className="text-sm font-medium">
+														Price Range
+													</Label>
+													<div className="space-y-1.5">
+														{[
+															{ value: "all", label: "All models" },
+															{ value: "free", label: "Free models" },
+															{ value: "low", label: "Low cost (≤ $0.000001)" },
+															{
+																value: "medium",
+																label: "Medium cost (≤ $0.00001)",
+															},
+															{
+																value: "high",
+																label: "High cost (> $0.00001)",
+															},
+														].map((option) => (
+															<div
+																key={option.value}
+																className="flex items-center space-x-2"
+															>
+																<Checkbox
+																	id={`price-${option.value}`}
+																	checked={filters.priceRange === option.value}
+																	onCheckedChange={() =>
+																		updateFilter("priceRange", option.value)
+																	}
+																/>
+																<Label
+																	htmlFor={`price-${option.value}`}
+																	className="text-sm cursor-pointer"
+																>
+																	{option.label}
+																</Label>
+															</div>
+														))}
+													</div>
+												</div>
+
+												<Separator />
+
+												{/* Stability filter */}
+												<div className="flex items-center justify-between">
+													<Label
+														htmlFor="hide-unstable"
+														className="text-sm cursor-pointer font-medium"
+													>
+														Hide unstable/experimental
+													</Label>
+													<Switch
+														id="hide-unstable"
+														checked={filters.hideUnstable}
+														onCheckedChange={(checked) =>
+															updateFilter("hideUnstable", checked)
+														}
+													/>
+												</div>
+											</div>
+										</PopoverContent>
+									</Popover>
+								</div>
+								<div>
+									<div className="px-3 py-1 text-xs text-muted-foreground">
+										{filteredEntries.length} model
+										{filteredEntries.length !== 1 ? "s" : ""} found
+									</div>
+									{filteredEntries.length === 0 ? (
+										<div className="py-6 text-center text-sm">
+											No models found.
+											{hasActiveFilters && (
+												<Button
+													variant="link"
+													size="sm"
+													onClick={clearFilters}
+													className="mt-2 block mx-auto"
+												>
+													Clear filters to see all models
+												</Button>
+											)}
+										</div>
+									) : (
+										<div
+											ref={listContainerRef}
+											className="h-[300px] sm:h-[400px]"
+										>
+											<List
+												style={{ height: "100%", width: "100%" }}
+												rowComponent={ModelEntryRowComponent}
+												rowCount={filteredEntries.length}
+												rowHeight={ROW_HEIGHT}
+												rowProps={rowProps}
+												overscanCount={8}
+											/>
+										</div>
+									)}
+								</div>
+							</Command>
+						</div>
+						{/* Desktop preview panel */}
+						<div className="hidden md:block w-[360px] border-l border-border bg-muted/40">
+							<div className="p-4 space-y-3 h-full overflow-y-auto">
+								{previewEntry ? (
+									<>
+										<div className="flex items-center gap-3">
+											{(() => {
+												if (!previewEntry.provider) {
+													return (
+														<div className="p-2 rounded-lg bg-primary/10">
+															<Sparkles className="h-5 w-5 text-primary" />
+														</div>
+													);
+												}
+												const ProviderIcon = getProviderIcon(
+													previewEntry.provider.id,
+												);
+												return ProviderIcon ? (
+													<div
+														className="p-2 rounded-lg"
+														style={{
+															backgroundColor: `${previewEntry.provider?.color}15`,
+														}}
+													>
+														<ProviderIcon className="h-5 w-5 dark:text-white" />
+													</div>
+												) : null;
+											})()}
+											<div className="flex-1 min-w-0">
+												<div className="font-semibold text-sm truncate">
+													{previewEntry.model.name}
+												</div>
+												<div className="text-xs text-muted-foreground truncate">
+													{previewEntry.provider?.name ??
+														"Auto-select provider"}
+													{previewEntry.mapping?.region && (
+														<span className="ml-1">
+															({previewEntry.mapping.region})
+														</span>
+													)}
+												</div>
+												<div className="text-[11px] text-muted-foreground capitalize truncate">
+													{previewEntry.model.id !== "auto"
+														? `${previewEntry.model.family} family`
+														: "-"}
+												</div>
+											</div>
+										</div>
+
+										{!previewEntry.provider ? (
+											<>
+												<p className="text-xs text-muted-foreground leading-relaxed">
+													This is a root model ID. The Gateway will
+													automatically select the best provider for this model
+													based on availability, performance, and cost. Specific
+													capabilities and pricing will depend on the selected
+													provider.
+												</p>
+
+												{(() => {
+													const aggregate = getRootAggregateInfo(
+														previewEntry.model,
+													);
+
+													const isVideo =
+														mode === "video" ||
+														!!previewEntry.model.output?.includes("video");
+													const minPerSec = isVideo
+														? getMinPerSecondPrice(previewEntry.model.mappings)
+														: null;
+													const maxPerSec = isVideo
+														? getMaxPerSecondPrice(previewEntry.model.mappings)
+														: null;
+
+													const hasPricingOrLimits = isVideo
+														? minPerSec !== null
+														: aggregate.minInputPrice !== undefined ||
+															aggregate.minOutputPrice !== undefined ||
+															aggregate.maxContextSize !== undefined ||
+															aggregate.maxOutput !== undefined;
+
+													const hasImagePricing =
+														!isVideo &&
+														((aggregate.minRequestPrice !== undefined &&
+															aggregate.minRequestPrice > 0) ||
+															aggregate.minImageInputPrice !== undefined ||
+															aggregate.minImageOutputPrice !== undefined);
+
+													const imageEstimate =
+														mode === "image"
+															? getMinImageCostEstimate(
+																	previewEntry.model.mappings,
+																)
+															: null;
+
+													const hasCapabilities =
+														aggregate.capabilities.length > 0;
+
+													if (
+														!hasPricingOrLimits &&
+														!hasImagePricing &&
+														!hasCapabilities &&
+														!imageEstimate
+													) {
+														return null;
+													}
+
+													return (
+														<div className="space-y-3 pt-3 border-t border-dashed">
+															{imageEstimate && (
+																<ImageEstimateCard estimate={imageEstimate} />
+															)}
+															{hasPricingOrLimits &&
+																(isVideo ? (
+																	<div className="space-y-2">
+																		<h5 className="font-medium text-xs">
+																			Video Pricing{" "}
+																			<span className="text-[11px] font-normal text-muted-foreground">
+																				(per second)
+																			</span>
+																		</h5>
+																		<div className="grid grid-cols-2 gap-3">
+																			<div className="space-y-1">
+																				<span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+																					From
+																				</span>
+																				<p className="text-xs font-mono">
+																					{minPerSec ?? "Unknown"}
+																				</p>
+																			</div>
+																			<div className="space-y-1">
+																				<span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+																					Up to
+																				</span>
+																				<p className="text-xs font-mono">
+																					{maxPerSec ?? "Unknown"}
+																				</p>
+																			</div>
+																		</div>
+																		{mode === "chat" && (
+																			<div className="flex items-start gap-1.5 rounded-md bg-muted/50 px-2.5 py-2 text-xs text-muted-foreground">
+																				<Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+																				<span>
+																					Selecting this model will open Video
+																					Studio.
+																				</span>
+																			</div>
+																		)}
+																	</div>
+																) : (
+																	<div className="space-y-2">
+																		<h5 className="font-medium text-xs">
+																			Pricing &amp; Limits{" "}
+																			<span className="text-[11px] font-normal text-muted-foreground">
+																				(starts at)
+																			</span>
+																		</h5>
+																		<div className="grid grid-cols-2 gap-3">
+																			{(!previewIsImageGen ||
+																				previewExpandTokens) && (
+																				<>
+																					<div className="space-y-1">
+																						<span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+																							Input
+																						</span>
+																						<p className="text-xs font-mono">
+																							{aggregate.minInputPrice !==
+																							undefined
+																								? formatPrice(
+																										aggregate.minInputPrice,
+																									)
+																								: "Unknown"}
+																						</p>
+																					</div>
+																					<div className="space-y-1">
+																						<span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+																							Output
+																						</span>
+																						<p className="text-xs font-mono">
+																							{aggregate.minOutputPrice !==
+																							undefined
+																								? formatPrice(
+																										aggregate.minOutputPrice,
+																									)
+																								: "Unknown"}
+																						</p>
+																					</div>
+																				</>
+																			)}
+																			<div className="space-y-1">
+																				<span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+																					Context
+																				</span>
+																				<p className="text-xs font-mono">
+																					{formatContextSize(
+																						aggregate.maxContextSize,
+																					)}
+																				</p>
+																			</div>
+																			<div className="space-y-1">
+																				<span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+																					Max Output
+																				</span>
+																				<p className="text-xs font-mono">
+																					{formatContextSize(
+																						aggregate.maxOutput,
+																					)}
+																				</p>
+																			</div>
+																		</div>
+																		{previewIsImageGen && (
+																			<button
+																				type="button"
+																				className="text-[11px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+																				onClick={() =>
+																					setPreviewExpandTokens((v) => !v)
+																				}
+																			>
+																				{previewExpandTokens
+																					? "Hide token pricing"
+																					: "Expand details"}
+																			</button>
+																		)}
+																	</div>
+																))}
+
+															{hasImagePricing && (
+																<div className="pt-2">
+																	<div className="grid grid-cols-2 gap-3">
+																		{aggregate.minRequestPrice !== undefined &&
+																			aggregate.minRequestPrice > 0 && (
+																				<div className="space-y-1">
+																					<span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+																						Per Request
+																					</span>
+																					<p className="text-xs font-mono">
+																						$
+																						{aggregate.minRequestPrice.toFixed(
+																							3,
+																						)}
+																						/req
+																					</p>
+																				</div>
+																			)}
+																		{aggregate.minImageInputPrice !==
+																			undefined && (
+																			<div className="space-y-1">
+																				<span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+																					Image Input
+																				</span>
+																				<p className="text-xs font-mono">
+																					{formatPrice(
+																						aggregate.minImageInputPrice,
+																					)}
+																				</p>
+																			</div>
+																		)}
+																		{aggregate.minImageOutputPrice !==
+																			undefined && (
+																			<div className="space-y-1">
+																				<span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+																					Image Output
+																				</span>
+																				<p className="text-xs font-mono">
+																					{formatPrice(
+																						aggregate.minImageOutputPrice,
+																					)}
+																				</p>
+																			</div>
+																		)}
+																	</div>
+																</div>
+															)}
+
+															{hasCapabilities &&
+																previewEntry.model.id !== "auto" && (
+																	<div className="space-y-1">
+																		<h5 className="font-medium text-xs">
+																			Capabilities
+																		</h5>
+																		<div className="flex flex-wrap gap-1">
+																			{aggregate.capabilities.map(
+																				(capability) => {
+																					const { Icon } =
+																						getCapabilityIconConfig(capability);
+																					return (
+																						<Badge
+																							key={capability}
+																							variant="secondary"
+																							className="text-[10px] px-1.5 py-0.5 flex items-center gap-1"
+																						>
+																							{Icon && <Icon size={12} />}
+																							{capability}
+																						</Badge>
+																					);
+																				},
+																			)}
+																		</div>
+																	</div>
+																)}
+														</div>
+													);
+												})()}
+											</>
+										) : (
+											<>
+												{previewEntry.provider?.description && (
+													<p className="text-xs text-muted-foreground leading-relaxed">
+														{previewEntry.provider.description}
+													</p>
+												)}
+
+												<div className="space-y-2">
+													<h5 className="font-medium text-xs">
+														{mode === "video" ||
+														previewEntry.model.output?.includes("video")
+															? "Video Pricing"
+															: "Pricing & Limits"}
+													</h5>
+													{mode === "video" ||
+													previewEntry.model.output?.includes("video") ? (
+														<>
+															<div className="grid grid-cols-1 gap-3">
+																<div className="space-y-1">
+																	<span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+																		Per Second
+																	</span>
+																	<p className="text-xs font-mono">
+																		{previewEntry.mapping?.perSecondPrice
+																			? formatPerSecondPrice(
+																					previewEntry.mapping.perSecondPrice,
+																				)
+																			: "Unknown"}
+																	</p>
+																</div>
+															</div>
+															{mode === "chat" && (
+																<div className="flex items-start gap-1.5 rounded-md bg-muted/50 px-2.5 py-2 text-xs text-muted-foreground">
+																	<Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+																	<span>
+																		Selecting this model will open Video Studio.
+																	</span>
+																</div>
+															)}
+														</>
+													) : (
+														<>
+															<div className="grid grid-cols-2 gap-3">
+																{(!previewIsImageGen ||
+																	previewExpandTokens) && (
+																	<>
+																		<div className="space-y-1">
+																			<span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+																				Input
+																			</span>
+																			<p className="text-xs font-mono">
+																				{(() => {
+																					const price = getMappingPriceInfo(
+																						previewEntry.mapping,
+																						"input",
+																					);
+																					if (
+																						price.original &&
+																						price.discounted &&
+																						price.original !== price.discounted
+																					) {
+																						return (
+																							<>
+																								<span className="line-through text-muted-foreground">
+																									{price.original}
+																								</span>{" "}
+																								<span className="text-green-500">
+																									{price.discounted}
+																								</span>
+																							</>
+																						);
+																					}
+																					return price.label;
+																				})()}
+																			</p>
+																		</div>
+																		<div className="space-y-1">
+																			<span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+																				Output
+																			</span>
+																			<p className="text-xs font-mono">
+																				{(() => {
+																					const price = getMappingPriceInfo(
+																						previewEntry.mapping,
+																						"output",
+																					);
+																					if (
+																						price.original &&
+																						price.discounted &&
+																						price.original !== price.discounted
+																					) {
+																						return (
+																							<>
+																								<span className="line-through text-muted-foreground">
+																									{price.original}
+																								</span>{" "}
+																								<span className="text-green-500">
+																									{price.discounted}
+																								</span>
+																							</>
+																						);
+																					}
+																					return price.label;
+																				})()}
+																			</p>
+																		</div>
+																	</>
+																)}
+																<div className="space-y-1">
+																	<span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+																		Context
+																	</span>
+																	<p className="text-xs font-mono">
+																		{formatContextSize(
+																			previewEntry.mapping?.contextSize,
+																		)}
+																	</p>
+																</div>
+																<div className="space-y-1">
+																	<span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+																		Max Output
+																	</span>
+																	<p className="text-xs font-mono">
+																		{formatContextSize(
+																			previewEntry.mapping?.maxOutput,
+																		)}
+																	</p>
+																</div>
+															</div>
+															{previewIsImageGen && (
+																<button
+																	type="button"
+																	className="text-[11px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+																	onClick={() =>
+																		setPreviewExpandTokens((v) => !v)
+																	}
+																>
+																	{previewExpandTokens
+																		? "Hide token pricing"
+																		: "Expand details"}
+																</button>
+															)}
+														</>
+													)}
+													{previewEntry.mapping?.cachedInputPrice &&
+														(!previewIsImageGen || previewExpandTokens) && (
+															<div className="pt-2 border-t border-dashed">
+																<div className="space-y-1">
+																	<span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+																		Cached Input
+																	</span>
+																	<p className="text-xs font-mono text-green-600 dark:text-green-400">
+																		{(() => {
+																			const price = getMappingPriceInfo(
+																				previewEntry.mapping,
+																				"cachedInput",
+																			);
+																			if (
+																				price.original &&
+																				price.discounted &&
+																				price.original !== price.discounted
+																			) {
+																				return (
+																					<>
+																						<span className="line-through text-muted-foreground">
+																							{price.original}
+																						</span>{" "}
+																						<span className="text-green-500">
+																							{price.discounted}
+																						</span>
+																					</>
+																				);
+																			}
+																			return price.label;
+																		})()}
+																	</p>
+																</div>
+															</div>
+														)}
+													{mode === "image" &&
+														(() => {
+															const est = estimateImageCost(
+																previewEntry.mapping,
+															);
+															if (!est) {
+																return null;
+															}
+															return (
+																<div className="pt-2 mt-2 rounded-md border border-primary/30 bg-primary/5 p-2.5">
+																	<span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+																		Est. per Image
+																	</span>
+																	<p className="text-sm font-mono font-semibold text-primary">
+																		~{formatImageCost(est.discounted)}
+																	</p>
+																	<p className="text-[10px] text-muted-foreground">
+																		Typical 1024×1024 output
+																	</p>
+																</div>
+															);
+														})()}
+													{/* Image Generation Pricing */}
+													{(previewEntry.mapping?.requestPrice ??
+														previewEntry.mapping?.imageInputPrice) && (
+														<div className="pt-2">
+															<div className="grid grid-cols-2 gap-3">
+																{previewEntry.mapping?.requestPrice &&
+																	parseFloat(
+																		previewEntry.mapping.requestPrice,
+																	) > 0 && (
+																		<div className="space-y-1">
+																			<span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+																				Per Request
+																			</span>
+																			<p className="text-xs font-mono">
+																				{(() => {
+																					const price = getMappingPriceInfo(
+																						previewEntry.mapping,
+																						"request",
+																					);
+																					if (
+																						price.original &&
+																						price.discounted &&
+																						price.original !== price.discounted
+																					) {
+																						return (
+																							<>
+																								<span className="line-through text-muted-foreground">
+																									{price.original}
+																								</span>{" "}
+																								<span className="text-green-500">
+																									{price.discounted}
+																								</span>
+																							</>
+																						);
+																					}
+																					return price.label;
+																				})()}
+																			</p>
+																		</div>
+																	)}
+																{previewEntry.mapping?.imageInputPrice !==
+																	undefined && (
+																	<div className="space-y-1">
+																		<span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+																			Image Input
+																		</span>
+																		<p className="text-xs font-mono">
+																			{(() => {
+																				const price = getMappingPriceInfo(
+																					previewEntry.mapping,
+																					"imageInput",
+																				);
+																				if (
+																					price.original &&
+																					price.discounted &&
+																					price.original !== price.discounted
+																				) {
+																					return (
+																						<>
+																							<span className="line-through text-muted-foreground">
+																								{price.original}
+																							</span>{" "}
+																							<span className="text-green-500">
+																								{price.discounted}
+																							</span>
+																						</>
+																					);
+																				}
+																				return price.label;
+																			})()}
+																		</p>
+																	</div>
+																)}
+															</div>
+														</div>
+													)}
+												</div>
+
+												{(() => {
+													const caps = getMappingCapabilities(
+														previewEntry.mapping,
+														previewEntry.model,
+													);
+													return caps.length > 0 ? (
+														<div className="space-y-1">
+															<h5 className="font-medium text-xs">
+																Capabilities
+															</h5>
+															<div className="flex flex-wrap gap-1">
+																{caps.map((capability) => {
+																	const { Icon } =
+																		getCapabilityIconConfig(capability);
+																	return (
+																		<Badge
+																			key={capability}
+																			variant="secondary"
+																			className="text-[10px] px-1.5 py-0.5 flex items-center gap-1"
+																		>
+																			{Icon && <Icon size={12} />}
+																			{capability}
+																		</Badge>
+																	);
+																})}
+															</div>
+														</div>
+													) : null;
+												})()}
+												{(() => {
+													if (!previewEntry.mapping) {
+														return null;
+													}
+													const regions = previewEntry.model.mappings
+														.filter(
+															(m) =>
+																m.providerId ===
+																	previewEntry.mapping!.providerId && m.region,
+														)
+														.map((m) => m.region as string);
+													return regions.length > 0 ? (
+														<div className="space-y-1">
+															<h5 className="font-medium text-xs">
+																Available Regions
+															</h5>
+															<div className="flex flex-wrap gap-1">
+																{regions.map((r) => (
+																	<Badge
+																		key={r}
+																		variant="secondary"
+																		className="text-[10px] px-1.5 py-0.5"
+																	>
+																		{r}
+																	</Badge>
+																))}
+															</div>
+														</div>
+													) : null;
+												})()}
+											</>
+										)}
+									</>
+								) : (
+									<p className="text-xs text-muted-foreground">
+										Hover a model to see details.
+									</p>
+								)}
+							</div>
+						</div>
+					</div>
+				</PopoverContent>
+			</Popover>
+
+			{/* Model Details Dialog */}
+			<Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+				<DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+					{selectedDetails && (
+						<>
+							<DialogHeader>
+								<DialogTitle className="flex items-center gap-3">
+									{(() => {
+										if (!selectedDetails.provider) {
+											return (
+												<div className="p-2 rounded-lg bg-primary/10">
+													<Sparkles className="h-6 w-6 text-primary" />
+												</div>
+											);
+										}
+										const ProviderIcon = getProviderIcon(
+											selectedDetails.provider.id,
+										);
+										return ProviderIcon ? (
+											<div
+												className="p-2 rounded-lg"
+												style={{
+													backgroundColor: `${selectedDetails.provider?.color}15`,
+												}}
+											>
+												<ProviderIcon className="h-6 w-6 dark:text-white" />
+											</div>
+										) : null;
+									})()}
+									<div className="flex-1">
+										<div className="font-semibold text-base">
+											{selectedDetails.model.name}
+										</div>
+										<div className="text-sm text-muted-foreground font-normal">
+											{selectedDetails.provider?.name ?? "Auto-select provider"}
+											{selectedDetails.mapping?.region && (
+												<span className="ml-1">
+													({selectedDetails.mapping.region})
+												</span>
+											)}
+										</div>
+										<div className="text-xs text-muted-foreground font-normal capitalize">
+											{selectedDetails.model.family} family
+										</div>
+									</div>
+									{selectedDetails.provider?.website && (
+										<Button variant="ghost" size="sm" asChild>
+											<a
+												href={selectedDetails.provider.website}
+												target="_blank"
+												rel="noopener noreferrer"
+												className="h-8 w-8 p-0"
+											>
+												<ExternalLink className="h-3 w-3" />
+											</a>
+										</Button>
+									)}
+								</DialogTitle>
+							</DialogHeader>
+
+							<div className="space-y-4">
+								{!selectedDetails.provider ? (
+									<div className="space-y-4">
+										<p className="text-sm text-muted-foreground leading-relaxed">
+											This is a root model ID. The Gateway will automatically
+											select the best provider for this model based on
+											availability, performance, and cost. Specific capabilities
+											and pricing will depend on the selected provider.
+										</p>
+
+										{(() => {
+											const aggregate = getRootAggregateInfo(
+												selectedDetails.model,
+											);
+
+											const imageEstimate = getMinImageCostEstimate(
+												selectedDetails.model.mappings,
+											);
+
+											const hasPricingOrLimits =
+												aggregate.minInputPrice !== undefined ||
+												aggregate.minOutputPrice !== undefined ||
+												aggregate.maxContextSize !== undefined ||
+												aggregate.maxOutput !== undefined;
+
+											const hasImagePricing =
+												(aggregate.minRequestPrice !== undefined &&
+													aggregate.minRequestPrice > 0) ||
+												aggregate.minImageInputPrice !== undefined ||
+												aggregate.minImageOutputPrice !== undefined;
+
+											const hasCapabilities = aggregate.capabilities.length > 0;
+
+											if (
+												!hasPricingOrLimits &&
+												!hasImagePricing &&
+												!hasCapabilities &&
+												!imageEstimate
+											) {
+												return null;
+											}
+
+											return (
+												<div className="space-y-4">
+													{imageEstimate && (
+														<ImageEstimateCard estimate={imageEstimate} />
+													)}
+													{hasPricingOrLimits && (
+														<div className="space-y-3">
+															<h5 className="font-medium text-sm">
+																Pricing &amp; Limits{" "}
+																<span className="text-xs font-normal text-muted-foreground">
+																	(starts at)
+																</span>
+															</h5>
+															<div className="grid grid-cols-2 gap-3">
+																{(!selectedIsImageGen ||
+																	selectedExpandTokens) && (
+																	<>
+																		<div className="space-y-1">
+																			<span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+																				Input
+																			</span>
+																			<p className="text-sm font-mono">
+																				{aggregate.minInputPrice !== undefined
+																					? formatPrice(aggregate.minInputPrice)
+																					: "Unknown"}
+																			</p>
+																		</div>
+																		<div className="space-y-1">
+																			<span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+																				Output
+																			</span>
+																			<p className="text-sm font-mono">
+																				{aggregate.minOutputPrice !== undefined
+																					? formatPrice(
+																							aggregate.minOutputPrice,
+																						)
+																					: "Unknown"}
+																			</p>
+																		</div>
+																	</>
+																)}
+																<div className="space-y-1">
+																	<span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+																		Context
+																	</span>
+																	<p className="text-sm font-mono">
+																		{formatContextSize(
+																			aggregate.maxContextSize,
+																		)}
+																	</p>
+																</div>
+																<div className="space-y-1">
+																	<span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+																		Max Output
+																	</span>
+																	<p className="text-sm font-mono">
+																		{formatContextSize(aggregate.maxOutput)}
+																	</p>
+																</div>
+															</div>
+															{selectedIsImageGen && (
+																<button
+																	type="button"
+																	className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+																	onClick={() =>
+																		setSelectedExpandTokens((v) => !v)
+																	}
+																>
+																	{selectedExpandTokens
+																		? "Hide token pricing"
+																		: "Expand details"}
+																</button>
+															)}
+														</div>
+													)}
+
+													{hasImagePricing && (
+														<div className="pt-2">
+															<div className="grid grid-cols-2 gap-3">
+																{aggregate.minRequestPrice !== undefined &&
+																	aggregate.minRequestPrice > 0 && (
+																		<div className="space-y-1">
+																			<span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+																				Per Request
+																			</span>
+																			<p className="text-sm font-mono">
+																				${aggregate.minRequestPrice.toFixed(3)}
+																				/req
+																			</p>
+																		</div>
+																	)}
+																{aggregate.minImageInputPrice !== undefined && (
+																	<div className="space-y-1">
+																		<span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+																			Image Input
+																		</span>
+																		<p className="text-sm font-mono">
+																			{formatPrice(
+																				aggregate.minImageInputPrice,
+																			)}
+																		</p>
+																	</div>
+																)}
+																{aggregate.minImageOutputPrice !==
+																	undefined && (
+																	<div className="space-y-1">
+																		<span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+																			Image Output
+																		</span>
+																		<p className="text-sm font-mono">
+																			{formatPrice(
+																				aggregate.minImageOutputPrice,
+																			)}
+																		</p>
+																	</div>
+																)}
+															</div>
+														</div>
+													)}
+
+													{hasCapabilities && (
+														<div className="space-y-2">
+															<h5 className="font-medium text-sm">
+																Capabilities
+															</h5>
+															<div className="flex flex-wrap gap-1.5">
+																{aggregate.capabilities.map((capability) => (
+																	<Badge
+																		key={capability}
+																		variant="secondary"
+																		className="text-xs px-2 py-1"
+																	>
+																		{capability}
+																	</Badge>
+																))}
+															</div>
+														</div>
+													)}
+												</div>
+											);
+										})()}
+									</div>
+								) : (
+									<>
+										{selectedDetails.provider?.description && (
+											<>
+												<p className="text-sm text-muted-foreground leading-relaxed">
+													{selectedDetails.provider.description}
+												</p>
+												<Separator />
+											</>
+										)}
+
+										{(() => {
+											const imageEstimate = selectedDetails.mapping
+												? estimateImageCost(selectedDetails.mapping)
+												: null;
+											return imageEstimate ? (
+												<ImageEstimateCard estimate={imageEstimate} />
+											) : null;
+										})()}
+
+										<div className="space-y-3">
+											<h5 className="font-medium text-sm">Pricing & Limits</h5>
+											<div className="grid grid-cols-2 gap-3">
+												{(!selectedIsImageGen || selectedExpandTokens) && (
+													<>
+														<div className="space-y-1">
+															<span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+																Input
+															</span>
+															<p className="text-sm font-mono">
+																{(() => {
+																	const price = getMappingPriceInfo(
+																		selectedDetails.mapping,
+																		"input",
+																	);
+																	if (
+																		price.original &&
+																		price.discounted &&
+																		price.original !== price.discounted
+																	) {
+																		return (
+																			<>
+																				<span className="line-through text-muted-foreground">
+																					{price.original}
+																				</span>{" "}
+																				<span className="text-green-500">
+																					{price.discounted}
+																				</span>
+																			</>
+																		);
+																	}
+																	return price.label;
+																})()}
+															</p>
+														</div>
+														<div className="space-y-1">
+															<span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+																Output
+															</span>
+															<p className="text-sm font-mono">
+																{(() => {
+																	const price = getMappingPriceInfo(
+																		selectedDetails.mapping,
+																		"output",
+																	);
+																	if (
+																		price.original &&
+																		price.discounted &&
+																		price.original !== price.discounted
+																	) {
+																		return (
+																			<>
+																				<span className="line-through text-muted-foreground">
+																					{price.original}
+																				</span>{" "}
+																				<span className="text-green-500">
+																					{price.discounted}
+																				</span>
+																			</>
+																		);
+																	}
+																	return price.label;
+																})()}
+															</p>
+														</div>
+													</>
+												)}
+												<div className="space-y-1">
+													<span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+														Context
+													</span>
+													<p className="text-sm font-mono">
+														{formatContextSize(
+															selectedDetails.mapping?.contextSize,
+														)}
+													</p>
+												</div>
+												<div className="space-y-1">
+													<span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+														Max Output
+													</span>
+													<p className="text-sm font-mono">
+														{formatContextSize(
+															selectedDetails.mapping?.maxOutput,
+														)}
+													</p>
+												</div>
+											</div>
+											{selectedIsImageGen && (
+												<button
+													type="button"
+													className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+													onClick={() => setSelectedExpandTokens((v) => !v)}
+												>
+													{selectedExpandTokens
+														? "Hide token pricing"
+														: "Expand details"}
+												</button>
+											)}
+											{selectedDetails.mapping?.cachedInputPrice &&
+												(!selectedIsImageGen || selectedExpandTokens) && (
+													<div className="pt-2 border-t border-dashed">
+														<div className="space-y-1">
+															<span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+																Cached Input
+															</span>
+															<p className="text-sm font-mono text-green-600 dark:text-green-400">
+																{(() => {
+																	const price = getMappingPriceInfo(
+																		selectedDetails.mapping,
+																		"cachedInput",
+																	);
+																	if (
+																		price.original &&
+																		price.discounted &&
+																		price.original !== price.discounted
+																	) {
+																		return (
+																			<>
+																				<span className="line-through text-muted-foreground">
+																					{price.original}
+																				</span>{" "}
+																				<span className="text-green-500">
+																					{price.discounted}
+																				</span>
+																			</>
+																		);
+																	}
+																	return price.label;
+																})()}
+															</p>
+														</div>
+													</div>
+												)}
+											{/* Image Generation Pricing */}
+											{(selectedDetails.mapping?.requestPrice ??
+												selectedDetails.mapping?.imageInputPrice) && (
+												<div className="pt-2 border-t border-dashed">
+													<span className="text-xs font-medium text-muted-foreground uppercase tracking-wide block mb-2">
+														Image Pricing
+													</span>
+													<div className="grid grid-cols-2 gap-3">
+														{selectedDetails.mapping?.requestPrice &&
+															parseFloat(selectedDetails.mapping.requestPrice) >
+																0 && (
+																<div className="space-y-1">
+																	<span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+																		Per Request
+																	</span>
+																	<p className="text-sm font-mono">
+																		{(() => {
+																			const price = getMappingPriceInfo(
+																				selectedDetails.mapping,
+																				"request",
+																			);
+																			if (
+																				price.original &&
+																				price.discounted &&
+																				price.original !== price.discounted
+																			) {
+																				return (
+																					<>
+																						<span className="line-through text-muted-foreground">
+																							{price.original}
+																						</span>{" "}
+																						<span className="text-green-500">
+																							{price.discounted}
+																						</span>
+																					</>
+																				);
+																			}
+																			return price.label;
+																		})()}
+																	</p>
+																</div>
+															)}
+														{selectedDetails.mapping?.imageInputPrice !==
+															undefined && (
+															<div className="space-y-1">
+																<span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+																	Image Input
+																</span>
+																<p className="text-sm font-mono">
+																	{(() => {
+																		const price = getMappingPriceInfo(
+																			selectedDetails.mapping,
+																			"imageInput",
+																		);
+																		if (
+																			price.original &&
+																			price.discounted &&
+																			price.original !== price.discounted
+																		) {
+																			return (
+																				<>
+																					<span className="line-through text-muted-foreground">
+																						{price.original}
+																					</span>{" "}
+																					<span className="text-green-500">
+																						{price.discounted}
+																					</span>
+																				</>
+																			);
+																		}
+																		return price.label;
+																	})()}
+																</p>
+															</div>
+														)}
+													</div>
+												</div>
+											)}
+										</div>
+
+										<Separator />
+
+										{(() => {
+											const caps = getMappingCapabilities(
+												selectedDetails.mapping,
+												selectedDetails.model,
+											);
+											return caps.length > 0 ? (
+												<div className="space-y-2">
+													<h5 className="font-medium text-sm">Capabilities</h5>
+													<div className="flex flex-wrap gap-1.5">
+														{caps.map((capability) => {
+															const { Icon } =
+																getCapabilityIconConfig(capability);
+															return (
+																<Badge
+																	key={capability}
+																	variant="secondary"
+																	className="text-xs px-2 py-1 flex items-center gap-1.5"
+																>
+																	{Icon && <Icon size={14} />}
+																	{capability}
+																</Badge>
+															);
+														})}
+													</div>
+												</div>
+											) : null;
+										})()}
+										{(() => {
+											if (!selectedDetails.mapping) {
+												return null;
+											}
+											const regions = selectedDetails.model.mappings
+												.filter(
+													(m) =>
+														m.providerId ===
+															selectedDetails.mapping!.providerId && m.region,
+												)
+												.map((m) => m.region as string);
+											return regions.length > 0 ? (
+												<div className="space-y-2">
+													<h5 className="font-medium text-sm">
+														Available Regions
+													</h5>
+													<div className="flex flex-wrap gap-1.5">
+														{regions.map((r) => (
+															<Badge
+																key={r}
+																variant="secondary"
+																className="text-xs px-2 py-1"
+															>
+																{r}
+															</Badge>
+														))}
+													</div>
+												</div>
+											) : null;
+										})()}
+									</>
+								)}
+							</div>
+						</>
+					)}
+				</DialogContent>
+			</Dialog>
+		</>
+	);
+}
