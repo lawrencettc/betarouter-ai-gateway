@@ -8,15 +8,15 @@ publishes the services without opening application ports on the Droplet.
 
 Configure these public hostnames on the remotely managed Cloudflare tunnel:
 
-| Hostname | Tunnel service |
-| --- | --- |
-| `betarouter.com` | `http://betarouter:3002` |
-| `api.betarouter.com` | `http://betarouter:4001` |
+| Hostname                      | Tunnel service           |
+| ----------------------------- | ------------------------ |
+| `betarouter.com`              | `http://betarouter:3002` |
+| `api.betarouter.com`          | `http://betarouter:4001` |
 | `platform-api.betarouter.com` | `http://betarouter:4002` |
-| `playground.betarouter.com` | `http://betarouter:3003` |
-| `code.betarouter.com` | `http://betarouter:3004` |
-| `docs.betarouter.com` | `http://betarouter:3005` |
-| `admin.betarouter.com` | `http://betarouter:3006` |
+| `playground.betarouter.com`   | `http://betarouter:3003` |
+| `code.betarouter.com`         | `http://betarouter:3004` |
+| `docs.betarouter.com`         | `http://betarouter:3005` |
+| `admin.betarouter.com`        | `http://betarouter:3006` |
 
 Cloudflare creates and proxies the required DNS records when each public
 hostname is saved. The application, PostgreSQL, and Redis ports are not bound
@@ -61,8 +61,11 @@ Allow outbound TCP/UDP `7844` and outbound HTTPS for `cloudflared`.
 
 The current 2 GB Droplet is suitable for running the service but is tight for a
 full monorepo build. Add at least 4 GB of temporary swap and confirm adequate
-free disk before using the local-build fallback. Once GHCR builds resume, set
-`BETAROUTER_IMAGE` back to the GHCR image and `BETAROUTER_PULL_POLICY=always`.
+free disk before using the local-build fallback. Keep
+`BETAROUTER_BUILD_CONCURRENCY=1` so the Next.js applications build serially;
+higher concurrency can trigger the Linux out-of-memory killer. Once GHCR builds
+resume, set `BETAROUTER_IMAGE` back to the GHCR image and
+`BETAROUTER_PULL_POLICY=always`.
 
 ## Verify
 

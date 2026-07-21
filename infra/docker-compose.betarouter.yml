@@ -8,6 +8,7 @@ services:
       dockerfile: infra/unified.dockerfile
       args:
         APP_VERSION: ${BETAROUTER_APP_VERSION:-self-hosted}
+        TURBO_CONCURRENCY: ${BETAROUTER_BUILD_CONCURRENCY:-1}
     pull_policy: ${BETAROUTER_PULL_POLICY:-always}
     restart: unless-stopped
     stop_grace_period: 2m

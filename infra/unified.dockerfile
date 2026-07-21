@@ -92,8 +92,11 @@ RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
 # Copy source code
 COPY . .
 
-# Install all dependencies, build, then prune to production only
-RUN --mount=type=cache,target=/app/.turbo pnpm build
+# Install all dependencies, build, then prune to production only. Keep the
+# default fast for CI; low-memory self-hosted builds can override this argument.
+ARG TURBO_CONCURRENCY=32
+RUN --mount=type=cache,target=/app/.turbo \
+    TURBO_TOKEN=turbotokenoss pnpm turbo run build --concurrency="${TURBO_CONCURRENCY}"
 
 # Copy database init scripts
 COPY packages/db/init/ /docker-entrypoint-initdb.d/
