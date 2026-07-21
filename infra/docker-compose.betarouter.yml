@@ -1,7 +1,7 @@
 name: betarouter-ai-gateway
 
 services:
-  llmgateway:
+  betarouter:
     image: ${BETAROUTER_IMAGE:-ghcr.io/lawrencettc/betarouter-ai-gateway-unified:latest}
     build:
       context: ..
@@ -27,7 +27,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       POSTGRES_DB: ${POSTGRES_DB:-betarouter}
-      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@localhost:5432/${POSTGRES_DB:-betarouter}
       REDIS_HOST: localhost
       REDIS_PORT: "6379"
 
@@ -36,6 +36,8 @@ services:
       LLM_VIDEO_CONTENT_JWT_SECRET: ${LLM_VIDEO_CONTENT_JWT_SECRET:?LLM_VIDEO_CONTENT_JWT_SECRET is required}
 
       UI_URL: ${UI_URL:?UI_URL is required}
+      APP_URL: ${APP_URL:?APP_URL is required}
+      GATEWAY_URL: ${GATEWAY_URL:?GATEWAY_URL is required}
       PLAYGROUND_URL: ${PLAYGROUND_URL:?PLAYGROUND_URL is required}
       CODE_URL: ${CODE_URL:?CODE_URL is required}
       DOCS_URL: ${DOCS_URL:?DOCS_URL is required}
@@ -72,9 +74,10 @@ services:
       test:
         - CMD-SHELL
         - >-
-          curl --fail --silent --show-error http://localhost:3002/ >/dev/null &&
-          curl --fail --silent --show-error http://localhost:4001/ >/dev/null &&
-          curl --fail --silent --show-error http://localhost:4002/ >/dev/null
+          supervisorctl status | awk '$$2 != "RUNNING" { exit 1 }' &&
+          for port in 3002 3003 3004 3005 3006 4001 4002; do
+            curl --fail --silent --show-error "http://localhost:$$port/" >/dev/null || exit 1;
+          done
       interval: 30s
       timeout: 10s
       retries: 10
@@ -87,7 +90,7 @@ services:
     networks:
       - betarouter
 
-  cloudflared:
+  betarouter-tunnel:
     image: cloudflare/cloudflared:2026.7.2
     command:
       - tunnel
@@ -97,7 +100,7 @@ services:
       - ${TUNNEL_TOKEN:?TUNNEL_TOKEN is required}
     restart: unless-stopped
     depends_on:
-      llmgateway:
+      betarouter:
         condition: service_healthy
     read_only: true
     security_opt:

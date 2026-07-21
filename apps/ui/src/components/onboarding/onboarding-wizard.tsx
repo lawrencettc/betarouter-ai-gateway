@@ -120,7 +120,10 @@ export function OnboardingWizard() {
 		const timeout = setTimeout(() => controller.abort(), 30_000);
 
 		try {
-			const res = await fetch(`${config.gatewayUrl}/v1/chat/completions`, {
+			const gatewayBaseUrl = config.gatewayUrl
+				.replace(/\/v1\/?$/, "")
+				.replace(/\/$/, "");
+			const res = await fetch(`${gatewayBaseUrl}/v1/chat/completions`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",

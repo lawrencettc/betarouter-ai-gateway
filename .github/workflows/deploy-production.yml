@@ -26,17 +26,33 @@ jobs:
     steps:
       - name: Update production checkout
         working-directory: /opt/betarouter-ai-gateway
+        env:
+          DEPLOY_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
         run: |
-          git fetch --prune origin main
-          git checkout main
-          git merge --ff-only origin/main
+          git fetch --prune origin "$DEPLOY_SHA"
+          git checkout --detach "$DEPLOY_SHA"
+          echo "BETAROUTER_IMAGE=ghcr.io/${GITHUB_REPOSITORY}-unified:v0.0.0-$(git rev-parse --short "$DEPLOY_SHA")" >> "$GITHUB_ENV"
+          echo "BETAROUTER_PULL_POLICY=always" >> "$GITHUB_ENV"
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v4.4.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Back up database and record rollback image
+        working-directory: /opt/betarouter-ai-gateway
+        run: |
+          container_id=$(docker compose --env-file .env.production -f infra/docker-compose.betarouter.yml ps -q betarouter)
+          if [ -n "$container_id" ]; then
+            previous_image=$(docker inspect --format '{{.Config.Image}}' "$container_id")
+            echo "PREVIOUS_IMAGE=$previous_image" >> "$GITHUB_ENV"
+            mkdir -p /opt/betarouter-backups
+            backup_path="/opt/betarouter-backups/pre-deploy-$(date -u +%Y%m%dT%H%M%SZ).sql.gz"
+            docker compose --env-file .env.production -f infra/docker-compose.betarouter.yml exec -T betarouter \
+              sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' | gzip > "$backup_path"
+          fi
 
       - name: Pull and deploy unified image
         working-directory: /opt/betarouter-ai-gateway
@@ -48,7 +64,12 @@ jobs:
         working-directory: /opt/betarouter-ai-gateway
         run: |
           for attempt in $(seq 1 30); do
-            status=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' betarouter-ai-gateway-llmgateway-1)
+            container_id=$(docker compose --env-file .env.production -f infra/docker-compose.betarouter.yml ps -q betarouter)
+            if [ -n "$container_id" ]; then
+              status=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$container_id" || true)
+            else
+              status=missing
+            fi
             if [ "$status" = healthy ]; then
               docker compose --env-file .env.production -f infra/docker-compose.betarouter.yml ps
               exit 0
@@ -58,3 +79,18 @@ jobs:
           docker compose --env-file .env.production -f infra/docker-compose.betarouter.yml logs --tail=200
           exit 1
 
+      - name: Verify public routes through Cloudflare
+        run: |
+          curl --fail --silent --show-error --retry 12 --retry-delay 10 --retry-all-errors https://betarouter.com/ >/dev/null
+          curl --fail --silent --show-error --retry 12 --retry-delay 10 --retry-all-errors https://api.betarouter.com/ >/dev/null
+          curl --fail --silent --show-error --retry 12 --retry-delay 10 --retry-all-errors https://platform-api.betarouter.com/ >/dev/null
+
+      - name: Roll back application image after a failed deploy
+        if: failure() && env.PREVIOUS_IMAGE != ''
+        working-directory: /opt/betarouter-ai-gateway
+        env:
+          BETAROUTER_IMAGE: ${{ env.PREVIOUS_IMAGE }}
+          BETAROUTER_PULL_POLICY: never
+        run: |
+          docker compose --env-file .env.production -f infra/docker-compose.betarouter.yml up -d --remove-orphans
+          docker compose --env-file .env.production -f infra/docker-compose.betarouter.yml ps
