@@ -15,6 +15,8 @@ import {
 	db,
 	desc,
 	eq,
+	and,
+	inArray,
 	model,
 	modelProviderMapping,
 	platformCatalogChangeSet,
@@ -1023,6 +1025,58 @@ platformCatalog.openapi(
 platformCatalog.openapi(
 	createRoute({
 		method: "post",
+		path: "/change-sets/{id}/cancel",
+		request: { params: z.object({ id: z.string().min(1) }) },
+		responses: {
+			200: {
+				description: "Cancelled draft or scheduled catalog change",
+				content: {
+					"application/json": {
+						schema: z.object({
+							changeSetId: z.string(),
+							state: z.literal("cancelled"),
+						}),
+					},
+				},
+			},
+			404: { description: "Change set not found or not cancellable" },
+		},
+	}),
+	async (c) => {
+		const user = c.get("user");
+		if (!user) {
+			throw new HTTPException(401, { message: "Unauthorized" });
+		}
+		const changeSetId = c.req.valid("param").id;
+		const [cancelled] = await db
+			.update(platformCatalogChangeSet)
+			.set({ state: "cancelled" })
+			.where(
+				and(
+					eq(platformCatalogChangeSet.id, changeSetId),
+					inArray(platformCatalogChangeSet.state, ["draft", "scheduled"]),
+				),
+			)
+			.returning({ id: platformCatalogChangeSet.id });
+		if (!cancelled) {
+			throw new HTTPException(404, {
+				message: "Change set not found or not cancellable",
+			});
+		}
+		await db.insert(platformAuditLog).values({
+			userId: user.id,
+			action: "platform_catalog.cancel",
+			resourceId: changeSetId,
+			success: true,
+			...requestMetadata(c),
+		});
+		return c.json({ changeSetId, state: "cancelled" as const });
+	},
+);
+
+platformCatalog.openapi(
+	createRoute({
+		method: "post",
 		path: "/change-sets/{id}/apply",
 		request: { params: z.object({ id: z.string().min(1) }) },
 		responses: {
@@ -1218,6 +1272,201 @@ platformCatalog.openapi(
 			cacheInvalidation = "failed";
 		}
 		return c.json({ ...result, cacheInvalidation });
+	},
+);
+
+platformCatalog.openapi(
+	createRoute({
+		method: "post",
+		path: "/change-sets/{id}/rollback",
+		request: { params: z.object({ id: z.string().min(1) }) },
+		responses: {
+			200: {
+				description: "Applied an audited inverse catalog revision",
+				content: {
+					"application/json": {
+						schema: z.object({
+							changeSetId: z.string(),
+							inverseOf: z.string(),
+							catalogRevision: z.number(),
+							cacheInvalidation: z.enum(["published", "failed"]),
+						}),
+					},
+				},
+			},
+			404: { description: "Applied change set not found" },
+			409: { description: "Rollback conflicts with newer policy changes" },
+		},
+	}),
+	async (c) => {
+		const user = c.get("user");
+		if (!user) {
+			throw new HTTPException(401, { message: "Unauthorized" });
+		}
+		const originalId = c.req.valid("param").id;
+		const view = await loadCatalogView();
+		let rollback: {
+			changeSetId: string;
+			inverseOf: string;
+			catalogRevision: number;
+		};
+		try {
+			rollback = await db.transaction(async (tx) => {
+				await tx.execute(sql`SELECT pg_advisory_xact_lock(7220260722)`);
+				const [original] = await tx
+					.select()
+					.from(platformCatalogChangeSet)
+					.where(eq(platformCatalogChangeSet.id, originalId))
+					.limit(1);
+				if (
+					!original ||
+					!new Set(["applied", "rolled_back"]).has(original.state) ||
+					!original.inverseOperations
+				) {
+					throw new HTTPException(404, {
+						message: "Applied change set is not rollbackable",
+					});
+				}
+				const [existingRollback] = await tx
+					.select()
+					.from(platformCatalogChangeSet)
+					.where(eq(platformCatalogChangeSet.inverseOf, originalId))
+					.orderBy(desc(platformCatalogChangeSet.createdAt))
+					.limit(1);
+				if (
+					existingRollback?.state === "applied" &&
+					existingRollback.appliedRevision
+				) {
+					return {
+						changeSetId: existingRollback.id,
+						inverseOf: originalId,
+						catalogRevision: existingRollback.appliedRevision,
+					};
+				}
+				const [latestRevision] = await tx
+					.select({ id: platformCatalogRevision.id })
+					.from(platformCatalogRevision)
+					.orderBy(desc(platformCatalogRevision.id))
+					.limit(1);
+				const baseRevision = latestRevision?.id ?? null;
+				const operations = catalogChangeSetInputSchema.shape.operations.parse(
+					original.inverseOperations,
+				);
+				const [rollbackChangeSet] = await tx
+					.insert(platformCatalogChangeSet)
+					.values({
+						createdBy: user.id,
+						title: `Rollback: ${original.title}`,
+						reason: `Restore catalog state before change set ${original.id}`,
+						state: "applying",
+						baseRevision,
+						operations: operations as PlatformCatalogOperationV1[],
+						inverseOf: original.id,
+						idempotencyKey: `rollback:${original.id}:${baseRevision ?? "initial"}`,
+					})
+					.returning({ id: platformCatalogChangeSet.id });
+				if (!rollbackChangeSet) {
+					throw new HTTPException(500, {
+						message: "Rollback change set was not created",
+					});
+				}
+				const updatedAt = new Date().toISOString();
+				const applied = applyCatalogOperations({
+					state: policyStateFromView(view),
+					operations,
+					actor: user.id,
+					updatedAt,
+				});
+				const provisionalSnapshot = resolveStateSnapshot(
+					view,
+					applied.state,
+					0,
+				);
+				await persistPolicyState(tx, applied.state, operations);
+				const [revision] = await tx
+					.insert(platformCatalogRevision)
+					.values({
+						changeSetId: rollbackChangeSet.id,
+						appliedBy: user.id,
+						checksum: provisionalSnapshot.checksum,
+						snapshot: provisionalSnapshot as unknown as Record<string, unknown>,
+					})
+					.returning({ id: platformCatalogRevision.id });
+				if (!revision) {
+					throw new HTTPException(500, {
+						message: "Rollback revision was not created",
+					});
+				}
+				await tx
+					.update(platformCatalogRevision)
+					.set({
+						snapshot: {
+							...provisionalSnapshot,
+							revision: revision.id,
+						} as unknown as Record<string, unknown>,
+					})
+					.where(eq(platformCatalogRevision.id, revision.id));
+				await tx
+					.update(platformCatalogChangeSet)
+					.set({
+						state: "applied",
+						appliedAt: new Date(updatedAt),
+						appliedRevision: revision.id,
+						inverseOperations:
+							applied.inverseOperations as PlatformCatalogOperationV1[],
+					})
+					.where(eq(platformCatalogChangeSet.id, rollbackChangeSet.id));
+				await tx
+					.update(platformCatalogChangeSet)
+					.set({ state: "rolled_back" })
+					.where(eq(platformCatalogChangeSet.id, original.id));
+				await tx.insert(platformAuditLog).values({
+					userId: user.id,
+					action: "platform_catalog.rollback",
+					resourceId: rollbackChangeSet.id,
+					success: true,
+					metadata: {
+						inverseOf: original.id,
+						catalogRevision: revision.id,
+						checksum: provisionalSnapshot.checksum,
+						affectedEntityIds: applied.affectedEntityIds,
+					},
+					...requestMetadata(c),
+				});
+				return {
+					changeSetId: rollbackChangeSet.id,
+					inverseOf: original.id,
+					catalogRevision: revision.id,
+				};
+			});
+		} catch (error) {
+			try {
+				await db.insert(platformAuditLog).values({
+					userId: user.id,
+					action: "platform_catalog.rollback",
+					resourceId: originalId,
+					success: false,
+					metadata: {
+						errorCode: error instanceof Error ? error.name : "rollback_failed",
+						statusCode: error instanceof HTTPException ? error.status : 500,
+					},
+					...requestMetadata(c),
+				});
+			} catch {
+				// Preserve the rollback error if the audit store is unavailable.
+			}
+			throw error;
+		}
+		let cacheInvalidation: "published" | "failed" = "published";
+		try {
+			await redisClient.publish(
+				CATALOG_INVALIDATION_CHANNEL,
+				JSON.stringify({ revision: rollback.catalogRevision }),
+			);
+		} catch {
+			cacheInvalidation = "failed";
+		}
+		return c.json({ ...rollback, cacheInvalidation });
 	},
 );
 
