@@ -157,7 +157,9 @@ export async function enforceCatalogRequest(
 	});
 	const baseDecision = evaluateCatalogRequest(baseSnapshot, input);
 	const snapshot =
-		flags.breakerMode === "enforce" && baseDecision.allowed
+		flags.routingEnabled &&
+		flags.breakerMode === "enforce" &&
+		baseDecision.allowed
 			? await getEffectiveCatalogSnapshot({
 					breakerMappingIds: baseDecision.mappingIds,
 					claimBreakerProbes: true,
@@ -228,20 +230,27 @@ export function filterProviderMappingsByCatalog(
 		return providers;
 	}
 	return decision.mappings.flatMap((mapping) => {
-		const exactProvider = providers.find(
+		const provider = findProviderMappingForCatalogMapping(providers, mapping);
+		return provider ? [applyCatalogCustomerPrices(provider, mapping)] : [];
+	});
+}
+
+export function findProviderMappingForCatalogMapping(
+	providers: readonly ProviderModelMapping[],
+	mapping: EffectiveMapping,
+): ProviderModelMapping | undefined {
+	return (
+		providers.find(
 			(candidate) =>
 				candidate.providerId === mapping.providerId &&
 				(candidate.region ?? null) === mapping.region,
-		);
-		const provider =
-			exactProvider ??
-			providers.find(
-				(candidate) =>
-					candidate.providerId === mapping.providerId &&
-					candidate.region === undefined,
-			);
-		return provider ? [applyCatalogCustomerPrices(provider, mapping)] : [];
-	});
+		) ??
+		providers.find(
+			(candidate) =>
+				candidate.providerId === mapping.providerId &&
+				candidate.region === undefined,
+		)
+	);
 }
 
 export async function filterAutoCandidateByCatalog(

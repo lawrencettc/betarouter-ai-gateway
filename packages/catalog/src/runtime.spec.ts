@@ -94,6 +94,7 @@ describe("parseStoredCatalogSnapshot", () => {
 		});
 		expect(retired.mappings[0]?.reasons).toContain("model_retired");
 		expect(retired.routableMappingIds).toEqual([]);
+		expect(retired.checksum).not.toBe(stored.checksum);
 
 		const deactivated = applyCatalogLifecycleAt(
 			stored,

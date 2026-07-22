@@ -1,7 +1,10 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { HTTPException } from "hono/http-exception";
 
-import { applyCatalogCustomerPrices } from "@/lib/catalog-policy.js";
+import {
+	applyCatalogCustomerPrices,
+	findProviderMappingForCatalogMapping,
+} from "@/lib/catalog-policy.js";
 
 import {
 	getEffectiveCatalogSnapshot,
@@ -182,14 +185,10 @@ modelsApi.openapi(listModels, async (c) => {
 							return {
 								...model,
 								providers: effectiveMappings.flatMap((effective) => {
-									const provider = model.providers.find((candidate) => {
-										const typed = candidate as ProviderModelMapping;
-										return (
-											typed.providerId === effective.providerId &&
-											(typed.region === undefined ||
-												(typed.region ?? null) === effective.region)
-										);
-									});
+									const provider = findProviderMappingForCatalogMapping(
+										model.providers as readonly ProviderModelMapping[],
+										effective,
+									);
 									return provider
 										? [applyCatalogCustomerPrices(provider, effective)]
 										: [];

@@ -314,8 +314,7 @@ export function applyCatalogLifecycleAt(
 				(mapping) => mapping.modelId === model.id && mapping.available,
 			),
 	}));
-	return {
-		...snapshot,
+	const runtimeContent = {
 		providers: runtimeProviders,
 		models: runtimeModels,
 		mappings,
@@ -331,6 +330,11 @@ export function applyCatalogLifecycleAt(
 		routableMappingIds: mappings
 			.filter((mapping) => mapping.routable)
 			.map((mapping) => mapping.id),
+	};
+	return {
+		revision: snapshot.revision,
+		...runtimeContent,
+		checksum: calculateCatalogChecksum(runtimeContent),
 	};
 }
 
