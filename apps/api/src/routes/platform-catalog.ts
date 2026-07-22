@@ -164,8 +164,22 @@ const adminMappingSchema = effectiveMappingSchema.extend({
 const listQuerySchema = z.object({
 	search: z.string().optional(),
 	state: z
-		.enum(["all", "visible", "hidden", "available", "unavailable"])
+		.enum([
+			"all",
+			"visible",
+			"hidden",
+			"available",
+			"unavailable",
+			"deprecated",
+			"retired",
+			"unhealthy",
+			"unpriced",
+			"uncredentialed",
+			"untested",
+		])
 		.default("all"),
+	providerId: z.string().optional(),
+	modality: z.string().optional(),
 	page: z.coerce.number().int().positive().default(1),
 	pageSize: z.coerce.number().int().min(1).max(500).default(50),
 });
@@ -879,6 +893,9 @@ interface FilterableEffective {
 	visible?: boolean;
 	displayable?: boolean;
 	available: boolean;
+	lifecycle?: "draft" | "active" | "deprecated" | "retired";
+	routable?: boolean;
+	reasons?: string[];
 }
 
 function filterEffective<T extends FilterableEffective>(
@@ -899,6 +916,24 @@ function filterEffective<T extends FilterableEffective>(
 				return item.available;
 			case "unavailable":
 				return !item.available;
+			case "deprecated":
+				return item.lifecycle === "deprecated";
+			case "retired":
+				return item.lifecycle === "retired";
+			case "unhealthy":
+				return (
+					item.routable === false &&
+					(item.reasons?.some((reason) => reason.startsWith("circuit_")) ??
+						false)
+				);
+			case "unpriced":
+				return item.reasons?.includes("mapping_price_incomplete") ?? false;
+			case "uncredentialed":
+				return (
+					item.reasons?.includes("provider_credential_unavailable") ?? false
+				);
+			case "untested":
+				return item.reasons?.includes("mapping_test_required") ?? false;
 			case "all":
 				return true;
 			default:
@@ -1010,33 +1045,34 @@ platformCatalog.openapi(
 		const policyById = new Map(
 			view.providerPolicies.map((item) => [item.providerId, item]),
 		);
-		const filtered = filterEffective(view.snapshot.providers, query).map(
-			(item) => {
-				const source = sourceById.get(item.id)!;
-				const policy = policyById.get(item.id);
-				return {
-					...item,
-					name: source.name,
-					description: source.description,
-					credentialAvailable: view.credentialAvailability[item.id] ?? false,
-					policy: policy
-						? {
-								updatedAt: policy.updatedAt.toISOString(),
-								enabled: policy.enabled,
-								visible: policy.visible,
-								lifecycle: policy.lifecycle,
-								sortOrder: policy.sortOrder,
-								displayNameOverride: policy.displayNameOverride,
-								descriptionOverride: policy.descriptionOverride,
-								websiteOverride: policy.websiteOverride,
-								deprecatedAt: policy.deprecatedAt?.toISOString() ?? null,
-								retireAt: policy.retireAt?.toISOString() ?? null,
-								replacementProviderId: policy.replacementProviderId,
-							}
-						: null,
-				};
-			},
-		);
+		const providerCandidates = query.providerId
+			? view.snapshot.providers.filter((item) => item.id === query.providerId)
+			: view.snapshot.providers;
+		const filtered = filterEffective(providerCandidates, query).map((item) => {
+			const source = sourceById.get(item.id)!;
+			const policy = policyById.get(item.id);
+			return {
+				...item,
+				name: source.name,
+				description: source.description,
+				credentialAvailable: view.credentialAvailability[item.id] ?? false,
+				policy: policy
+					? {
+							updatedAt: policy.updatedAt.toISOString(),
+							enabled: policy.enabled,
+							visible: policy.visible,
+							lifecycle: policy.lifecycle,
+							sortOrder: policy.sortOrder,
+							displayNameOverride: policy.displayNameOverride,
+							descriptionOverride: policy.descriptionOverride,
+							websiteOverride: policy.websiteOverride,
+							deprecatedAt: policy.deprecatedAt?.toISOString() ?? null,
+							retireAt: policy.retireAt?.toISOString() ?? null,
+							replacementProviderId: policy.replacementProviderId,
+						}
+					: null,
+			};
+		});
 		return c.json({
 			...paginate(filtered, query.page, query.pageSize),
 			revision: view.snapshot.revision,
@@ -1068,36 +1104,48 @@ platformCatalog.openapi(
 		const policyById = new Map(
 			view.modelPolicies.map((item) => [item.modelId, item]),
 		);
-		const filtered = filterEffective(view.snapshot.models, query).map(
-			(item) => {
-				const source = sourceById.get(item.id)!;
-				const policy = policyById.get(item.id);
-				return {
-					...item,
-					name: source.name,
-					description: source.description,
-					family: source.family,
-					output: source.output,
-					policy: policy
-						? {
-								updatedAt: policy.updatedAt.toISOString(),
-								enabled: policy.enabled,
-								visible: policy.visible,
-								allowDirect: policy.allowDirect,
-								lifecycle: policy.lifecycle,
-								replacementModelId: policy.replacementModelId,
-								deprecatedAt: policy.deprecatedAt?.toISOString() ?? null,
-								retireAt: policy.retireAt?.toISOString() ?? null,
-								retirementMessage: policy.retirementMessage,
-								displayNameOverride: policy.displayNameOverride,
-								descriptionOverride: policy.descriptionOverride,
-								aliasesOverride: policy.aliasesOverride,
-								sortOrder: policy.sortOrder,
-							}
-						: null,
-				};
-			},
-		);
+		const modelIdsForProvider = query.providerId
+			? new Set(
+					view.snapshot.mappings
+						.filter((item) => item.providerId === query.providerId)
+						.map((item) => item.modelId),
+				)
+			: null;
+		const modelCandidates = view.snapshot.models.filter((item) => {
+			const source = sourceById.get(item.id);
+			return (
+				(!modelIdsForProvider || modelIdsForProvider.has(item.id)) &&
+				(!query.modality || source?.output.includes(query.modality))
+			);
+		});
+		const filtered = filterEffective(modelCandidates, query).map((item) => {
+			const source = sourceById.get(item.id)!;
+			const policy = policyById.get(item.id);
+			return {
+				...item,
+				name: source.name,
+				description: source.description,
+				family: source.family,
+				output: source.output,
+				policy: policy
+					? {
+							updatedAt: policy.updatedAt.toISOString(),
+							enabled: policy.enabled,
+							visible: policy.visible,
+							allowDirect: policy.allowDirect,
+							lifecycle: policy.lifecycle,
+							replacementModelId: policy.replacementModelId,
+							deprecatedAt: policy.deprecatedAt?.toISOString() ?? null,
+							retireAt: policy.retireAt?.toISOString() ?? null,
+							retirementMessage: policy.retirementMessage,
+							displayNameOverride: policy.displayNameOverride,
+							descriptionOverride: policy.descriptionOverride,
+							aliasesOverride: policy.aliasesOverride,
+							sortOrder: policy.sortOrder,
+						}
+					: null,
+			};
+		});
 		return c.json({
 			...paginate(filtered, query.page, query.pageSize),
 			revision: view.snapshot.revision,
@@ -1131,46 +1179,53 @@ platformCatalog.openapi(
 		const pricePolicyById = new Map(
 			view.pricePolicies.map((item) => [item.mappingId, item]),
 		);
-		const filtered = filterEffective(view.snapshot.mappings, query).map(
-			(item) => {
-				const policy = policyById.get(item.id);
-				const pricePolicy = pricePolicyById.get(item.id);
-				return {
-					...item,
-					sourcePrices: definedPriceRecord(item.sourcePrices),
-					customerPrices: definedPriceRecord(item.customerPrices),
-					margin: definedPriceRecord(item.margin),
-					pricePolicyUpdatedAt: pricePolicy?.updatedAt.toISOString() ?? null,
-					pricePolicy: pricePolicy
-						? mappingPricePolicySchema.parse({
-								mode: pricePolicy.mode,
-								currency: pricePolicy.currency,
-								markupBps: pricePolicy.markupBps ?? undefined,
-								fixedPrices: pricePolicy.fixedPrices ?? undefined,
-								allowNegativeMargin: pricePolicy.allowNegativeMargin,
-								negativeMarginReason:
-									pricePolicy.negativeMarginReason ?? undefined,
-							})
-						: null,
-					credentialAvailable:
-						view.credentialAvailability[item.providerId] ?? false,
-					policy: policy
-						? {
-								updatedAt: policy.updatedAt.toISOString(),
-								enabled: policy.enabled,
-								externalIdOverride: policy.externalIdOverride,
-								priority: policy.priority,
-								weight: policy.weight,
-								breakerEnabled: policy.breakerEnabled,
-								requiredTestRevision: policy.requiredTestRevision,
-								contextSizeLimit: policy.contextSizeLimit,
-								maxOutputLimit: policy.maxOutputLimit,
-								disabledCapabilities: policy.disabledCapabilities,
-							}
-						: null,
-				};
-			},
+		const sourceModelById = new Map(
+			view.sourceModels.map((item) => [item.id, item]),
 		);
+		const mappingCandidates = view.snapshot.mappings.filter(
+			(item) =>
+				(!query.providerId || item.providerId === query.providerId) &&
+				(!query.modality ||
+					sourceModelById.get(item.modelId)?.output.includes(query.modality)),
+		);
+		const filtered = filterEffective(mappingCandidates, query).map((item) => {
+			const policy = policyById.get(item.id);
+			const pricePolicy = pricePolicyById.get(item.id);
+			return {
+				...item,
+				sourcePrices: definedPriceRecord(item.sourcePrices),
+				customerPrices: definedPriceRecord(item.customerPrices),
+				margin: definedPriceRecord(item.margin),
+				pricePolicyUpdatedAt: pricePolicy?.updatedAt.toISOString() ?? null,
+				pricePolicy: pricePolicy
+					? mappingPricePolicySchema.parse({
+							mode: pricePolicy.mode,
+							currency: pricePolicy.currency,
+							markupBps: pricePolicy.markupBps ?? undefined,
+							fixedPrices: pricePolicy.fixedPrices ?? undefined,
+							allowNegativeMargin: pricePolicy.allowNegativeMargin,
+							negativeMarginReason:
+								pricePolicy.negativeMarginReason ?? undefined,
+						})
+					: null,
+				credentialAvailable:
+					view.credentialAvailability[item.providerId] ?? false,
+				policy: policy
+					? {
+							updatedAt: policy.updatedAt.toISOString(),
+							enabled: policy.enabled,
+							externalIdOverride: policy.externalIdOverride,
+							priority: policy.priority,
+							weight: policy.weight,
+							breakerEnabled: policy.breakerEnabled,
+							requiredTestRevision: policy.requiredTestRevision,
+							contextSizeLimit: policy.contextSizeLimit,
+							maxOutputLimit: policy.maxOutputLimit,
+							disabledCapabilities: policy.disabledCapabilities,
+						}
+					: null,
+			};
+		});
 		return c.json({
 			...paginate(filtered, query.page, query.pageSize),
 			revision: view.snapshot.revision,

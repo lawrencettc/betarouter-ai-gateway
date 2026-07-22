@@ -89,7 +89,18 @@ type Entity =
 	| { kind: "provider"; item: ProviderItem }
 	| { kind: "model"; item: ModelItem }
 	| { kind: "mapping"; item: MappingItem };
-type ListState = "all" | "visible" | "hidden" | "available" | "unavailable";
+type ListState =
+	| "all"
+	| "visible"
+	| "hidden"
+	| "available"
+	| "unavailable"
+	| "deprecated"
+	| "retired"
+	| "unhealthy"
+	| "unpriced"
+	| "uncredentialed"
+	| "untested";
 
 function message(error: unknown): string {
 	if (error && typeof error === "object" && "message" in error) {
@@ -129,6 +140,12 @@ function StateFilter({
 				<SelectItem value="hidden">Hidden</SelectItem>
 				<SelectItem value="available">Available</SelectItem>
 				<SelectItem value="unavailable">Unavailable</SelectItem>
+				<SelectItem value="deprecated">Deprecated</SelectItem>
+				<SelectItem value="retired">Retired</SelectItem>
+				<SelectItem value="unhealthy">Unhealthy</SelectItem>
+				<SelectItem value="unpriced">Unpriced</SelectItem>
+				<SelectItem value="uncredentialed">No credential</SelectItem>
+				<SelectItem value="untested">Untested</SelectItem>
 			</SelectContent>
 		</Select>
 	);
@@ -232,6 +249,7 @@ function PreviewSheet({
 		idempotencyKey,
 		operations,
 	});
+	const confirmPhrase = `APPLY ${operations.length}`;
 
 	const runPreview = async () => {
 		if (!reason.trim()) {
@@ -256,7 +274,7 @@ function PreviewSheet({
 	};
 
 	const publish = async () => {
-		if (!preview?.valid || confirm !== "APPLY") {
+		if (!preview?.valid || confirm !== confirmPhrase) {
 			return;
 		}
 		setBusy(true);
@@ -381,7 +399,7 @@ function PreviewSheet({
 							)}
 							<div className="space-y-2">
 								<Label htmlFor="apply-confirm">
-									Type APPLY to {effectiveAt ? "schedule" : "publish"}
+									Type {confirmPhrase} to {effectiveAt ? "schedule" : "publish"}
 								</Label>
 								<Input
 									id="apply-confirm"
@@ -396,7 +414,7 @@ function PreviewSheet({
 				<SheetFooter>
 					<Button
 						onClick={publish}
-						disabled={!preview?.valid || confirm !== "APPLY" || busy}
+						disabled={!preview?.valid || confirm !== confirmPhrase || busy}
 					>
 						{busy && <Loader2 className="size-4 animate-spin" />}
 						{effectiveAt ? "Schedule change" : "Publish now"}
@@ -921,6 +939,8 @@ export function CatalogClient({
 	const [tab, setTab] = useState("overview");
 	const [search, setSearch] = useState("");
 	const [state, setState] = useState<ListState>("all");
+	const [providerFilter, setProviderFilter] = useState("");
+	const [modality, setModality] = useState("all");
 	const [loading, setLoading] = useState(false);
 	const [selected, setSelected] = useState<Map<string, Entity>>(new Map());
 	const [operations, setOperations] = useState<Operation[]>([]);
@@ -931,7 +951,9 @@ export function CatalogClient({
 		Awaited<ReturnType<typeof api.GET>>["data"] | null
 	>(null);
 	const [healthOpen, setHealthOpen] = useState(false);
+	const [healthMapping, setHealthMapping] = useState<MappingItem | null>(null);
 	const [confirmRollback, setConfirmRollback] = useState<Change | null>(null);
+	const [rollbackConfirmText, setRollbackConfirmText] = useState("");
 
 	const listForTab =
 		tab === "providers" ? providers : tab === "models" ? models : mappings;
@@ -945,6 +967,10 @@ export function CatalogClient({
 						pageSize: 50,
 						state,
 						...(search.trim() ? { search: search.trim() } : {}),
+						...(providerFilter.trim()
+							? { providerId: providerFilter.trim() }
+							: {}),
+						...(modality !== "all" ? { modality } : {}),
 					},
 				};
 				if (target === "providers") {
@@ -977,7 +1003,7 @@ export function CatalogClient({
 				setLoading(false);
 			}
 		},
-		[api, search, state],
+		[api, modality, providerFilter, search, state],
 	);
 
 	useEffect(() => {
@@ -1105,6 +1131,7 @@ export function CatalogClient({
 	};
 	const showHealth = async (item: MappingItem) => {
 		setHealthOpen(true);
+		setHealthMapping(item);
 		setHealth(null);
 		const result = await api.GET("/admin/catalog/mappings/{id}/health", {
 			params: { path: { id: item.id } },
@@ -1113,6 +1140,21 @@ export function CatalogClient({
 		if (result.error) {
 			toast.error(message(result.error));
 		}
+	};
+	const resetBreaker = async () => {
+		if (!healthMapping) {
+			return;
+		}
+		const result = await api.POST(
+			"/admin/catalog/mappings/{id}/breaker/reset",
+			{ params: { path: { id: healthMapping.id } } },
+		);
+		if (result.error) {
+			toast.error(message(result.error));
+			return;
+		}
+		toast.success("Circuit breaker reset");
+		await showHealth(healthMapping);
 	};
 	const runTest = async (item: MappingItem) => {
 		const credential = credentials.find(
@@ -1269,7 +1311,7 @@ export function CatalogClient({
 				</TabsContent>
 				{(["providers", "models", "mappings"] as const).map((kind) => (
 					<TabsContent key={kind} value={kind} className="space-y-4">
-						<div className="flex flex-col gap-3 rounded-xl border bg-card p-3 sm:flex-row sm:items-center">
+						<div className="sticky top-3 z-20 flex flex-col gap-3 rounded-xl border bg-card/95 p-3 shadow-sm backdrop-blur sm:flex-row sm:flex-wrap sm:items-center">
 							<div className="relative flex-1">
 								<Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
 								<Input
@@ -1280,6 +1322,34 @@ export function CatalogClient({
 								/>
 							</div>
 							<StateFilter value={state} onChange={setState} />
+							{kind !== "providers" && (
+								<Input
+									className="w-48"
+									value={providerFilter}
+									onChange={(event) => setProviderFilter(event.target.value)}
+									placeholder="Provider ID"
+									aria-label="Filter by provider ID"
+								/>
+							)}
+							{kind !== "providers" && (
+								<Select value={modality} onValueChange={setModality}>
+									<SelectTrigger
+										className="w-44"
+										aria-label="Filter by modality"
+									>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="all">All modalities</SelectItem>
+										<SelectItem value="text">Text</SelectItem>
+										<SelectItem value="image">Image</SelectItem>
+										<SelectItem value="audio">Audio</SelectItem>
+										<SelectItem value="video">Video</SelectItem>
+										<SelectItem value="embedding">Embedding</SelectItem>
+										<SelectItem value="moderation">Moderation</SelectItem>
+									</SelectContent>
+								</Select>
+							)}
 							{selected.size > 0 && (
 								<div className="flex flex-wrap gap-2">
 									<Badge variant="secondary">{selected.size} selected</Badge>
@@ -1679,9 +1749,20 @@ export function CatalogClient({
 						</DialogDescription>
 					</DialogHeader>
 					{health ? (
-						<pre className="max-h-[55vh] overflow-auto rounded-lg bg-muted p-4 text-xs">
-							{JSON.stringify(health, null, 2)}
-						</pre>
+						<>
+							<pre className="max-h-[55vh] overflow-auto rounded-lg bg-muted p-4 text-xs">
+								{JSON.stringify(health, null, 2)}
+							</pre>
+							<DialogFooter>
+								<Button
+									variant="outline"
+									disabled={health.latestTest?.status !== "passed"}
+									onClick={() => void resetBreaker()}
+								>
+									Reset breaker
+								</Button>
+							</DialogFooter>
+						</>
 					) : (
 						<Loader2 className="mx-auto size-6 animate-spin" />
 					)}
@@ -1689,7 +1770,12 @@ export function CatalogClient({
 			</Dialog>
 			<Dialog
 				open={!!confirmRollback}
-				onOpenChange={(open) => !open && setConfirmRollback(null)}
+				onOpenChange={(open) => {
+					if (!open) {
+						setConfirmRollback(null);
+						setRollbackConfirmText("");
+					}
+				}}
 			>
 				<DialogContent>
 					<DialogHeader>
@@ -1706,12 +1792,24 @@ export function CatalogClient({
 							Rollback {confirmRollback?.title}?
 						</AlertDescription>
 					</Alert>
+					<div className="space-y-2">
+						<Label htmlFor="rollback-confirm">
+							Type ROLLBACK 1 to continue
+						</Label>
+						<Input
+							id="rollback-confirm"
+							value={rollbackConfirmText}
+							onChange={(event) => setRollbackConfirmText(event.target.value)}
+							autoComplete="off"
+						/>
+					</div>
 					<DialogFooter>
 						<Button variant="outline" onClick={() => setConfirmRollback(null)}>
 							Cancel
 						</Button>
 						<Button
 							variant="destructive"
+							disabled={rollbackConfirmText !== "ROLLBACK 1"}
 							onClick={async () => {
 								if (!confirmRollback) {
 									return;
