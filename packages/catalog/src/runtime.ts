@@ -76,10 +76,18 @@ const storedCatalogSnapshotSchema = z
 	})
 	.strict();
 
-export function parseStoredCatalogSnapshot(value: unknown): EffectiveCatalog {
+export function parseStoredCatalogSnapshot(
+	value: unknown,
+	expectedChecksum?: string,
+): EffectiveCatalog {
 	const snapshot = storedCatalogSnapshotSchema.parse(value) as EffectiveCatalog;
 	const { revision: _revision, checksum, ...content } = snapshot;
-	if (calculateCatalogChecksum(content) !== checksum) {
+	const validCanonicalChecksum =
+		checksum.startsWith("sha256:v2:") &&
+		calculateCatalogChecksum(content) === checksum;
+	const validLegacyChecksum =
+		!checksum.startsWith("sha256:v2:") && expectedChecksum === checksum;
+	if (!validCanonicalChecksum && !validLegacyChecksum) {
 		throw new Error("Stored catalog snapshot checksum is invalid");
 	}
 	return snapshot;
@@ -87,11 +95,14 @@ export function parseStoredCatalogSnapshot(value: unknown): EffectiveCatalog {
 
 export async function loadLatestCatalogSnapshot(): Promise<EffectiveCatalog | null> {
 	const [row] = await db
-		.select({ snapshot: platformCatalogRevision.snapshot })
+		.select({
+			checksum: platformCatalogRevision.checksum,
+			snapshot: platformCatalogRevision.snapshot,
+		})
 		.from(platformCatalogRevision)
 		.orderBy(desc(platformCatalogRevision.id))
 		.limit(1);
-	return row ? parseStoredCatalogSnapshot(row.snapshot) : null;
+	return row ? parseStoredCatalogSnapshot(row.snapshot, row.checksum) : null;
 }
 
 const maxStaleMs = Number(

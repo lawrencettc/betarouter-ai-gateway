@@ -31,6 +31,30 @@ describe("parseStoredCatalogSnapshot", () => {
 		).toThrow("checksum");
 	});
 
+	it("accepts a matching legacy database checksum without weakening v2 validation", () => {
+		const resolved = resolveEffectiveCatalog({
+			revision: 1,
+			now: new Date("2026-07-22T00:00:00.000Z"),
+			providers: [],
+			models: [],
+			mappings: [],
+			providerPolicies: [],
+			modelPolicies: [],
+			mappingPolicies: [],
+			providerCredentialAvailability: {},
+			mappingReadiness: {},
+			breakerStates: {},
+		});
+		const legacy = { ...resolved, checksum: "sha256:legacy" };
+
+		expect(parseStoredCatalogSnapshot(legacy, "sha256:legacy").revision).toBe(
+			1,
+		);
+		expect(() =>
+			parseStoredCatalogSnapshot(legacy, "sha256:different"),
+		).toThrow("checksum");
+	});
+
 	it("enforces scheduled retirement and source deactivation without a new revision", () => {
 		const input: CatalogResolverInput = {
 			revision: 7,

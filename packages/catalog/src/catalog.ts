@@ -194,7 +194,21 @@ function effectiveLifecycle(
 }
 
 export function calculateCatalogChecksum(value: unknown): string {
-	return `sha256:${createHash("sha256").update(JSON.stringify(value)).digest("hex")}`;
+	const canonical = JSON.stringify(value, (_key, current) => {
+		if (
+			current === null ||
+			typeof current !== "object" ||
+			Array.isArray(current)
+		) {
+			return current;
+		}
+		return Object.fromEntries(
+			Object.entries(current as Record<string, unknown>).sort(
+				([left], [right]) => left.localeCompare(right),
+			),
+		);
+	});
+	return `sha256:v2:${createHash("sha256").update(canonical).digest("hex")}`;
 }
 
 export function resolveEffectiveCatalog(
