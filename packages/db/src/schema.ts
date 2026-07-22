@@ -2712,6 +2712,12 @@ export type PlatformCatalogOperationV1 =
 	  }
 	| {
 			version: 1;
+			type: "mapping.clear_price_policy";
+			mappingId: string;
+			expectedUpdatedAt: string;
+	  }
+	| {
+			version: 1;
 			type: "mapping.set_external_id";
 			mappingId: string;
 			expectedUpdatedAt: string | null;

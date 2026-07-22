@@ -19,7 +19,9 @@ import {
 	desc,
 	eq,
 	and,
+	gte,
 	inArray,
+	log,
 	model,
 	modelProviderMapping,
 	platformCatalogChangeSet,
@@ -32,7 +34,9 @@ import {
 	platformProviderCredential,
 	platformProviderPolicy,
 	provider,
+	or,
 	sql,
+	videoJob,
 } from "@llmgateway/db";
 import { getProviderEnvConfig, getProviderEnvVar } from "@llmgateway/models";
 
@@ -503,6 +507,128 @@ function requestMetadata(c: {
 	};
 }
 
+async function calculateCatalogImpact(
+	view: CatalogView,
+	operations: CatalogOperationV1[],
+	before: EffectiveCatalog,
+	after: EffectiveCatalog,
+) {
+	const providerIds = new Set<string>();
+	const modelIds = new Set<string>();
+	const mappingIds = new Set<string>();
+	for (const operation of operations) {
+		if (operation.type === "provider.set_policy") {
+			providerIds.add(operation.providerId);
+		} else if (operation.type === "model.set_policy") {
+			modelIds.add(operation.modelId);
+		} else if (operation.type === "entity.archive_policy") {
+			if (operation.entityType === "provider") {
+				providerIds.add(operation.entityId);
+			} else if (operation.entityType === "model") {
+				modelIds.add(operation.entityId);
+			} else {
+				mappingIds.add(operation.entityId);
+			}
+		} else {
+			mappingIds.add(operation.mappingId);
+		}
+	}
+	for (const mapping of view.sourceMappings) {
+		if (mappingIds.has(mapping.id)) {
+			providerIds.add(mapping.providerId);
+			modelIds.add(mapping.modelId);
+		}
+	}
+	const affectedProviderIds = [...providerIds];
+	const affectedModelIds = [...modelIds];
+	const affectedMappingIds = [...mappingIds];
+	const scope = or(
+		affectedMappingIds.length > 0
+			? inArray(log.modelProviderMappingId, affectedMappingIds)
+			: undefined,
+		affectedModelIds.length > 0
+			? inArray(log.usedModel, affectedModelIds)
+			: undefined,
+		affectedProviderIds.length > 0
+			? inArray(log.usedProvider, affectedProviderIds)
+			: undefined,
+	);
+	const queuedScope = or(
+		affectedMappingIds.length > 0
+			? inArray(videoJob.modelProviderMappingId, affectedMappingIds)
+			: undefined,
+		affectedModelIds.length > 0
+			? inArray(videoJob.model, affectedModelIds)
+			: undefined,
+		affectedProviderIds.length > 0
+			? inArray(videoJob.usedProvider, affectedProviderIds)
+			: undefined,
+	);
+	const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+	const [traffic, queued] = await Promise.all([
+		scope
+			? db
+					.select({
+						requests: sql<number>`count(*)::int`,
+						organizations: sql<number>`count(distinct ${log.organizationId})::int`,
+						projects: sql<number>`count(distinct ${log.projectId})::int`,
+						apiKeys: sql<number>`count(distinct ${log.apiKeyId})::int`,
+					})
+					.from(log)
+					.where(and(gte(log.createdAt, since), scope))
+			: Promise.resolve([
+					{ requests: 0, organizations: 0, projects: 0, apiKeys: 0 },
+				]),
+		queuedScope
+			? db
+					.select({ count: sql<number>`count(*)::int` })
+					.from(videoJob)
+					.where(
+						and(
+							inArray(videoJob.status, ["queued", "in_progress"]),
+							queuedScope,
+						),
+					)
+			: Promise.resolve([{ count: 0 }]),
+	]);
+	const previousMappings = new Map(
+		before.mappings.map((item) => [item.id, item]),
+	);
+	const priceChanges = after.mappings.flatMap((mapping) => {
+		if (!mappingIds.has(mapping.id)) {
+			return [];
+		}
+		const previous = previousMappings.get(mapping.id);
+		const units = new Set([
+			...Object.keys(previous?.customerPrices ?? {}),
+			...Object.keys(mapping.customerPrices),
+		]);
+		return [...units]
+			.filter(
+				(unit) =>
+					previous?.customerPrices[
+						unit as keyof typeof mapping.customerPrices
+					] !==
+					mapping.customerPrices[unit as keyof typeof mapping.customerPrices],
+			)
+			.map(
+				(unit) =>
+					`${mapping.id}:${unit}:${previous?.customerPrices[unit as keyof typeof mapping.customerPrices] ?? "unset"}->${mapping.customerPrices[unit as keyof typeof mapping.customerPrices] ?? "unset"}`,
+			);
+	});
+	return {
+		providerIds,
+		modelIds,
+		mappingIds,
+		requests: Number(traffic[0]?.requests ?? 0),
+		organizations: Number(traffic[0]?.organizations ?? 0),
+		projects: Number(traffic[0]?.projects ?? 0),
+		apiKeys: Number(traffic[0]?.apiKeys ?? 0),
+		queuedJobs: Number(queued[0]?.count ?? 0),
+		priceChanges,
+	};
+}
+
 type CatalogTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 async function persistPolicyState(
@@ -527,6 +653,9 @@ async function persistPolicyState(
 				mappingIds.add(operation.mappingId);
 				break;
 			case "mapping.set_price_policy":
+				priceMappingIds.add(operation.mappingId);
+				break;
+			case "mapping.clear_price_policy":
 				priceMappingIds.add(operation.mappingId);
 				break;
 			case "entity.archive_policy":
@@ -620,7 +749,10 @@ async function persistPolicyState(
 	for (const mappingId of priceMappingIds) {
 		const row = state.prices[mappingId];
 		if (!row) {
-			throw new HTTPException(409, { message: "Price policy is stale" });
+			await tx
+				.delete(platformMappingPricePolicy)
+				.where(eq(platformMappingPricePolicy.mappingId, mappingId));
+			continue;
 		}
 		const policy = row.policy;
 		const values = {
@@ -972,6 +1104,12 @@ platformCatalog.openapi(
 				applied.state,
 				view.snapshot.revision + 1,
 			);
+			const impact = await calculateCatalogImpact(
+				view,
+				input.operations,
+				view.snapshot,
+				snapshot,
+			);
 			const activatingProviderIds = new Set(
 				input.operations
 					.filter(
@@ -1011,12 +1149,17 @@ platformCatalog.openapi(
 			);
 			const inspectedMappings = snapshot.mappings.filter(
 				(mapping) =>
-					activatingProviderIds.has(mapping.providerId) ||
-					activatingModelIds.has(mapping.modelId) ||
-					activatingMappingIds.has(mapping.id),
+					impact.providerIds.has(mapping.providerId) ||
+					impact.modelIds.has(mapping.modelId) ||
+					impact.mappingIds.has(mapping.id),
 			);
-			const blockers = inspectedMappings
-				.filter((mapping) => !mapping.available)
+			const mappingBlockers = inspectedMappings
+				.filter(
+					(mapping) =>
+						impact.mappingIds.has(mapping.id) &&
+						applied.state.mappings[mapping.id]?.enabled === true &&
+						!mapping.available,
+				)
 				.map((mapping) => ({
 					entityId: mapping.id,
 					reasons: mapping.reasons.filter(
@@ -1025,6 +1168,32 @@ platformCatalog.openapi(
 					),
 				}))
 				.filter((blocker) => blocker.reasons.length > 0);
+			const entityBlockers = [
+				...[...activatingProviderIds]
+					.filter(
+						(providerId) =>
+							!snapshot.mappings.some(
+								(mapping) =>
+									mapping.providerId === providerId && mapping.available,
+							),
+					)
+					.map((entityId) => ({
+						entityId,
+						reasons: ["no_available_mapping"],
+					})),
+				...[...activatingModelIds]
+					.filter(
+						(modelId) =>
+							!snapshot.mappings.some(
+								(mapping) => mapping.modelId === modelId && mapping.available,
+							),
+					)
+					.map((entityId) => ({
+						entityId,
+						reasons: ["no_available_mapping"],
+					})),
+			];
+			const blockers = [...mappingBlockers, ...entityBlockers];
 			const fallbackLosses = snapshot.models
 				.filter(
 					(item) =>
@@ -1034,49 +1203,33 @@ platformCatalog.openapi(
 						),
 				)
 				.map((item) => item.id);
-			const entityTypes = new Set(
-				input.operations.map((operation) => {
-					if (operation.type.startsWith("provider.")) {
-						return "provider";
-					}
-					if (operation.type.startsWith("model.")) {
-						return "model";
-					}
-					if (operation.type === "entity.archive_policy") {
-						return operation.entityType;
-					}
-					return "mapping";
-				}),
-			);
 			const response = {
 				valid: blockers.length === 0,
 				baseRevision: input.baseRevision,
 				resultingChecksum: snapshot.checksum,
 				blockers,
-				warnings:
-					input.operations.length >= 100
+				warnings: [
+					...(input.operations.length >= 100
 						? ["High-impact bulk change requires typed confirmation"]
-						: [],
+						: []),
+					...(impact.queuedJobs > 0
+						? [
+								`${impact.queuedJobs} queued or in-progress jobs retain their accepted mapping and revision`,
+							]
+						: []),
+				],
 				affected: {
-					providers: entityTypes.has("provider")
-						? activatingProviderIds.size
-						: 0,
-					models: entityTypes.has("model") ? activatingModelIds.size : 0,
+					providers: impact.providerIds.size,
+					models: impact.modelIds.size,
 					mappings: inspectedMappings.length,
-					requests: null,
-					organizations: null,
-					projects: null,
-					apiKeys: null,
-					queuedJobs: null,
+					requests: impact.requests,
+					organizations: impact.organizations,
+					projects: impact.projects,
+					apiKeys: impact.apiKeys,
+					queuedJobs: impact.queuedJobs,
 				},
 				fallbackLosses,
-				priceChanges: input.operations
-					.filter((operation) => operation.type === "mapping.set_price_policy")
-					.map((operation) =>
-						operation.type === "mapping.set_price_policy"
-							? operation.mappingId
-							: "",
-					),
+				priceChanges: impact.priceChanges,
 				marginEstimate: null,
 			};
 			await db.insert(platformAuditLog).values({

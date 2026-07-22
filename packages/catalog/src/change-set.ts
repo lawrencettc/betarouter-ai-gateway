@@ -234,7 +234,36 @@ export function applyCatalogOperations(input: ApplyCatalogOperationsInput): {
 						expectedUpdatedAt: input.updatedAt,
 						policy: current.policy,
 					});
+				} else {
+					inverseOperations.unshift({
+						version: 1,
+						type: "mapping.clear_price_policy",
+						mappingId: operation.mappingId,
+						expectedUpdatedAt: input.updatedAt,
+					});
 				}
+				affectedEntityIds.add(operation.mappingId);
+				break;
+			}
+			case "mapping.clear_price_policy": {
+				const current = next.prices[operation.mappingId];
+				assertExpected(
+					current,
+					operation.expectedUpdatedAt,
+					"price",
+					operation.mappingId,
+				);
+				if (!current) {
+					throw new CatalogConflictError("price", operation.mappingId);
+				}
+				delete next.prices[operation.mappingId];
+				inverseOperations.unshift({
+					version: 1,
+					type: "mapping.set_price_policy",
+					mappingId: operation.mappingId,
+					expectedUpdatedAt: null,
+					policy: current.policy,
+				});
 				affectedEntityIds.add(operation.mappingId);
 				break;
 			}

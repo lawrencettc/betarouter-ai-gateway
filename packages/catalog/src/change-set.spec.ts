@@ -103,4 +103,42 @@ describe("applyCatalogOperations", () => {
 			lifecycle: "retired",
 		});
 	});
+
+	it("rolls a newly created price policy back to absence", () => {
+		const appliedAt = "2026-07-22T01:00:00.000Z";
+		const applied = applyCatalogOperations({
+			state,
+			actor: "admin-2",
+			updatedAt: appliedAt,
+			operations: [
+				{
+					version: 1,
+					type: "mapping.set_price_policy",
+					mappingId: "mapping-1",
+					expectedUpdatedAt: null,
+					policy: {
+						mode: "source_cost",
+						currency: "USD",
+						allowNegativeMargin: false,
+					},
+				},
+			],
+		});
+		expect(applied.inverseOperations).toEqual([
+			{
+				version: 1,
+				type: "mapping.clear_price_policy",
+				mappingId: "mapping-1",
+				expectedUpdatedAt: appliedAt,
+			},
+		]);
+
+		const rolledBack = applyCatalogOperations({
+			state: applied.state,
+			actor: "admin-2",
+			updatedAt: "2026-07-22T02:00:00.000Z",
+			operations: applied.inverseOperations,
+		});
+		expect(rolledBack.state.prices).toEqual({});
+	});
 });

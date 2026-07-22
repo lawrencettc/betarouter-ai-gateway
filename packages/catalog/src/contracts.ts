@@ -164,6 +164,14 @@ export const catalogOperationV1Schema = z.discriminatedUnion("type", [
 		.strict(),
 	z
 		.object({
+			version: z.literal(1),
+			type: z.literal("mapping.clear_price_policy"),
+			mappingId: idSchema,
+			expectedUpdatedAt: z.string().datetime(),
+		})
+		.strict(),
+	z
+		.object({
 			...operationBase,
 			type: z.literal("mapping.set_external_id"),
 			mappingId: idSchema,
