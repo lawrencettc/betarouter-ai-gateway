@@ -63,6 +63,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useFetchClient } from "@/lib/fetch-client";
 
+import { prepareHiddenCanaryOperations } from "./canary-operations";
+
 import type { paths } from "@/lib/api/v1";
 
 type Summary =
@@ -593,6 +595,84 @@ function EditEntityDialog({
 	if (!entity) {
 		return null;
 	}
+	const buildMappingOperations = (
+		hiddenCanary: boolean,
+	): Operation[] | null => {
+		if (entity.kind !== "mapping") {
+			return null;
+		}
+		const requestedCapabilities = disabledCapabilities
+			.split(",")
+			.map((value) => value.trim())
+			.filter(Boolean);
+		const invalidCapabilities = requestedCapabilities.filter(
+			(value) => !isDisabledCapability(value),
+		);
+		if (invalidCapabilities.length > 0) {
+			toast.error(
+				`Unsupported capability name${invalidCapabilities.length === 1 ? "" : "s"}: ${invalidCapabilities.join(", ")}`,
+			);
+			return null;
+		}
+
+		const operations: Operation[] = [];
+		operations.push({
+			version: 1,
+			type: "mapping.set_policy",
+			mappingId: entity.item.id,
+			expectedUpdatedAt: entity.item.policy?.updatedAt ?? null,
+			patch: {
+				enabled,
+				externalIdOverride:
+					externalId === entity.item.externalId ? null : externalId,
+				priority: Number(priority),
+				weight: Number(weight),
+				breakerEnabled,
+				contextSizeLimit: contextSizeLimit ? Number(contextSizeLimit) : null,
+				maxOutputLimit: maxOutputLimit ? Number(maxOutputLimit) : null,
+				disabledCapabilities:
+					requestedCapabilities.filter(isDisabledCapability),
+			},
+		});
+		if (priceMode === "source_cost") {
+			operations.push({
+				version: 1,
+				type: "mapping.set_price_policy",
+				mappingId: entity.item.id,
+				expectedUpdatedAt: entity.item.pricePolicyUpdatedAt,
+				policy: { mode: "source_cost" },
+			});
+		} else if (priceMode === "markup") {
+			operations.push({
+				version: 1,
+				type: "mapping.set_price_policy",
+				mappingId: entity.item.id,
+				expectedUpdatedAt: entity.item.pricePolicyUpdatedAt,
+				policy: { mode: "markup", markupBps: Number(markup) },
+			});
+		} else {
+			let fixedPrices: Extract<
+				Extract<Operation, { type: "mapping.set_price_policy" }>["policy"],
+				{ mode: "fixed" }
+			>["fixedPrices"];
+			try {
+				fixedPrices = JSON.parse(fixedPricesJson) as typeof fixedPrices;
+			} catch {
+				toast.error("Fixed prices must be valid JSON");
+				return null;
+			}
+			operations.push({
+				version: 1,
+				type: "mapping.set_price_policy",
+				mappingId: entity.item.id,
+				expectedUpdatedAt: entity.item.pricePolicyUpdatedAt,
+				policy: { mode: "fixed", fixedPrices },
+			});
+		}
+		return hiddenCanary
+			? prepareHiddenCanaryOperations(entity.item, operations)
+			: operations;
+	};
 	const save = () => {
 		let operations: Operation[];
 		if (entity.kind === "provider") {
@@ -649,79 +729,19 @@ function EditEntityDialog({
 				},
 			];
 		} else {
-			const requestedCapabilities = disabledCapabilities
-				.split(",")
-				.map((value) => value.trim())
-				.filter(Boolean);
-			const invalidCapabilities = requestedCapabilities.filter(
-				(value) => !isDisabledCapability(value),
-			);
-			if (invalidCapabilities.length > 0) {
-				toast.error(
-					`Unsupported capability name${invalidCapabilities.length === 1 ? "" : "s"}: ${invalidCapabilities.join(", ")}`,
-				);
+			const mappingOperations = buildMappingOperations(false);
+			if (!mappingOperations) {
 				return;
 			}
-			operations = [
-				{
-					version: 1,
-					type: "mapping.set_policy",
-					mappingId: entity.item.id,
-					expectedUpdatedAt: entity.item.policy?.updatedAt ?? null,
-					patch: {
-						enabled,
-						externalIdOverride:
-							externalId === entity.item.externalId ? null : externalId,
-						priority: Number(priority),
-						weight: Number(weight),
-						breakerEnabled,
-						contextSizeLimit: contextSizeLimit
-							? Number(contextSizeLimit)
-							: null,
-						maxOutputLimit: maxOutputLimit ? Number(maxOutputLimit) : null,
-						disabledCapabilities:
-							requestedCapabilities.filter(isDisabledCapability),
-					},
-				},
-			];
-			if (priceMode === "source_cost") {
-				operations.push({
-					version: 1,
-					type: "mapping.set_price_policy",
-					mappingId: entity.item.id,
-					expectedUpdatedAt: entity.item.pricePolicyUpdatedAt,
-					policy: { mode: "source_cost" },
-				});
-			} else if (priceMode === "markup") {
-				operations.push({
-					version: 1,
-					type: "mapping.set_price_policy",
-					mappingId: entity.item.id,
-					expectedUpdatedAt: entity.item.pricePolicyUpdatedAt,
-					policy: { mode: "markup", markupBps: Number(markup) },
-				});
-			} else {
-				let fixedPrices: Extract<
-					Extract<Operation, { type: "mapping.set_price_policy" }>["policy"],
-					{ mode: "fixed" }
-				>["fixedPrices"];
-				try {
-					fixedPrices = JSON.parse(fixedPricesJson) as typeof fixedPrices;
-				} catch {
-					toast.error("Fixed prices must be valid JSON");
-					return;
-				}
-				operations.push({
-					version: 1,
-					type: "mapping.set_price_policy",
-					mappingId: entity.item.id,
-					expectedUpdatedAt: entity.item.pricePolicyUpdatedAt,
-					policy: {
-						mode: "fixed",
-						fixedPrices,
-					},
-				});
-			}
+			operations = mappingOperations;
+		}
+		onOperations(operations);
+		onOpenChange(false);
+	};
+	const saveHiddenCanary = () => {
+		const operations = buildMappingOperations(true);
+		if (!operations) {
+			return;
 		}
 		onOperations(operations);
 		onOpenChange(false);
@@ -983,10 +1003,26 @@ function EditEntityDialog({
 						</>
 					)}
 				</div>
+				{entity.kind === "mapping" && (
+					<Alert>
+						<ShieldCheck className="size-4" />
+						<AlertTitle>Hidden canary</AlertTitle>
+						<AlertDescription>
+							Atomically activates this mapping at weight 0 together with its
+							provider and model, while keeping both hidden and direct use
+							disabled.
+						</AlertDescription>
+					</Alert>
+				)}
 				<DialogFooter>
 					<Button variant="outline" onClick={() => onOpenChange(false)}>
 						Cancel
 					</Button>
+					{entity.kind === "mapping" && (
+						<Button variant="outline" onClick={saveHiddenCanary}>
+							Prepare hidden canary
+						</Button>
+					)}
 					<Button onClick={save}>Preview change</Button>
 				</DialogFooter>
 			</DialogContent>
