@@ -61,6 +61,8 @@ export interface MappingReadiness {
 	sourcePrices?: PriceMap;
 	customerPrices?: PriceMap;
 	margin?: PriceMap;
+	pricingMode?: "source_cost" | "markup" | "fixed" | null;
+	markupBps?: number | null;
 }
 
 export interface CatalogBreakerState {
@@ -136,6 +138,8 @@ export interface EffectiveMapping {
 	sourcePrices: PriceMap;
 	customerPrices: PriceMap;
 	margin: PriceMap;
+	pricingMode: "source_cost" | "markup" | "fixed" | null;
+	markupBps: number | null;
 	reasons: MappingEligibilityReason[];
 }
 
@@ -329,6 +333,8 @@ export function resolveEffectiveCatalog(
 			sourcePrices: readiness?.sourcePrices ?? {},
 			customerPrices: readiness?.customerPrices ?? {},
 			margin: readiness?.margin ?? {},
+			pricingMode: readiness?.pricingMode ?? null,
+			markupBps: readiness?.markupBps ?? null,
 			reasons: reasons.sort(),
 		};
 	});

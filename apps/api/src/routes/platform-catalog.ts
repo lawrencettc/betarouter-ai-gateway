@@ -95,6 +95,8 @@ const effectiveMappingSchema = z.object({
 	sourcePrices: z.record(z.string(), z.string()),
 	customerPrices: z.record(z.string(), z.string()),
 	margin: z.record(z.string(), z.string()),
+	pricingMode: z.enum(["source_cost", "markup", "fixed"]).nullable(),
+	markupBps: z.number().nullable(),
 	reasons: z.array(z.string()),
 });
 const listQuerySchema = z.object({
@@ -187,6 +189,8 @@ function resolvePricePolicy(
 	policy: CatalogPolicyState["prices"][string]["policy"] | undefined,
 ): ResolvedMappingPrice & {
 	sourcePrices: ReturnType<typeof sourceMappingPricesToPriceMap>;
+	pricingMode: "source_cost" | "markup" | "fixed" | null;
+	markupBps: number | null;
 } {
 	const sourcePrices = sourceMappingPricesToPriceMap(mapping);
 	if (!policy) {
@@ -198,6 +202,8 @@ function resolvePricePolicy(
 			missingUnits: [],
 			invalidUnits: [],
 			negativeMarginUnits: [],
+			pricingMode: null,
+			markupBps: null,
 		};
 	}
 	const resolved = resolveMappingPrice({
@@ -219,7 +225,12 @@ function resolvePricePolicy(
 						}
 					: { mode: "source_cost" },
 	});
-	return { ...resolved, sourcePrices };
+	return {
+		...resolved,
+		sourcePrices,
+		pricingMode: policy.mode,
+		markupBps: policy.mode === "markup" ? policy.markupBps : null,
+	};
 }
 
 async function loadCatalogView(): Promise<{
@@ -341,6 +352,8 @@ async function loadCatalogView(): Promise<{
 						sourcePrices: prices.sourcePrices,
 						customerPrices: prices.customerPrices,
 						margin: prices.margin,
+						pricingMode: prices.pricingMode,
+						markupBps: prices.markupBps,
 					},
 				];
 			}),
@@ -490,6 +503,8 @@ function resolveStateSnapshot(
 						sourcePrices: prices.sourcePrices,
 						customerPrices: prices.customerPrices,
 						margin: prices.margin,
+						pricingMode: prices.pricingMode,
+						markupBps: prices.markupBps,
 					},
 				];
 			}),

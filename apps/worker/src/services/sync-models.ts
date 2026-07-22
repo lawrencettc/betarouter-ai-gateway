@@ -138,6 +138,11 @@ export async function syncProvidersAndModels() {
 									mapping.cachedInputPrice !== undefined
 										? mapping.cachedInputPrice.toString()
 										: null,
+								cacheReadInputPrice:
+									"cacheReadInputPrice" in mapping &&
+									mapping.cacheReadInputPrice !== undefined
+										? mapping.cacheReadInputPrice.toString()
+										: null,
 								cacheWriteInputPrice:
 									"cacheWriteInputPrice" in mapping &&
 									mapping.cacheWriteInputPrice !== undefined
@@ -157,6 +162,21 @@ export async function syncProvidersAndModels() {
 									"imageOutputPrice" in mapping &&
 									mapping.imageOutputPrice !== undefined
 										? mapping.imageOutputPrice.toString()
+										: null,
+								inputAudioPrice:
+									"inputAudioPrice" in mapping &&
+									mapping.inputAudioPrice !== undefined
+										? mapping.inputAudioPrice.toString()
+										: null,
+								cachedImageInputPrice:
+									"cachedImageInputPrice" in mapping &&
+									mapping.cachedImageInputPrice !== undefined
+										? mapping.cachedImageInputPrice.toString()
+										: null,
+								cachedInputAudioPrice:
+									"cachedInputAudioPrice" in mapping &&
+									mapping.cachedInputAudioPrice !== undefined
+										? mapping.cachedInputAudioPrice.toString()
 										: null,
 								outputAudioPrice:
 									"outputAudioPrice" in mapping &&
@@ -256,6 +276,11 @@ export async function syncProvidersAndModels() {
 								mapping.cachedInputPrice !== undefined
 									? mapping.cachedInputPrice.toString()
 									: undefined,
+							cacheReadInputPrice:
+								"cacheReadInputPrice" in mapping &&
+								mapping.cacheReadInputPrice !== undefined
+									? mapping.cacheReadInputPrice.toString()
+									: undefined,
 							cacheWriteInputPrice:
 								"cacheWriteInputPrice" in mapping &&
 								mapping.cacheWriteInputPrice !== undefined
@@ -275,6 +300,21 @@ export async function syncProvidersAndModels() {
 								"imageOutputPrice" in mapping &&
 								mapping.imageOutputPrice !== undefined
 									? mapping.imageOutputPrice.toString()
+									: undefined,
+							inputAudioPrice:
+								"inputAudioPrice" in mapping &&
+								mapping.inputAudioPrice !== undefined
+									? mapping.inputAudioPrice.toString()
+									: undefined,
+							cachedImageInputPrice:
+								"cachedImageInputPrice" in mapping &&
+								mapping.cachedImageInputPrice !== undefined
+									? mapping.cachedImageInputPrice.toString()
+									: undefined,
+							cachedInputAudioPrice:
+								"cachedInputAudioPrice" in mapping &&
+								mapping.cachedInputAudioPrice !== undefined
+									? mapping.cachedInputAudioPrice.toString()
 									: undefined,
 							outputAudioPrice:
 								"outputAudioPrice" in mapping &&

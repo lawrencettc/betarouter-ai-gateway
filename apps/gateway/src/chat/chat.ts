@@ -32,6 +32,7 @@ import {
 import {
 	enforceCatalogRequest,
 	filterProviderMappingsByCatalog,
+	findCatalogMappingForProvider,
 } from "@/lib/catalog-policy.js";
 import { getClientIpFromRequest } from "@/lib/client-ip.js";
 import {
@@ -5077,10 +5078,19 @@ chat.openapi(completions, async (c) => {
 	const insertLog = (
 		logData: Parameters<typeof _insertLog>[0],
 		options?: Parameters<typeof _insertLog>[1],
-	) =>
-		_insertLog(
+	) => {
+		const catalogMapping = findCatalogMappingForProvider(
+			catalogRequestDecision,
+			usedProvider,
+			usedRegion ?? null,
+		);
+		return _insertLog(
 			{
 				...logData,
+				modelProviderMappingId:
+					logData.modelProviderMappingId ?? catalogMapping?.id ?? null,
+				catalogRevisionId:
+					logData.catalogRevisionId ?? catalogRequestDecision?.revision ?? null,
 				sessionId: logData.sessionId ?? sessionId ?? null,
 				internalContentFilter: shouldTagContentFilter
 					? true
@@ -5090,6 +5100,7 @@ chat.openapi(completions, async (c) => {
 			},
 			options,
 		);
+	};
 
 	if (contentFilterBlocked) {
 		const contentFilterResponseId = `chatcmpl-${Date.now()}`;

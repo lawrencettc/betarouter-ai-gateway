@@ -65,7 +65,7 @@ describe("resolveMappingPrice", () => {
 				inputPerMillionTokens: "2",
 				ocrPage: "0.01",
 			}),
-		).toEqual({ input: "2", ocrPage: "0.01" });
+		).toEqual({ input: "2", audioInput: "2", ocrPage: "0.01" });
 	});
 
 	it("requires at least one source billing unit", () => {

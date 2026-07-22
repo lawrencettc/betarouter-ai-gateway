@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { filterProviderMappingsByCatalog } from "./catalog-policy.js";
+import {
+	filterProviderMappingsByCatalog,
+	findCatalogMappingForProvider,
+} from "./catalog-policy.js";
 
 import type { CatalogRequestDecision } from "@llmgateway/catalog";
 import type { ProviderModelMapping } from "@llmgateway/models";
@@ -31,6 +34,8 @@ describe("filterProviderMappingsByCatalog", () => {
 					sourcePrices: {},
 					customerPrices: {},
 					margin: {},
+					pricingMode: null,
+					markupBps: null,
 					reasons: [],
 				},
 				{
@@ -48,6 +53,8 @@ describe("filterProviderMappingsByCatalog", () => {
 					sourcePrices: {},
 					customerPrices: {},
 					margin: {},
+					pricingMode: null,
+					markupBps: null,
 					reasons: [],
 				},
 			],
@@ -68,5 +75,8 @@ describe("filterProviderMappingsByCatalog", () => {
 				externalId: "new-upstream-id",
 			}),
 		]);
+		expect(
+			findCatalogMappingForProvider(decision, "relay", "us-east"),
+		).toMatchObject({ id: "mapping-2" });
 	});
 });

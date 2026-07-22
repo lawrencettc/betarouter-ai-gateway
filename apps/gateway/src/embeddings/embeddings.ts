@@ -32,6 +32,7 @@ import {
 import {
 	enforceCatalogRequest,
 	filterProviderMappingsByCatalog,
+	findCatalogMappingForProvider,
 } from "@/lib/catalog-policy.js";
 import { getClientIpFromRequest } from "@/lib/client-ip.js";
 import { assertProviderCompliant } from "@/lib/compliance.js";
@@ -528,6 +529,11 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 			message: "No eligible embedding provider mapping is available",
 		});
 	}
+	const catalogMapping = findCatalogMappingForProvider(
+		catalogDecision,
+		mapping.providerId,
+		mapping.region ?? null,
+	);
 	const upstreamModel = mapping.externalId;
 	const providerId = mapping.providerId;
 
@@ -1028,6 +1034,8 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 				providerKeyId: attempt.providerKey?.id,
 				usedModel: `${providerId}/${modelDefId}`,
 				usedModelMapping: upstreamModel,
+				modelProviderMappingId: catalogMapping?.id,
+				catalogRevisionId: catalogDecision?.revision,
 				usedProvider: providerId,
 				requestedModel,
 				requestedProvider: providerId,

@@ -4,6 +4,7 @@ export type PriceUnit =
 	| "input"
 	| "output"
 	| "cachedInput"
+	| "cacheRead"
 	| "cacheWrite"
 	| "cacheWrite1h"
 	| "imageInput"
@@ -11,6 +12,9 @@ export type PriceUnit =
 	| "request"
 	| "webSearch"
 	| "audioOutput"
+	| "audioInput"
+	| "cachedImageInput"
+	| "cachedAudioInput"
 	| "ocrPage"
 	| "inputCharacters"
 	| `second:${string}`;
@@ -36,10 +40,14 @@ export interface SourceMappingPriceFields {
 	inputPrice?: string | null;
 	outputPrice?: string | null;
 	cachedInputPrice?: string | null;
+	cacheReadInputPrice?: string | null;
 	cacheWriteInputPrice?: string | null;
 	cacheWriteInputPrice1h?: string | null;
 	imageInputPrice?: string | null;
 	imageOutputPrice?: string | null;
+	inputAudioPrice?: string | null;
+	cachedImageInputPrice?: string | null;
+	cachedInputAudioPrice?: string | null;
 	requestPrice?: string | null;
 	webSearchPrice?: string | null;
 	outputAudioPrice?: string | null;
@@ -107,16 +115,18 @@ export function sourceMappingPricesToPriceMap(
 		...(perMillion(mapping.cachedInputPrice) !== undefined && {
 			cachedInput: perMillion(mapping.cachedInputPrice),
 		}),
+		...(perMillion(mapping.cacheReadInputPrice) !== undefined && {
+			cacheRead: perMillion(mapping.cacheReadInputPrice),
+		}),
 		...(perMillion(mapping.cacheWriteInputPrice) !== undefined && {
 			cacheWrite: perMillion(mapping.cacheWriteInputPrice),
 		}),
 		...(perMillion(mapping.cacheWriteInputPrice1h) !== undefined && {
 			cacheWrite1h: perMillion(mapping.cacheWriteInputPrice1h),
 		}),
-		...(mapping.imageInputPrice !== null &&
-			mapping.imageInputPrice !== undefined && {
-				imageInput: mapping.imageInputPrice,
-			}),
+		...(perMillion(mapping.imageInputPrice) !== undefined && {
+			imageInput: perMillion(mapping.imageInputPrice),
+		}),
 		...(perMillion(mapping.imageOutputPrice) !== undefined && {
 			imageOutput: perMillion(mapping.imageOutputPrice),
 		}),
@@ -130,6 +140,15 @@ export function sourceMappingPricesToPriceMap(
 			}),
 		...(perMillion(mapping.outputAudioPrice) !== undefined && {
 			audioOutput: perMillion(mapping.outputAudioPrice),
+		}),
+		...(perMillion(mapping.inputAudioPrice) !== undefined && {
+			audioInput: perMillion(mapping.inputAudioPrice),
+		}),
+		...(perMillion(mapping.cachedImageInputPrice) !== undefined && {
+			cachedImageInput: perMillion(mapping.cachedImageInputPrice),
+		}),
+		...(perMillion(mapping.cachedInputAudioPrice) !== undefined && {
+			cachedAudioInput: perMillion(mapping.cachedInputAudioPrice),
 		}),
 		...(mapping.ocrPagePrice !== null &&
 			mapping.ocrPagePrice !== undefined && {
@@ -151,12 +170,16 @@ export function fixedPricesV1ToPriceMap(fixed: FixedPricesV1Input): PriceMap {
 	return {
 		...(fixed.inputPerMillionTokens !== undefined && {
 			input: fixed.inputPerMillionTokens,
+			audioInput: fixed.inputPerMillionTokens,
 		}),
 		...(fixed.outputPerMillionTokens !== undefined && {
 			output: fixed.outputPerMillionTokens,
 		}),
 		...(fixed.cachedInputPerMillionTokens !== undefined && {
 			cachedInput: fixed.cachedInputPerMillionTokens,
+			cacheRead: fixed.cachedInputPerMillionTokens,
+			cachedImageInput: fixed.cachedInputPerMillionTokens,
+			cachedAudioInput: fixed.cachedInputPerMillionTokens,
 		}),
 		...(fixed.cacheWritePerMillionTokens !== undefined && {
 			cacheWrite: fixed.cacheWritePerMillionTokens,

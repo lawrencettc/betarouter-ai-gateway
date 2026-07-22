@@ -39,6 +39,8 @@ function snapshot(overrides: Partial<EffectiveCatalog> = {}): EffectiveCatalog {
 				sourcePrices: {},
 				customerPrices: {},
 				margin: {},
+				pricingMode: null,
+				markupBps: null,
 				reasons: [],
 			},
 		],

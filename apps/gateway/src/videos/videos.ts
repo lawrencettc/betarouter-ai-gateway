@@ -24,6 +24,7 @@ import {
 import {
 	enforceCatalogRequest,
 	filterProviderMappingsByCatalog,
+	findCatalogMappingForProvider,
 } from "@/lib/catalog-policy.js";
 import { getClientIpFromRequest } from "@/lib/client-ip.js";
 import {
@@ -4801,6 +4802,11 @@ videos.openapi(createVideo, async (c) => {
 	const parsedStorageUri = parseGcsUri(storageUri);
 
 	const initialStatus = normalizeVideoStatus(upstreamResponse.status);
+	const acceptedCatalogMapping = findCatalogMappingForProvider(
+		catalogDecision,
+		selectedProviderMapping.providerId,
+		selectedProviderMapping.region ?? null,
+	);
 	const created = await db
 		.insert(tables.videoJob)
 		.values({
@@ -4822,6 +4828,8 @@ videos.openapi(createVideo, async (c) => {
 			providerConfigIndex: selectedProviderContext.configIndex,
 			platformProviderCredentialId:
 				selectedProviderContext.platformCredentialId ?? null,
+			modelProviderMappingId: acceptedCatalogMapping?.id ?? null,
+			catalogRevisionId: catalogDecision?.revision ?? null,
 			upstreamId,
 			prompt: request.prompt,
 			status: initialStatus,

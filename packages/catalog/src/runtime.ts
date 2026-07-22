@@ -53,6 +53,8 @@ const storedCatalogSnapshotSchema = z
 				sourcePrices: z.record(z.string(), z.string()),
 				customerPrices: z.record(z.string(), z.string()),
 				margin: z.record(z.string(), z.string()),
+				pricingMode: z.enum(["source_cost", "markup", "fixed"]).nullable(),
+				markupBps: z.number().nullable(),
 				reasons: z.array(z.string()),
 			}),
 		),

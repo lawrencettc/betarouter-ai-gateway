@@ -32,6 +32,7 @@ import {
 import {
 	enforceCatalogRequest,
 	filterProviderMappingsByCatalog,
+	findCatalogMappingForProvider,
 } from "@/lib/catalog-policy.js";
 import { getClientIpFromRequest } from "@/lib/client-ip.js";
 import { assertProviderCompliant } from "@/lib/compliance.js";
@@ -447,6 +448,11 @@ ocr.openapi(createOcr, async (c): Promise<any> => {
 			message: "No eligible OCR provider mapping is available",
 		});
 	}
+	const catalogMapping = findCatalogMappingForProvider(
+		catalogDecision,
+		mapping.providerId,
+		mapping.region ?? null,
+	);
 	const upstreamModel = mapping.externalId;
 	const providerId = mapping.providerId;
 
@@ -749,6 +755,8 @@ ocr.openapi(createOcr, async (c): Promise<any> => {
 				providerKeyId: attempt.providerKey?.id,
 				usedModel: `${providerId}/${modelDefId}`,
 				usedModelMapping: upstreamModel,
+				modelProviderMappingId: catalogMapping?.id,
+				catalogRevisionId: catalogDecision?.revision,
 				usedProvider: providerId,
 				requestedModel,
 				requestedProvider: providerId,

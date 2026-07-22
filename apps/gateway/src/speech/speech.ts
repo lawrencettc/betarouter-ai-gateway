@@ -32,6 +32,7 @@ import {
 import {
 	enforceCatalogRequest,
 	filterProviderMappingsByCatalog,
+	findCatalogMappingForProvider,
 } from "@/lib/catalog-policy.js";
 import { getClientIpFromRequest } from "@/lib/client-ip.js";
 import { assertProviderCompliant } from "@/lib/compliance.js";
@@ -507,6 +508,11 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 			message: "No eligible speech provider mapping is available",
 		});
 	}
+	const catalogMapping = findCatalogMappingForProvider(
+		catalogDecision,
+		mapping.providerId,
+		mapping.region ?? null,
+	);
 	const upstreamModel = mapping.externalId;
 	const providerId = mapping.providerId;
 	const isOpenAI = providerId === "openai";
@@ -947,6 +953,8 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 				providerKeyId: attempt.providerKey?.id,
 				usedModel: `${providerId}/${modelDefId}`,
 				usedModelMapping: upstreamModel,
+				modelProviderMappingId: catalogMapping?.id,
+				catalogRevisionId: catalogDecision?.revision,
 				usedProvider: providerId,
 				requestedModel,
 				requestedProvider: providerId,
