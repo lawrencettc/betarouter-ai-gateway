@@ -1421,6 +1421,14 @@ export const platformAuditLogActions = [
 	"platform_provider.activate",
 	"platform_provider.deactivate",
 	"platform_provider.delete",
+	"platform_catalog.preview",
+	"platform_catalog.apply",
+	"platform_catalog.schedule",
+	"platform_catalog.cancel",
+	"platform_catalog.rollback",
+	"platform_catalog.test",
+	"platform_catalog.circuit_open",
+	"platform_catalog.circuit_close",
 ] as const;
 
 export type PlatformAuditLogAction = (typeof platformAuditLogActions)[number];
@@ -1432,7 +1440,9 @@ export const platformAuditLog = pgTable(
 		createdAt: timestamp().notNull().defaultNow(),
 		userId: text().notNull(),
 		action: text({ enum: platformAuditLogActions }).notNull(),
-		resourceId: text().references(() => platformProviderCredential.id),
+		// Catalog audits also identify providers, models, mappings, revisions, and
+		// change sets, so this deliberately remains a polymorphic identifier.
+		resourceId: text(),
 		success: boolean().notNull(),
 		requestId: text(),
 		ipAddress: text(),
@@ -1543,6 +1553,14 @@ export const log = pgTable(
 		requestedProvider: text(),
 		usedModel: text().notNull(),
 		usedModelMapping: text(),
+		modelProviderMappingId: text().references(
+			(): AnyPgColumn => modelProviderMapping.id,
+			{ onDelete: "set null" },
+		),
+		catalogRevisionId: bigint({ mode: "number" }).references(
+			(): AnyPgColumn => platformCatalogRevision.id,
+			{ onDelete: "set null" },
+		),
 		usedProvider: text().notNull(),
 		responseSize: integer().notNull(),
 		content: text(),
@@ -1773,6 +1791,14 @@ export const videoJob = pgTable(
 		usedModel: text().notNull(),
 		providerConfigIndex: integer(),
 		platformProviderCredentialId: text(),
+		modelProviderMappingId: text().references(
+			(): AnyPgColumn => modelProviderMapping.id,
+			{ onDelete: "set null" },
+		),
+		catalogRevisionId: bigint({ mode: "number" }).references(
+			(): AnyPgColumn => platformCatalogRevision.id,
+			{ onDelete: "set null" },
+		),
 		upstreamId: text().notNull(),
 		prompt: text().notNull(),
 		status: text({
@@ -2619,6 +2645,410 @@ export const modelProviderMapping = pgTable(
 		index("model_provider_mapping_status_model_id_idx").on(
 			table.status,
 			table.modelId,
+		),
+	],
+);
+
+export const platformCatalogLifecycleValues = [
+	"draft",
+	"active",
+	"deprecated",
+	"retired",
+] as const;
+
+export type PlatformCatalogLifecycle =
+	(typeof platformCatalogLifecycleValues)[number];
+
+export interface PlatformFixedPricesV1 {
+	version: 1;
+	inputPerMillionTokens?: string;
+	outputPerMillionTokens?: string;
+	cachedInputPerMillionTokens?: string;
+	cacheWritePerMillionTokens?: string;
+	cacheWrite1hPerMillionTokens?: string;
+	imageInput?: string;
+	imageOutput?: string;
+	request?: string;
+	webSearch?: string;
+	audioOutputPerMillionTokens?: string;
+	ocrPage?: string;
+	inputPerMillionCharacters?: string;
+	perSecondByResolution?: Record<string, string>;
+}
+
+export type PlatformCatalogOperationV1 =
+	| {
+			version: 1;
+			type: "provider.set_policy";
+			providerId: string;
+			expectedUpdatedAt: string | null;
+			patch: Record<string, unknown>;
+	  }
+	| {
+			version: 1;
+			type: "model.set_policy";
+			modelId: string;
+			expectedUpdatedAt: string | null;
+			patch: Record<string, unknown>;
+	  }
+	| {
+			version: 1;
+			type: "mapping.set_policy";
+			mappingId: string;
+			expectedUpdatedAt: string | null;
+			patch: Record<string, unknown>;
+	  }
+	| {
+			version: 1;
+			type: "mapping.set_price_policy";
+			mappingId: string;
+			expectedUpdatedAt: string | null;
+			policy: Record<string, unknown>;
+	  }
+	| {
+			version: 1;
+			type: "mapping.set_external_id";
+			mappingId: string;
+			expectedUpdatedAt: string | null;
+			externalId: string | null;
+	  }
+	| {
+			version: 1;
+			type: "entity.archive_policy";
+			entityType: "provider" | "model" | "mapping";
+			entityId: string;
+			expectedUpdatedAt: string;
+	  };
+
+export interface PlatformCatalogImpactSnapshotV1 {
+	version: 1;
+	lookbackHours: number;
+	requestCount: number | null;
+	customerCount: number | null;
+	apiKeyCount: number | null;
+	queuedJobCount: number | null;
+	fallbackGaps: string[];
+	priceDeltas: Record<string, string>;
+	marginDeltas: Record<string, string>;
+	warnings: string[];
+}
+
+export const platformCatalogRevision = pgTable(
+	"platform_catalog_revision",
+	{
+		id: bigint({ mode: "number" }).generatedAlwaysAsIdentity().primaryKey(),
+		createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+		changeSetId: text()
+			.notNull()
+			.references((): AnyPgColumn => platformCatalogChangeSet.id),
+		appliedBy: text().notNull(),
+		checksum: text().notNull(),
+		snapshot: jsonb().$type<Record<string, unknown>>().notNull(),
+	},
+	(table) => [
+		uniqueIndex("platform_catalog_revision_change_set_id_unique").on(
+			table.changeSetId,
+		),
+		uniqueIndex("platform_catalog_revision_checksum_unique").on(table.checksum),
+	],
+);
+
+export const platformProviderPolicy = pgTable(
+	"platform_provider_policy",
+	{
+		providerId: text()
+			.primaryKey()
+			.references(() => provider.id, { onDelete: "cascade" }),
+		visible: boolean().notNull().default(false),
+		enabled: boolean().notNull().default(false),
+		displayNameOverride: text(),
+		descriptionOverride: text(),
+		websiteOverride: text(),
+		sortOrder: integer().notNull().default(1000),
+		lifecycle: text({ enum: platformCatalogLifecycleValues })
+			.notNull()
+			.default("draft"),
+		deprecatedAt: timestamp({ withTimezone: true }),
+		retireAt: timestamp({ withTimezone: true }),
+		replacementProviderId: text().references((): AnyPgColumn => provider.id, {
+			onDelete: "set null",
+		}),
+		updatedAt: timestamp({ withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+		updatedBy: text().notNull(),
+	},
+	(table) => [
+		index("platform_provider_policy_visible_enabled_idx").on(
+			table.visible,
+			table.enabled,
+		),
+		check(
+			"platform_provider_policy_lifecycle_dates_check",
+			sql`${table.retireAt} IS NULL OR ${table.deprecatedAt} IS NULL OR ${table.retireAt} > ${table.deprecatedAt}`,
+		),
+		check(
+			"platform_provider_policy_lifecycle_check",
+			sql`${table.lifecycle} IN ('draft', 'active', 'deprecated', 'retired')`,
+		),
+	],
+);
+
+export const platformModelPolicy = pgTable(
+	"platform_model_policy",
+	{
+		modelId: text()
+			.primaryKey()
+			.references(() => model.id, { onDelete: "cascade" }),
+		visible: boolean().notNull().default(false),
+		enabled: boolean().notNull().default(false),
+		allowDirect: boolean().notNull().default(false),
+		displayNameOverride: text(),
+		descriptionOverride: text(),
+		aliasesOverride: jsonb().$type<string[]>(),
+		sortOrder: integer().notNull().default(1000),
+		lifecycle: text({ enum: platformCatalogLifecycleValues })
+			.notNull()
+			.default("draft"),
+		deprecatedAt: timestamp({ withTimezone: true }),
+		retireAt: timestamp({ withTimezone: true }),
+		replacementModelId: text().references((): AnyPgColumn => model.id, {
+			onDelete: "set null",
+		}),
+		retirementMessage: text(),
+		updatedAt: timestamp({ withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+		updatedBy: text().notNull(),
+	},
+	(table) => [
+		index("platform_model_policy_visible_enabled_idx").on(
+			table.visible,
+			table.enabled,
+		),
+		check(
+			"platform_model_policy_replacement_check",
+			sql`${table.replacementModelId} IS NULL OR ${table.replacementModelId} <> ${table.modelId}`,
+		),
+		check(
+			"platform_model_policy_lifecycle_dates_check",
+			sql`${table.retireAt} IS NULL OR ${table.deprecatedAt} IS NULL OR ${table.retireAt} > ${table.deprecatedAt}`,
+		),
+		check(
+			"platform_model_policy_lifecycle_check",
+			sql`${table.lifecycle} IN ('draft', 'active', 'deprecated', 'retired')`,
+		),
+	],
+);
+
+export const platformMappingPolicy = pgTable(
+	"platform_mapping_policy",
+	{
+		mappingId: text()
+			.primaryKey()
+			.references(() => modelProviderMapping.id, { onDelete: "cascade" }),
+		enabled: boolean().notNull().default(false),
+		externalIdOverride: text(),
+		contextSizeLimit: integer(),
+		maxOutputLimit: integer(),
+		disabledCapabilities: jsonb().$type<string[]>().notNull().default([]),
+		priority: integer().notNull().default(100),
+		weight: integer().notNull().default(100),
+		breakerEnabled: boolean().notNull().default(true),
+		requiredTestRevision: text(),
+		updatedAt: timestamp({ withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+		updatedBy: text().notNull(),
+	},
+	(table) => [
+		index("platform_mapping_policy_enabled_priority_idx").on(
+			table.enabled,
+			table.priority,
+		),
+		check(
+			"platform_mapping_policy_context_size_check",
+			sql`${table.contextSizeLimit} IS NULL OR ${table.contextSizeLimit} > 0`,
+		),
+		check(
+			"platform_mapping_policy_max_output_check",
+			sql`${table.maxOutputLimit} IS NULL OR ${table.maxOutputLimit} > 0`,
+		),
+		check(
+			"platform_mapping_policy_weight_check",
+			sql`${table.weight} BETWEEN 0 AND 10000`,
+		),
+	],
+);
+
+export const platformMappingPricePolicy = pgTable(
+	"platform_mapping_price_policy",
+	{
+		mappingId: text()
+			.primaryKey()
+			.references(() => modelProviderMapping.id, { onDelete: "cascade" }),
+		currency: text({ enum: ["USD"] })
+			.notNull()
+			.default("USD"),
+		mode: text({ enum: ["source_cost", "markup", "fixed"] }).notNull(),
+		markupBps: integer(),
+		fixedPrices: jsonb().$type<PlatformFixedPricesV1>(),
+		allowNegativeMargin: boolean().notNull().default(false),
+		negativeMarginReason: text(),
+		updatedAt: timestamp({ withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+		updatedBy: text().notNull(),
+	},
+	(table) => [
+		check(
+			"platform_mapping_price_policy_markup_check",
+			sql`${table.markupBps} IS NULL OR ${table.markupBps} BETWEEN -10000 AND 100000`,
+		),
+		check(
+			"platform_mapping_price_policy_mode_value_check",
+			sql`(${table.mode} <> 'markup' OR ${table.markupBps} IS NOT NULL) AND (${table.mode} <> 'fixed' OR ${table.fixedPrices} IS NOT NULL)`,
+		),
+		check(
+			"platform_mapping_price_policy_negative_margin_check",
+			sql`${table.allowNegativeMargin} = false OR NULLIF(BTRIM(${table.negativeMarginReason}), '') IS NOT NULL`,
+		),
+		check(
+			"platform_mapping_price_policy_currency_check",
+			sql`${table.currency} = 'USD'`,
+		),
+		check(
+			"platform_mapping_price_policy_mode_check",
+			sql`${table.mode} IN ('source_cost', 'markup', 'fixed')`,
+		),
+	],
+);
+
+export const platformCatalogChangeSetStates = [
+	"draft",
+	"scheduled",
+	"applying",
+	"applied",
+	"failed",
+	"cancelled",
+	"rolled_back",
+] as const;
+
+export const platformCatalogChangeSet = pgTable(
+	"platform_catalog_change_set",
+	{
+		id: text().primaryKey().notNull().$defaultFn(shortid),
+		createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+		createdBy: text().notNull(),
+		updatedAt: timestamp({ withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+		title: text().notNull(),
+		reason: text().notNull(),
+		state: text({ enum: platformCatalogChangeSetStates })
+			.notNull()
+			.default("draft"),
+		baseRevision: bigint({ mode: "number" }).references(
+			() => platformCatalogRevision.id,
+		),
+		operations: jsonb().$type<PlatformCatalogOperationV1[]>().notNull(),
+		impactSnapshot: jsonb().$type<PlatformCatalogImpactSnapshotV1>(),
+		effectiveAt: timestamp({ withTimezone: true }),
+		appliedAt: timestamp({ withTimezone: true }),
+		appliedRevision: bigint({ mode: "number" }).references(
+			() => platformCatalogRevision.id,
+		),
+		inverseOf: text().references(
+			(): AnyPgColumn => platformCatalogChangeSet.id,
+		),
+		errorCode: text(),
+		idempotencyKey: text().notNull(),
+	},
+	(table) => [
+		uniqueIndex("platform_catalog_change_set_idempotency_key_unique").on(
+			table.idempotencyKey,
+		),
+		index("platform_catalog_change_set_state_effective_at_idx").on(
+			table.state,
+			table.effectiveAt,
+		),
+		check(
+			"platform_catalog_change_set_state_check",
+			sql`${table.state} IN ('draft', 'scheduled', 'applying', 'applied', 'failed', 'cancelled', 'rolled_back')`,
+		),
+	],
+);
+
+export const platformMappingTestRun = pgTable(
+	"platform_mapping_test_run",
+	{
+		id: text().primaryKey().notNull().$defaultFn(shortid),
+		createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+		createdBy: text().notNull(),
+		mappingId: text()
+			.notNull()
+			.references(() => modelProviderMapping.id, { onDelete: "cascade" }),
+		credentialId: text().references(() => platformProviderCredential.id, {
+			onDelete: "set null",
+		}),
+		catalogRevision: bigint({ mode: "number" }).references(
+			() => platformCatalogRevision.id,
+		),
+		status: text({ enum: ["running", "passed", "failed", "error"] })
+			.notNull()
+			.default("running"),
+		testProfile: text().notNull(),
+		latencyMs: integer(),
+		upstreamStatus: integer(),
+		errorClass: text(),
+		sanitizedMessage: text(),
+		finishedAt: timestamp({ withTimezone: true }),
+	},
+	(table) => [
+		index("platform_mapping_test_run_mapping_created_at_idx").on(
+			table.mappingId,
+			table.createdAt,
+		),
+		check(
+			"platform_mapping_test_run_status_check",
+			sql`${table.status} IN ('running', 'passed', 'failed', 'error')`,
+		),
+	],
+);
+
+export const platformMappingHealthSummary = pgTable(
+	"platform_mapping_health_summary",
+	{
+		id: text().primaryKey().notNull().$defaultFn(shortid),
+		createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+		mappingId: text()
+			.notNull()
+			.references(() => modelProviderMapping.id, { onDelete: "cascade" }),
+		catalogRevision: bigint({ mode: "number" }).references(
+			() => platformCatalogRevision.id,
+		),
+		breakerState: text({ enum: ["closed", "open", "half_open"] }).notNull(),
+		requestCount: integer().notNull().default(0),
+		upstreamFailureCount: integer().notNull().default(0),
+		latencyP50Ms: integer(),
+		latencyP95Ms: integer(),
+		lastSuccessAt: timestamp({ withTimezone: true }),
+		openedAt: timestamp({ withTimezone: true }),
+		retryAt: timestamp({ withTimezone: true }),
+	},
+	(table) => [
+		index("platform_mapping_health_summary_mapping_created_at_idx").on(
+			table.mappingId,
+			table.createdAt,
+		),
+		check(
+			"platform_mapping_health_summary_breaker_state_check",
+			sql`${table.breakerState} IN ('closed', 'open', 'half_open')`,
 		),
 	],
 );
