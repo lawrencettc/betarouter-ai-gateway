@@ -5,6 +5,7 @@ import {
 	CatalogConflictError,
 	type CatalogPolicyState,
 } from "./change-set.js";
+import { catalogOperationV1Schema } from "./contracts.js";
 
 const state: CatalogPolicyState = {
 	providers: {
@@ -51,6 +52,67 @@ describe("applyCatalogOperations", () => {
 			providerId: "openai",
 			patch: { visible: false, enabled: false, lifecycle: "draft" },
 		});
+	});
+
+	it("generates inverse policy operations that survive persisted schema validation", () => {
+		const existingState: CatalogPolicyState = {
+			providers: state.providers,
+			models: {
+				"gpt-5.5": {
+					modelId: "gpt-5.5",
+					visible: false,
+					enabled: false,
+					allowDirect: false,
+					lifecycle: "draft",
+					updatedAt: "2026-07-22T00:00:00.000Z",
+					updatedBy: "admin-1",
+				},
+			},
+			mappings: {
+				"mapping-1": {
+					mappingId: "mapping-1",
+					enabled: false,
+					weight: 0,
+					updatedAt: "2026-07-22T00:00:00.000Z",
+					updatedBy: "admin-1",
+				},
+			},
+			prices: {},
+		};
+		const applied = applyCatalogOperations({
+			state: existingState,
+			actor: "admin-2",
+			updatedAt: "2026-07-22T01:00:00.000Z",
+			operations: [
+				{
+					version: 1,
+					type: "provider.set_policy",
+					providerId: "openai",
+					expectedUpdatedAt: "2026-07-22T00:00:00.000Z",
+					patch: { enabled: true },
+				},
+				{
+					version: 1,
+					type: "model.set_policy",
+					modelId: "gpt-5.5",
+					expectedUpdatedAt: "2026-07-22T00:00:00.000Z",
+					patch: { enabled: true },
+				},
+				{
+					version: 1,
+					type: "mapping.set_policy",
+					mappingId: "mapping-1",
+					expectedUpdatedAt: "2026-07-22T00:00:00.000Z",
+					patch: { enabled: true },
+				},
+			],
+		});
+
+		expect(
+			applied.inverseOperations.map(
+				(operation) => catalogOperationV1Schema.safeParse(operation).success,
+			),
+		).toEqual([true, true, true]);
 	});
 
 	it("rejects the complete batch atomically on an optimistic conflict", () => {
