@@ -7,6 +7,23 @@ import { models as modelsList, providers } from "@llmgateway/models";
 import type { ProviderModelMapping } from "@llmgateway/models";
 
 describe("Models API", () => {
+	test("GET /v1/models fails open when shadow mode has no catalog revision", async () => {
+		const previousShadowRead = process.env.PLATFORM_CATALOG_SHADOW_READ;
+		process.env.PLATFORM_CATALOG_SHADOW_READ = "true";
+		try {
+			const res = await app.request("/v1/models");
+			expect(res.status).toBe(200);
+			const json = await res.json();
+			expect(json.data.length).toBeGreaterThan(0);
+		} finally {
+			if (previousShadowRead === undefined) {
+				delete process.env.PLATFORM_CATALOG_SHADOW_READ;
+			} else {
+				process.env.PLATFORM_CATALOG_SHADOW_READ = previousShadowRead;
+			}
+		}
+	});
+
 	test("GET /v1/models should return a list of models", async () => {
 		const res = await app.request("/v1/models");
 
