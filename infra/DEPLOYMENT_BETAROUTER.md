@@ -38,9 +38,12 @@ chmod 600 .env.production
 ```
 
 Replace every `replace-with-...` value in `.env.production`, including the
-Cloudflare tunnel token and `ADMIN_EMAILS`. Admin users first create a normal
-BetaRouter account, then sign in to `admin.betarouter.com` with the same email
-and password. Keep this file only on the Droplet.
+Cloudflare tunnel token, `ADMIN_EMAILS`, platform-provider encryption keys, and
+`PLATFORM_ADMIN_USER_IDS`. Admin users first create a normal BetaRouter account;
+look up that account's immutable database user ID and place it in
+`PLATFORM_ADMIN_USER_IDS` before enabling credential management. They then sign
+in to `admin.betarouter.com` with the same email and password. Keep this file
+only on the Droplet.
 
 Normally, GitHub Actions publishes the unified image to GHCR. Start it with:
 

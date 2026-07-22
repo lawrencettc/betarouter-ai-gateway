@@ -59,7 +59,11 @@ import {
 import type { RoutingAttempt } from "@/chat/tools/retry-with-fallback.js";
 import type { ServerTypes } from "@/vars.js";
 import type { RoutingMetadata } from "@llmgateway/actions";
-import type { InferSelectModel, tables } from "@llmgateway/db";
+import type {
+	InferSelectModel,
+	ProviderKeyOptions,
+	tables,
+} from "@llmgateway/db";
 import type { ModelDefinition, ProviderModelMapping } from "@llmgateway/models";
 
 const embeddingInputSchema = z
@@ -703,6 +707,9 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 		let usedToken: string | undefined;
 		let configIndex = 0;
 		let envVarName: string | undefined;
+		let platformProviderBaseUrl: string | undefined;
+		let platformProviderOptions: ProviderKeyOptions | undefined;
+		let platformCredentialId: string | undefined;
 
 		const excludedProviderKeyIds = failedKeys.providerKeyIdsFor(
 			providerId,
@@ -735,13 +742,16 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 					`Dev Plan credit limit reached. Upgrade your plan or wait for renewal on ${renewalDate}.`,
 			);
 
-			const envResult = getProviderEnv(providerId, {
+			const envResult = await getProviderEnv(providerId, {
 				selectionScope: upstreamModel,
 				excludedIndices: excludedEnvKeyIndices,
 			});
 			usedToken = envResult.token;
 			configIndex = envResult.configIndex;
 			envVarName = envResult.envVarName;
+			platformProviderBaseUrl = envResult.baseUrl;
+			platformProviderOptions = envResult.options;
+			platformCredentialId = envResult.credentialId;
 		} else if (retryProject.mode === "hybrid") {
 			providerKey = await findProviderKey(
 				retryProject.organizationId,
@@ -760,13 +770,16 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 						`No API key set for provider. Dev Plan credit limit reached. Upgrade your plan or wait for renewal on ${renewalDate}.`,
 				);
 
-				const envResult = getProviderEnv(providerId, {
+				const envResult = await getProviderEnv(providerId, {
 					selectionScope: upstreamModel,
 					excludedIndices: excludedEnvKeyIndices,
 				});
 				usedToken = envResult.token;
 				configIndex = envResult.configIndex;
 				envVarName = envResult.envVarName;
+				platformProviderBaseUrl = envResult.baseUrl;
+				platformProviderOptions = envResult.options;
+				platformCredentialId = envResult.credentialId;
 			}
 		} else {
 			throw new HTTPException(400, {
@@ -800,6 +813,7 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 		const envBaseUrl = getProviderEnvValue(providerId, "baseUrl", configIndex);
 		const resolvedBaseUrl =
 			providerKey?.baseUrl ??
+			platformProviderBaseUrl ??
 			envBaseUrl ??
 			providerBaseUrlDefaults[providerId] ??
 			"https://api.openai.com";
@@ -856,6 +870,7 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 			}
 			const vertexProjectId =
 				providerKey?.options?.google_vertex_project_id ??
+				platformProviderOptions?.google_vertex_project_id ??
 				getProviderEnvValue("google-vertex", "project", configIndex);
 			if (!vertexProjectId) {
 				return {
@@ -882,9 +897,9 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 			// presence is an accurate BYOK signal.
 			vertexTokenType = resolveVertexTokenType(
 				"google-vertex",
-				providerKey?.options ?? undefined,
+				providerKey?.options ?? platformProviderOptions,
 				configIndex,
-				providerKey !== undefined,
+				providerKey !== undefined || platformCredentialId !== undefined,
 			);
 			const vertexAuthQuery =
 				vertexTokenType === "oauth"

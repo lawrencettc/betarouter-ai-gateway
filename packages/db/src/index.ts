@@ -15,6 +15,7 @@ export * from "./migrate.js";
 export * from "./relations.js";
 export * from "./provider-metrics.js";
 export * from "./provider-metrics-history.js";
+export * from "./platform-provider-crypto.js";
 export * from "./query-tags.js";
 export * from "./webhook-helpers.js";
 

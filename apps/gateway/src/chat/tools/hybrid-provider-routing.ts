@@ -1,3 +1,6 @@
+import { findActivePlatformProviderIds } from "@/lib/cached-queries.js";
+
+import { isPlatformProviderCryptoConfigured } from "@llmgateway/db";
 import {
 	hasProviderEnvironmentToken,
 	type Provider,
@@ -19,14 +22,14 @@ export function getEnvironmentBackedProviders(
 		.map((provider) => provider.id);
 }
 
-export function getAvailableProvidersForProjectMode(
+export async function getAvailableProvidersForProjectMode(
 	projectMode: ProjectMode,
 	providerKeys: Array<{ provider: string }>,
 	providerIds?: string[],
-): {
+): Promise<{
 	availableProviders: string[];
 	providersWithKeys: Set<string>;
-} {
+}> {
 	const providersWithKeys = new Set(providerKeys.map((key) => key.provider));
 
 	if (projectMode === "api-keys") {
@@ -36,7 +39,18 @@ export function getAvailableProvidersForProjectMode(
 		};
 	}
 
-	const envProviders = getEnvironmentBackedProviders(providerIds);
+	const platformProviders = isPlatformProviderCryptoConfigured()
+		? await findActivePlatformProviderIds()
+		: [];
+	const allowedPlatformProviders = providerIds
+		? platformProviders.filter((provider) => providerIds.includes(provider))
+		: platformProviders;
+	const envProviders = Array.from(
+		new Set([
+			...getEnvironmentBackedProviders(providerIds),
+			...allowedPlatformProviders,
+		]),
+	);
 
 	if (projectMode === "credits") {
 		return {

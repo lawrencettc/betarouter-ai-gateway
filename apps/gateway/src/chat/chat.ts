@@ -131,6 +131,7 @@ import {
 	isCachingEnabled,
 	metricsKey,
 	type LogInsertData,
+	type ProviderKeyOptions,
 	shortid,
 	type tables,
 	type ProviderMetrics,
@@ -205,7 +206,6 @@ import { getFinishReasonFromError } from "./tools/get-finish-reason-from-error.j
 import {
 	getEnvKeyCount,
 	getProviderEnv,
-	getServiceTierIneligibleEnvIndices,
 	hasServiceTierEligibleEnvCredential,
 } from "./tools/get-provider-env.js";
 import { hasMeaningfulAssistantOutput } from "./tools/has-meaningful-assistant-output.js";
@@ -2946,7 +2946,7 @@ chat.openapi(completions, async (c) => {
 			.filter((provider) => provider.id !== "llmgateway")
 			.map((provider) => provider.id);
 		const { availableProviders, providersWithKeys } =
-			getAvailableProvidersForProjectMode(
+			await getAvailableProvidersForProjectMode(
 				project.mode,
 				providerKeys,
 				supportedProviderIds,
@@ -3558,7 +3558,7 @@ chat.openapi(completions, async (c) => {
 					providerIds,
 				);
 				const { availableProviders, providersWithKeys } =
-					getAvailableProvidersForProjectMode(
+					await getAvailableProvidersForProjectMode(
 						project.mode,
 						providerKeys,
 						providerIds,
@@ -3775,7 +3775,7 @@ chat.openapi(completions, async (c) => {
 					providerIds,
 				);
 				const { availableProviders, providersWithKeys } =
-					getAvailableProvidersForProjectMode(
+					await getAvailableProvidersForProjectMode(
 						project.mode,
 						providerKeys,
 						providerIds,
@@ -3988,7 +3988,7 @@ chat.openapi(completions, async (c) => {
 				providerIds,
 			);
 			const { availableProviders, providersWithKeys } =
-				getAvailableProvidersForProjectMode(
+				await getAvailableProvidersForProjectMode(
 					project.mode,
 					providerKeys,
 					providerIds,
@@ -4566,6 +4566,9 @@ chat.openapi(completions, async (c) => {
 	let usedToken: string | undefined;
 	let usedApiKeyHash: string | undefined;
 	let envVarName: string | undefined; // Environment variable name for health tracking
+	let platformProviderBaseUrl: string | undefined;
+	let platformProviderOptions: ProviderKeyOptions | undefined;
+	let platformCredentialId: string | undefined;
 	// ID for tracked-key health attribution. Equal to providerKey.id when the
 	// DB-provided key is what's actually sent. Cleared when a region-specific
 	// env var override replaces the token, so health failures route to the env
@@ -4707,19 +4710,20 @@ chat.openapi(completions, async (c) => {
 			});
 		}
 
-		const envResult = getProviderEnv(usedProvider, {
+		const envResult = await getProviderEnv(usedProvider, {
 			selectionScope: usedInternalModel,
-			excludedIndices: isRequestedServiceTier(service_tier)
-				? getServiceTierIneligibleEnvIndices(usedProvider as Provider)
-				: undefined,
+			requireServiceTierSupport: isRequestedServiceTier(service_tier),
 		});
 		usedToken = envResult.token;
 		configIndex = envResult.configIndex;
 		envVarName = envResult.envVarName;
+		platformProviderBaseUrl = envResult.baseUrl;
+		platformProviderOptions = envResult.options;
+		platformCredentialId = envResult.credentialId;
 
 		// Override with region-specific env var if a non-default region is selected.
 		// Health attribution must follow the credential we actually send.
-		if (usedRegion) {
+		if (usedRegion && !platformCredentialId) {
 			const regionEnvVarName = getRegionSpecificEnvVarName(
 				usedProvider,
 				usedRegion,
@@ -4730,6 +4734,9 @@ chat.openapi(completions, async (c) => {
 					usedToken = regionToken;
 					envVarName = regionEnvVarName;
 					configIndex = 0;
+					platformProviderBaseUrl = undefined;
+					platformProviderOptions = undefined;
+					platformCredentialId = undefined;
 				}
 			}
 		}
@@ -4837,19 +4844,20 @@ chat.openapi(completions, async (c) => {
 				});
 			}
 
-			const envResult = getProviderEnv(usedProvider, {
+			const envResult = await getProviderEnv(usedProvider, {
 				selectionScope: usedInternalModel,
-				excludedIndices: isRequestedServiceTier(service_tier)
-					? getServiceTierIneligibleEnvIndices(usedProvider as Provider)
-					: undefined,
+				requireServiceTierSupport: isRequestedServiceTier(service_tier),
 			});
 			usedToken = envResult.token;
 			configIndex = envResult.configIndex;
 			envVarName = envResult.envVarName;
+			platformProviderBaseUrl = envResult.baseUrl;
+			platformProviderOptions = envResult.options;
+			platformCredentialId = envResult.credentialId;
 
 			// Override with region-specific env var if a non-default region is selected.
 			// Health attribution must follow the credential we actually send.
-			if (usedRegion) {
+			if (usedRegion && !platformCredentialId) {
 				const regionEnvVarName = getRegionSpecificEnvVarName(
 					usedProvider,
 					usedRegion,
@@ -4860,6 +4868,9 @@ chat.openapi(completions, async (c) => {
 						usedToken = regionToken;
 						envVarName = regionEnvVarName;
 						configIndex = 0;
+						platformProviderBaseUrl = undefined;
+						platformProviderOptions = undefined;
+						platformCredentialId = undefined;
 					}
 				}
 			}
@@ -4871,7 +4882,10 @@ chat.openapi(completions, async (c) => {
 	}
 
 	if (usedProvider === "vertex-anthropic") {
-		const gcpToken = await getGcpAccessToken();
+		const gcpToken =
+			providerKey || platformCredentialId
+				? await getGcpServiceAccountAccessToken(usedToken)
+				: await getGcpAccessToken();
 		if (gcpToken) {
 			usedToken = gcpToken;
 		}
@@ -5192,7 +5206,8 @@ chat.openapi(completions, async (c) => {
 	// so users can target deployments whose names differ from the registry.
 	const azureDeploymentName =
 		usedProvider === "azure"
-			? providerKey?.options?.azure_deployment_name
+			? (providerKey?.options?.azure_deployment_name ??
+				platformProviderOptions?.azure_deployment_name)
 			: undefined;
 	const upstreamModelName = azureDeploymentName || usedExternalId;
 
@@ -5210,10 +5225,13 @@ chat.openapi(completions, async (c) => {
 		if (usedProvider !== "google-vertex") {
 			return undefined;
 		}
-		const dbKeyIsActiveCredential = trackedKeyHealthId !== undefined;
+		const dbKeyIsActiveCredential =
+			trackedKeyHealthId !== undefined || platformCredentialId !== undefined;
 		return resolveVertexTokenType(
 			usedProvider,
-			dbKeyIsActiveCredential ? (providerKey?.options ?? undefined) : undefined,
+			dbKeyIsActiveCredential
+				? (providerKey?.options ?? platformProviderOptions)
+				: undefined,
 			configIndex,
 			dbKeyIsActiveCredential,
 		);
@@ -5228,17 +5246,17 @@ chat.openapi(completions, async (c) => {
 
 		url = getProviderEndpoint(
 			usedProvider,
-			providerKey?.baseUrl ?? undefined,
+			providerKey?.baseUrl ?? platformProviderBaseUrl,
 			upstreamModelName,
 			usesGoogleQueryToken(usedProvider) ? usedToken : undefined,
 			stream,
 			supportsReasoning,
 			hasExistingToolCalls,
-			providerKey?.options ?? undefined,
+			providerKey?.options ?? platformProviderOptions,
 			configIndex,
 			isImageGeneration,
 			usedRegion,
-			providerKey !== undefined,
+			providerKey !== undefined || platformCredentialId !== undefined,
 			usedInternalModel,
 			resolveActiveVertexTokenType(),
 		);

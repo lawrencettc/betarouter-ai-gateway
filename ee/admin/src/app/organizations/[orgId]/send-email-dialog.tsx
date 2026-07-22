@@ -145,7 +145,7 @@ export function SendEmailDialog({
 						<Label htmlFor="subject">Subject</Label>
 						<Input
 							id="subject"
-							placeholder="Welcome to LLM Gateway"
+							placeholder="Welcome to BetaRouter"
 							value={subject}
 							onChange={(e) => setSubject(e.target.value)}
 							className="mt-1"

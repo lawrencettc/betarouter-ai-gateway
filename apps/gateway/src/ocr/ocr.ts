@@ -570,6 +570,7 @@ ocr.openapi(createOcr, async (c): Promise<any> => {
 		let usedToken: string | undefined;
 		let configIndex = 0;
 		let envVarName: string | undefined;
+		let platformProviderBaseUrl: string | undefined;
 
 		const excludedProviderKeyIds = failedKeys.providerKeyIdsFor(
 			providerId,
@@ -602,13 +603,14 @@ ocr.openapi(createOcr, async (c): Promise<any> => {
 					`Dev Plan credit limit reached. Upgrade your plan or wait for renewal on ${renewalDate}.`,
 			);
 
-			const envResult = getProviderEnv(providerId, {
+			const envResult = await getProviderEnv(providerId, {
 				selectionScope: upstreamModel,
 				excludedIndices: excludedEnvKeyIndices,
 			});
 			usedToken = envResult.token;
 			configIndex = envResult.configIndex;
 			envVarName = envResult.envVarName;
+			platformProviderBaseUrl = envResult.baseUrl;
 		} else if (retryProject.mode === "hybrid") {
 			providerKey = await findProviderKey(
 				retryProject.organizationId,
@@ -627,13 +629,14 @@ ocr.openapi(createOcr, async (c): Promise<any> => {
 						`No API key set for provider. Dev Plan credit limit reached. Upgrade your plan or wait for renewal on ${renewalDate}.`,
 				);
 
-				const envResult = getProviderEnv(providerId, {
+				const envResult = await getProviderEnv(providerId, {
 					selectionScope: upstreamModel,
 					excludedIndices: excludedEnvKeyIndices,
 				});
 				usedToken = envResult.token;
 				configIndex = envResult.configIndex;
 				envVarName = envResult.envVarName;
+				platformProviderBaseUrl = envResult.baseUrl;
 			}
 		} else {
 			throw new HTTPException(400, {
@@ -659,7 +662,10 @@ ocr.openapi(createOcr, async (c): Promise<any> => {
 
 		const envBaseUrl = getProviderEnvValue(providerId, "baseUrl", configIndex);
 		const resolvedBaseUrl =
-			providerKey?.baseUrl ?? envBaseUrl ?? "https://api.mistral.ai";
+			providerKey?.baseUrl ??
+			platformProviderBaseUrl ??
+			envBaseUrl ??
+			"https://api.mistral.ai";
 
 		return {
 			providerKey,

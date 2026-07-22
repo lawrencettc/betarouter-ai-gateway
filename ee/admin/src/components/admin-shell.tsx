@@ -17,6 +17,7 @@ import {
 	MessageSquare,
 	Percent,
 	Server,
+	ShieldCheck,
 	Sparkles,
 } from "lucide-react";
 import Link from "next/link";
@@ -68,7 +69,7 @@ function MobileHeader() {
 				</div>
 				<div className="flex flex-col">
 					<span className="text-sm font-semibold leading-tight">
-						LLM Gateway
+						BetaRouter
 					</span>
 					<span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
 						Admin
@@ -93,6 +94,7 @@ export function AdminShell({ children }: AdminShellProps) {
 	const isDiscounts = pathname === "/discounts";
 	const isRateLimits = pathname === "/rate-limits";
 	const isProviders = pathname === "/providers";
+	const isPlatformProviders = pathname.startsWith("/platform-providers");
 	const isModels = pathname === "/models";
 	const isModelProviderMappings = pathname === "/model-provider-mappings";
 	const isUnstableMappings = pathname.startsWith("/unstable-mappings");
@@ -125,7 +127,7 @@ export function AdminShell({ children }: AdminShellProps) {
 							</div>
 							<div className="flex flex-col">
 								<span className="text-sm font-semibold leading-tight">
-									LLM Gateway
+									BetaRouter
 								</span>
 								<span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
 									Admin
@@ -200,6 +202,14 @@ export function AdminShell({ children }: AdminShellProps) {
 									<SidebarMenuButton isActive={isProviders} size="lg">
 										<Server className="h-4 w-4" />
 										<span>Providers</span>
+									</SidebarMenuButton>
+								</Link>
+							</SidebarMenuItem>
+							<SidebarMenuItem>
+								<Link href="/platform-providers" className="block">
+									<SidebarMenuButton isActive={isPlatformProviders} size="lg">
+										<ShieldCheck className="h-4 w-4" />
+										<span>Platform Providers</span>
 									</SidebarMenuButton>
 								</Link>
 							</SidebarMenuItem>

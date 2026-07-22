@@ -35,6 +35,7 @@ import {
 	organization as organizationTable,
 	project as projectTable,
 	providerKey as providerKeyTable,
+	platformProviderCredential as platformProviderCredentialTable,
 	rateLimit as rateLimitTable,
 	user as userTable,
 	userOrganization as userOrganizationTable,
@@ -60,6 +61,7 @@ import type {
 	organization,
 	project,
 	providerKey,
+	platformProviderCredential,
 	user,
 	userOrganization,
 	wallet,
@@ -73,6 +75,9 @@ export type CustomModel = InferSelectModel<typeof customModel>;
 type Organization = InferSelectModel<typeof organization>;
 type Project = InferSelectModel<typeof project>;
 type ProviderKey = InferSelectModel<typeof providerKey>;
+export type PlatformProviderCredential = InferSelectModel<
+	typeof platformProviderCredential
+>;
 type User = InferSelectModel<typeof user>;
 type UserOrganization = InferSelectModel<typeof userOrganization>;
 type Wallet = InferSelectModel<typeof wallet>;
@@ -86,6 +91,9 @@ const endUserSessionTableName = getTableName(endUserSessionTable);
 const organizationTableName = getTableName(organizationTable);
 const projectTableName = getTableName(projectTable);
 const providerKeyTableName = getTableName(providerKeyTable);
+const platformProviderCredentialTableName = getTableName(
+	platformProviderCredentialTable,
+);
 const customModelTableName = getTableName(customModelTable);
 const rateLimitTableName = getTableName(rateLimitTable);
 const userTableName = getTableName(userTable);
@@ -542,6 +550,54 @@ export async function findProviderKeysByProviders(
 					),
 				)
 				.orderBy(asc(providerKeyTable.createdAt), asc(providerKeyTable.id)),
+	);
+}
+
+/**
+ * Active operator-managed credentials for credits/hybrid fallback traffic.
+ * Cached rows remain encrypted; decryption happens only in the request process.
+ */
+export async function findActivePlatformProviderCredentials(
+	provider: string,
+): Promise<PlatformProviderCredential[]> {
+	return await swrWrap(
+		`platformProvider:provider:${provider}`,
+		[platformProviderCredentialTableName],
+		async () =>
+			await db
+				.select()
+				.from(platformProviderCredentialTable)
+				.where(
+					and(
+						eq(platformProviderCredentialTable.status, "active"),
+						eq(platformProviderCredentialTable.validationStatus, "valid"),
+						eq(platformProviderCredentialTable.provider, provider),
+					),
+				)
+				.orderBy(
+					asc(platformProviderCredentialTable.priority),
+					asc(platformProviderCredentialTable.createdAt),
+					asc(platformProviderCredentialTable.id),
+				),
+	);
+}
+
+export async function findActivePlatformProviderIds(): Promise<string[]> {
+	return await swrWrap(
+		"platformProvider:active-provider-ids",
+		[platformProviderCredentialTableName],
+		async () => {
+			const rows = await db
+				.selectDistinct({ provider: platformProviderCredentialTable.provider })
+				.from(platformProviderCredentialTable)
+				.where(
+					and(
+						eq(platformProviderCredentialTable.status, "active"),
+						eq(platformProviderCredentialTable.validationStatus, "valid"),
+					),
+				);
+			return rows.map((row) => row.provider);
+		},
 	);
 }
 

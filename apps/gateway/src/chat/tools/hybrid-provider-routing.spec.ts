@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
 	getAvailableProvidersForProjectMode,
@@ -8,9 +8,21 @@ import {
 
 import type { ProviderModelMapping } from "@llmgateway/models";
 
+const routingMocks = vi.hoisted(() => ({
+	findPlatformProviderIds: vi.fn(),
+}));
+
+vi.mock("@/lib/cached-queries.js", () => ({
+	findActivePlatformProviderIds: routingMocks.findPlatformProviderIds,
+}));
+
 describe("hybrid-provider-routing", () => {
 	const originalOpenAIKey = process.env.LLM_OPENAI_API_KEY;
 	const originalGoogleVertexKey = process.env.LLM_GOOGLE_VERTEX_API_KEY;
+	const originalEncryptionKeys = process.env.PLATFORM_PROVIDER_ENCRYPTION_KEYS;
+	const originalEncryptionVersion =
+		process.env.PLATFORM_PROVIDER_ENCRYPTION_CURRENT_VERSION;
+	const originalFingerprintKey = process.env.PLATFORM_PROVIDER_FINGERPRINT_KEY;
 
 	afterEach(() => {
 		if (originalOpenAIKey === undefined) {
@@ -24,12 +36,47 @@ describe("hybrid-provider-routing", () => {
 		} else {
 			process.env.LLM_GOOGLE_VERTEX_API_KEY = originalGoogleVertexKey;
 		}
+		if (originalEncryptionKeys === undefined) {
+			delete process.env.PLATFORM_PROVIDER_ENCRYPTION_KEYS;
+		} else {
+			process.env.PLATFORM_PROVIDER_ENCRYPTION_KEYS = originalEncryptionKeys;
+		}
+		if (originalEncryptionVersion === undefined) {
+			delete process.env.PLATFORM_PROVIDER_ENCRYPTION_CURRENT_VERSION;
+		} else {
+			process.env.PLATFORM_PROVIDER_ENCRYPTION_CURRENT_VERSION =
+				originalEncryptionVersion;
+		}
+		if (originalFingerprintKey === undefined) {
+			delete process.env.PLATFORM_PROVIDER_FINGERPRINT_KEY;
+		} else {
+			process.env.PLATFORM_PROVIDER_FINGERPRINT_KEY = originalFingerprintKey;
+		}
+		routingMocks.findPlatformProviderIds.mockReset();
 	});
 
-	it("returns only provider keys in api-keys mode", () => {
+	it("includes database-only platform providers in credits mode", async () => {
+		process.env.PLATFORM_PROVIDER_ENCRYPTION_KEYS = "v1:configured";
+		process.env.PLATFORM_PROVIDER_ENCRYPTION_CURRENT_VERSION = "v1";
+		process.env.PLATFORM_PROVIDER_FINGERPRINT_KEY = "configured";
+		routingMocks.findPlatformProviderIds.mockResolvedValue([
+			"openai",
+			"anthropic",
+		]);
+
+		const result = await getAvailableProvidersForProjectMode(
+			"credits",
+			[],
+			["openai"],
+		);
+
+		expect(result.availableProviders).toEqual(["openai"]);
+	});
+
+	it("returns only provider keys in api-keys mode", async () => {
 		process.env.LLM_OPENAI_API_KEY = "sk-openai";
 
-		const result = getAvailableProvidersForProjectMode(
+		const result = await getAvailableProvidersForProjectMode(
 			"api-keys",
 			[{ provider: "google-ai-studio" }, { provider: "alibaba" }],
 			["google-ai-studio", "google-vertex", "alibaba"],
@@ -42,10 +89,10 @@ describe("hybrid-provider-routing", () => {
 		]);
 	});
 
-	it("prefers keyed providers over credits-backed providers in hybrid mode", () => {
+	it("prefers keyed providers over credits-backed providers in hybrid mode", async () => {
 		process.env.LLM_GOOGLE_VERTEX_API_KEY = "vertex-env-key";
 
-		const result = getAvailableProvidersForProjectMode(
+		const result = await getAvailableProvidersForProjectMode(
 			"hybrid",
 			[{ provider: "google-ai-studio" }],
 			["google-ai-studio", "google-vertex"],

@@ -40,12 +40,13 @@ import {
 	isPremiumModel,
 } from "@llmgateway/shared";
 
-import {
-	getProviderEnv,
-	getServiceTierIneligibleEnvIndices,
-} from "./get-provider-env.js";
+import { getProviderEnv } from "./get-provider-env.js";
 
-import type { InferSelectModel, tables } from "@llmgateway/db";
+import type {
+	InferSelectModel,
+	ProviderKeyOptions,
+	tables,
+} from "@llmgateway/db";
 
 export interface ProviderContext {
 	usedProvider: Provider;
@@ -338,6 +339,9 @@ export async function resolveProviderContext(
 	let usedToken: string | undefined;
 	let configIndex = 0;
 	let envVarName: string | undefined;
+	let platformProviderBaseUrl: string | undefined;
+	let platformProviderOptions: ProviderKeyOptions | undefined;
+	let platformCredentialId: string | undefined;
 
 	// Flex/Priority is only honored when the request reaches the provider's real
 	// upstream endpoint. Skip provider keys whose custom base URL (proxy) may
@@ -350,21 +354,6 @@ export async function resolveProviderContext(
 					key.baseUrl,
 				)
 		: undefined;
-	// Exclude env credential indices whose base URL can't honor the tier, merged
-	// with any already-failed indices, so env fallback also lands on the upstream.
-	const serviceTierEnvExcludedIndices = (
-		provider: Provider,
-	): ReadonlySet<number> | undefined => {
-		if (!serviceTierKeyFilter) {
-			return options.excludedEnvKeyIndices;
-		}
-		const ineligible = getServiceTierIneligibleEnvIndices(provider);
-		if (ineligible.size === 0) {
-			return options.excludedEnvKeyIndices;
-		}
-		return new Set([...(options.excludedEnvKeyIndices ?? []), ...ineligible]);
-	};
-
 	if (project.mode === "api-keys") {
 		if (usedProvider === "custom" && options.customProviderName) {
 			providerKey = await findCustomProviderKey(
@@ -392,13 +381,17 @@ export async function resolveProviderContext(
 		usedToken = providerKey.token;
 	} else if (project.mode === "credits") {
 		assertOrganizationHasCreditsForEnvFallback(organization, modelInfo);
-		const envResult = getProviderEnv(usedProvider as Provider, {
-			excludedIndices: serviceTierEnvExcludedIndices(usedProvider as Provider),
+		const envResult = await getProviderEnv(usedProvider as Provider, {
+			excludedIndices: options.excludedEnvKeyIndices,
 			selectionScope: usedInternalModel,
+			requireServiceTierSupport: Boolean(serviceTierKeyFilter),
 		});
 		usedToken = envResult.token;
 		configIndex = envResult.configIndex;
 		envVarName = envResult.envVarName;
+		platformProviderBaseUrl = envResult.baseUrl;
+		platformProviderOptions = envResult.options;
+		platformCredentialId = envResult.credentialId;
 	} else if (project.mode === "hybrid") {
 		if (usedProvider === "custom" && options.customProviderName) {
 			providerKey = await findCustomProviderKey(
@@ -421,15 +414,17 @@ export async function resolveProviderContext(
 			usedToken = providerKey.token;
 		} else {
 			assertOrganizationHasCreditsForEnvFallback(organization, modelInfo);
-			const envResult = getProviderEnv(usedProvider as Provider, {
-				excludedIndices: serviceTierEnvExcludedIndices(
-					usedProvider as Provider,
-				),
+			const envResult = await getProviderEnv(usedProvider as Provider, {
+				excludedIndices: options.excludedEnvKeyIndices,
 				selectionScope: usedInternalModel,
+				requireServiceTierSupport: Boolean(serviceTierKeyFilter),
 			});
 			usedToken = envResult.token;
 			configIndex = envResult.configIndex;
 			envVarName = envResult.envVarName;
+			platformProviderBaseUrl = envResult.baseUrl;
+			platformProviderOptions = envResult.options;
+			platformCredentialId = envResult.credentialId;
 		}
 	}
 
@@ -466,10 +461,13 @@ export async function resolveProviderContext(
 	}
 
 	// Override token with region-specific env var if available (credits/hybrid mode)
-	if (usedRegion && !providerKey) {
+	if (usedRegion && !providerKey && !platformCredentialId) {
 		const regionToken = getRegionSpecificEnvValue(usedProvider, usedRegion);
 		if (regionToken) {
 			usedToken = regionToken;
+			platformProviderBaseUrl = undefined;
+			platformProviderOptions = undefined;
+			platformCredentialId = undefined;
 			// Update envVarName to reflect the regional env var
 			const baseEnvVar = getProviderEnvVar(usedProvider);
 			if (baseEnvVar) {
@@ -498,14 +496,16 @@ export async function resolveProviderContext(
 	// pick up the override.
 	const azureDeploymentName =
 		usedProvider === "azure"
-			? providerKey?.options?.azure_deployment_name
+			? (providerKey?.options?.azure_deployment_name ??
+				platformProviderOptions?.azure_deployment_name)
 			: undefined;
 	const upstreamModelName = azureDeploymentName || usedExternalId;
 
 	// --- URL resolution ---
 	// When using a provider key (BYOK), skip env vars entirely —
 	// only the provider key's baseUrl or hardcoded provider defaults should be used.
-	const isBYOK = providerKey !== undefined;
+	const isBYOK =
+		providerKey !== undefined || platformCredentialId !== undefined;
 	// Resolve the Google Vertex token type once and feed it to both the endpoint
 	// (`?key=` query param) and the headers (`Authorization: Bearer`) so they
 	// never disagree. There is no BYOK region-env override here (the override
@@ -515,14 +515,14 @@ export async function resolveProviderContext(
 		usedProvider === "google-vertex"
 			? resolveVertexTokenType(
 					usedProvider,
-					providerKey?.options ?? undefined,
+					providerKey?.options ?? platformProviderOptions,
 					configIndex,
 					isBYOK,
 				)
 			: undefined;
 	const url = getProviderEndpoint(
 		usedProvider as Provider,
-		providerKey?.baseUrl ?? undefined,
+		providerKey?.baseUrl ?? platformProviderBaseUrl,
 		upstreamModelName,
 		usedProvider === "google-ai-studio" ||
 			usedProvider === "glacier" ||
@@ -534,7 +534,7 @@ export async function resolveProviderContext(
 		options.stream,
 		supportsReasoning,
 		options.hasExistingToolCalls,
-		providerKey?.options ?? undefined,
+		providerKey?.options ?? platformProviderOptions,
 		configIndex,
 		isImageGeneration,
 		usedRegion,
@@ -707,10 +707,14 @@ export async function resolveProviderContext(
 	// header — so swap usedToken here so downstream header builders just work.
 	// Read the env var directly to bypass round-robin comma-splitting (an SA
 	// JSON value contains commas and would otherwise be truncated).
-	if (usedProvider === "vertex-openai") {
+	if (usedProvider === "vertex-openai" || usedProvider === "vertex-anthropic") {
 		const fullSaJson = providerKey
 			? usedToken
-			: (process.env.LLM_VERTEX_OPENAI_SERVICE_ACCOUNT_JSON ?? "");
+			: platformCredentialId
+				? usedToken
+				: usedProvider === "vertex-openai"
+					? (process.env.LLM_VERTEX_OPENAI_SERVICE_ACCOUNT_JSON ?? "")
+					: (process.env.LLM_VERTEX_ANTHROPIC_SERVICE_ACCOUNT_JSON ?? "");
 		usedToken = await getGcpServiceAccountAccessToken(fullSaJson);
 	}
 

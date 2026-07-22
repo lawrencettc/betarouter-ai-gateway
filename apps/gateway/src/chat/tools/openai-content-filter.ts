@@ -487,7 +487,7 @@ export async function checkOpenAIContentFilter(
 		: AbortSignal.timeout(OPENAI_MODERATION_TIMEOUT_MS);
 
 	try {
-		const providerEnv = getProviderEnv("openai", {
+		const providerEnv = await getProviderEnv("openai", {
 			advanceRoundRobin: false,
 		});
 		const moderationResults = await Promise.all(

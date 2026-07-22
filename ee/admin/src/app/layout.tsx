@@ -23,9 +23,9 @@ const geistMono = Geist_Mono({
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-	metadataBase: new URL("https://admin.llmgateway.io"),
-	title: "LLM Gateway Admin",
-	description: "Admin dashboard for LLM Gateway.",
+	metadataBase: new URL("https://admin.betarouter.com"),
+	title: "BetaRouter Admin",
+	description: "Admin dashboard for BetaRouter.",
 	icons: {
 		icon: "/favicon/favicon.ico?v=2",
 	},

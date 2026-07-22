@@ -7,6 +7,7 @@ import {
 	and,
 	asc,
 	db,
+	decryptPlatformProviderToken,
 	eq,
 	type InferSelectModel,
 	inArray,
@@ -41,6 +42,7 @@ import {
 	getVideoStorageExpiryDate,
 	parseGcsUri,
 } from "@llmgateway/shared/gcs";
+import { assertSafeProviderUrl } from "@llmgateway/shared/url-safety-node";
 import { buildSignedGatewayVideoLogContentUrl } from "@llmgateway/shared/video-access";
 
 const UPSTREAM_FETCH_TIMEOUT_MS = 30_000;
@@ -289,6 +291,45 @@ async function resolveVideoProviderContext(
 				? resolveVertexTokenType(
 						"google-vertex",
 						providerKey.options ?? undefined,
+						undefined,
+						true,
+					)
+				: undefined,
+		};
+	}
+
+	if (job.platformProviderCredentialId) {
+		const [credential] = await db
+			.select()
+			.from(tables.platformProviderCredential)
+			.where(
+				eq(
+					tables.platformProviderCredential.id,
+					job.platformProviderCredentialId,
+				),
+			)
+			.limit(1);
+		if (!credential) {
+			throw new Error("Platform provider credential is unavailable");
+		}
+		const baseUrl = credential.baseUrl ?? defaultBaseUrl;
+		if (!baseUrl) {
+			throw new Error(`No base URL set for provider: ${job.usedProvider}`);
+		}
+		if (credential.baseUrl) {
+			await assertSafeProviderUrl(credential.baseUrl);
+		}
+		return {
+			baseUrl,
+			token: decryptPlatformProviderToken(
+				credential,
+				credential.id,
+				credential.provider,
+			),
+			vertexTokenType: isGoogleVertexVideoProvider(providerId)
+				? resolveVertexTokenType(
+						"google-vertex",
+						credential.options ?? undefined,
 						undefined,
 						true,
 					)

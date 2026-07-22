@@ -35,7 +35,7 @@ import { createCombinedSignal, isTimeoutError } from "@/lib/timeout-config.js";
 
 import { getProviderHeaders } from "@llmgateway/actions";
 import { shortid } from "@llmgateway/db";
-import { models } from "@llmgateway/models";
+import { getProviderEnvValue, models } from "@llmgateway/models";
 
 import type { ServerTypes } from "@/vars.js";
 import type { InferSelectModel, tables } from "@llmgateway/db";
@@ -430,6 +430,7 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 	let usedToken: string | undefined;
 	let configIndex = 0;
 	let envVarName: string | undefined;
+	let platformProviderBaseUrl: string | undefined;
 
 	if (project.mode === "api-keys") {
 		providerKey = await findProviderKey(
@@ -445,12 +446,13 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 		}
 		usedToken = providerKey.token;
 	} else if (project.mode === "credits") {
-		const envResult = getProviderEnv("openai", {
+		const envResult = await getProviderEnv("openai", {
 			selectionScope: upstreamModel,
 		});
 		usedToken = envResult.token;
 		configIndex = envResult.configIndex;
 		envVarName = envResult.envVarName;
+		platformProviderBaseUrl = envResult.baseUrl;
 	} else if (project.mode === "hybrid") {
 		providerKey = await findProviderKey(
 			project.organizationId,
@@ -460,12 +462,13 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 		if (providerKey) {
 			usedToken = providerKey.token;
 		} else {
-			const envResult = getProviderEnv("openai", {
+			const envResult = await getProviderEnv("openai", {
 				selectionScope: upstreamModel,
 			});
 			usedToken = envResult.token;
 			configIndex = envResult.configIndex;
 			envVarName = envResult.envVarName;
+			platformProviderBaseUrl = envResult.baseUrl;
 		}
 	} else {
 		throw new HTTPException(400, {
@@ -479,7 +482,9 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 		});
 	}
 
-	const upstreamUrl = `${providerKey?.baseUrl ?? "https://api.openai.com"}/v1/moderations`;
+	const resolveUpstreamUrl = () =>
+		`${providerKey?.baseUrl ?? platformProviderBaseUrl ?? getProviderEnvValue("openai", "baseUrl", configIndex) ?? "https://api.openai.com"}/v1/moderations`;
+	let upstreamUrl = resolveUpstreamUrl();
 	const requestBody = {
 		input,
 		model: upstreamModel,
@@ -517,19 +522,21 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 	// keys: every tried index is excluded from re-selection.
 	const finalLogId = shortid();
 	const triedEnvIndices = new Set<number>();
-	const rotateToNextEnvKey = (): boolean => {
+	const rotateToNextEnvKey = async (): Promise<boolean> => {
 		if (envVarName === undefined) {
 			return false;
 		}
 		triedEnvIndices.add(configIndex);
 		try {
-			const envResult = getProviderEnv("openai", {
+			const envResult = await getProviderEnv("openai", {
 				selectionScope: upstreamModel,
 				excludedIndices: triedEnvIndices,
 			});
 			usedToken = envResult.token;
 			configIndex = envResult.configIndex;
 			envVarName = envResult.envVarName;
+			platformProviderBaseUrl = envResult.baseUrl;
+			upstreamUrl = resolveUpstreamUrl();
 			return true;
 		} catch {
 			return false;
@@ -572,7 +579,7 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 				const isCanceled =
 					error instanceof Error && error.name === "AbortError";
 				const isTimeout = isTimeoutError(error);
-				const willRetry = !isCanceled && rotateToNextEnvKey();
+				const willRetry = !isCanceled && (await rotateToNextEnvKey());
 
 				await insertLog({
 					...baseLogEntry,
@@ -699,7 +706,7 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 						finishReason,
 						upstreamResponse.status,
 						upstreamText,
-					) && rotateToNextEnvKey();
+					) && (await rotateToNextEnvKey());
 
 				await insertLog({
 					...baseLogEntry,

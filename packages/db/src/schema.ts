@@ -1360,6 +1360,98 @@ export const providerKey = pgTable(
 	],
 );
 
+export const platformProviderCredential = pgTable(
+	"platform_provider_credential",
+	{
+		id: text().primaryKey().notNull().$defaultFn(shortid),
+		createdAt: timestamp().notNull().defaultNow(),
+		createdBy: text().notNull(),
+		updatedAt: timestamp()
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+		updatedBy: text().notNull(),
+		deletedAt: timestamp(),
+		provider: text().notNull(),
+		name: text().notNull(),
+		baseUrl: text(),
+		options: jsonb().$type<ProviderKeyOptions>(),
+		priority: integer().notNull().default(100),
+		status: text({ enum: ["active", "inactive", "deleted"] })
+			.notNull()
+			.default("inactive"),
+		encryptedToken: text().notNull(),
+		encryptionIv: text().notNull(),
+		encryptionAuthTag: text().notNull(),
+		encryptionKeyVersion: text().notNull(),
+		maskedToken: text().notNull(),
+		tokenFingerprint: text().notNull(),
+		validationStatus: text({
+			enum: ["pending", "valid", "invalid", "error"],
+		})
+			.notNull()
+			.default("pending"),
+		validationMessage: text(),
+		lastValidatedAt: timestamp(),
+		lastUsedAt: timestamp(),
+		lastRevealedAt: timestamp(),
+		lastRevealedBy: text(),
+	},
+	(table) => [
+		index("platform_provider_credential_provider_status_priority_idx").on(
+			table.provider,
+			table.status,
+			table.priority,
+		),
+		uniqueIndex("platform_provider_credential_active_fingerprint_unique")
+			.on(table.tokenFingerprint)
+			.where(sql`${table.status} <> 'deleted'`),
+		uniqueIndex("platform_provider_credential_active_name_unique")
+			.on(table.provider, table.name)
+			.where(sql`${table.status} <> 'deleted'`),
+	],
+);
+
+export const platformAuditLogActions = [
+	"platform_provider.create",
+	"platform_provider.validate",
+	"platform_provider.reveal",
+	"platform_provider.rotate",
+	"platform_provider.update",
+	"platform_provider.activate",
+	"platform_provider.deactivate",
+	"platform_provider.delete",
+] as const;
+
+export type PlatformAuditLogAction = (typeof platformAuditLogActions)[number];
+
+export const platformAuditLog = pgTable(
+	"platform_audit_log",
+	{
+		id: text().primaryKey().notNull().$defaultFn(shortid),
+		createdAt: timestamp().notNull().defaultNow(),
+		userId: text().notNull(),
+		action: text({ enum: platformAuditLogActions }).notNull(),
+		resourceId: text().references(() => platformProviderCredential.id),
+		success: boolean().notNull(),
+		requestId: text(),
+		ipAddress: text(),
+		userAgent: text(),
+		metadata: jsonb().$type<Record<string, unknown>>(),
+	},
+	(table) => [
+		index("platform_audit_log_user_created_at_idx").on(
+			table.userId,
+			table.createdAt,
+		),
+		index("platform_audit_log_resource_created_at_idx").on(
+			table.resourceId,
+			table.createdAt,
+		),
+		index("platform_audit_log_action_idx").on(table.action),
+	],
+);
+
 // Per-provider-key catalog of custom models. Enterprise orgs define these to
 // attribute cost and enforce context/output limits for custom-provider
 // requests. All pricing/limit/capability fields are optional; prices are stored
@@ -1680,6 +1772,7 @@ export const videoJob = pgTable(
 		usedProvider: text().notNull(),
 		usedModel: text().notNull(),
 		providerConfigIndex: integer(),
+		platformProviderCredentialId: text(),
 		upstreamId: text().notNull(),
 		prompt: text().notNull(),
 		status: text({

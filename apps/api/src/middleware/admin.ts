@@ -36,3 +36,27 @@ export const adminMiddleware = createMiddleware<ServerTypes>(
 		return await next();
 	},
 );
+
+export function isPlatformAdminUser(
+	user: { id: string; email?: string | null } | null | undefined,
+): boolean {
+	if (!user || !isAdminEmail(user.email)) {
+		return false;
+	}
+	const allowedUserIds = (process.env.PLATFORM_ADMIN_USER_IDS ?? "")
+		.split(",")
+		.map((value) => value.trim())
+		.filter(Boolean);
+	return allowedUserIds.length > 0 && allowedUserIds.includes(user.id);
+}
+
+export const platformAdminMiddleware = createMiddleware<ServerTypes>(
+	async (c, next) => {
+		if (!isPlatformAdminUser(c.get("user"))) {
+			throw new HTTPException(403, {
+				message: "Platform admin access required",
+			});
+		}
+		return await next();
+	},
+);

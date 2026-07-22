@@ -1,6 +1,12 @@
 import { HTTPException } from "hono/http-exception";
 
 import {
+	calculateUptimePenalty,
+	getKeyMetrics,
+	isKeyHealthy,
+} from "@/lib/api-key-health.js";
+import { findActivePlatformProviderCredentials } from "@/lib/cached-queries.js";
+import {
 	getRoundRobinValue,
 	parseCommaSeparatedEnv,
 	peekRoundRobinValue,
@@ -8,16 +14,74 @@ import {
 
 import { providerKeyBaseUrlSupportsServiceTier } from "@llmgateway/actions";
 import {
+	decryptPlatformProviderToken,
+	isPlatformProviderCryptoConfigured,
+} from "@llmgateway/db";
+import {
 	getProviderEnvValue,
 	getProviderEnvVar,
 	getProviderEnvConfig,
 	type Provider,
 } from "@llmgateway/models";
+import { assertSafeProviderUrl } from "@llmgateway/shared/url-safety-node";
+
+import type { ProviderKeyOptions } from "@llmgateway/db";
 
 export interface ProviderEnvResult {
 	token: string;
 	configIndex: number;
 	envVarName: string;
+	baseUrl?: string;
+	options?: ProviderKeyOptions;
+	credentialId?: string;
+	source: "database" | "environment";
+}
+
+const platformCredentialCounts = new Map<string, number>();
+
+function getPlatformSourceName(provider: Provider): string {
+	return `platform-provider:${provider}`;
+}
+
+function selectPlatformCredentialIndex(
+	sourceName: string,
+	priorities: readonly number[],
+	selectionScope?: string,
+	excludedIndices: ReadonlySet<number> = new Set(),
+): number | undefined {
+	const candidates = priorities
+		.map((priority, index) => ({ index, priority }))
+		.filter(({ index }) => !excludedIndices.has(index));
+	const priorityBuckets = [
+		...new Set(candidates.map((item) => item.priority)),
+	].sort((a, b) => a - b);
+
+	for (const priority of priorityBuckets) {
+		const healthy = candidates
+			.filter(
+				(item) =>
+					item.priority === priority &&
+					isKeyHealthy(sourceName, item.index, selectionScope),
+			)
+			.sort((a, b) => {
+				const aPenalty = calculateUptimePenalty(
+					getKeyMetrics(sourceName, a.index, selectionScope).uptime,
+				);
+				const bPenalty = calculateUptimePenalty(
+					getKeyMetrics(sourceName, b.index, selectionScope).uptime,
+				);
+				return aPenalty - bPenalty || a.index - b.index;
+			});
+		if (healthy[0]) {
+			return healthy[0].index;
+		}
+	}
+
+	// If every configured key is temporarily unhealthy, preserve deterministic
+	// priority order and let the upstream attempt decide whether it has recovered.
+	return candidates.sort(
+		(a, b) => a.priority - b.priority || a.index - b.index,
+	)[0]?.index;
 }
 
 function getEnvCredentialCount(provider: Provider): number {
@@ -99,6 +163,7 @@ interface GetProviderEnvOptions {
 	advanceRoundRobin?: boolean;
 	excludedIndices?: ReadonlySet<number>;
 	selectionScope?: string;
+	requireServiceTierSupport?: boolean;
 }
 
 /**
@@ -107,10 +172,76 @@ interface GetProviderEnvOptions {
  * @param usedProvider The provider to get the token for
  * @returns Object containing the token and the config index used
  */
-export function getProviderEnv(
+export async function getProviderEnv(
 	usedProvider: Provider,
 	options: GetProviderEnvOptions = {},
-): ProviderEnvResult {
+): Promise<ProviderEnvResult> {
+	const platformCredentials = isPlatformProviderCryptoConfigured()
+		? await findActivePlatformProviderCredentials(usedProvider)
+		: [];
+	if (platformCredentials.length > 0) {
+		const sourceName = getPlatformSourceName(usedProvider);
+		platformCredentialCounts.set(sourceName, platformCredentials.length);
+		const excludedPlatformIndices = new Set(options.excludedIndices ?? []);
+		if (options.requireServiceTierSupport) {
+			platformCredentials.forEach((credential, index) => {
+				if (
+					!providerKeyBaseUrlSupportsServiceTier(
+						usedProvider,
+						credential.baseUrl,
+					)
+				) {
+					excludedPlatformIndices.add(index);
+				}
+			});
+		}
+		const selectedIndex = selectPlatformCredentialIndex(
+			sourceName,
+			platformCredentials.map((credential) => credential.priority),
+			options.selectionScope,
+			excludedPlatformIndices,
+		);
+		const selected =
+			selectedIndex === undefined
+				? undefined
+				: platformCredentials[selectedIndex];
+		if (!selected) {
+			throw new HTTPException(500, {
+				message: `No eligible platform credentials remain for provider: ${usedProvider}`,
+			});
+		}
+		const resolvedIndex = selectedIndex;
+		if (resolvedIndex === undefined) {
+			throw new HTTPException(500, {
+				message: `No eligible platform credentials remain for provider: ${usedProvider}`,
+			});
+		}
+		if (selected.baseUrl) {
+			await assertSafeProviderUrl(selected.baseUrl);
+		}
+		let token: string;
+		try {
+			token = decryptPlatformProviderToken(
+				selected,
+				selected.id,
+				selected.provider,
+			);
+		} catch {
+			throw new HTTPException(500, {
+				message: "Platform provider credential could not be decrypted",
+			});
+		}
+		return {
+			token,
+			configIndex: resolvedIndex,
+			envVarName: sourceName,
+			baseUrl: selected.baseUrl ?? undefined,
+			options: selected.options ?? undefined,
+			credentialId: selected.id,
+			source: "database",
+		};
+	}
+
 	const envVar = getProviderEnvVar(usedProvider);
 	if (!envVar) {
 		throw new HTTPException(500, {
@@ -140,13 +271,24 @@ export function getProviderEnv(
 	}
 
 	const advanceRoundRobin = options.advanceRoundRobin ?? true;
-	const excludedIndices = options.excludedIndices;
+	const excludedIndices = new Set(options.excludedIndices ?? []);
+	if (options.requireServiceTierSupport) {
+		for (const index of getServiceTierIneligibleEnvIndices(usedProvider)) {
+			excludedIndices.add(index);
+		}
+	}
 	const selectionScope = options.selectionScope;
 	const result = advanceRoundRobin
 		? getRoundRobinValue(envVar, envValue, selectionScope, excludedIndices)
 		: peekRoundRobinValue(envVar, envValue, selectionScope, excludedIndices);
 
-	return { token: result.value, configIndex: result.index, envVarName: envVar };
+	return {
+		token: result.value,
+		configIndex: result.index,
+		envVarName: envVar,
+		baseUrl: getProviderEnvValue(usedProvider, "baseUrl", result.index),
+		source: "environment",
+	};
 }
 
 /**
@@ -158,6 +300,9 @@ export function getProviderEnv(
 export function getEnvKeyCount(envVarName: string | undefined): number {
 	if (!envVarName) {
 		return 0;
+	}
+	if (envVarName.startsWith("platform-provider:")) {
+		return platformCredentialCounts.get(envVarName) ?? 0;
 	}
 	const value = process.env[envVarName];
 	if (!value) {

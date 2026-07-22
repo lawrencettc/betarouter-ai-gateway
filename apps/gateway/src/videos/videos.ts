@@ -50,6 +50,7 @@ import { redisClient } from "@llmgateway/cache";
 import {
 	and,
 	db,
+	decryptPlatformProviderToken,
 	eq,
 	metricsKey,
 	sql,
@@ -57,12 +58,12 @@ import {
 	tables,
 	UnifiedFinishReason,
 	type InferSelectModel,
+	type ProviderKeyOptions,
 } from "@llmgateway/db";
 import { logger, toError } from "@llmgateway/logger";
 import {
 	getProviderEnvValue,
 	getProviderEnvVar,
-	hasProviderEnvironmentToken,
 	models,
 	type ModelDefinition,
 	type Provider,
@@ -84,6 +85,7 @@ import {
 	getGoogleVertexVideoOutputPrefix,
 	parseGcsUri,
 } from "@llmgateway/shared/gcs";
+import { assertSafeProviderUrl } from "@llmgateway/shared/url-safety-node";
 import {
 	buildSignedGatewayVideoLogContentUrl,
 	verifyVideoContentAccessToken,
@@ -614,6 +616,7 @@ interface ProviderContext {
 	requestId: string;
 	usedMode: "api-keys" | "credits";
 	configIndex: number | null;
+	platformCredentialId?: string;
 	vertexProjectId?: string;
 	vertexRegion?: string;
 	vertexTokenType?: VertexTokenType;
@@ -630,14 +633,16 @@ function resolveVideoVertexTokenType(
 	providerId: Provider,
 	providerKey: InferSelectModel<typeof tables.providerKey> | undefined,
 	configIndex: number | null,
+	platformOptions?: ProviderKeyOptions,
+	isPlatformCredential = false,
 ): VertexTokenType | undefined {
 	if (providerId !== "google-vertex") {
 		return undefined;
 	}
-	return providerKey
+	return providerKey || isPlatformCredential
 		? resolveVertexTokenType(
 				providerId,
-				providerKey.options ?? undefined,
+				providerKey?.options ?? platformOptions,
 				undefined,
 				true,
 			)
@@ -1493,11 +1498,12 @@ async function resolveProviderContext(
 	}
 
 	if (project.mode === "credits") {
-		const env = getProviderEnv(providerId, {
+		const env = await getProviderEnv(providerId, {
 			excludedIndices: getVideoExcludedConfigIndices(providerId),
 			selectionScope,
 		});
 		const baseUrl =
+			env.baseUrl ??
 			getProviderEnvValue(providerId, "baseUrl", env.configIndex) ??
 			defaultBaseUrl;
 		if (!baseUrl) {
@@ -1507,7 +1513,8 @@ async function resolveProviderContext(
 		}
 
 		const vertexProjectId = isGoogleVertexVideoProvider(providerId)
-			? getProviderEnvValue(providerId, "project", env.configIndex)
+			? (env.options?.google_vertex_project_id ??
+				getProviderEnvValue(providerId, "project", env.configIndex))
 			: undefined;
 		const vertexRegion = isGoogleVertexVideoProvider(providerId)
 			? (getProviderEnvValue(
@@ -1531,12 +1538,15 @@ async function resolveProviderContext(
 			requestId,
 			usedMode: "credits",
 			configIndex: env.configIndex,
+			platformCredentialId: env.credentialId,
 			vertexProjectId,
 			vertexRegion,
 			vertexTokenType: resolveVideoVertexTokenType(
 				providerId,
 				undefined,
 				env.configIndex,
+				env.options,
+				env.credentialId !== undefined,
 			),
 			uploadBaseUrl:
 				providerId === "avalanche"
@@ -1598,16 +1608,11 @@ async function resolveProviderContext(
 		return providerContext;
 	}
 
-	if (!hasProviderEnvironmentToken(providerId)) {
-		throw new HTTPException(400, {
-			message: `No provider key or environment token set for provider: ${providerId}. Please add the provider key in the settings or switch the project mode to credits or hybrid.`,
-		});
-	}
-
-	const env = getProviderEnv(providerId, {
+	const env = await getProviderEnv(providerId, {
 		excludedIndices: getVideoExcludedConfigIndices(providerId),
 	});
 	const baseUrl =
+		env.baseUrl ??
 		getProviderEnvValue(providerId, "baseUrl", env.configIndex) ??
 		defaultBaseUrl;
 	if (!baseUrl) {
@@ -1617,7 +1622,8 @@ async function resolveProviderContext(
 	}
 
 	const vertexProjectId = isGoogleVertexVideoProvider(providerId)
-		? getProviderEnvValue(providerId, "project", env.configIndex)
+		? (env.options?.google_vertex_project_id ??
+			getProviderEnvValue(providerId, "project", env.configIndex))
 		: undefined;
 	const vertexRegion = isGoogleVertexVideoProvider(providerId)
 		? (getProviderEnvValue(
@@ -1641,8 +1647,16 @@ async function resolveProviderContext(
 		requestId,
 		usedMode: "credits",
 		configIndex: env.configIndex,
+		platformCredentialId: env.credentialId,
 		vertexProjectId,
 		vertexRegion,
+		vertexTokenType: resolveVideoVertexTokenType(
+			providerId,
+			undefined,
+			env.configIndex,
+			env.options,
+			env.credentialId !== undefined,
+		),
 		uploadBaseUrl:
 			providerId === "avalanche"
 				? getProviderEnvValue(providerId, "fileUploadBaseUrl", env.configIndex)
@@ -1678,7 +1692,7 @@ async function hasVideoProviderConfiguration(
 	}
 
 	if (project.mode === "credits") {
-		return hasVideoEnvConfiguration(providerId, defaultBaseUrl);
+		return await hasVideoEnvConfiguration(providerId, defaultBaseUrl);
 	}
 
 	const providerKey = await findProviderKey(
@@ -1698,19 +1712,16 @@ async function hasVideoProviderConfiguration(
 		);
 	}
 
-	return hasVideoEnvConfiguration(providerId, defaultBaseUrl);
+	return await hasVideoEnvConfiguration(providerId, defaultBaseUrl);
 }
 
-function hasVideoEnvConfiguration(
+async function hasVideoEnvConfiguration(
 	providerId: Provider,
 	defaultBaseUrl: string | null,
-): boolean {
-	if (!hasProviderEnvironmentToken(providerId)) {
-		return false;
-	}
+): Promise<boolean> {
 	let env;
 	try {
-		env = getProviderEnv(providerId, {
+		env = await getProviderEnv(providerId, {
 			advanceRoundRobin: false,
 			excludedIndices: getVideoExcludedConfigIndices(providerId),
 		});
@@ -1718,6 +1729,7 @@ function hasVideoEnvConfiguration(
 		return false;
 	}
 	const baseUrl =
+		env.baseUrl ??
 		getProviderEnvValue(providerId, "baseUrl", env.configIndex) ??
 		defaultBaseUrl;
 	if (!baseUrl) {
@@ -1725,6 +1737,7 @@ function hasVideoEnvConfiguration(
 	}
 	if (
 		isGoogleVertexVideoProvider(providerId) &&
+		!env.options?.google_vertex_project_id &&
 		!getProviderEnvValue(providerId, "project", env.configIndex)
 	) {
 		return false;
@@ -2571,11 +2584,49 @@ async function resolveVideoJobProviderContext(job: VideoJobRecord): Promise<{
 		};
 	}
 
-	const env = getProviderEnv(providerId, {
+	if (job.platformProviderCredentialId) {
+		const [credential] = await db
+			.select()
+			.from(tables.platformProviderCredential)
+			.where(
+				eq(
+					tables.platformProviderCredential.id,
+					job.platformProviderCredentialId,
+				),
+			)
+			.limit(1);
+		if (!credential) {
+			throw new HTTPException(500, {
+				message: "Platform provider credential is unavailable",
+			});
+		}
+		const baseUrl = credential.baseUrl ?? defaultBaseUrl;
+		if (!baseUrl) {
+			throw new HTTPException(500, {
+				message: `No base URL set for provider: ${providerId}`,
+			});
+		}
+		if (credential.baseUrl) {
+			await assertSafeProviderUrl(credential.baseUrl);
+		}
+		return {
+			providerId,
+			baseUrl,
+			token: decryptPlatformProviderToken(
+				credential,
+				credential.id,
+				credential.provider,
+			),
+			requestId: job.requestId,
+		};
+	}
+
+	const env = await getProviderEnv(providerId, {
 		excludedIndices: getVideoExcludedConfigIndices(providerId),
 		selectionScope: job.usedModel,
 	});
 	const baseUrl =
+		env.baseUrl ??
 		getProviderEnvValue(providerId, "baseUrl", env.configIndex) ??
 		defaultBaseUrl;
 	if (!baseUrl) {
@@ -4744,6 +4795,8 @@ videos.openapi(createVideo, async (c) => {
 			usedProvider: selectedProviderContext.providerId,
 			usedModel: selectedUpstreamModelName,
 			providerConfigIndex: selectedProviderContext.configIndex,
+			platformProviderCredentialId:
+				selectedProviderContext.platformCredentialId ?? null,
 			upstreamId,
 			prompt: request.prompt,
 			status: initialStatus,

@@ -50,7 +50,11 @@ import {
 import type { RoutingAttempt } from "@/chat/tools/retry-with-fallback.js";
 import type { ServerTypes } from "@/vars.js";
 import type { RoutingMetadata } from "@llmgateway/actions";
-import type { InferSelectModel, tables } from "@llmgateway/db";
+import type {
+	InferSelectModel,
+	ProviderKeyOptions,
+	tables,
+} from "@llmgateway/db";
 import type {
 	ModelDefinition,
 	ProviderModelMapping,
@@ -713,6 +717,9 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 		let usedToken: string | undefined;
 		let configIndex = 0;
 		let envVarName: string | undefined;
+		let platformProviderBaseUrl: string | undefined;
+		let platformProviderOptions: ProviderKeyOptions | undefined;
+		let platformCredentialId: string | undefined;
 
 		const excludedProviderKeyIds = failedKeys.providerKeyIdsFor(
 			providerId,
@@ -745,13 +752,16 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 					`Dev Plan credit limit reached. Upgrade your plan or wait for renewal on ${renewalDate}.`,
 			);
 
-			const envResult = getProviderEnv(providerId, {
+			const envResult = await getProviderEnv(providerId, {
 				selectionScope: upstreamModel,
 				excludedIndices: excludedEnvKeyIndices,
 			});
 			usedToken = envResult.token;
 			configIndex = envResult.configIndex;
 			envVarName = envResult.envVarName;
+			platformProviderBaseUrl = envResult.baseUrl;
+			platformProviderOptions = envResult.options;
+			platformCredentialId = envResult.credentialId;
 		} else if (retryProject.mode === "hybrid") {
 			providerKey = await findProviderKey(
 				retryProject.organizationId,
@@ -770,13 +780,16 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 						`No API key set for provider. Dev Plan credit limit reached. Upgrade your plan or wait for renewal on ${renewalDate}.`,
 				);
 
-				const envResult = getProviderEnv(providerId, {
+				const envResult = await getProviderEnv(providerId, {
 					selectionScope: upstreamModel,
 					excludedIndices: excludedEnvKeyIndices,
 				});
 				usedToken = envResult.token;
 				configIndex = envResult.configIndex;
 				envVarName = envResult.envVarName;
+				platformProviderBaseUrl = envResult.baseUrl;
+				platformProviderOptions = envResult.options;
+				platformCredentialId = envResult.credentialId;
 			}
 		} else {
 			throw new HTTPException(400, {
@@ -801,6 +814,7 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 		const envBaseUrl = getProviderEnvValue(providerId, "baseUrl", configIndex);
 		const resolvedBaseUrl =
 			providerKey?.baseUrl ??
+			platformProviderBaseUrl ??
 			envBaseUrl ??
 			PROVIDER_BASE_URL_DEFAULTS[providerId] ??
 			"https://generativelanguage.googleapis.com";
@@ -821,6 +835,7 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 		} else if (isGoogleVertex) {
 			const vertexProjectId =
 				providerKey?.options?.google_vertex_project_id ??
+				platformProviderOptions?.google_vertex_project_id ??
 				getProviderEnvValue("google-vertex", "project", configIndex);
 			if (!vertexProjectId) {
 				throw new HTTPException(500, {
@@ -836,9 +851,9 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 			// param agree.
 			vertexTokenType = resolveVertexTokenType(
 				"google-vertex",
-				providerKey?.options ?? undefined,
+				providerKey?.options ?? platformProviderOptions,
 				configIndex,
-				providerKey !== undefined,
+				providerKey !== undefined || platformCredentialId !== undefined,
 			);
 			const vertexAuthQuery =
 				vertexTokenType === "oauth"

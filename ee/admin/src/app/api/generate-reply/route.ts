@@ -183,16 +183,16 @@ User details:
 		const emailDraft = await generateText({
 			model: llmgateway("auto"),
 			output: Output.object({ schema: emailSchema }),
-			system: `You are an email drafting assistant for LLM Gateway, an AI/LLM API gateway service that provides access to 300+ AI models through a single OpenAI-compatible API.
+			system: `You are an email drafting assistant for BetaRouter, an AI/LLM API gateway service that provides access to 300+ AI models through a single OpenAI-compatible API.
 
 ${data.type === "enterprise" ? "Draft a professional reply to their enterprise inquiry." : "Draft a personalized welcome/outreach email to this new user."}
 
 Guidelines:
-- Write from the perspective of LLM Gateway team
+- Write from the perspective of the BetaRouter team
 - Be warm, professional, and helpful
 - ${data.type === "enterprise" ? "Address their specific inquiry" : "Welcome them and offer to help with their use case"}
 - Keep paragraphs short and scannable
-- Sign off as "The LLM Gateway Team"
+- Sign off as "The BetaRouter Team"
 - Don't use markdown formatting in the email body, keep it plain text
 ${data.context ? `\nAdditional context: ${data.context}` : ""}
 
