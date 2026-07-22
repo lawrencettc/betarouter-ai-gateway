@@ -18,6 +18,7 @@ export interface SourceMapping {
 	modelId: string;
 	status: "active" | "inactive";
 	externalId: string;
+	region?: string | null;
 	deprecatedAt?: Date | null;
 	deactivatedAt?: Date | null;
 }
@@ -40,6 +41,7 @@ export interface ModelPolicy {
 	deprecatedAt?: Date | null;
 	retireAt?: Date | null;
 	replacementModelId?: string | null;
+	retirementMessage?: string | null;
 }
 
 export interface MappingPolicy {
@@ -109,12 +111,16 @@ export interface EffectiveModel {
 	available: boolean;
 	allowDirect: boolean;
 	replacementModelId: string | null;
+	deprecatedAt: string | null;
+	retireAt: string | null;
+	retirementMessage: string | null;
 }
 
 export interface EffectiveMapping {
 	id: string;
 	providerId: string;
 	modelId: string;
+	region: string | null;
 	externalId: string;
 	displayable: boolean;
 	available: boolean;
@@ -304,6 +310,7 @@ export function resolveEffectiveCatalog(
 			id: mapping.id,
 			providerId: mapping.providerId,
 			modelId: mapping.modelId,
+			region: mapping.region ?? null,
 			externalId: mappingPolicy?.externalIdOverride ?? mapping.externalId,
 			displayable,
 			available,
@@ -336,6 +343,9 @@ export function resolveEffectiveCatalog(
 				modelMappings.some((mapping) => mapping.available),
 			allowDirect: policy?.allowDirect ?? false,
 			replacementModelId: policy?.replacementModelId ?? null,
+			deprecatedAt: policy?.deprecatedAt?.toISOString() ?? null,
+			retireAt: policy?.retireAt?.toISOString() ?? null,
+			retirementMessage: policy?.retirementMessage ?? null,
 		};
 	});
 

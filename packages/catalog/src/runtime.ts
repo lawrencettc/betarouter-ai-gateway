@@ -32,6 +32,9 @@ const storedCatalogSnapshotSchema = z
 				available: z.boolean(),
 				allowDirect: z.boolean(),
 				replacementModelId: z.string().nullable(),
+				deprecatedAt: z.string().nullable(),
+				retireAt: z.string().nullable(),
+				retirementMessage: z.string().nullable(),
 			}),
 		),
 		mappings: z.array(
@@ -39,6 +42,7 @@ const storedCatalogSnapshotSchema = z
 				id: z.string(),
 				providerId: z.string(),
 				modelId: z.string(),
+				region: z.string().nullable(),
 				externalId: z.string(),
 				displayable: z.boolean(),
 				available: z.boolean(),

@@ -21,6 +21,10 @@ import {
 	findProviderKey,
 	type GatewayApiKey,
 } from "@/lib/cached-queries.js";
+import {
+	enforceCatalogRequest,
+	filterProviderMappingsByCatalog,
+} from "@/lib/catalog-policy.js";
 import { getClientIpFromRequest } from "@/lib/client-ip.js";
 import {
 	complianceBlockMessage,
@@ -4407,6 +4411,27 @@ videos.openapi(createVideo, async (c) => {
 			message: `Model ${normalizedModel} not found`,
 		});
 	}
+	const catalogDecision = await enforceCatalogRequest(
+		{
+			modelId: normalizedModel,
+			providerId: requestedProvider,
+		},
+		{ setHeader: (name, value) => c.header(name, value) },
+	);
+	const catalogProviders = filterProviderMappingsByCatalog(
+		modelInfo.providers.filter((provider) =>
+			Boolean((provider as ProviderModelMapping).videoGenerations),
+		) as ProviderModelMapping[],
+		catalogDecision,
+	);
+	if (catalogDecision && catalogProviders.length === 0) {
+		throw new HTTPException(503, {
+			message: "No eligible video provider mapping is available",
+		});
+	}
+	const catalogModelInfo: ModelDefinition = catalogDecision
+		? { ...modelInfo, providers: catalogProviders }
+		: modelInfo;
 
 	// Sandbox wallets can only spend on free models (none for video), so reject
 	// paid video generation from test-mode end-user sessions.
@@ -4445,7 +4470,7 @@ videos.openapi(createVideo, async (c) => {
 	// Enterprise provider compliance policy: restrict video routing to providers
 	// that meet the org's policy, and block before dispatch if none qualify.
 	const videoCompliancePolicy = getActiveCompliancePolicy(organization);
-	let complianceModelInfo: ModelDefinition = modelInfo;
+	let complianceModelInfo: ModelDefinition = catalogModelInfo;
 	if (videoCompliancePolicy) {
 		// A pinned provider is dispatched directly, so block it explicitly even
 		// when the model has other compliant providers (mirrors the chat path).
@@ -4453,7 +4478,7 @@ videos.openapi(createVideo, async (c) => {
 			requestedProvider !== undefined &&
 			!isProviderIdCompliant(requestedProvider, videoCompliancePolicy);
 		const compliantProviders = filterCompliantProviders(
-			modelInfo.providers as ProviderModelMapping[],
+			catalogModelInfo.providers as ProviderModelMapping[],
 			videoCompliancePolicy,
 		);
 		if (pinnedBlocked || compliantProviders.length === 0) {

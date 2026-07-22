@@ -66,11 +66,15 @@ const effectiveModelSchema = z.object({
 	available: z.boolean(),
 	allowDirect: z.boolean(),
 	replacementModelId: z.string().nullable(),
+	deprecatedAt: z.string().nullable(),
+	retireAt: z.string().nullable(),
+	retirementMessage: z.string().nullable(),
 });
 const effectiveMappingSchema = z.object({
 	id: z.string(),
 	providerId: z.string(),
 	modelId: z.string(),
+	region: z.string().nullable(),
 	externalId: z.string(),
 	displayable: z.boolean(),
 	available: z.boolean(),
@@ -148,6 +152,7 @@ function toModelPolicy(
 		deprecatedAt: row.deprecatedAt,
 		retireAt: row.retireAt,
 		replacementModelId: row.replacementModelId,
+		retirementMessage: row.retirementMessage,
 	};
 }
 
@@ -241,6 +246,7 @@ async function loadCatalogView(): Promise<{
 			modelId: item.modelId,
 			status: item.status,
 			externalId: item.externalId,
+			region: item.region,
 			deprecatedAt: item.deprecatedAt,
 			deactivatedAt: item.deactivatedAt,
 		})),
@@ -362,6 +368,7 @@ function resolveStateSnapshot(
 			modelId: item.modelId,
 			status: item.status,
 			externalId: item.externalId,
+			region: item.region,
 			deprecatedAt: item.deprecatedAt,
 			deactivatedAt: item.deactivatedAt,
 		})),
@@ -382,6 +389,7 @@ function resolveStateSnapshot(
 			deprecatedAt: item.deprecatedAt ? new Date(item.deprecatedAt) : null,
 			retireAt: item.retireAt ? new Date(item.retireAt) : null,
 			replacementModelId: item.replacementModelId,
+			retirementMessage: item.retirementMessage,
 		})),
 		mappingPolicies: Object.values(state.mappings).map((item) => ({
 			mappingId: item.mappingId,

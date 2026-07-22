@@ -29,6 +29,10 @@ import {
 	findProviderKeysByProviders,
 	type CustomModel,
 } from "@/lib/cached-queries.js";
+import {
+	enforceCatalogRequest,
+	filterProviderMappingsByCatalog,
+} from "@/lib/catalog-policy.js";
 import { getClientIpFromRequest } from "@/lib/client-ip.js";
 import {
 	isCodingModel,
@@ -1674,6 +1678,18 @@ chat.openapi(completions, async (c) => {
 	const requestedModel = parseResult.requestedModel;
 	const customProviderName = parseResult.customProviderName;
 	const requestedRegion = parseResult.requestedRegion;
+	const catalogRequestDecision = await enforceCatalogRequest(
+		{
+			modelId: requestedModel,
+			providerId:
+				parseResult.requestedProvider === "llmgateway" ||
+				parseResult.requestedProvider === "custom"
+					? undefined
+					: parseResult.requestedProvider,
+			region: requestedRegion,
+		},
+		{ setHeader: (name, value) => c.header(name, value) },
+	);
 
 	// Count input images from messages for cost calculation
 	const inputImageCount =
@@ -1692,22 +1708,32 @@ chat.openapi(completions, async (c) => {
 		Boolean(modelInfoResult.requestedProvider) &&
 		modelInfoResult.requestedProvider !== "llmgateway" &&
 		modelInfoResult.requestedProvider !== "custom";
-	const expandedActiveModelProviders = expandAllProviderRegions(
+	const catalogActiveModelProviders = filterProviderMappingsByCatalog(
 		modelInfoResult.modelInfo.providers,
+		catalogRequestDecision,
 	);
-	const expandedAllModelProviders = expandAllProviderRegions(
+	const catalogAllModelProviders = filterProviderMappingsByCatalog(
 		modelInfoResult.allModelProviders,
+		catalogRequestDecision,
+	);
+	const expandedActiveModelProviders = filterProviderMappingsByCatalog(
+		expandAllProviderRegions(catalogActiveModelProviders),
+		catalogRequestDecision,
+	);
+	const expandedAllModelProviders = filterProviderMappingsByCatalog(
+		expandAllProviderRegions(catalogAllModelProviders),
+		catalogRequestDecision,
 	);
 	let routingExpandedModelProviders = expandedActiveModelProviders;
 	let modelInfo = {
 		...modelInfoResult.modelInfo,
 		providers: useExpandedRoutingProviders
 			? expandedActiveModelProviders
-			: modelInfoResult.modelInfo.providers,
+			: catalogActiveModelProviders,
 	};
 	let allModelProviders = useExpandedRoutingProviders
 		? expandedAllModelProviders
-		: modelInfoResult.allModelProviders;
+		: catalogAllModelProviders;
 	let requestedProvider = modelInfoResult.requestedProvider;
 
 	// If a specific region was requested (e.g. "alibaba/qwen-plus:cn-beijing"),

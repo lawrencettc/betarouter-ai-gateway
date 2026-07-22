@@ -29,6 +29,10 @@ import {
 	findProjectById,
 	findProviderKey,
 } from "@/lib/cached-queries.js";
+import {
+	enforceCatalogRequest,
+	filterProviderMappingsByCatalog,
+} from "@/lib/catalog-policy.js";
 import { getClientIpFromRequest } from "@/lib/client-ip.js";
 import { assertProviderCompliant } from "@/lib/compliance.js";
 import {
@@ -497,7 +501,33 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 		);
 	}
 
-	const { mapping, modelDef, modelDefId, explicitProvider } = match;
+	const {
+		mapping: legacyMapping,
+		modelDef,
+		modelDefId,
+		explicitProvider,
+	} = match;
+	const catalogDecision = await enforceCatalogRequest(
+		{
+			modelId: modelDefId,
+			providerId: explicitProvider ? legacyMapping.providerId : undefined,
+			region: explicitProvider ? legacyMapping.region : undefined,
+		},
+		{ setHeader: (name, value) => c.header(name, value) },
+	);
+	const [mapping] = filterProviderMappingsByCatalog(
+		modelDef.providers.filter(
+			(provider): provider is ProviderModelMapping =>
+				Boolean((provider as ProviderModelMapping).embeddings) &&
+				(!explicitProvider || provider.providerId === legacyMapping.providerId),
+		),
+		catalogDecision,
+	);
+	if (!mapping) {
+		throw new HTTPException(503, {
+			message: "No eligible embedding provider mapping is available",
+		});
+	}
 	const upstreamModel = mapping.externalId;
 	const providerId = mapping.providerId;
 
