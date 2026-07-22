@@ -158,7 +158,7 @@ function effectiveLifecycle(
 	return lifecycle ?? "draft";
 }
 
-function stableChecksum(value: unknown): string {
+export function calculateCatalogChecksum(value: unknown): string {
 	return `sha256:${createHash("sha256").update(JSON.stringify(value)).digest("hex")}`;
 }
 
@@ -382,6 +382,6 @@ export function resolveEffectiveCatalog(
 	return {
 		revision: input.revision,
 		...snapshotContent,
-		checksum: stableChecksum(snapshotContent),
+		checksum: calculateCatalogChecksum(snapshotContent),
 	};
 }

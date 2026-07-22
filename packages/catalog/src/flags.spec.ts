@@ -1,0 +1,30 @@
+import { describe, expect, it } from "vitest";
+
+import { readCatalogFeatureFlags } from "./flags.js";
+
+describe("readCatalogFeatureFlags", () => {
+	it("defaults every enforcement path off", () => {
+		expect(readCatalogFeatureFlags({})).toEqual({
+			shadowRead: false,
+			discoveryEnabled: false,
+			routingEnabled: false,
+			breakerMode: "off",
+		});
+	});
+
+	it("accepts explicit staged rollout values", () => {
+		expect(
+			readCatalogFeatureFlags({
+				PLATFORM_CATALOG_SHADOW_READ: "true",
+				PLATFORM_CATALOG_DISCOVERY_ENABLED: "true",
+				PLATFORM_CATALOG_ROUTING_ENABLED: "1",
+				PLATFORM_CATALOG_BREAKER_MODE: "observe",
+			}),
+		).toEqual({
+			shadowRead: true,
+			discoveryEnabled: true,
+			routingEnabled: true,
+			breakerMode: "observe",
+		});
+	});
+});
