@@ -207,6 +207,32 @@ export function filterProviderMappingsByCatalog(
 	});
 }
 
+export async function filterAutoCandidateByCatalog(
+	modelId: string,
+	providers: ProviderModelMapping[],
+): Promise<{
+	providers: ProviderModelMapping[];
+	decision: Extract<CatalogRequestDecision, { allowed: true }> | null;
+	enforced: boolean;
+}> {
+	try {
+		const decision = await enforceCatalogRequest({ modelId });
+		return {
+			providers: filterProviderMappingsByCatalog(providers, decision),
+			decision,
+			enforced: decision !== null,
+		};
+	} catch (error) {
+		if (
+			error instanceof HTTPException &&
+			new Set([404, 410, 503]).has(error.status)
+		) {
+			return { providers: [], decision: null, enforced: true };
+		}
+		throw error;
+	}
+}
+
 export function findCatalogMappingForProvider(
 	decision: Extract<CatalogRequestDecision, { allowed: true }> | null,
 	providerId: string | undefined,

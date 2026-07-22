@@ -23,6 +23,10 @@ import {
 	findProjectById,
 	findProviderKey,
 } from "@/lib/cached-queries.js";
+import {
+	enforceCatalogRequest,
+	findCatalogMappingForProvider,
+} from "@/lib/catalog-policy.js";
 import { assertProviderCompliant } from "@/lib/compliance.js";
 import {
 	applyEndUserSession,
@@ -332,6 +336,15 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 	}
 
 	const { input, model: upstreamModel } = validationResult.data;
+	const catalogDecision = await enforceCatalogRequest(
+		{ modelId: "openai-moderation", providerId: "openai" },
+		{ setHeader: (name, value) => c.header(name, value) },
+	);
+	const catalogMapping = findCatalogMappingForProvider(
+		catalogDecision,
+		"openai",
+	);
+	const resolvedUpstreamModel = catalogMapping?.externalId ?? upstreamModel;
 	const startedAt = Date.now();
 	const source = validateSource(
 		c.req.header("x-source"),
@@ -407,9 +420,7 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 
 	// Sandbox wallets can only spend on free models, so reject paid moderation
 	// requests from test-mode end-user sessions.
-	const moderationModelId = upstreamModel.includes("/")
-		? upstreamModel.slice(upstreamModel.lastIndexOf("/") + 1)
-		: upstreamModel;
+	const moderationModelId = "openai-moderation";
 	assertTestWalletModelAllowed(
 		wallet,
 		models.find((m) => m.id === moderationModelId),
@@ -436,7 +447,7 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 		providerKey = await findProviderKey(
 			project.organizationId,
 			"openai",
-			upstreamModel,
+			resolvedUpstreamModel,
 		);
 		if (!providerKey) {
 			throw new HTTPException(400, {
@@ -447,7 +458,7 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 		usedToken = providerKey.token;
 	} else if (project.mode === "credits") {
 		const envResult = await getProviderEnv("openai", {
-			selectionScope: upstreamModel,
+			selectionScope: resolvedUpstreamModel,
 		});
 		usedToken = envResult.token;
 		configIndex = envResult.configIndex;
@@ -457,13 +468,13 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 		providerKey = await findProviderKey(
 			project.organizationId,
 			"openai",
-			upstreamModel,
+			resolvedUpstreamModel,
 		);
 		if (providerKey) {
 			usedToken = providerKey.token;
 		} else {
 			const envResult = await getProviderEnv("openai", {
-				selectionScope: upstreamModel,
+				selectionScope: resolvedUpstreamModel,
 			});
 			usedToken = envResult.token;
 			configIndex = envResult.configIndex;
@@ -487,7 +498,7 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 	let upstreamUrl = resolveUpstreamUrl();
 	const requestBody = {
 		input,
-		model: upstreamModel,
+		model: resolvedUpstreamModel,
 	};
 
 	const baseLogEntry = createLogEntry({
@@ -496,7 +507,9 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 		apiKey,
 		providerKeyId: providerKey?.id,
 		usedModel: "openai-moderation",
-		usedModelMapping: upstreamModel,
+		usedModelMapping: resolvedUpstreamModel,
+		modelProviderMappingId: catalogMapping?.id ?? null,
+		catalogRevisionId: catalogDecision?.revision ?? null,
 		usedProvider: "openai",
 		requestedModel: "openai-moderation",
 		requestedProvider: "openai",
@@ -529,7 +542,7 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 		triedEnvIndices.add(configIndex);
 		try {
 			const envResult = await getProviderEnv("openai", {
-				selectionScope: upstreamModel,
+				selectionScope: resolvedUpstreamModel,
 				excludedIndices: triedEnvIndices,
 			});
 			usedToken = envResult.token;

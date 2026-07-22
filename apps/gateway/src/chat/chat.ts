@@ -31,6 +31,7 @@ import {
 } from "@/lib/cached-queries.js";
 import {
 	enforceCatalogRequest,
+	filterAutoCandidateByCatalog,
 	filterProviderMappingsByCatalog,
 	findCatalogMappingForProvider,
 } from "@/lib/catalog-policy.js";
@@ -1679,7 +1680,7 @@ chat.openapi(completions, async (c) => {
 	const requestedModel = parseResult.requestedModel;
 	const customProviderName = parseResult.customProviderName;
 	const requestedRegion = parseResult.requestedRegion;
-	const catalogRequestDecision = await enforceCatalogRequest(
+	let catalogRequestDecision = await enforceCatalogRequest(
 		{
 			modelId: requestedModel,
 			providerId:
@@ -2992,6 +2993,7 @@ chat.openapi(completions, async (c) => {
 		];
 
 		let selectedModel: ModelDefinition | undefined;
+		let selectedCatalogDecision: typeof catalogRequestDecision = null;
 		let selectedProviders: any[] = [];
 		let selectedFilteredProviders: Array<{
 			providerId: string;
@@ -3023,6 +3025,7 @@ chat.openapi(completions, async (c) => {
 		// instead of the generic errors / hardcoded fallback below.
 		let anyPreComplianceCandidate = false;
 		let anyPostComplianceCandidate = false;
+		let catalogRoutingEnforced = false;
 
 		for (const modelDef of models) {
 			if (modelDef.id === "auto" || modelDef.id === "custom") {
@@ -3085,7 +3088,7 @@ chat.openapi(completions, async (c) => {
 			}
 			const candidateAllowedProviders = candidateIam.allowedProviders;
 
-			const candidateProviders = preferConcreteRegionalMappings(
+			const sourceCandidateProviders = preferConcreteRegionalMappings(
 				applyPinnedDefaultRegions(
 					project.mode === "credits"
 						? filterRegionsByAvailableKeys(
@@ -3102,6 +3105,12 @@ chat.openapi(completions, async (c) => {
 					},
 				),
 			);
+			const catalogCandidate = await filterAutoCandidateByCatalog(
+				modelDef.id,
+				sourceCandidateProviders,
+			);
+			const candidateProviders = catalogCandidate.providers;
+			catalogRoutingEnforced ||= catalogCandidate.enforced;
 			// Check if any of the model's providers are available
 			const availableModelProviders = candidateProviders.filter(
 				(provider) =>
@@ -3180,6 +3189,7 @@ chat.openapi(completions, async (c) => {
 					if (totalPrice < lowestPrice) {
 						lowestPrice = totalPrice;
 						selectedModel = modelDef;
+						selectedCatalogDecision = catalogCandidate.decision;
 						selectedProviders = preferredSuitableProviders;
 						selectedFilteredProviders = filteredOutForModel;
 					}
@@ -3191,6 +3201,7 @@ chat.openapi(completions, async (c) => {
 
 		// If we found a suitable model, use the cheapest provider from it
 		if (selectedModel && selectedProviders.length > 0) {
+			catalogRequestDecision = selectedCatalogDecision;
 			// Fetch uptime/latency metrics from last 5 minutes for provider selection
 			const metricsCombinations = selectedProviders.map((p) => ({
 				modelId: selectedModel.id,
@@ -3247,6 +3258,12 @@ chat.openapi(completions, async (c) => {
 				usedExternalId = selectedProviders[0].externalId;
 			}
 		} else {
+			if (catalogRoutingEnforced) {
+				throw new HTTPException(503, {
+					message:
+						"No catalog-approved model is currently available for auto routing",
+				});
+			}
 			// Compliance removed every otherwise-available candidate: fail closed
 			// with the policy 403 + security event rather than the generic errors or
 			// the hardcoded fallback below.

@@ -131,4 +131,25 @@ describe("evaluateCatalogRequest", () => {
 			}),
 		).toMatchObject({ allowed: true, mappingIds: ["mapping-1"] });
 	});
+
+	it("orders routing candidates by priority, weight, then stable id", () => {
+		const base = snapshot();
+		const decision = evaluateCatalogRequest(
+			{
+				...base,
+				mappings: [
+					{ ...base.mappings[0]!, id: "later", priority: 20, weight: 100 },
+					{ ...base.mappings[0]!, id: "lighter", priority: 10, weight: 20 },
+					{ ...base.mappings[0]!, id: "heavier", priority: 10, weight: 80 },
+				],
+				routableMappingIds: ["later", "lighter", "heavier"],
+			},
+			{ modelId: "gpt" },
+		);
+
+		expect(decision).toMatchObject({
+			allowed: true,
+			mappingIds: ["heavier", "lighter", "later"],
+		});
+	});
 });

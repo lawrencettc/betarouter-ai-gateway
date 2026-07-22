@@ -38,6 +38,28 @@ const OPENAI_GPT4O_MINI_TTS_VOICES = [
 
 export const openaiModels = [
 	{
+		id: "openai-moderation",
+		name: "OpenAI Moderation",
+		description:
+			"OpenAI text and image safety classification through the moderation endpoint.",
+		family: "openai",
+		output: ["text"],
+		releasedAt: new Date("2024-09-26"),
+		providers: [
+			{
+				providerId: "openai",
+				externalId: "omni-moderation-latest",
+				inputPrice: "0",
+				outputPrice: "0",
+				requestPrice: "0",
+				streaming: false,
+				vision: true,
+				tools: false,
+				jsonOutput: true,
+			},
+		],
+	},
+	{
 		id: "gpt-4o-mini",
 		name: "GPT-4o Mini",
 		description:
