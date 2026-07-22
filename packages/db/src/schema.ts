@@ -2957,6 +2957,7 @@ export const platformCatalogChangeSet = pgTable(
 			() => platformCatalogRevision.id,
 		),
 		operations: jsonb().$type<PlatformCatalogOperationV1[]>().notNull(),
+		inverseOperations: jsonb().$type<PlatformCatalogOperationV1[]>(),
 		impactSnapshot: jsonb().$type<PlatformCatalogImpactSnapshotV1>(),
 		effectiveAt: timestamp({ withTimezone: true }),
 		appliedAt: timestamp({ withTimezone: true }),

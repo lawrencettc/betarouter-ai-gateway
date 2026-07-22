@@ -1,9 +1,10 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
-import { desc, eq } from "drizzle-orm";
+import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 
 import { platformAdminMiddleware } from "@/middleware/admin.js";
 
+import { redisClient } from "@llmgateway/cache";
 import {
 	applyCatalogOperations,
 	catalogChangeSetInputSchema,
@@ -12,6 +13,8 @@ import {
 } from "@llmgateway/catalog";
 import {
 	db,
+	desc,
+	eq,
 	model,
 	modelProviderMapping,
 	platformCatalogChangeSet,
@@ -24,22 +27,26 @@ import {
 	platformProviderCredential,
 	platformProviderPolicy,
 	provider,
+	sql,
 } from "@llmgateway/db";
 import { getProviderEnvConfig, getProviderEnvVar } from "@llmgateway/models";
 
 import type { ServerTypes } from "@/vars.js";
 import type {
 	CatalogLifecycle,
+	CatalogOperationV1,
 	CatalogPolicyState,
 	EffectiveCatalog,
 	MappingPolicy,
 	ModelPolicy,
 	ProviderPolicy,
 } from "@llmgateway/catalog";
+import type { PlatformCatalogOperationV1 } from "@llmgateway/db";
 import type { Provider } from "@llmgateway/models";
 
 const platformCatalog = new OpenAPIHono<ServerTypes>();
 platformCatalog.use("/*", platformAdminMiddleware);
+const CATALOG_INVALIDATION_CHANNEL = "platform-catalog:invalidate";
 
 const lifecycleSchema = z.enum(["draft", "active", "deprecated", "retired"]);
 const effectiveProviderSchema = z.object({
@@ -413,6 +420,147 @@ function requestMetadata(c: {
 	};
 }
 
+type CatalogTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+async function persistPolicyState(
+	tx: CatalogTransaction,
+	state: CatalogPolicyState,
+	operations: CatalogOperationV1[],
+): Promise<void> {
+	const providerIds = new Set<string>();
+	const modelIds = new Set<string>();
+	const mappingIds = new Set<string>();
+	const priceMappingIds = new Set<string>();
+	for (const operation of operations) {
+		switch (operation.type) {
+			case "provider.set_policy":
+				providerIds.add(operation.providerId);
+				break;
+			case "model.set_policy":
+				modelIds.add(operation.modelId);
+				break;
+			case "mapping.set_policy":
+			case "mapping.set_external_id":
+				mappingIds.add(operation.mappingId);
+				break;
+			case "mapping.set_price_policy":
+				priceMappingIds.add(operation.mappingId);
+				break;
+			case "entity.archive_policy":
+				if (operation.entityType === "provider") {
+					providerIds.add(operation.entityId);
+				} else if (operation.entityType === "model") {
+					modelIds.add(operation.entityId);
+				} else {
+					mappingIds.add(operation.entityId);
+				}
+				break;
+		}
+	}
+
+	for (const providerId of providerIds) {
+		const row = state.providers[providerId];
+		if (!row) {
+			throw new HTTPException(409, { message: "Provider policy is stale" });
+		}
+		const values = {
+			providerId: row.providerId,
+			visible: row.visible,
+			enabled: row.enabled,
+			displayNameOverride: row.displayNameOverride ?? null,
+			descriptionOverride: row.descriptionOverride ?? null,
+			websiteOverride: row.websiteOverride ?? null,
+			sortOrder: row.sortOrder ?? 1000,
+			lifecycle: row.lifecycle,
+			deprecatedAt: row.deprecatedAt ? new Date(row.deprecatedAt) : null,
+			retireAt: row.retireAt ? new Date(row.retireAt) : null,
+			replacementProviderId: row.replacementProviderId ?? null,
+			updatedAt: new Date(row.updatedAt),
+			updatedBy: row.updatedBy,
+		};
+		await tx.insert(platformProviderPolicy).values(values).onConflictDoUpdate({
+			target: platformProviderPolicy.providerId,
+			set: values,
+		});
+	}
+	for (const modelId of modelIds) {
+		const row = state.models[modelId];
+		if (!row) {
+			throw new HTTPException(409, { message: "Model policy is stale" });
+		}
+		const values = {
+			modelId: row.modelId,
+			visible: row.visible,
+			enabled: row.enabled,
+			allowDirect: row.allowDirect,
+			displayNameOverride: row.displayNameOverride ?? null,
+			descriptionOverride: row.descriptionOverride ?? null,
+			aliasesOverride: row.aliasesOverride ?? null,
+			sortOrder: row.sortOrder ?? 1000,
+			lifecycle: row.lifecycle,
+			deprecatedAt: row.deprecatedAt ? new Date(row.deprecatedAt) : null,
+			retireAt: row.retireAt ? new Date(row.retireAt) : null,
+			replacementModelId: row.replacementModelId ?? null,
+			retirementMessage: row.retirementMessage ?? null,
+			updatedAt: new Date(row.updatedAt),
+			updatedBy: row.updatedBy,
+		};
+		await tx
+			.insert(platformModelPolicy)
+			.values(values)
+			.onConflictDoUpdate({ target: platformModelPolicy.modelId, set: values });
+	}
+	for (const mappingId of mappingIds) {
+		const row = state.mappings[mappingId];
+		if (!row) {
+			throw new HTTPException(409, { message: "Mapping policy is stale" });
+		}
+		const values = {
+			mappingId: row.mappingId,
+			enabled: row.enabled,
+			externalIdOverride: row.externalIdOverride ?? null,
+			contextSizeLimit: row.contextSizeLimit ?? null,
+			maxOutputLimit: row.maxOutputLimit ?? null,
+			disabledCapabilities: row.disabledCapabilities ?? [],
+			priority: row.priority ?? 100,
+			weight: row.weight ?? 100,
+			breakerEnabled: row.breakerEnabled ?? true,
+			requiredTestRevision: row.requiredTestRevision ?? null,
+			updatedAt: new Date(row.updatedAt),
+			updatedBy: row.updatedBy,
+		};
+		await tx.insert(platformMappingPolicy).values(values).onConflictDoUpdate({
+			target: platformMappingPolicy.mappingId,
+			set: values,
+		});
+	}
+	for (const mappingId of priceMappingIds) {
+		const row = state.prices[mappingId];
+		if (!row) {
+			throw new HTTPException(409, { message: "Price policy is stale" });
+		}
+		const policy = row.policy;
+		const values = {
+			mappingId,
+			currency: policy.currency,
+			mode: policy.mode,
+			markupBps: policy.mode === "markup" ? policy.markupBps : null,
+			fixedPrices: policy.mode === "fixed" ? policy.fixedPrices : null,
+			allowNegativeMargin: policy.allowNegativeMargin,
+			negativeMarginReason: policy.negativeMarginReason ?? null,
+			updatedAt: new Date(row.updatedAt),
+			updatedBy: row.updatedBy,
+		};
+		await tx
+			.insert(platformMappingPricePolicy)
+			.values(values)
+			.onConflictDoUpdate({
+				target: platformMappingPricePolicy.mappingId,
+				set: values,
+			});
+	}
+}
+
 function paginate<T>(
 	items: T[],
 	page: number,
@@ -426,9 +574,17 @@ function paginate<T>(
 	};
 }
 
-function filterEffective<
-	T extends { id: string; visible?: boolean; available: boolean },
->(items: T[], query: z.infer<typeof listQuerySchema>): T[] {
+interface FilterableEffective {
+	id: string;
+	visible?: boolean;
+	displayable?: boolean;
+	available: boolean;
+}
+
+function filterEffective<T extends FilterableEffective>(
+	items: T[],
+	query: z.infer<typeof listQuerySchema>,
+): T[] {
 	const search = query.search?.trim().toLowerCase();
 	return items.filter((item) => {
 		if (search && !item.id.toLowerCase().includes(search)) {
@@ -436,9 +592,9 @@ function filterEffective<
 		}
 		switch (query.state) {
 			case "visible":
-				return item.visible === true;
+				return (item.visible ?? item.displayable) === true;
 			case "hidden":
-				return item.visible === false;
+				return (item.visible ?? item.displayable) === false;
 			case "available":
 				return item.available;
 			case "unavailable":
@@ -539,7 +695,8 @@ for (const definition of [
 		async (c) => {
 			const query = c.req.valid("query");
 			const { snapshot } = await loadCatalogView();
-			const items = filterEffective(snapshot[definition.key], query);
+			const sourceItems = snapshot[definition.key] as FilterableEffective[];
+			const items = filterEffective(sourceItems, query);
 			return c.json({
 				...paginate(items, query.page, query.pageSize),
 				revision: snapshot.revision,
@@ -592,6 +749,90 @@ platformCatalog.openapi(
 platformCatalog.openapi(
 	createRoute({
 		method: "post",
+		path: "/change-sets",
+		request: {
+			body: {
+				required: true,
+				content: {
+					"application/json": { schema: catalogChangeSetInputSchema },
+				},
+			},
+		},
+		responses: {
+			200: {
+				description: "Existing idempotent catalog change set",
+				content: {
+					"application/json": { schema: z.record(z.string(), z.unknown()) },
+				},
+			},
+			201: {
+				description: "Saved draft or scheduled catalog change set",
+				content: {
+					"application/json": { schema: z.record(z.string(), z.unknown()) },
+				},
+			},
+			409: { description: "Base revision is stale" },
+		},
+	}),
+	async (c) => {
+		const user = c.get("user");
+		if (!user) {
+			throw new HTTPException(401, { message: "Unauthorized" });
+		}
+		const input = c.req.valid("json");
+		const [existing] = await db
+			.select()
+			.from(platformCatalogChangeSet)
+			.where(eq(platformCatalogChangeSet.idempotencyKey, input.idempotencyKey))
+			.limit(1);
+		if (existing) {
+			return c.json(existing);
+		}
+		const view = await loadCatalogView();
+		const currentRevision = view.snapshot.revision || null;
+		if (input.baseRevision !== currentRevision) {
+			return c.json({ message: "Catalog base revision is stale" }, 409);
+		}
+		const effectiveAt = input.effectiveAt ? new Date(input.effectiveAt) : null;
+		const state = effectiveAt ? ("scheduled" as const) : ("draft" as const);
+		const [created] = await db
+			.insert(platformCatalogChangeSet)
+			.values({
+				createdBy: user.id,
+				title: input.title,
+				reason: input.reason,
+				state,
+				baseRevision: input.baseRevision,
+				operations: input.operations as PlatformCatalogOperationV1[],
+				effectiveAt,
+				idempotencyKey: input.idempotencyKey,
+			})
+			.returning();
+		if (!created) {
+			throw new HTTPException(500, { message: "Change set was not saved" });
+		}
+		await db.insert(platformAuditLog).values({
+			userId: user.id,
+			action: effectiveAt
+				? "platform_catalog.schedule"
+				: "platform_catalog.preview",
+			resourceId: created.id,
+			success: true,
+			metadata: {
+				draftSaved: !effectiveAt,
+				baseRevision: input.baseRevision,
+				operationCount: input.operations.length,
+				effectiveAt: input.effectiveAt,
+			},
+			...requestMetadata(c),
+		});
+		return c.json(created, 201);
+	},
+);
+
+platformCatalog.openapi(
+	createRoute({
+		method: "post",
 		path: "/change-sets/preview",
 		request: {
 			body: {
@@ -611,6 +852,9 @@ platformCatalog.openapi(
 	}),
 	async (c) => {
 		const user = c.get("user");
+		if (!user) {
+			throw new HTTPException(401, { message: "Unauthorized" });
+		}
 		const input = c.req.valid("json");
 		try {
 			const view = await loadCatalogView();
@@ -778,6 +1022,207 @@ platformCatalog.openapi(
 
 platformCatalog.openapi(
 	createRoute({
+		method: "post",
+		path: "/change-sets/{id}/apply",
+		request: { params: z.object({ id: z.string().min(1) }) },
+		responses: {
+			200: {
+				description: "Atomically applied catalog revision",
+				content: {
+					"application/json": {
+						schema: z.object({
+							changeSetId: z.string(),
+							catalogRevision: z.number(),
+							affectedEntities: z.array(z.string()),
+							cacheInvalidation: z.enum(["published", "failed"]),
+						}),
+					},
+				},
+			},
+			400: { description: "Change set is invalid or blocked" },
+			404: { description: "Change set not found" },
+			409: { description: "Change set or base revision is stale" },
+		},
+	}),
+	async (c) => {
+		const user = c.get("user");
+		if (!user) {
+			throw new HTTPException(401, { message: "Unauthorized" });
+		}
+		const changeSetId = c.req.valid("param").id;
+		const view = await loadCatalogView();
+		let result: {
+			changeSetId: string;
+			catalogRevision: number;
+			affectedEntities: string[];
+		};
+		try {
+			result = await db.transaction(async (tx) => {
+				await tx.execute(sql`SELECT pg_advisory_xact_lock(7220260722)`);
+				const [changeSet] = await tx
+					.select()
+					.from(platformCatalogChangeSet)
+					.where(eq(platformCatalogChangeSet.id, changeSetId))
+					.limit(1);
+				if (!changeSet) {
+					throw new HTTPException(404, { message: "Change set not found" });
+				}
+				if (changeSet.state === "applied" && changeSet.appliedRevision) {
+					return {
+						changeSetId,
+						catalogRevision: changeSet.appliedRevision,
+						affectedEntities: [],
+					};
+				}
+				if (!new Set(["draft", "scheduled"]).has(changeSet.state)) {
+					throw new HTTPException(409, {
+						message: "Change set is not applyable",
+					});
+				}
+				if (
+					changeSet.effectiveAt &&
+					changeSet.effectiveAt.getTime() > Date.now()
+				) {
+					throw new HTTPException(409, {
+						message: "Scheduled change set is not due",
+					});
+				}
+				const [latestRevision] = await tx
+					.select({ id: platformCatalogRevision.id })
+					.from(platformCatalogRevision)
+					.orderBy(desc(platformCatalogRevision.id))
+					.limit(1);
+				const currentRevision = latestRevision?.id ?? null;
+				if (changeSet.baseRevision !== currentRevision) {
+					throw new HTTPException(409, {
+						message: "Change set base revision is stale",
+					});
+				}
+				const operations = catalogChangeSetInputSchema.shape.operations.parse(
+					changeSet.operations,
+				);
+				const updatedAt = new Date().toISOString();
+				const applied = applyCatalogOperations({
+					state: policyStateFromView(view),
+					operations,
+					actor: user.id,
+					updatedAt,
+				});
+				const provisionalSnapshot = resolveStateSnapshot(
+					view,
+					applied.state,
+					0,
+				);
+				const affectedMappings = provisionalSnapshot.mappings.filter(
+					(mapping) =>
+						applied.affectedEntityIds.includes(mapping.id) ||
+						applied.affectedEntityIds.includes(mapping.providerId) ||
+						applied.affectedEntityIds.includes(mapping.modelId),
+				);
+				const blockers = affectedMappings.filter((mapping) => {
+					const policy = applied.state.mappings[mapping.id];
+					return (
+						policy?.enabled === true &&
+						!mapping.available &&
+						mapping.reasons.some(
+							(reason) =>
+								reason !== "circuit_open" && reason !== "circuit_half_open",
+						)
+					);
+				});
+				if (blockers.length > 0) {
+					throw new HTTPException(400, {
+						message: `Catalog activation is blocked: ${blockers
+							.map((item) => `${item.id} (${item.reasons.join(", ")})`)
+							.join("; ")}`,
+					});
+				}
+				await tx
+					.update(platformCatalogChangeSet)
+					.set({ state: "applying" })
+					.where(eq(platformCatalogChangeSet.id, changeSetId));
+				await persistPolicyState(tx, applied.state, operations);
+				const [revision] = await tx
+					.insert(platformCatalogRevision)
+					.values({
+						changeSetId,
+						appliedBy: user.id,
+						checksum: provisionalSnapshot.checksum,
+						snapshot: provisionalSnapshot as unknown as Record<string, unknown>,
+					})
+					.returning({ id: platformCatalogRevision.id });
+				if (!revision) {
+					throw new HTTPException(500, {
+						message: "Catalog revision was not created",
+					});
+				}
+				const snapshot = { ...provisionalSnapshot, revision: revision.id };
+				await tx
+					.update(platformCatalogRevision)
+					.set({ snapshot: snapshot as unknown as Record<string, unknown> })
+					.where(eq(platformCatalogRevision.id, revision.id));
+				await tx
+					.update(platformCatalogChangeSet)
+					.set({
+						state: "applied",
+						appliedAt: new Date(updatedAt),
+						appliedRevision: revision.id,
+						inverseOperations:
+							applied.inverseOperations as PlatformCatalogOperationV1[],
+					})
+					.where(eq(platformCatalogChangeSet.id, changeSetId));
+				await tx.insert(platformAuditLog).values({
+					userId: user.id,
+					action: "platform_catalog.apply",
+					resourceId: changeSetId,
+					success: true,
+					metadata: {
+						catalogRevision: revision.id,
+						checksum: snapshot.checksum,
+						operationCount: operations.length,
+						affectedEntityIds: applied.affectedEntityIds,
+					},
+					...requestMetadata(c),
+				});
+				return {
+					changeSetId,
+					catalogRevision: revision.id,
+					affectedEntities: applied.affectedEntityIds,
+				};
+			});
+		} catch (error) {
+			try {
+				await db.insert(platformAuditLog).values({
+					userId: user.id,
+					action: "platform_catalog.apply",
+					resourceId: changeSetId,
+					success: false,
+					metadata: {
+						errorCode: error instanceof Error ? error.name : "apply_failed",
+						statusCode: error instanceof HTTPException ? error.status : 500,
+					},
+					...requestMetadata(c),
+				});
+			} catch {
+				// Preserve the apply error if the audit store is unavailable.
+			}
+			throw error;
+		}
+		let cacheInvalidation: "published" | "failed" = "published";
+		try {
+			await redisClient.publish(
+				CATALOG_INVALIDATION_CHANNEL,
+				JSON.stringify({ revision: result.catalogRevision }),
+			);
+		} catch {
+			cacheInvalidation = "failed";
+		}
+		return c.json({ ...result, cacheInvalidation });
+	},
+);
+
+platformCatalog.openapi(
+	createRoute({
 		method: "get",
 		path: "/change-sets",
 		responses: {
@@ -797,7 +1242,7 @@ platformCatalog.openapi(
 			.from(platformCatalogChangeSet)
 			.orderBy(desc(platformCatalogChangeSet.createdAt))
 			.limit(200);
-		return c.json(rows);
+		return c.json(rows as unknown as Record<string, unknown>[]);
 	},
 );
 
