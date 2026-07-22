@@ -38,7 +38,9 @@ chmod 600 .env.production
 ```
 
 Replace every `replace-with-...` value in `.env.production`, including the
-Cloudflare tunnel token. Keep this file only on the Droplet.
+Cloudflare tunnel token and `ADMIN_EMAILS`. Admin users first create a normal
+BetaRouter account, then sign in to `admin.betarouter.com` with the same email
+and password. Keep this file only on the Droplet.
 
 Normally, GitHub Actions publishes the unified image to GHCR. Start it with:
 
