@@ -10,9 +10,11 @@ import {
 	applyCatalogOperations,
 	catalogChangeSetInputSchema,
 	fixedPricesV1ToPriceMap,
+	getCatalogBreakerStates,
 	mappingPricePolicySchema,
 	resolveEffectiveCatalog,
 	resolveMappingPrice,
+	resetCatalogBreaker,
 	sourceMappingPricesToPriceMap,
 } from "@llmgateway/catalog";
 import {
@@ -30,6 +32,7 @@ import {
 	platformCatalogRevision,
 	platformAuditLog,
 	platformMappingPolicy,
+	platformMappingHealthSummary,
 	platformMappingPricePolicy,
 	platformMappingTestRun,
 	platformModelPolicy,
@@ -992,8 +995,178 @@ platformCatalog.openapi(
 
 platformCatalog.openapi(
 	createRoute({
+		method: "get",
+		path: "/mappings/{id}/health",
+		request: { params: z.object({ id: z.string().min(1) }) },
+		responses: {
+			200: {
+				description: "Mapping readiness and live health",
+				content: {
+					"application/json": {
+						schema: z.object({
+							mapping: effectiveMappingSchema,
+							breaker: z
+								.object({
+									state: z.enum(["closed", "open", "half_open"]),
+									consecutiveFailures: z.number(),
+									requestCount: z.number(),
+									openedAt: z.number().nullable(),
+									retryAt: z.number().nullable(),
+								})
+								.nullable(),
+							credentialCount: z.number(),
+							validCredentialCount: z.number(),
+							latestTest: mappingTestResponseSchema.nullable(),
+							latestSummary: z
+								.object({
+									createdAt: z.string(),
+									requestCount: z.number(),
+									upstreamFailureCount: z.number(),
+									latencyP50Ms: z.number().nullable(),
+									latencyP95Ms: z.number().nullable(),
+									lastSuccessAt: z.string().nullable(),
+								})
+								.nullable(),
+						}),
+					},
+				},
+			},
+			404: { description: "Mapping not found" },
+		},
+	}),
+	async (c) => {
+		const mappingId = c.req.valid("param").id;
+		const view = await loadCatalogView();
+		const mapping = view.snapshot.mappings.find(
+			(item) => item.id === mappingId,
+		);
+		if (!mapping) {
+			return c.json({ message: "Mapping not found" }, 404);
+		}
+		const [breakerStates, credentials, tests, summaries] = await Promise.all([
+			getCatalogBreakerStates({
+				revision: view.snapshot.revision,
+				mappingIds: [mappingId],
+			}),
+			db
+				.select({
+					status: platformProviderCredential.status,
+					validationStatus: platformProviderCredential.validationStatus,
+				})
+				.from(platformProviderCredential)
+				.where(eq(platformProviderCredential.provider, mapping.providerId)),
+			db
+				.select()
+				.from(platformMappingTestRun)
+				.where(eq(platformMappingTestRun.mappingId, mappingId))
+				.orderBy(desc(platformMappingTestRun.createdAt))
+				.limit(1),
+			db
+				.select()
+				.from(platformMappingHealthSummary)
+				.where(eq(platformMappingHealthSummary.mappingId, mappingId))
+				.orderBy(desc(platformMappingHealthSummary.createdAt))
+				.limit(1),
+		]);
+		const breaker = breakerStates[mappingId];
+		const latestTest = tests[0];
+		const latestSummary = summaries[0];
+		return c.json({
+			mapping,
+			breaker: breaker
+				? {
+						state: breaker.state,
+						consecutiveFailures: breaker.consecutiveFailures,
+						requestCount: breaker.window.length,
+						openedAt: breaker.openedAt ?? null,
+						retryAt: breaker.retryAt ?? null,
+					}
+				: null,
+			credentialCount: credentials.filter((item) => item.status === "active")
+				.length,
+			validCredentialCount: credentials.filter(
+				(item) => item.status === "active" && item.validationStatus === "valid",
+			).length,
+			latestTest: latestTest
+				? {
+						...latestTest,
+						createdAt: latestTest.createdAt.toISOString(),
+						finishedAt: latestTest.finishedAt?.toISOString() ?? null,
+					}
+				: null,
+			latestSummary: latestSummary
+				? {
+						createdAt: latestSummary.createdAt.toISOString(),
+						requestCount: latestSummary.requestCount,
+						upstreamFailureCount: latestSummary.upstreamFailureCount,
+						latencyP50Ms: latestSummary.latencyP50Ms,
+						latencyP95Ms: latestSummary.latencyP95Ms,
+						lastSuccessAt: latestSummary.lastSuccessAt?.toISOString() ?? null,
+					}
+				: null,
+		});
+	},
+);
+
+platformCatalog.openapi(
+	createRoute({
 		method: "post",
-		path: "/mappings/{id}/tests",
+		path: "/mappings/{id}/breaker/reset",
+		request: { params: z.object({ id: z.string().min(1) }) },
+		responses: {
+			200: {
+				description: "Breaker reset",
+				content: {
+					"application/json": {
+						schema: z.object({
+							success: z.literal(true),
+							revision: z.number(),
+						}),
+					},
+				},
+			},
+			409: { description: "A passing mapping test is required" },
+		},
+	}),
+	async (c) => {
+		const user = c.get("user");
+		if (!user) {
+			throw new HTTPException(401, { message: "Unauthorized" });
+		}
+		const mappingId = c.req.valid("param").id;
+		const view = await loadCatalogView();
+		const [latestTest] = await db
+			.select()
+			.from(platformMappingTestRun)
+			.where(eq(platformMappingTestRun.mappingId, mappingId))
+			.orderBy(desc(platformMappingTestRun.createdAt))
+			.limit(1);
+		if (!latestTest || latestTest.status !== "passed") {
+			throw new HTTPException(409, {
+				message: "Run and pass a mapping test before resetting its breaker",
+			});
+		}
+		await resetCatalogBreaker(view.snapshot.revision, mappingId);
+		await db.insert(platformAuditLog).values({
+			userId: user.id,
+			action: "platform_catalog.circuit_close",
+			resourceId: mappingId,
+			success: true,
+			metadata: {
+				revision: view.snapshot.revision,
+				testRunId: latestTest.id,
+				manual: true,
+			},
+			...requestMetadata(c),
+		});
+		return c.json({ success: true as const, revision: view.snapshot.revision });
+	},
+);
+
+platformCatalog.openapi(
+	createRoute({
+		method: "post",
+		path: "/mappings/{id}/test",
 		request: {
 			params: z.object({ id: z.string().min(1) }),
 			body: {

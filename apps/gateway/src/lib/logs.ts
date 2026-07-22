@@ -1,5 +1,9 @@
 import { publishToQueue, LOG_QUEUE } from "@llmgateway/cache";
 import {
+	readCatalogFeatureFlags,
+	recordCatalogBreakerOutcome,
+} from "@llmgateway/catalog";
+import {
 	db,
 	log,
 	UnifiedFinishReason,
@@ -283,6 +287,36 @@ export function calculateDataStorageCost(
 
 export type LogData = InferInsertModel<typeof log>;
 
+function reportCatalogOutcome(logData: LogInsertData): void {
+	if (
+		readCatalogFeatureFlags().breakerMode === "off" ||
+		!logData.modelProviderMappingId ||
+		!logData.catalogRevisionId ||
+		logData.cached
+	) {
+		return;
+	}
+	const kind =
+		logData.unifiedFinishReason === UnifiedFinishReason.UPSTREAM_ERROR ||
+		logData.unifiedFinishReason === UnifiedFinishReason.GATEWAY_ERROR
+			? "upstream_failure"
+			: logData.unifiedFinishReason === UnifiedFinishReason.CLIENT_ERROR
+				? "customer_error"
+				: logData.hasError
+					? null
+					: "success";
+	if (!kind) {
+		return;
+	}
+	void recordCatalogBreakerOutcome({
+		revision: Number(logData.catalogRevisionId),
+		mappingId: logData.modelProviderMappingId,
+		outcome: { kind, at: Date.now() },
+	}).catch((error: unknown) => {
+		logger.error("Failed to record catalog breaker outcome", { error });
+	});
+}
+
 export async function insertLog(
 	logData: LogInsertData,
 	options?: { syncInsert?: boolean },
@@ -352,9 +386,11 @@ export async function insertLog(
 
 	if (options?.syncInsert) {
 		await db.insert(log).values(logData as LogData);
+		reportCatalogOutcome(logData);
 		return 1;
 	}
 
 	await publishToQueue(LOG_QUEUE, logData);
+	reportCatalogOutcome(logData);
 	return 1; // Return 1 to match test expectations
 }

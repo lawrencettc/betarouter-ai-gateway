@@ -129,7 +129,9 @@ export async function enforceCatalogRequest(
 	if (!flags.routingEnabled && !flags.shadowRead) {
 		return null;
 	}
-	const snapshot = await getEffectiveCatalogSnapshot();
+	const snapshot = await getEffectiveCatalogSnapshot({
+		claimBreakerProbes: flags.breakerMode === "enforce",
+	});
 	const decision = evaluateCatalogRequest(snapshot, input);
 	if (flags.shadowRead) {
 		logger.info("Catalog routing decision", {

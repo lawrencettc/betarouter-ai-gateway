@@ -1,4 +1,5 @@
 export * from "./breaker.js";
+export * from "./breaker-store.js";
 export * from "./bootstrap.js";
 export * from "./catalog.js";
 export * from "./change-set.js";

@@ -256,7 +256,9 @@ export function applyCatalogOperations(input: ApplyCatalogOperationsInput): {
 				if (!current) {
 					throw new CatalogConflictError("price", operation.mappingId);
 				}
-				delete next.prices[operation.mappingId];
+				const { [operation.mappingId]: _removed, ...remainingPrices } =
+					next.prices;
+				next.prices = remainingPrices;
 				inverseOperations.unshift({
 					version: 1,
 					type: "mapping.set_price_policy",

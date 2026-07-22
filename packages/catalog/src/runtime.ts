@@ -4,7 +4,9 @@ import { db } from "@llmgateway/db/db";
 import { desc } from "@llmgateway/db/orm";
 import { platformCatalogRevision } from "@llmgateway/db/schema";
 
+import { getCatalogBreakerStates } from "./breaker-store.js";
 import { calculateCatalogChecksum } from "./catalog.js";
+import { readCatalogFeatureFlags } from "./flags.js";
 import { CatalogSnapshotCache } from "./snapshot-cache.js";
 
 import type { EffectiveCatalog } from "./catalog.js";
@@ -92,8 +94,59 @@ const runtimeCache = new CatalogSnapshotCache({
 		Number.isFinite(maxStaleMs) && maxStaleMs >= 0 ? maxStaleMs : 300_000,
 });
 
-export async function getEffectiveCatalogSnapshot(): Promise<EffectiveCatalog> {
-	return (await runtimeCache.get()).snapshot;
+async function withRuntimeBreakers(
+	snapshot: EffectiveCatalog,
+	claimBreakerProbes: boolean,
+): Promise<EffectiveCatalog> {
+	if (readCatalogFeatureFlags().breakerMode !== "enforce") {
+		return snapshot;
+	}
+	try {
+		const states = await getCatalogBreakerStates({
+			revision: snapshot.revision,
+			mappingIds: snapshot.mappings.map((mapping) => mapping.id),
+			claimProbes: claimBreakerProbes,
+		});
+		const mappings = snapshot.mappings.map((mapping) => {
+			const breaker = states[mapping.id];
+			if (!breaker || breaker.state === "closed") {
+				return mapping;
+			}
+			const probeOnly =
+				breaker.state === "half_open" && breaker.probeClaimed === true;
+			return {
+				...mapping,
+				routable: probeOnly ? mapping.available : false,
+				probeOnly,
+				reasons: [
+					...mapping.reasons.filter(
+						(reason) =>
+							reason !== "circuit_open" && reason !== "circuit_half_open",
+					),
+					breaker.state === "open" ? "circuit_open" : "circuit_half_open",
+				] as typeof mapping.reasons,
+			};
+		});
+		return {
+			...snapshot,
+			mappings,
+			routableMappingIds: mappings
+				.filter((mapping) => mapping.routable)
+				.map((mapping) => mapping.id),
+		};
+	} catch {
+		// Redis loss is fail-open for breaker state; static policy still applies.
+		return snapshot;
+	}
+}
+
+export async function getEffectiveCatalogSnapshot(
+	options: { claimBreakerProbes?: boolean } = {},
+): Promise<EffectiveCatalog> {
+	return await withRuntimeBreakers(
+		(await runtimeCache.get()).snapshot,
+		options.claimBreakerProbes ?? false,
+	);
 }
 
 export async function pollEffectiveCatalogSnapshot(): Promise<EffectiveCatalog> {

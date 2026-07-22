@@ -4,6 +4,10 @@ import { getStopSignal, isStopRequested } from "@/shutdown.js";
 
 import { redisClient } from "@llmgateway/cache";
 import {
+	readCatalogFeatureFlags,
+	recordCatalogBreakerOutcome,
+} from "@llmgateway/catalog";
+import {
 	and,
 	asc,
 	db,
@@ -1878,6 +1882,8 @@ async function finalizeVideoJob(job: VideoJobRecord): Promise<void> {
 				requestedProvider: jobToLog.requestedProvider,
 				usedModel: getFormattedUsedVideoModel(jobToLog),
 				usedModelMapping: jobToLog.usedModel,
+				modelProviderMappingId: jobToLog.modelProviderMappingId,
+				catalogRevisionId: jobToLog.catalogRevisionId,
 				usedProvider: jobToLog.usedProvider,
 				responseSize,
 				content:
@@ -1934,6 +1940,33 @@ async function finalizeVideoJob(job: VideoJobRecord): Promise<void> {
 		}
 		if (claimedJob) {
 			currentJob = claimedJob;
+			if (
+				readCatalogFeatureFlags().breakerMode !== "off" &&
+				claimedJob.modelProviderMappingId &&
+				claimedJob.catalogRevisionId
+			) {
+				void recordCatalogBreakerOutcome({
+					revision: claimedJob.catalogRevisionId,
+					mappingId: claimedJob.modelProviderMappingId,
+					outcome: {
+						kind:
+							claimedJob.status === "completed"
+								? "success"
+								: isContentFilterErrorText(
+											[claimedJob.error?.code, claimedJob.error?.message]
+												.filter(Boolean)
+												.join(" "),
+									  )
+									? "customer_error"
+									: "upstream_failure",
+						at: Date.now(),
+					},
+				}).catch((error: unknown) => {
+					logger.error("Failed to record video catalog breaker outcome", {
+						error,
+					});
+				});
+			}
 		}
 	}
 

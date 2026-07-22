@@ -1194,6 +1194,9 @@ importers:
       '@llmgateway/cache':
         specifier: workspace:*
         version: link:../../packages/cache
+      '@llmgateway/catalog':
+        specifier: workspace:*
+        version: link:../../packages/catalog
       '@llmgateway/db':
         specifier: workspace:*
         version: link:../../packages/db
