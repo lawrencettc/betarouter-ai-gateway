@@ -8,8 +8,11 @@ import { redisClient } from "@llmgateway/cache";
 import {
 	applyCatalogOperations,
 	catalogChangeSetInputSchema,
+	fixedPricesV1ToPriceMap,
 	mappingPricePolicySchema,
 	resolveEffectiveCatalog,
+	resolveMappingPrice,
+	sourceMappingPricesToPriceMap,
 } from "@llmgateway/catalog";
 import {
 	db,
@@ -42,6 +45,7 @@ import type {
 	MappingPolicy,
 	ModelPolicy,
 	ProviderPolicy,
+	ResolvedMappingPrice,
 } from "@llmgateway/catalog";
 import type { PlatformCatalogOperationV1 } from "@llmgateway/db";
 import type { Provider } from "@llmgateway/models";
@@ -82,6 +86,9 @@ const effectiveMappingSchema = z.object({
 	probeOnly: z.boolean(),
 	priority: z.number(),
 	weight: z.number(),
+	sourcePrices: z.record(z.string(), z.string()),
+	customerPrices: z.record(z.string(), z.string()),
+	margin: z.record(z.string(), z.string()),
 	reasons: z.array(z.string()),
 });
 const listQuerySchema = z.object({
@@ -169,6 +176,46 @@ function toMappingPolicy(
 	};
 }
 
+function resolvePricePolicy(
+	mapping: typeof modelProviderMapping.$inferSelect,
+	policy: CatalogPolicyState["prices"][string]["policy"] | undefined,
+): ResolvedMappingPrice & {
+	sourcePrices: ReturnType<typeof sourceMappingPricesToPriceMap>;
+} {
+	const sourcePrices = sourceMappingPricesToPriceMap(mapping);
+	if (!policy) {
+		return {
+			ready: false,
+			sourcePrices,
+			customerPrices: {},
+			margin: {},
+			missingUnits: [],
+			invalidUnits: [],
+			negativeMarginUnits: [],
+		};
+	}
+	const resolved = resolveMappingPrice({
+		sourcePrices,
+		policy:
+			policy.mode === "fixed"
+				? {
+						mode: "fixed",
+						fixedPrices: fixedPricesV1ToPriceMap(policy.fixedPrices),
+						allowNegativeMargin: policy.allowNegativeMargin,
+						negativeMarginReason: policy.negativeMarginReason,
+					}
+				: policy.mode === "markup"
+					? {
+							mode: "markup",
+							markupBps: policy.markupBps,
+							allowNegativeMargin: policy.allowNegativeMargin,
+							negativeMarginReason: policy.negativeMarginReason,
+						}
+					: { mode: "source_cost" },
+	});
+	return { ...resolved, sourcePrices };
+}
+
 async function loadCatalogView(): Promise<{
 	snapshot: EffectiveCatalog;
 	sourceProviders: (typeof provider.$inferSelect)[];
@@ -219,6 +266,24 @@ async function loadCatalogView(): Promise<{
 	]);
 	const credentialProviders = new Set(credentials.map((item) => item.provider));
 	const priceMappingIds = new Set(pricePolicies.map((item) => item.mappingId));
+	const pricePolicyById = new Map(
+		pricePolicies.map((row) => {
+			const rawPolicy = {
+				mode: row.mode,
+				currency: row.currency,
+				...(row.markupBps === null ? {} : { markupBps: row.markupBps }),
+				...(row.fixedPrices === null ? {} : { fixedPrices: row.fixedPrices }),
+				allowNegativeMargin: row.allowNegativeMargin,
+				...(row.negativeMarginReason
+					? { negativeMarginReason: row.negativeMarginReason }
+					: {}),
+			};
+			return [
+				row.mappingId,
+				mappingPricePolicySchema.parse(rawPolicy),
+			] as const;
+		}),
+	);
 	const passedTests = new Set(
 		tests.map((item) => `${item.mappingId}:${item.testProfile}`),
 	);
@@ -259,13 +324,17 @@ async function loadCatalogView(): Promise<{
 				const requiredTestRevision = mappingPolicyById.get(
 					item.id,
 				)?.requiredTestRevision;
+				const prices = resolvePricePolicy(item, pricePolicyById.get(item.id));
 				return [
 					item.id,
 					{
-						priceReady: priceMappingIds.has(item.id),
+						priceReady: priceMappingIds.has(item.id) && prices.ready,
 						testPassed:
 							!requiredTestRevision ||
 							passedTests.has(`${item.id}:${requiredTestRevision}`),
+						sourcePrices: prices.sourcePrices,
+						customerPrices: prices.customerPrices,
+						margin: prices.margin,
 					},
 				];
 			}),
@@ -404,13 +473,17 @@ function resolveStateSnapshot(
 			view.sourceMappings.map((item) => {
 				const requiredTestRevision =
 					state.mappings[item.id]?.requiredTestRevision;
+				const prices = resolvePricePolicy(item, state.prices[item.id]?.policy);
 				return [
 					item.id,
 					{
-						priceReady: Boolean(state.prices[item.id]),
+						priceReady: prices.ready,
 						testPassed:
 							!requiredTestRevision ||
 							view.passedTests.has(`${item.id}:${requiredTestRevision}`),
+						sourcePrices: prices.sourcePrices,
+						customerPrices: prices.customerPrices,
+						margin: prices.margin,
 					},
 				];
 			}),
@@ -591,6 +664,11 @@ interface FilterableEffective {
 	available: boolean;
 }
 
+type EffectiveListItem =
+	| z.infer<typeof effectiveProviderSchema>
+	| z.infer<typeof effectiveModelSchema>
+	| z.infer<typeof effectiveMappingSchema>;
+
 function filterEffective<T extends FilterableEffective>(
 	items: T[],
 	query: z.infer<typeof listQuerySchema>,
@@ -705,7 +783,7 @@ for (const definition of [
 		async (c) => {
 			const query = c.req.valid("query");
 			const { snapshot } = await loadCatalogView();
-			const sourceItems = snapshot[definition.key] as FilterableEffective[];
+			const sourceItems = snapshot[definition.key] as EffectiveListItem[];
 			const items = filterEffective(sourceItems, query);
 			return c.json({
 				...paginate(items, query.page, query.pageSize),
@@ -1487,7 +1565,29 @@ platformCatalog.openapi(
 				description: "Catalog change-set history",
 				content: {
 					"application/json": {
-						schema: z.array(z.record(z.string(), z.unknown())),
+						schema: z.array(
+							z.object({
+								id: z.string(),
+								createdAt: z.string(),
+								createdBy: z.string(),
+								updatedAt: z.string(),
+								title: z.string(),
+								reason: z.string(),
+								state: z.enum([
+									"draft",
+									"scheduled",
+									"applying",
+									"applied",
+									"failed",
+									"cancelled",
+									"rolled_back",
+								]),
+								baseRevision: z.number().nullable(),
+								appliedRevision: z.number().nullable(),
+								effectiveAt: z.string().nullable(),
+								appliedAt: z.string().nullable(),
+							}),
+						),
 					},
 				},
 			},
@@ -1499,7 +1599,15 @@ platformCatalog.openapi(
 			.from(platformCatalogChangeSet)
 			.orderBy(desc(platformCatalogChangeSet.createdAt))
 			.limit(200);
-		return c.json(rows as unknown as Record<string, unknown>[]);
+		return c.json(
+			rows.map((row) => ({
+				...row,
+				createdAt: row.createdAt.toISOString(),
+				updatedAt: row.updatedAt.toISOString(),
+				effectiveAt: row.effectiveAt?.toISOString() ?? null,
+				appliedAt: row.appliedAt?.toISOString() ?? null,
+			})),
+		);
 	},
 );
 

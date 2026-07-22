@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveMappingPrice } from "./pricing.js";
+import {
+	fixedPricesV1ToPriceMap,
+	resolveMappingPrice,
+	sourceMappingPricesToPriceMap,
+} from "./pricing.js";
 
 describe("resolveMappingPrice", () => {
 	it("applies basis-point markup using decimal arithmetic", () => {
@@ -42,5 +46,34 @@ describe("resolveMappingPrice", () => {
 		expect(blocked.ready).toBe(false);
 		expect(blocked.negativeMarginUnits).toEqual(["request"]);
 		expect(allowed.ready).toBe(true);
+	});
+
+	it("normalizes token prices to per-million units and keeps unit prices", () => {
+		expect(
+			sourceMappingPricesToPriceMap({
+				inputPrice: "0.00000125",
+				requestPrice: "0.02",
+				perSecondPrice: { hd: "0.1" },
+			}),
+		).toEqual({ input: "1.25", request: "0.02", "second:hd": "0.1" });
+	});
+
+	it("maps the versioned fixed-price contract into billing units", () => {
+		expect(
+			fixedPricesV1ToPriceMap({
+				version: 1,
+				inputPerMillionTokens: "2",
+				ocrPage: "0.01",
+			}),
+		).toEqual({ input: "2", ocrPage: "0.01" });
+	});
+
+	it("requires at least one source billing unit", () => {
+		expect(
+			resolveMappingPrice({
+				sourcePrices: {},
+				policy: { mode: "source_cost" },
+			}),
+		).toMatchObject({ ready: false });
 	});
 });

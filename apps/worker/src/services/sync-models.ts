@@ -153,6 +153,34 @@ export async function syncProvidersAndModels() {
 									mapping.imageInputPrice !== undefined
 										? mapping.imageInputPrice.toString()
 										: null,
+								imageOutputPrice:
+									"imageOutputPrice" in mapping &&
+									mapping.imageOutputPrice !== undefined
+										? mapping.imageOutputPrice.toString()
+										: null,
+								outputAudioPrice:
+									"outputAudioPrice" in mapping &&
+									mapping.outputAudioPrice !== undefined
+										? mapping.outputAudioPrice.toString()
+										: null,
+								inputCharacterPrice:
+									"inputCharacterPrice" in mapping &&
+									mapping.inputCharacterPrice !== undefined
+										? mapping.inputCharacterPrice.toString()
+										: null,
+								ocrPagePrice:
+									"ocrPagePrice" in mapping &&
+									mapping.ocrPagePrice !== undefined
+										? mapping.ocrPagePrice.toString()
+										: null,
+								perSecondPrice:
+									"perSecondPrice" in mapping && mapping.perSecondPrice
+										? Object.fromEntries(
+												Object.entries(mapping.perSecondPrice).map(
+													([key, value]) => [key, value.toString()],
+												),
+											)
+										: null,
 								requestPrice:
 									"requestPrice" in mapping &&
 									mapping.requestPrice !== undefined
@@ -242,6 +270,33 @@ export async function syncProvidersAndModels() {
 								"imageInputPrice" in mapping &&
 								mapping.imageInputPrice !== undefined
 									? mapping.imageInputPrice.toString()
+									: undefined,
+							imageOutputPrice:
+								"imageOutputPrice" in mapping &&
+								mapping.imageOutputPrice !== undefined
+									? mapping.imageOutputPrice.toString()
+									: undefined,
+							outputAudioPrice:
+								"outputAudioPrice" in mapping &&
+								mapping.outputAudioPrice !== undefined
+									? mapping.outputAudioPrice.toString()
+									: undefined,
+							inputCharacterPrice:
+								"inputCharacterPrice" in mapping &&
+								mapping.inputCharacterPrice !== undefined
+									? mapping.inputCharacterPrice.toString()
+									: undefined,
+							ocrPagePrice:
+								"ocrPagePrice" in mapping && mapping.ocrPagePrice !== undefined
+									? mapping.ocrPagePrice.toString()
+									: undefined,
+							perSecondPrice:
+								"perSecondPrice" in mapping && mapping.perSecondPrice
+									? Object.fromEntries(
+											Object.entries(mapping.perSecondPrice).map(
+												([key, value]) => [key, value.toString()],
+											),
+										)
 									: undefined,
 							requestPrice:
 								"requestPrice" in mapping && mapping.requestPrice !== undefined

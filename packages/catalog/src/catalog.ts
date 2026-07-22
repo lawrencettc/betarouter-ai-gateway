@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 
+import type { PriceMap } from "./pricing.js";
+
 export type CatalogLifecycle = "draft" | "active" | "deprecated" | "retired";
 
 export interface SourceProvider {
@@ -56,6 +58,9 @@ export interface MappingPolicy {
 export interface MappingReadiness {
 	priceReady: boolean;
 	testPassed: boolean;
+	sourcePrices?: PriceMap;
+	customerPrices?: PriceMap;
+	margin?: PriceMap;
 }
 
 export interface CatalogBreakerState {
@@ -128,6 +133,9 @@ export interface EffectiveMapping {
 	probeOnly: boolean;
 	priority: number;
 	weight: number;
+	sourcePrices: PriceMap;
+	customerPrices: PriceMap;
+	margin: PriceMap;
 	reasons: MappingEligibilityReason[];
 }
 
@@ -318,6 +326,9 @@ export function resolveEffectiveCatalog(
 			probeOnly,
 			priority: mappingPolicy?.priority ?? 100,
 			weight: mappingPolicy?.weight ?? 0,
+			sourcePrices: readiness?.sourcePrices ?? {},
+			customerPrices: readiness?.customerPrices ?? {},
+			margin: readiness?.margin ?? {},
 			reasons: reasons.sort(),
 		};
 	});

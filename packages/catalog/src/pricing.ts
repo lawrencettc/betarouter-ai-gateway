@@ -32,6 +32,39 @@ export interface ResolveMappingPriceInput {
 	policy: MappingPricePolicy;
 }
 
+export interface SourceMappingPriceFields {
+	inputPrice?: string | null;
+	outputPrice?: string | null;
+	cachedInputPrice?: string | null;
+	cacheWriteInputPrice?: string | null;
+	cacheWriteInputPrice1h?: string | null;
+	imageInputPrice?: string | null;
+	imageOutputPrice?: string | null;
+	requestPrice?: string | null;
+	webSearchPrice?: string | null;
+	outputAudioPrice?: string | null;
+	ocrPagePrice?: string | null;
+	inputCharacterPrice?: string | null;
+	perSecondPrice?: Record<string, string> | null;
+}
+
+export interface FixedPricesV1Input {
+	version: 1;
+	inputPerMillionTokens?: string;
+	outputPerMillionTokens?: string;
+	cachedInputPerMillionTokens?: string;
+	cacheWritePerMillionTokens?: string;
+	cacheWrite1hPerMillionTokens?: string;
+	imageInput?: string;
+	imageOutput?: string;
+	request?: string;
+	webSearch?: string;
+	audioOutputPerMillionTokens?: string;
+	ocrPage?: string;
+	inputPerMillionCharacters?: string;
+	perSecondByResolution?: Record<string, string>;
+}
+
 export interface ResolvedMappingPrice {
 	ready: boolean;
 	customerPrices: PriceMap;
@@ -48,6 +81,107 @@ function decimal(value: string): Decimal | null {
 	} catch {
 		return null;
 	}
+}
+
+function perMillion(value: string | null | undefined): string | undefined {
+	if (value === null || value === undefined) {
+		return undefined;
+	}
+	try {
+		return new Decimal(value).mul(1_000_000).toString();
+	} catch {
+		return value;
+	}
+}
+
+export function sourceMappingPricesToPriceMap(
+	mapping: SourceMappingPriceFields,
+): PriceMap {
+	return {
+		...(perMillion(mapping.inputPrice) !== undefined && {
+			input: perMillion(mapping.inputPrice),
+		}),
+		...(perMillion(mapping.outputPrice) !== undefined && {
+			output: perMillion(mapping.outputPrice),
+		}),
+		...(perMillion(mapping.cachedInputPrice) !== undefined && {
+			cachedInput: perMillion(mapping.cachedInputPrice),
+		}),
+		...(perMillion(mapping.cacheWriteInputPrice) !== undefined && {
+			cacheWrite: perMillion(mapping.cacheWriteInputPrice),
+		}),
+		...(perMillion(mapping.cacheWriteInputPrice1h) !== undefined && {
+			cacheWrite1h: perMillion(mapping.cacheWriteInputPrice1h),
+		}),
+		...(mapping.imageInputPrice !== null &&
+			mapping.imageInputPrice !== undefined && {
+				imageInput: mapping.imageInputPrice,
+			}),
+		...(perMillion(mapping.imageOutputPrice) !== undefined && {
+			imageOutput: perMillion(mapping.imageOutputPrice),
+		}),
+		...(mapping.requestPrice !== null &&
+			mapping.requestPrice !== undefined && {
+				request: mapping.requestPrice,
+			}),
+		...(mapping.webSearchPrice !== null &&
+			mapping.webSearchPrice !== undefined && {
+				webSearch: mapping.webSearchPrice,
+			}),
+		...(perMillion(mapping.outputAudioPrice) !== undefined && {
+			audioOutput: perMillion(mapping.outputAudioPrice),
+		}),
+		...(mapping.ocrPagePrice !== null &&
+			mapping.ocrPagePrice !== undefined && {
+				ocrPage: mapping.ocrPagePrice,
+			}),
+		...(perMillion(mapping.inputCharacterPrice) !== undefined && {
+			inputCharacters: perMillion(mapping.inputCharacterPrice),
+		}),
+		...Object.fromEntries(
+			Object.entries(mapping.perSecondPrice ?? {}).map(([key, value]) => [
+				`second:${key}`,
+				value,
+			]),
+		),
+	};
+}
+
+export function fixedPricesV1ToPriceMap(fixed: FixedPricesV1Input): PriceMap {
+	return {
+		...(fixed.inputPerMillionTokens !== undefined && {
+			input: fixed.inputPerMillionTokens,
+		}),
+		...(fixed.outputPerMillionTokens !== undefined && {
+			output: fixed.outputPerMillionTokens,
+		}),
+		...(fixed.cachedInputPerMillionTokens !== undefined && {
+			cachedInput: fixed.cachedInputPerMillionTokens,
+		}),
+		...(fixed.cacheWritePerMillionTokens !== undefined && {
+			cacheWrite: fixed.cacheWritePerMillionTokens,
+		}),
+		...(fixed.cacheWrite1hPerMillionTokens !== undefined && {
+			cacheWrite1h: fixed.cacheWrite1hPerMillionTokens,
+		}),
+		...(fixed.imageInput !== undefined && { imageInput: fixed.imageInput }),
+		...(fixed.imageOutput !== undefined && { imageOutput: fixed.imageOutput }),
+		...(fixed.request !== undefined && { request: fixed.request }),
+		...(fixed.webSearch !== undefined && { webSearch: fixed.webSearch }),
+		...(fixed.audioOutputPerMillionTokens !== undefined && {
+			audioOutput: fixed.audioOutputPerMillionTokens,
+		}),
+		...(fixed.ocrPage !== undefined && { ocrPage: fixed.ocrPage }),
+		...(fixed.inputPerMillionCharacters !== undefined && {
+			inputCharacters: fixed.inputPerMillionCharacters,
+		}),
+		...Object.fromEntries(
+			Object.entries(fixed.perSecondByResolution ?? {}).map(([key, value]) => [
+				`second:${key}`,
+				value,
+			]),
+		),
+	};
 }
 
 export function resolveMappingPrice(
@@ -109,6 +243,7 @@ export function resolveMappingPrice(
 
 	return {
 		ready:
+			sourceEntries.length > 0 &&
 			missingUnits.length === 0 &&
 			invalidUnits.length === 0 &&
 			(negativeMarginUnits.length === 0 || negativeMarginAllowed),
