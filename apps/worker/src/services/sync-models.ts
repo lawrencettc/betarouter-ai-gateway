@@ -1,3 +1,4 @@
+import { refreshCatalogRevisionFromSource } from "@llmgateway/catalog";
 import {
 	db,
 	provider,
@@ -393,6 +394,14 @@ export async function syncProvidersAndModels() {
 
 		const mappingCount = await database.select().from(modelProviderMapping);
 		logger.info(`Total model-provider mappings: ${mappingCount.length}`);
+
+		const catalogRevision = await refreshCatalogRevisionFromSource();
+		if (catalogRevision) {
+			logger.info("Published synchronized catalog revision", {
+				revision: catalogRevision.catalogRevision,
+				cacheInvalidation: catalogRevision.cacheInvalidation,
+			});
+		}
 
 		logger.info("Providers and models sync completed successfully");
 	} catch (error) {

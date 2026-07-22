@@ -427,6 +427,101 @@ export interface AppliedCatalogChangeSet {
 	cacheInvalidation: "published" | "failed";
 }
 
+/**
+ * Publish a new immutable revision when synchronized source metadata changes.
+ * Operator policy rows are read, never rewritten, so upstream refreshes cannot
+ * undo curation while every consumer still observes one revision/checksum pair.
+ */
+export async function refreshCatalogRevisionFromSource(
+	input: {
+		actorId?: string;
+		now?: Date;
+	} = {},
+): Promise<AppliedCatalogChangeSet | null> {
+	const actorId = input.actorId ?? "system:source-sync";
+	const now = input.now ?? new Date();
+	const result = await db.transaction(async (tx) => {
+		await tx.execute(sql`SELECT pg_advisory_xact_lock(7220260722)`);
+		const view = await loadStoreView(tx);
+		const provisional = resolveStoreSnapshot(view, policyState(view), 0);
+		const [latest] = await tx
+			.select({
+				id: platformCatalogRevision.id,
+				checksum: platformCatalogRevision.checksum,
+			})
+			.from(platformCatalogRevision)
+			.orderBy(desc(platformCatalogRevision.id))
+			.limit(1);
+		if (latest?.checksum === provisional.checksum) {
+			return null;
+		}
+		const [changeSet] = await tx
+			.insert(platformCatalogChangeSet)
+			.values({
+				createdBy: actorId,
+				title: "Refresh synchronized source catalog",
+				reason:
+					"Source provider, model, mapping, capability, or price data changed",
+				state: "applying",
+				baseRevision: latest?.id ?? null,
+				operations: [],
+				idempotencyKey: `source-sync:${latest?.id ?? "initial"}:${provisional.checksum}`,
+			})
+			.returning({ id: platformCatalogChangeSet.id });
+		if (!changeSet) {
+			throw new Error("Source catalog change set was not created");
+		}
+		const [revision] = await tx
+			.insert(platformCatalogRevision)
+			.values({
+				changeSetId: changeSet.id,
+				appliedBy: actorId,
+				checksum: provisional.checksum,
+				snapshot: provisional as unknown as Record<string, unknown>,
+			})
+			.returning({ id: platformCatalogRevision.id });
+		if (!revision) {
+			throw new Error("Source catalog revision was not created");
+		}
+		const snapshot = { ...provisional, revision: revision.id };
+		await tx
+			.update(platformCatalogRevision)
+			.set({ snapshot: snapshot as unknown as Record<string, unknown> })
+			.where(eq(platformCatalogRevision.id, revision.id));
+		await tx
+			.update(platformCatalogChangeSet)
+			.set({
+				state: "applied",
+				appliedAt: now,
+				appliedRevision: revision.id,
+				inverseOperations: [],
+			})
+			.where(eq(platformCatalogChangeSet.id, changeSet.id));
+		return {
+			changeSetId: changeSet.id,
+			catalogRevision: revision.id,
+			affectedEntities: [
+				...snapshot.providers.map((item) => item.id),
+				...snapshot.models.map((item) => item.id),
+				...snapshot.mappings.map((item) => item.id),
+			],
+			cacheInvalidation: "published" as const,
+		};
+	});
+	if (!result) {
+		return null;
+	}
+	try {
+		await redisClient.publish(
+			CATALOG_INVALIDATION_CHANNEL,
+			JSON.stringify({ revision: result.catalogRevision }),
+		);
+		return result;
+	} catch {
+		return { ...result, cacheInvalidation: "failed" };
+	}
+}
+
 export async function applyStoredCatalogChangeSet(input: {
 	changeSetId: string;
 	actorId: string;
