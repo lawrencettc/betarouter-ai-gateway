@@ -29,6 +29,7 @@
 		"@hono/zod-validator": "^0.7.2",
 		"@llmgateway/actions": "workspace:*",
 		"@llmgateway/cache": "workspace:*",
+		"@llmgateway/catalog": "workspace:*",
 		"@llmgateway/db": "workspace:*",
 		"@llmgateway/guardrails": "workspace:*",
 		"@llmgateway/instrumentation": "workspace:*",

@@ -4,6 +4,10 @@ import { z } from "zod";
 import { findArenaMatch, getArenaBenchmarks } from "@/lib/arena-benchmarks.js";
 
 import {
+	getEffectiveCatalogSnapshot,
+	readCatalogFeatureFlags,
+} from "@llmgateway/catalog";
+import {
 	and,
 	asc,
 	db,
@@ -15,12 +19,14 @@ import {
 	sql,
 	tables,
 } from "@llmgateway/db";
+import { logger } from "@llmgateway/logger";
 import {
 	models as modelDefinitions,
 	type ProviderModelMapping,
 } from "@llmgateway/models";
 
 import type { ServerTypes } from "@/vars.js";
+import type { EffectiveCatalog } from "@llmgateway/catalog";
 
 export const internalModels = new OpenAPIHono<ServerTypes>();
 
@@ -134,6 +140,8 @@ const getModelsRoute = createRoute({
 				"application/json": {
 					schema: z.object({
 						models: z.array(modelSchema),
+						catalogRevision: z.number().nullable(),
+						catalogChecksum: z.string().nullable(),
 					}),
 				},
 			},
@@ -142,8 +150,28 @@ const getModelsRoute = createRoute({
 	},
 });
 
+async function loadDiscoverySnapshot(): Promise<EffectiveCatalog | null> {
+	const flags = readCatalogFeatureFlags();
+	if (!flags.discoveryEnabled && !flags.shadowRead) {
+		return null;
+	}
+	try {
+		return await getEffectiveCatalogSnapshot();
+	} catch (error) {
+		if (flags.discoveryEnabled) {
+			throw error;
+		}
+		logger.warn("Catalog shadow snapshot unavailable", {
+			error: error instanceof Error ? error.message : String(error),
+		});
+		return null;
+	}
+}
+
 internalModels.openapi(getModelsRoute, async (c) => {
 	const now = new Date();
+	const flags = readCatalogFeatureFlags();
+	const catalogSnapshot = await loadDiscoverySnapshot();
 
 	const [models, activeMappings, globalDiscounts] = await Promise.all([
 		db.query.model.findMany({
@@ -177,8 +205,22 @@ internalModels.openapi(getModelsRoute, async (c) => {
 			),
 	]);
 
-	const mappingsByModelId = new Map<string, typeof activeMappings>();
-	for (const mapping of activeMappings) {
+	const visibleModelIds = new Set(catalogSnapshot?.visibleModelIds ?? []);
+	const displayableMappingIds = new Set(
+		catalogSnapshot?.mappings
+			.filter((mapping) => mapping.displayable)
+			.map((mapping) => mapping.id) ?? [],
+	);
+	const effectiveModels =
+		flags.discoveryEnabled && catalogSnapshot
+			? models.filter((item) => visibleModelIds.has(item.id))
+			: models;
+	const effectiveMappings =
+		flags.discoveryEnabled && catalogSnapshot
+			? activeMappings.filter((item) => displayableMappingIds.has(item.id))
+			: activeMappings;
+	const mappingsByModelId = new Map<string, typeof effectiveMappings>();
+	for (const mapping of effectiveMappings) {
 		const existing = mappingsByModelId.get(mapping.modelId);
 		if (existing) {
 			existing.push(mapping);
@@ -227,7 +269,7 @@ internalModels.openapi(getModelsRoute, async (c) => {
 	};
 
 	// Transform and apply effective discount
-	const transformedModels = models.map((model) => ({
+	const transformedModels = effectiveModels.map((model) => ({
 		...model,
 		mappings: (mappingsByModelId.get(model.id) ?? []).map((mapping) => {
 			const sharedMapping: ProviderModelMapping | null =
@@ -325,7 +367,26 @@ internalModels.openapi(getModelsRoute, async (c) => {
 		}),
 	}));
 
-	return c.json({ models: transformedModels });
+	if (catalogSnapshot) {
+		c.header(
+			"ETag",
+			`W/"catalog-${catalogSnapshot.revision}-${catalogSnapshot.checksum.slice(-16)}"`,
+		);
+		if (flags.shadowRead) {
+			logger.info("Catalog discovery shadow comparison", {
+				revision: catalogSnapshot.revision,
+				legacyModelCount: models.length,
+				policyModelCount: catalogSnapshot.visibleModelIds.length,
+				legacyMappingCount: activeMappings.length,
+				policyMappingCount: displayableMappingIds.size,
+			});
+		}
+	}
+	return c.json({
+		models: transformedModels,
+		catalogRevision: catalogSnapshot?.revision ?? null,
+		catalogChecksum: catalogSnapshot?.checksum ?? null,
+	});
 });
 
 // GET /internal/providers - Returns providers sorted by createdAt desc
@@ -342,6 +403,8 @@ const getProvidersRoute = createRoute({
 				"application/json": {
 					schema: z.object({
 						providers: z.array(providerSchema),
+						catalogRevision: z.number().nullable(),
+						catalogChecksum: z.string().nullable(),
 					}),
 				},
 			},
@@ -351,7 +414,9 @@ const getProvidersRoute = createRoute({
 });
 
 internalModels.openapi(getProvidersRoute, async (c) => {
-	const providers = await db.query.provider.findMany({
+	const catalogSnapshot = await loadDiscoverySnapshot();
+	const flags = readCatalogFeatureFlags();
+	const sourceProviders = await db.query.provider.findMany({
 		where: {
 			status: { eq: "active" },
 		},
@@ -360,7 +425,22 @@ internalModels.openapi(getProvidersRoute, async (c) => {
 		},
 	});
 
-	return c.json({ providers });
+	const visibleProviderIds = new Set(catalogSnapshot?.visibleProviderIds ?? []);
+	const providers =
+		flags.discoveryEnabled && catalogSnapshot
+			? sourceProviders.filter((item) => visibleProviderIds.has(item.id))
+			: sourceProviders;
+	if (catalogSnapshot) {
+		c.header(
+			"ETag",
+			`W/"catalog-${catalogSnapshot.revision}-${catalogSnapshot.checksum.slice(-16)}"`,
+		);
+	}
+	return c.json({
+		providers,
+		catalogRevision: catalogSnapshot?.revision ?? null,
+		catalogChecksum: catalogSnapshot?.checksum ?? null,
+	});
 });
 
 // GET /internal/models/{modelId}/benchmarks - Per-provider performance stats

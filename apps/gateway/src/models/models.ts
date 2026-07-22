@@ -1,6 +1,10 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { HTTPException } from "hono/http-exception";
 
+import {
+	getEffectiveCatalogSnapshot,
+	readCatalogFeatureFlags,
+} from "@llmgateway/catalog";
 import { logger, toError } from "@llmgateway/logger";
 import {
 	models as modelsList,
@@ -12,6 +16,13 @@ import {
 import type { ServerTypes } from "@/vars.js";
 
 export const modelsApi = new OpenAPIHono<ServerTypes>();
+
+function withCatalogExternalId(
+	provider: ProviderModelMapping,
+	externalId: string,
+): ProviderModelMapping {
+	return { ...provider, externalId };
+}
 
 const modelSchema = z.object({
 	id: z.string(),
@@ -151,6 +162,53 @@ modelsApi.openapi(listModels, async (c) => {
 		const excludeDeprecated = query.exclude_deprecated || false;
 		const noTraining = query.no_training || false;
 		const currentDate = new Date();
+		const catalogFlags = readCatalogFeatureFlags();
+		const catalogSnapshot =
+			catalogFlags.discoveryEnabled || catalogFlags.shadowRead
+				? await getEffectiveCatalogSnapshot()
+				: null;
+		const visibleModelIds = new Set(catalogSnapshot?.visibleModelIds ?? []);
+		const catalogModels: ModelDefinition[] =
+			catalogFlags.discoveryEnabled && catalogSnapshot
+				? modelsList
+						.filter((model) => visibleModelIds.has(model.id))
+						.map((model) => {
+							const effectiveMappings = catalogSnapshot.mappings.filter(
+								(mapping) =>
+									mapping.modelId === model.id && mapping.displayable,
+							);
+							return {
+								...model,
+								providers: model.providers
+									.filter((provider) =>
+										effectiveMappings.some(
+											(mapping) => mapping.providerId === provider.providerId,
+										),
+									)
+									.map((provider) => {
+										const effective = effectiveMappings
+											.filter(
+												(mapping) => mapping.providerId === provider.providerId,
+											)
+											.sort(
+												(left, right) =>
+													left.priority - right.priority ||
+													right.weight - left.weight,
+											)[0];
+										return effective
+											? withCatalogExternalId(provider, effective.externalId)
+											: provider;
+									}),
+							};
+						})
+				: [...modelsList];
+		if (catalogSnapshot && catalogFlags.shadowRead) {
+			logger.info("Catalog /v1/models shadow comparison", {
+				revision: catalogSnapshot.revision,
+				legacyModelCount: modelsList.length,
+				policyModelCount: catalogSnapshot.visibleModelIds.length,
+			});
+		}
 
 		// Set of provider ids that do not train on API data
 		const noTrainingProviderIds = new Set(
@@ -160,7 +218,7 @@ modelsApi.openapi(listModels, async (c) => {
 		);
 
 		// Filter models based on deactivation and deprecation status of their provider mappings
-		const deactivationFilteredModels = modelsList.filter(
+		const deactivationFilteredModels = catalogModels.filter(
 			(model: ModelDefinition) => {
 				// Check if all provider mappings are deactivated
 				const allDeactivated = model.providers.every(
@@ -311,6 +369,12 @@ modelsApi.openapi(listModels, async (c) => {
 			};
 		});
 
+		if (catalogSnapshot) {
+			c.header(
+				"ETag",
+				`W/"catalog-${catalogSnapshot.revision}-${catalogSnapshot.checksum.slice(-16)}"`,
+			);
+		}
 		return c.json({ data: modelData });
 	} catch (error) {
 		logger.error("Error in models endpoint", toError(error));
