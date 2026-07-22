@@ -370,6 +370,31 @@ function providerSelectionKey(provider: AvailableModelProvider): string {
 	return `${provider.providerId}:${provider.region ?? ""}`;
 }
 
+/** Keep the highest-precedence catalog fallback tier for primary selection. */
+function restrictToCatalogPriority<T extends AvailableModelProvider>(
+	providers: T[],
+): T[] {
+	const catalogProviders = providers.filter(
+		(provider) => provider.catalogPriority !== undefined,
+	);
+	if (catalogProviders.length === 0) {
+		return providers;
+	}
+	const minimumPriority = Math.min(
+		...catalogProviders.map((provider) => provider.catalogPriority!),
+	);
+	return providers.filter(
+		(provider) =>
+			provider.catalogPriority === minimumPriority &&
+			(provider.catalogWeight ?? 100) > 0,
+	);
+}
+
+function catalogWeightFactor(provider: AvailableModelProvider): Decimal {
+	const weight = provider.catalogWeight;
+	return weight === undefined ? new Decimal(1) : new Decimal(weight).div(100);
+}
+
 async function getProviderSelectionDiscount(
 	provider: AvailableModelProvider,
 	modelId: string,
@@ -516,25 +541,27 @@ export async function getCheapestFromAvailableProviders<
 
 	// Filter out unstable and experimental providers, plus providers explicitly
 	// disabled via routing override (priority 0).
-	const stableProviders = availableModelProviders.filter((provider) => {
-		const providerInfo = findProviderMapping(
-			modelWithPricing.providers,
-			provider,
-		);
-		const providerStability = providerInfo?.stability;
-		const modelStability =
-			"stability" in modelWithPricing
-				? (modelWithPricing as { stability?: string }).stability
-				: undefined;
-		const effectiveStability = providerStability ?? modelStability;
-		if (
-			effectiveStability === "unstable" ||
-			effectiveStability === "experimental"
-		) {
-			return false;
-		}
-		return getEffectivePriority(provider.providerId, cfg) > 0;
-	});
+	const stableProviders = restrictToCatalogPriority(
+		availableModelProviders.filter((provider) => {
+			const providerInfo = findProviderMapping(
+				modelWithPricing.providers,
+				provider,
+			);
+			const providerStability = providerInfo?.stability;
+			const modelStability =
+				"stability" in modelWithPricing
+					? (modelWithPricing as { stability?: string }).stability
+					: undefined;
+			const effectiveStability = providerStability ?? modelStability;
+			if (
+				effectiveStability === "unstable" ||
+				effectiveStability === "experimental"
+			) {
+				return false;
+			}
+			return getEffectivePriority(provider.providerId, cfg) > 0;
+		}),
+	);
 
 	if (stableProviders.length === 0) {
 		return null;
@@ -808,7 +835,14 @@ export async function getCheapestFromAvailableProviders<
 
 		// Final score = base weighted score + priority penalty + exponential uptime penalty
 		// The uptime penalty heavily penalizes providers with <95% uptime
-		providerScore.score = baseScore.plus(priorityPenalty).plus(uptimePenalty);
+		const catalogWeightPenalty = Decimal.max(
+			new Decimal(0),
+			new Decimal(1).minus(catalogWeightFactor(providerScore.provider)),
+		);
+		providerScore.score = baseScore
+			.plus(priorityPenalty)
+			.plus(catalogWeightPenalty)
+			.plus(uptimePenalty);
 	}
 
 	// Select provider with lowest score
@@ -894,7 +928,12 @@ function selectByPriceOnly<T extends AvailableModelProvider>(
 
 		// Apply provider priority: lower priority = effectively higher price
 		const priority = getEffectivePriority(provider.providerId, cfg);
-		const effectivePrice = priority > 0 ? totalPrice.div(priority) : totalPrice;
+		const providerPriorityPrice =
+			priority > 0 ? totalPrice.div(priority) : totalPrice;
+		const catalogWeight = catalogWeightFactor(provider);
+		const effectivePrice = catalogWeight.gt(0)
+			? providerPriorityPrice.div(catalogWeight)
+			: providerPriorityPrice;
 
 		providerPrices.push({
 			providerId: provider.providerId,

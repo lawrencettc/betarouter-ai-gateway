@@ -89,6 +89,9 @@ function applyCatalogCustomerPrices(
 	});
 	return {
 		...provider,
+		catalogPriority: mapping.priority,
+		catalogWeight: mapping.weight,
+		catalogMappingId: mapping.id,
 		externalId: mapping.externalId,
 		region: mapping.region ?? undefined,
 		inputPrice: perUnit(prices.input),

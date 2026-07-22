@@ -181,6 +181,12 @@ export type ToolChoiceMode = "auto" | "none" | "required" | "function";
 
 export interface ProviderModelMapping {
 	providerId: (typeof providers)[number]["id"];
+	/** Runtime-only catalog fallback tier. Lower values are attempted first. */
+	catalogPriority?: number;
+	/** Runtime-only catalog preference within the same priority tier. */
+	catalogWeight?: number;
+	/** Runtime-only revisioned mapping identity. */
+	catalogMappingId?: string;
 	/**
 	 * Provider-specific upstream model id used when calling the upstream
 	 * provider. Distinct from the root `ModelDefinition.id` and from any
