@@ -4,13 +4,19 @@ import { z } from "zod";
 
 import { platformAdminMiddleware } from "@/middleware/admin.js";
 
-import { resolveEffectiveCatalog } from "@llmgateway/catalog";
+import {
+	applyCatalogOperations,
+	catalogChangeSetInputSchema,
+	mappingPricePolicySchema,
+	resolveEffectiveCatalog,
+} from "@llmgateway/catalog";
 import {
 	db,
 	model,
 	modelProviderMapping,
 	platformCatalogChangeSet,
 	platformCatalogRevision,
+	platformAuditLog,
 	platformMappingPolicy,
 	platformMappingPricePolicy,
 	platformMappingTestRun,
@@ -24,6 +30,7 @@ import { getProviderEnvConfig, getProviderEnvVar } from "@llmgateway/models";
 import type { ServerTypes } from "@/vars.js";
 import type {
 	CatalogLifecycle,
+	CatalogPolicyState,
 	EffectiveCatalog,
 	MappingPolicy,
 	ModelPolicy,
@@ -71,6 +78,28 @@ const listQuerySchema = z.object({
 		.default("all"),
 	page: z.coerce.number().int().positive().default(1),
 	pageSize: z.coerce.number().int().min(1).max(500).default(50),
+});
+const previewResponseSchema = z.object({
+	valid: z.boolean(),
+	baseRevision: z.number().nullable(),
+	resultingChecksum: z.string(),
+	blockers: z.array(
+		z.object({ entityId: z.string(), reasons: z.array(z.string()) }),
+	),
+	warnings: z.array(z.string()),
+	affected: z.object({
+		providers: z.number(),
+		models: z.number(),
+		mappings: z.number(),
+		requests: z.number().nullable(),
+		organizations: z.number().nullable(),
+		projects: z.number().nullable(),
+		apiKeys: z.number().nullable(),
+		queuedJobs: z.number().nullable(),
+	}),
+	fallbackLosses: z.array(z.string()),
+	priceChanges: z.array(z.string()),
+	marginEstimate: z.string().nullable(),
 });
 
 function environmentCredentialAvailable(providerId: string): boolean {
@@ -135,6 +164,8 @@ async function loadCatalogView(): Promise<{
 	modelPolicies: (typeof platformModelPolicy.$inferSelect)[];
 	mappingPolicies: (typeof platformMappingPolicy.$inferSelect)[];
 	pricePolicies: (typeof platformMappingPricePolicy.$inferSelect)[];
+	credentialAvailability: Record<string, boolean>;
+	passedTests: Set<string>;
 }> {
 	const [
 		sourceProviders,
@@ -180,6 +211,13 @@ async function loadCatalogView(): Promise<{
 	const mappingPolicyById = new Map(
 		mappingPolicies.map((item) => [item.mappingId, item]),
 	);
+	const credentialAvailability = Object.fromEntries(
+		sourceProviders.map((item) => [
+			item.id,
+			credentialProviders.has(item.id) ||
+				environmentCredentialAvailable(item.id),
+		]),
+	);
 	const snapshot = resolveEffectiveCatalog({
 		revision: latestRevisions[0]?.id ?? 0,
 		now: new Date(),
@@ -200,13 +238,7 @@ async function loadCatalogView(): Promise<{
 		providerPolicies: providerPolicies.map(toProviderPolicy),
 		modelPolicies: modelPolicies.map(toModelPolicy),
 		mappingPolicies: mappingPolicies.map(toMappingPolicy),
-		providerCredentialAvailability: Object.fromEntries(
-			sourceProviders.map((item) => [
-				item.id,
-				credentialProviders.has(item.id) ||
-					environmentCredentialAvailable(item.id),
-			]),
-		),
+		providerCredentialAvailability: credentialAvailability,
 		mappingReadiness: Object.fromEntries(
 			sourceMappings.map((item) => {
 				const requiredTestRevision = mappingPolicyById.get(
@@ -234,6 +266,150 @@ async function loadCatalogView(): Promise<{
 		modelPolicies,
 		mappingPolicies,
 		pricePolicies,
+		credentialAvailability,
+		passedTests,
+	};
+}
+
+type CatalogView = Awaited<ReturnType<typeof loadCatalogView>>;
+
+function policyStateFromView(view: CatalogView): CatalogPolicyState {
+	return {
+		providers: Object.fromEntries(
+			view.providerPolicies.map((row) => [
+				row.providerId,
+				{
+					...row,
+					lifecycle: row.lifecycle as CatalogLifecycle,
+					deprecatedAt: row.deprecatedAt?.toISOString() ?? null,
+					retireAt: row.retireAt?.toISOString() ?? null,
+					updatedAt: row.updatedAt.toISOString(),
+				},
+			]),
+		),
+		models: Object.fromEntries(
+			view.modelPolicies.map((row) => [
+				row.modelId,
+				{
+					...row,
+					lifecycle: row.lifecycle as CatalogLifecycle,
+					deprecatedAt: row.deprecatedAt?.toISOString() ?? null,
+					retireAt: row.retireAt?.toISOString() ?? null,
+					updatedAt: row.updatedAt.toISOString(),
+				},
+			]),
+		),
+		mappings: Object.fromEntries(
+			view.mappingPolicies.map((row) => [
+				row.mappingId,
+				{ ...row, updatedAt: row.updatedAt.toISOString() },
+			]),
+		),
+		prices: Object.fromEntries(
+			view.pricePolicies.map((row) => {
+				const rawPolicy = {
+					mode: row.mode,
+					currency: row.currency,
+					...(row.markupBps === null ? {} : { markupBps: row.markupBps }),
+					...(row.fixedPrices === null ? {} : { fixedPrices: row.fixedPrices }),
+					allowNegativeMargin: row.allowNegativeMargin,
+					...(row.negativeMarginReason
+						? { negativeMarginReason: row.negativeMarginReason }
+						: {}),
+				};
+				return [
+					row.mappingId,
+					{
+						mappingId: row.mappingId,
+						policy: mappingPricePolicySchema.parse(rawPolicy),
+						updatedAt: row.updatedAt.toISOString(),
+						updatedBy: row.updatedBy,
+					},
+				];
+			}),
+		),
+	};
+}
+
+function resolveStateSnapshot(
+	view: CatalogView,
+	state: CatalogPolicyState,
+	revision: number,
+): EffectiveCatalog {
+	return resolveEffectiveCatalog({
+		revision,
+		now: new Date(),
+		providers: view.sourceProviders.map((item) => ({
+			id: item.id,
+			status: item.status,
+		})),
+		models: view.sourceModels.map((item) => ({
+			id: item.id,
+			status: item.status,
+		})),
+		mappings: view.sourceMappings.map((item) => ({
+			id: item.id,
+			providerId: item.providerId,
+			modelId: item.modelId,
+			status: item.status,
+			externalId: item.externalId,
+			deprecatedAt: item.deprecatedAt,
+			deactivatedAt: item.deactivatedAt,
+		})),
+		providerPolicies: Object.values(state.providers).map((item) => ({
+			providerId: item.providerId,
+			visible: item.visible,
+			enabled: item.enabled,
+			lifecycle: item.lifecycle,
+			deprecatedAt: item.deprecatedAt ? new Date(item.deprecatedAt) : null,
+			retireAt: item.retireAt ? new Date(item.retireAt) : null,
+		})),
+		modelPolicies: Object.values(state.models).map((item) => ({
+			modelId: item.modelId,
+			visible: item.visible,
+			enabled: item.enabled,
+			allowDirect: item.allowDirect,
+			lifecycle: item.lifecycle,
+			deprecatedAt: item.deprecatedAt ? new Date(item.deprecatedAt) : null,
+			retireAt: item.retireAt ? new Date(item.retireAt) : null,
+			replacementModelId: item.replacementModelId,
+		})),
+		mappingPolicies: Object.values(state.mappings).map((item) => ({
+			mappingId: item.mappingId,
+			enabled: item.enabled,
+			priority: item.priority ?? 100,
+			weight: item.weight ?? 100,
+			breakerEnabled: item.breakerEnabled ?? true,
+			externalIdOverride: item.externalIdOverride,
+		})),
+		providerCredentialAvailability: view.credentialAvailability,
+		mappingReadiness: Object.fromEntries(
+			view.sourceMappings.map((item) => {
+				const requiredTestRevision =
+					state.mappings[item.id]?.requiredTestRevision;
+				return [
+					item.id,
+					{
+						priceReady: Boolean(state.prices[item.id]),
+						testPassed:
+							!requiredTestRevision ||
+							view.passedTests.has(`${item.id}:${requiredTestRevision}`),
+					},
+				];
+			}),
+		),
+		breakerStates: {},
+	});
+}
+
+function requestMetadata(c: {
+	req: { header: (name: string) => string | undefined };
+}) {
+	return {
+		requestId: c.req.header("x-request-id"),
+		ipAddress:
+			c.req.header("cf-connecting-ip") ?? c.req.header("x-forwarded-for"),
+		userAgent: c.req.header("user-agent"),
 	};
 }
 
@@ -410,6 +586,193 @@ platformCatalog.openapi(
 			return c.json({ message: "Revision not found" }, 404);
 		}
 		return c.json({ ...row, createdAt: row.createdAt.toISOString() });
+	},
+);
+
+platformCatalog.openapi(
+	createRoute({
+		method: "post",
+		path: "/change-sets/preview",
+		request: {
+			body: {
+				required: true,
+				content: {
+					"application/json": { schema: catalogChangeSetInputSchema },
+				},
+			},
+		},
+		responses: {
+			200: {
+				description: "Validated catalog change impact preview",
+				content: { "application/json": { schema: previewResponseSchema } },
+			},
+			409: { description: "Base revision or entity version is stale" },
+		},
+	}),
+	async (c) => {
+		const user = c.get("user");
+		const input = c.req.valid("json");
+		try {
+			const view = await loadCatalogView();
+			const currentRevision = view.snapshot.revision || null;
+			if (input.baseRevision !== currentRevision) {
+				await db.insert(platformAuditLog).values({
+					userId: user.id,
+					action: "platform_catalog.preview",
+					success: false,
+					metadata: {
+						errorCode: "stale_base_revision",
+						requestedRevision: input.baseRevision,
+						currentRevision,
+					},
+					...requestMetadata(c),
+				});
+				return c.json({ message: "Catalog base revision is stale" }, 409);
+			}
+			const applied = applyCatalogOperations({
+				state: policyStateFromView(view),
+				operations: input.operations,
+				actor: user.id,
+				updatedAt: new Date().toISOString(),
+			});
+			const snapshot = resolveStateSnapshot(
+				view,
+				applied.state,
+				view.snapshot.revision + 1,
+			);
+			const activatingProviderIds = new Set(
+				input.operations
+					.filter(
+						(operation) =>
+							operation.type === "provider.set_policy" &&
+							(operation.patch.enabled === true ||
+								operation.patch.visible === true),
+					)
+					.map((operation) =>
+						operation.type === "provider.set_policy"
+							? operation.providerId
+							: "",
+					),
+			);
+			const activatingModelIds = new Set(
+				input.operations
+					.filter(
+						(operation) =>
+							operation.type === "model.set_policy" &&
+							(operation.patch.enabled === true ||
+								operation.patch.visible === true),
+					)
+					.map((operation) =>
+						operation.type === "model.set_policy" ? operation.modelId : "",
+					),
+			);
+			const activatingMappingIds = new Set(
+				input.operations
+					.filter(
+						(operation) =>
+							operation.type === "mapping.set_policy" &&
+							operation.patch.enabled === true,
+					)
+					.map((operation) =>
+						operation.type === "mapping.set_policy" ? operation.mappingId : "",
+					),
+			);
+			const inspectedMappings = snapshot.mappings.filter(
+				(mapping) =>
+					activatingProviderIds.has(mapping.providerId) ||
+					activatingModelIds.has(mapping.modelId) ||
+					activatingMappingIds.has(mapping.id),
+			);
+			const blockers = inspectedMappings
+				.filter((mapping) => !mapping.available)
+				.map((mapping) => ({
+					entityId: mapping.id,
+					reasons: mapping.reasons.filter(
+						(reason) =>
+							reason !== "circuit_open" && reason !== "circuit_half_open",
+					),
+				}))
+				.filter((blocker) => blocker.reasons.length > 0);
+			const fallbackLosses = snapshot.models
+				.filter(
+					(item) =>
+						item.available &&
+						!snapshot.mappings.some(
+							(mapping) => mapping.modelId === item.id && mapping.routable,
+						),
+				)
+				.map((item) => item.id);
+			const entityTypes = new Set(
+				input.operations.map((operation) => {
+					if (operation.type.startsWith("provider.")) {
+						return "provider";
+					}
+					if (operation.type.startsWith("model.")) {
+						return "model";
+					}
+					if (operation.type === "entity.archive_policy") {
+						return operation.entityType;
+					}
+					return "mapping";
+				}),
+			);
+			const response = {
+				valid: blockers.length === 0,
+				baseRevision: input.baseRevision,
+				resultingChecksum: snapshot.checksum,
+				blockers,
+				warnings:
+					input.operations.length >= 100
+						? ["High-impact bulk change requires typed confirmation"]
+						: [],
+				affected: {
+					providers: entityTypes.has("provider")
+						? activatingProviderIds.size
+						: 0,
+					models: entityTypes.has("model") ? activatingModelIds.size : 0,
+					mappings: inspectedMappings.length,
+					requests: null,
+					organizations: null,
+					projects: null,
+					apiKeys: null,
+					queuedJobs: null,
+				},
+				fallbackLosses,
+				priceChanges: input.operations
+					.filter((operation) => operation.type === "mapping.set_price_policy")
+					.map((operation) =>
+						operation.type === "mapping.set_price_policy"
+							? operation.mappingId
+							: "",
+					),
+				marginEstimate: null,
+			};
+			await db.insert(platformAuditLog).values({
+				userId: user.id,
+				action: "platform_catalog.preview",
+				success: true,
+				metadata: {
+					baseRevision: input.baseRevision,
+					operationCount: input.operations.length,
+					valid: response.valid,
+					blockerCount: blockers.length,
+				},
+				...requestMetadata(c),
+			});
+			return c.json(response);
+		} catch (error) {
+			await db.insert(platformAuditLog).values({
+				userId: user.id,
+				action: "platform_catalog.preview",
+				success: false,
+				metadata: {
+					errorCode: error instanceof Error ? error.name : "preview_failed",
+					operationCount: input.operations.length,
+				},
+				...requestMetadata(c),
+			});
+			throw error;
+		}
 	},
 );
 
