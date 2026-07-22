@@ -42,6 +42,13 @@ services:
       ADMIN_EMAILS: ${ADMIN_EMAILS:?ADMIN_EMAILS is required}
       PLATFORM_ADMIN_USER_IDS: ${PLATFORM_ADMIN_USER_IDS:?PLATFORM_ADMIN_USER_IDS is required}
 
+      # Model catalog rollout controls. Keep all enforcement off for the first
+      # additive deploy, then advance them using the catalog operations runbook.
+      PLATFORM_CATALOG_SHADOW_READ: ${PLATFORM_CATALOG_SHADOW_READ:-false}
+      PLATFORM_CATALOG_DISCOVERY_ENABLED: ${PLATFORM_CATALOG_DISCOVERY_ENABLED:-false}
+      PLATFORM_CATALOG_ROUTING_ENABLED: ${PLATFORM_CATALOG_ROUTING_ENABLED:-false}
+      PLATFORM_CATALOG_BREAKER_MODE: ${PLATFORM_CATALOG_BREAKER_MODE:-off}
+
       UI_URL: ${UI_URL:?UI_URL is required}
       APP_URL: ${APP_URL:?APP_URL is required}
       GATEWAY_URL: ${GATEWAY_URL:?GATEWAY_URL is required}
