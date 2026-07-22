@@ -1694,7 +1694,10 @@ chat.openapi(completions, async (c) => {
 					: parseResult.requestedProvider,
 			region: requestedRegion,
 		},
-		{ setHeader: (name, value) => c.header(name, value) },
+		{
+			operation: "chat",
+			setHeader: (name, value) => c.header(name, value),
+		},
 	);
 
 	// Count input images from messages for cost calculation

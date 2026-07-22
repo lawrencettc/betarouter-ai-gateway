@@ -16,7 +16,14 @@ import type {
 import type { ProviderModelMapping } from "@llmgateway/models";
 
 interface EnforceCatalogRequestOptions {
+	operation: "chat" | "deferred_non_chat";
 	setHeader?: (name: string, value: string) => void;
+}
+
+export function isCatalogOperationEnabled(
+	operation: EnforceCatalogRequestOptions["operation"],
+): boolean {
+	return operation === "chat";
 }
 
 function perUnit(value: string | undefined): string | undefined {
@@ -143,8 +150,11 @@ export function applyCatalogCustomerPrices(
 
 export async function enforceCatalogRequest(
 	input: CatalogRequestInput,
-	options: EnforceCatalogRequestOptions = {},
+	options: EnforceCatalogRequestOptions,
 ): Promise<Extract<CatalogRequestDecision, { allowed: true }> | null> {
+	if (!isCatalogOperationEnabled(options.operation)) {
+		return null;
+	}
 	if (input.modelId === "auto" || input.modelId === "custom") {
 		return null;
 	}
@@ -262,7 +272,10 @@ export async function filterAutoCandidateByCatalog(
 	enforced: boolean;
 }> {
 	try {
-		const decision = await enforceCatalogRequest({ modelId });
+		const decision = await enforceCatalogRequest(
+			{ modelId },
+			{ operation: "chat" },
+		);
 		return {
 			providers: filterProviderMappingsByCatalog(providers, decision),
 			decision,

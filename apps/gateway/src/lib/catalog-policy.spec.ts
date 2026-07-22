@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
 	filterProviderMappingsByCatalog,
 	findCatalogMappingForProvider,
+	isCatalogOperationEnabled,
 } from "./catalog-policy.js";
 
 import type {
@@ -12,6 +13,11 @@ import type {
 import type { ProviderModelMapping } from "@llmgateway/models";
 
 describe("filterProviderMappingsByCatalog", () => {
+	it("keeps unvalidated non-chat operations on legacy routing at launch", () => {
+		expect(isCatalogOperationEnabled("chat")).toBe(true);
+		expect(isCatalogOperationEnabled("deferred_non_chat")).toBe(false);
+	});
+
 	it("removes disabled fallbacks and applies the effective external id", () => {
 		const providers = [
 			{ providerId: "openai", externalId: "old", streaming: true },

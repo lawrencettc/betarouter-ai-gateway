@@ -4417,7 +4417,10 @@ videos.openapi(createVideo, async (c) => {
 			modelId: normalizedModel,
 			providerId: requestedProvider,
 		},
-		{ setHeader: (name, value) => c.header(name, value) },
+		{
+			operation: "deferred_non_chat",
+			setHeader: (name, value) => c.header(name, value),
+		},
 	);
 	const catalogProviders = filterProviderMappingsByCatalog(
 		modelInfo.providers.filter((provider) =>

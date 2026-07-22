@@ -493,7 +493,10 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 			providerId: explicitProvider ? legacyMapping.providerId : undefined,
 			region: explicitProvider ? legacyMapping.region : undefined,
 		},
-		{ setHeader: (name, value) => c.header(name, value) },
+		{
+			operation: "deferred_non_chat",
+			setHeader: (name, value) => c.header(name, value),
+		},
 	);
 	const [mapping] = filterProviderMappingsByCatalog(
 		modelDef.providers.filter(

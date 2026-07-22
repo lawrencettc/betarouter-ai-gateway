@@ -66,6 +66,9 @@ file so emergency rollback remains independent of a new build.
 
 6. Do not create the curated launch change set automatically during migration
    or container startup.
+7. If the target already contains a catalog revision created by a prerelease
+   build, bootstrap or publish one fresh revision after deploy so its stored
+   snapshot includes provider lifecycle dates and mapping deactivation dates.
 
 ## Staged rollout
 
