@@ -2749,7 +2749,7 @@ export const platformCatalogRevision = pgTable(
 		uniqueIndex("platform_catalog_revision_change_set_id_unique").on(
 			table.changeSetId,
 		),
-		uniqueIndex("platform_catalog_revision_checksum_unique").on(table.checksum),
+		index("platform_catalog_revision_checksum_idx").on(table.checksum),
 	],
 );
 

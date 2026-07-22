@@ -252,4 +252,12 @@ describe("resolveEffectiveCatalog", () => {
 
 		expect(second.checksum).toBe(first.checksum);
 	});
+
+	it("uses a content checksum that can repeat across rollback revisions", () => {
+		const first = resolveEffectiveCatalog(input());
+		const restored = resolveEffectiveCatalog({ ...input(), revision: 99 });
+
+		expect(restored.checksum).toBe(first.checksum);
+		expect(restored.revision).toBe(99);
+	});
 });

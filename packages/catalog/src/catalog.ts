@@ -361,8 +361,7 @@ export function resolveEffectiveCatalog(
 		};
 	});
 
-	const snapshotWithoutChecksum = {
-		revision: input.revision,
+	const snapshotContent = {
 		providers: effectiveProviders,
 		models: effectiveModels,
 		mappings: effectiveMappings,
@@ -381,7 +380,8 @@ export function resolveEffectiveCatalog(
 	};
 
 	return {
-		...snapshotWithoutChecksum,
-		checksum: stableChecksum(snapshotWithoutChecksum),
+		revision: input.revision,
+		...snapshotContent,
+		checksum: stableChecksum(snapshotContent),
 	};
 }
