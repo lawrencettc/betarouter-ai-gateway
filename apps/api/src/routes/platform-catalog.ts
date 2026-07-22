@@ -2460,6 +2460,7 @@ platformCatalog.openapi(
 						provisionalSnapshot,
 						applied.state,
 						applied.affectedEntityIds,
+						view.snapshot,
 					);
 				} catch (error) {
 					throw new HTTPException(400, {
@@ -2610,6 +2611,7 @@ platformCatalog.openapi(
 					snapshot,
 					applied.state,
 					applied.affectedEntityIds,
+					view.snapshot,
 				);
 			} catch (error) {
 				blockers.push({
@@ -2815,6 +2817,7 @@ platformCatalog.openapi(
 						provisionalSnapshot,
 						applied.state,
 						applied.affectedEntityIds,
+						view.snapshot,
 					);
 				} catch (error) {
 					throw new HTTPException(409, {

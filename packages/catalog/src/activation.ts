@@ -30,6 +30,7 @@ export function validateCatalogActivation(
 	snapshot: EffectiveCatalog,
 	state: CatalogPolicyState,
 	affectedIds: string[],
+	previousSnapshot?: EffectiveCatalog,
 ): void {
 	const affected = new Set(affectedIds);
 	const impactedProviderIds = new Set<string>();
@@ -54,6 +55,15 @@ export function validateCatalogActivation(
 	}
 
 	const blockers: string[] = [];
+	if (previousSnapshot) {
+		for (const modelId of findCatalogRoutabilityLosses(
+			previousSnapshot,
+			snapshot,
+			state,
+		)) {
+			blockers.push(`${modelId} (fallback coverage lost)`);
+		}
+	}
 	for (const mapping of snapshot.mappings) {
 		if (
 			affected.has(mapping.id) &&

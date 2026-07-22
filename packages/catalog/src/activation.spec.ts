@@ -129,5 +129,13 @@ describe("validateCatalogActivation", () => {
 		expect(
 			findCatalogRoutabilityLosses(after, after, before.policyState),
 		).toEqual([]);
+		expect(() =>
+			validateCatalogActivation(
+				after,
+				before.policyState,
+				["fallback"],
+				before.snapshot,
+			),
+		).toThrow(/fallback coverage lost/);
 	});
 });

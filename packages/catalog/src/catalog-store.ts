@@ -621,10 +621,16 @@ export async function applyStoredCatalogChangeSet(input: {
 				updatedAt: now.toISOString(),
 			});
 			const provisional = resolveStoreSnapshot(view, applied.state, 0);
+			const previousSnapshot = resolveStoreSnapshot(
+				view,
+				policyState(view),
+				currentRevision ?? 0,
+			);
 			validateCatalogActivation(
 				provisional,
 				applied.state,
 				applied.affectedEntityIds,
+				previousSnapshot,
 			);
 			await tx
 				.update(platformCatalogChangeSet)

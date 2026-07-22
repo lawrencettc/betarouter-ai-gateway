@@ -112,6 +112,8 @@ export interface CatalogResolverInput {
 export interface EffectiveProvider {
 	id: string;
 	lifecycle: CatalogLifecycle;
+	deprecatedAt?: string | null;
+	retireAt?: string | null;
 	configuredVisible: boolean;
 	visible: boolean;
 	available: boolean;
@@ -135,6 +137,7 @@ export interface EffectiveMapping {
 	providerId: string;
 	modelId: string;
 	region: string | null;
+	deactivatedAt?: string | null;
 	externalId: string;
 	/** Exact tested credential that managed-credit routing must use. */
 	platformCredentialId: string | null;
@@ -337,6 +340,7 @@ export function resolveEffectiveCatalog(
 			providerId: mapping.providerId,
 			modelId: mapping.modelId,
 			region: mapping.region ?? null,
+			deactivatedAt: mapping.deactivatedAt?.toISOString() ?? null,
 			externalId: mappingPolicy?.externalIdOverride ?? mapping.externalId,
 			platformCredentialId: readiness?.platformCredentialId ?? null,
 			platformCredentialProfile: readiness?.platformCredentialProfile ?? null,
@@ -395,6 +399,8 @@ export function resolveEffectiveCatalog(
 		return {
 			id: provider.id,
 			lifecycle,
+			deprecatedAt: policy?.deprecatedAt?.toISOString() ?? null,
+			retireAt: policy?.retireAt?.toISOString() ?? null,
 			configuredVisible,
 			visible:
 				configuredVisible &&

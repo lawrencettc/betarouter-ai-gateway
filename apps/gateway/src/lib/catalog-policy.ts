@@ -152,9 +152,17 @@ export async function enforceCatalogRequest(
 	if (!flags.routingEnabled && !flags.shadowRead) {
 		return null;
 	}
-	const snapshot = await getEffectiveCatalogSnapshot({
-		claimBreakerProbes: flags.breakerMode === "enforce",
+	const baseSnapshot = await getEffectiveCatalogSnapshot({
+		breakerMappingIds: [],
 	});
+	const baseDecision = evaluateCatalogRequest(baseSnapshot, input);
+	const snapshot =
+		flags.breakerMode === "enforce" && baseDecision.allowed
+			? await getEffectiveCatalogSnapshot({
+					breakerMappingIds: baseDecision.mappingIds,
+					claimBreakerProbes: true,
+				})
+			: baseSnapshot;
 	const decision = evaluateCatalogRequest(snapshot, input);
 	if (flags.shadowRead) {
 		logger.info("Catalog routing decision", {
@@ -220,12 +228,18 @@ export function filterProviderMappingsByCatalog(
 		return providers;
 	}
 	return decision.mappings.flatMap((mapping) => {
-		const provider = providers.find(
+		const exactProvider = providers.find(
 			(candidate) =>
 				candidate.providerId === mapping.providerId &&
-				(candidate.region === undefined ||
-					(candidate.region ?? null) === mapping.region),
+				(candidate.region ?? null) === mapping.region,
 		);
+		const provider =
+			exactProvider ??
+			providers.find(
+				(candidate) =>
+					candidate.providerId === mapping.providerId &&
+					candidate.region === undefined,
+			);
 		return provider ? [applyCatalogCustomerPrices(provider, mapping)] : [];
 	});
 }

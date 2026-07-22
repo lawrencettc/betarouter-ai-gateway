@@ -10,7 +10,7 @@ import { calculateCatalogChecksum } from "./catalog.js";
 import { readCatalogFeatureFlags } from "./flags.js";
 import { CatalogSnapshotCache } from "./snapshot-cache.js";
 
-import type { EffectiveCatalog } from "./catalog.js";
+import type { EffectiveCatalog, MappingEligibilityReason } from "./catalog.js";
 
 const lifecycleSchema = z.enum(["draft", "active", "deprecated", "retired"]);
 const storedCatalogSnapshotSchema = z
@@ -21,6 +21,8 @@ const storedCatalogSnapshotSchema = z
 			z.object({
 				id: z.string(),
 				lifecycle: lifecycleSchema,
+				deprecatedAt: z.string().nullable().optional(),
+				retireAt: z.string().nullable().optional(),
 				configuredVisible: z.boolean(),
 				visible: z.boolean(),
 				available: z.boolean(),
@@ -46,6 +48,7 @@ const storedCatalogSnapshotSchema = z
 				providerId: z.string(),
 				modelId: z.string(),
 				region: z.string().nullable(),
+				deactivatedAt: z.string().nullable().optional(),
 				externalId: z.string(),
 				platformCredentialId: z.string().nullable(),
 				platformCredentialProfile: z.string().startsWith("sha256:").nullable(),
@@ -137,15 +140,23 @@ function ensureInvalidationListener(): void {
 
 async function withRuntimeBreakers(
 	snapshot: EffectiveCatalog,
+	mappingIds: string[] | undefined,
 	claimBreakerProbes: boolean,
 ): Promise<EffectiveCatalog> {
 	if (readCatalogFeatureFlags().breakerMode !== "enforce") {
 		return snapshot;
 	}
 	try {
+		const selectedMappingIds = selectCatalogBreakerMappingIds(
+			snapshot,
+			mappingIds,
+		);
+		if (selectedMappingIds.length === 0) {
+			return snapshot;
+		}
 		const states = await getCatalogBreakerStates({
 			revision: snapshot.revision,
-			mappingIds: snapshot.mappings.map((mapping) => mapping.id),
+			mappingIds: selectedMappingIds,
 			claimProbes: claimBreakerProbes,
 		});
 		const mappings = snapshot.mappings.map((mapping) => {
@@ -181,12 +192,162 @@ async function withRuntimeBreakers(
 	}
 }
 
+export function selectCatalogBreakerMappingIds(
+	snapshot: EffectiveCatalog,
+	mappingIds: string[] | undefined,
+): string[] {
+	return mappingIds ?? snapshot.mappings.map((mapping) => mapping.id);
+}
+
+function dateReached(value: string | null | undefined, now: Date): boolean {
+	return (
+		value !== null && value !== undefined && Date.parse(value) <= now.getTime()
+	);
+}
+
+function lifecycleAt(
+	lifecycle: EffectiveCatalog["models"][number]["lifecycle"],
+	deprecatedAt: string | null | undefined,
+	retireAt: string | null | undefined,
+	now: Date,
+): EffectiveCatalog["models"][number]["lifecycle"] {
+	if (lifecycle === "retired" || dateReached(retireAt, now)) {
+		return "retired";
+	}
+	if (lifecycle === "deprecated" || dateReached(deprecatedAt, now)) {
+		return "deprecated";
+	}
+	return lifecycle;
+}
+
+/** Re-evaluate scheduled lifecycle boundaries without mutating the stored revision. */
+export function applyCatalogLifecycleAt(
+	snapshot: EffectiveCatalog,
+	now: Date,
+): EffectiveCatalog {
+	const providers = snapshot.providers.map((provider) => ({
+		...provider,
+		lifecycle: lifecycleAt(
+			provider.lifecycle,
+			provider.deprecatedAt,
+			provider.retireAt,
+			now,
+		),
+	}));
+	const models = snapshot.models.map((model) => ({
+		...model,
+		lifecycle: lifecycleAt(
+			model.lifecycle,
+			model.deprecatedAt,
+			model.retireAt,
+			now,
+		),
+	}));
+	const providerLifecycle = new Map(
+		providers.map((provider) => [provider.id, provider.lifecycle]),
+	);
+	const modelLifecycle = new Map(
+		models.map((model) => [model.id, model.lifecycle]),
+	);
+	const mappings = snapshot.mappings.map((mapping) => {
+		const reasons: MappingEligibilityReason[] = mapping.reasons.filter(
+			(reason) =>
+				reason !== "provider_retired" &&
+				reason !== "model_retired" &&
+				reason !== "source_mapping_deactivated",
+		);
+		if (providerLifecycle.get(mapping.providerId) === "retired") {
+			reasons.push("provider_retired");
+		}
+		if (modelLifecycle.get(mapping.modelId) === "retired") {
+			reasons.push("model_retired");
+		}
+		if (dateReached(mapping.deactivatedAt, now)) {
+			reasons.push("source_mapping_deactivated");
+		}
+		const available = reasons.every(
+			(reason) => reason === "circuit_open" || reason === "circuit_half_open",
+		);
+		const hasCircuitReason = reasons.some(
+			(reason) => reason === "circuit_open" || reason === "circuit_half_open",
+		);
+		return {
+			...mapping,
+			displayable:
+				mapping.displayable &&
+				providerLifecycle.get(mapping.providerId) !== "retired" &&
+				modelLifecycle.get(mapping.modelId) !== "retired" &&
+				!dateReached(mapping.deactivatedAt, now),
+			available,
+			routable: available && !hasCircuitReason,
+			probeOnly: false,
+			reasons: reasons.sort(),
+		};
+	});
+	const runtimeProviders = providers.map((provider) => ({
+		...provider,
+		visible:
+			provider.configuredVisible &&
+			provider.lifecycle !== "retired" &&
+			mappings.some(
+				(mapping) => mapping.providerId === provider.id && mapping.displayable,
+			),
+		available:
+			provider.available &&
+			provider.lifecycle !== "retired" &&
+			mappings.some(
+				(mapping) => mapping.providerId === provider.id && mapping.available,
+			),
+	}));
+	const runtimeModels = models.map((model) => ({
+		...model,
+		visible:
+			model.configuredVisible &&
+			model.lifecycle !== "retired" &&
+			mappings.some(
+				(mapping) => mapping.modelId === model.id && mapping.displayable,
+			),
+		available:
+			model.available &&
+			model.lifecycle !== "retired" &&
+			mappings.some(
+				(mapping) => mapping.modelId === model.id && mapping.available,
+			),
+	}));
+	return {
+		...snapshot,
+		providers: runtimeProviders,
+		models: runtimeModels,
+		mappings,
+		visibleProviderIds: runtimeProviders
+			.filter((provider) => provider.visible)
+			.map((provider) => provider.id),
+		visibleModelIds: runtimeModels
+			.filter((model) => model.visible)
+			.map((model) => model.id),
+		availableModelIds: runtimeModels
+			.filter((model) => model.available)
+			.map((model) => model.id),
+		routableMappingIds: mappings
+			.filter((mapping) => mapping.routable)
+			.map((mapping) => mapping.id),
+	};
+}
+
 export async function getEffectiveCatalogSnapshot(
-	options: { claimBreakerProbes?: boolean } = {},
+	options: {
+		breakerMappingIds?: string[];
+		claimBreakerProbes?: boolean;
+		now?: Date;
+	} = {},
 ): Promise<EffectiveCatalog> {
 	ensureInvalidationListener();
 	return await withRuntimeBreakers(
-		(await runtimeCache.get()).snapshot,
+		applyCatalogLifecycleAt(
+			(await runtimeCache.get()).snapshot,
+			options.now ?? new Date(),
+		),
+		options.breakerMappingIds,
 		options.claimBreakerProbes ?? false,
 	);
 }

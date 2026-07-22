@@ -4565,7 +4565,13 @@ chat.openapi(completions, async (c) => {
 		if (rawFinalModelInfo) {
 			finalModelInfo = {
 				...rawFinalModelInfo,
-				providers: expandAllProviderRegions(rawFinalModelInfo.providers),
+				// Re-apply the effective decision after resolving auto/fallback routing.
+				// This preserves the exact tested credential binding through token
+				// selection instead of reverting to raw static provider metadata.
+				providers: filterProviderMappingsByCatalog(
+					expandAllProviderRegions(rawFinalModelInfo.providers),
+					catalogRequestDecision,
+				),
 			};
 		}
 	}

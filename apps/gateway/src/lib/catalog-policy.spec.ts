@@ -5,7 +5,10 @@ import {
 	findCatalogMappingForProvider,
 } from "./catalog-policy.js";
 
-import type { CatalogRequestDecision } from "@llmgateway/catalog";
+import type {
+	CatalogRequestDecision,
+	EffectiveMapping,
+} from "@llmgateway/catalog";
 import type { ProviderModelMapping } from "@llmgateway/models";
 
 describe("filterProviderMappingsByCatalog", () => {
@@ -100,5 +103,61 @@ describe("filterProviderMappingsByCatalog", () => {
 		expect(
 			findCatalogMappingForProvider(decision, "relay", "us-east"),
 		).toMatchObject({ id: "mapping-2" });
+	});
+
+	it("prefers an exact regional mapping over the provider-level fallback", () => {
+		const providers = [
+			{ providerId: "relay", externalId: "generic", streaming: true },
+			{
+				providerId: "relay",
+				region: "us-east",
+				externalId: "regional",
+				streaming: true,
+				tools: true,
+			},
+		] as ProviderModelMapping[];
+		const mapping: EffectiveMapping = {
+			id: "mapping-us-east",
+			providerId: "relay",
+			modelId: "gpt",
+			region: "us-east",
+			deactivatedAt: null,
+			externalId: "catalog-regional",
+			platformCredentialId: "credential",
+			platformCredentialProfile: "sha256:profile",
+			displayable: true,
+			available: true,
+			routable: true,
+			probeOnly: false,
+			priority: 0,
+			weight: 100,
+			contextSizeLimit: null,
+			maxOutputLimit: null,
+			disabledCapabilities: [],
+			sourcePrices: {},
+			customerPrices: {},
+			margin: {},
+			pricingMode: null,
+			markupBps: null,
+			reasons: [],
+		};
+		const decision = {
+			allowed: true,
+			revision: 5,
+			mappingIds: [mapping.id],
+			mappings: [mapping],
+			deprecated: false,
+			deprecatedAt: null,
+			retireAt: null,
+			replacementModelId: null,
+		} satisfies Extract<CatalogRequestDecision, { allowed: true }>;
+
+		expect(
+			filterProviderMappingsByCatalog(providers, decision)[0],
+		).toMatchObject({
+			region: "us-east",
+			tools: true,
+			externalId: "catalog-regional",
+		});
 	});
 });
