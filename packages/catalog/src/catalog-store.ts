@@ -20,6 +20,7 @@ import { resolveEffectiveCatalog } from "./catalog.js";
 import { applyCatalogOperations } from "./change-set.js";
 import {
 	catalogChangeSetInputSchema,
+	mappingPolicyPatchSchema,
 	mappingPricePolicySchema,
 } from "./contracts.js";
 import {
@@ -27,6 +28,7 @@ import {
 	resolveMappingPrice,
 	sourceMappingPricesToPriceMap,
 } from "./pricing.js";
+import { catalogMappingTestProfile } from "./test-target.js";
 
 import type {
 	CatalogLifecycle,
@@ -74,7 +76,13 @@ async function loadStoreView(tx: CatalogTransaction) {
 		tx.select().from(platformMappingPolicy),
 		tx.select().from(platformMappingPricePolicy),
 		tx
-			.select({ provider: platformProviderCredential.provider })
+			.select({
+				id: platformProviderCredential.id,
+				provider: platformProviderCredential.provider,
+				tokenFingerprint: platformProviderCredential.tokenFingerprint,
+				baseUrl: platformProviderCredential.baseUrl,
+				options: platformProviderCredential.options,
+			})
 			.from(platformProviderCredential)
 			.where(
 				and(
@@ -98,6 +106,7 @@ async function loadStoreView(tx: CatalogTransaction) {
 		modelPolicies,
 		mappingPolicies,
 		pricePolicies,
+		credentials,
 		credentialProviderIds: new Set(credentials.map((item) => item.provider)),
 		passedTests: new Set(
 			tests.map((item) => `${item.mappingId}:${item.testProfile}`),
@@ -136,7 +145,14 @@ function policyState(view: StoreView): CatalogPolicyState {
 		mappings: Object.fromEntries(
 			view.mappingPolicies.map((row) => [
 				row.mappingId,
-				{ ...row, updatedAt: row.updatedAt.toISOString() },
+				{
+					...row,
+					disabledCapabilities:
+						mappingPolicyPatchSchema.shape.disabledCapabilities.parse(
+							row.disabledCapabilities,
+						),
+					updatedAt: row.updatedAt.toISOString(),
+				},
 			]),
 		),
 		prices: Object.fromEntries(
@@ -201,13 +217,28 @@ function resolveStoreSnapshot(
 								: { mode: "source_cost" },
 				})
 			: null;
-		const requiredTestRevision =
-			state.mappings[mapping.id]?.requiredTestRevision;
+		const mappingPolicy = state.mappings[mapping.id];
+		const testPassed = view.credentials
+			.filter((credential) => credential.provider === mapping.providerId)
+			.some((credential) => {
+				const profile = catalogMappingTestProfile({
+					mappingId: mapping.id,
+					providerId: mapping.providerId,
+					region: mapping.region,
+					externalId: mappingPolicy?.externalIdOverride ?? mapping.externalId,
+					contextSizeLimit: mappingPolicy?.contextSizeLimit,
+					maxOutputLimit: mappingPolicy?.maxOutputLimit,
+					disabledCapabilities: mappingPolicy?.disabledCapabilities,
+					credentialId: credential.id,
+					credentialFingerprint: credential.tokenFingerprint,
+					baseUrl: credential.baseUrl,
+					credentialOptions: credential.options,
+				});
+				return view.passedTests.has(`${mapping.id}:${profile}`);
+			});
 		mappingReadiness[mapping.id] = {
 			priceReady: prices?.ready ?? false,
-			testPassed:
-				!requiredTestRevision ||
-				view.passedTests.has(`${mapping.id}:${requiredTestRevision}`),
+			testPassed,
 			sourcePrices,
 			customerPrices: prices?.customerPrices ?? {},
 			margin: prices?.margin ?? {},
@@ -259,6 +290,9 @@ function resolveStoreSnapshot(
 			weight: item.weight ?? 100,
 			breakerEnabled: item.breakerEnabled ?? true,
 			externalIdOverride: item.externalIdOverride,
+			contextSizeLimit: item.contextSizeLimit,
+			maxOutputLimit: item.maxOutputLimit,
+			disabledCapabilities: item.disabledCapabilities,
 		})),
 		providerCredentialAvailability: credentialAvailability,
 		mappingReadiness,

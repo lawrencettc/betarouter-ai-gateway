@@ -71,13 +71,34 @@ export const modelPolicyPatchSchema = z
 	})
 	.strict();
 
+export const disabledCapabilitySchema = z.enum([
+	"streaming",
+	"vision",
+	"audio",
+	"document",
+	"reasoning",
+	"tools",
+	"jsonOutput",
+	"webSearch",
+	"embeddings",
+	"imageGenerations",
+	"videoGenerations",
+	"speechGenerations",
+	"ocr",
+	"supportsResponsesApi",
+]);
+
+export type DisabledCatalogCapability = z.infer<
+	typeof disabledCapabilitySchema
+>;
+
 export const mappingPolicyPatchSchema = z
 	.object({
 		enabled: z.boolean().optional(),
 		externalIdOverride: idSchema.nullable().optional(),
 		contextSizeLimit: z.number().int().positive().nullable().optional(),
 		maxOutputLimit: z.number().int().positive().nullable().optional(),
-		disabledCapabilities: z.array(idSchema).max(100).optional(),
+		disabledCapabilities: z.array(disabledCapabilitySchema).max(14).optional(),
 		priority: z.number().int().min(0).max(1_000_000).optional(),
 		weight: z.number().int().min(0).max(10_000).optional(),
 		breakerEnabled: z.boolean().optional(),

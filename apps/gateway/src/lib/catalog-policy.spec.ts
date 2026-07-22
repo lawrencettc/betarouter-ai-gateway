@@ -12,7 +12,14 @@ describe("filterProviderMappingsByCatalog", () => {
 	it("removes disabled fallbacks and applies the effective external id", () => {
 		const providers = [
 			{ providerId: "openai", externalId: "old", streaming: true },
-			{ providerId: "relay", externalId: "relay", streaming: true },
+			{
+				providerId: "relay",
+				externalId: "relay",
+				streaming: true,
+				tools: true,
+				contextSize: 8192,
+				maxOutput: 1024,
+			},
 		] as ProviderModelMapping[];
 		const decision = {
 			allowed: true,
@@ -31,6 +38,9 @@ describe("filterProviderMappingsByCatalog", () => {
 					probeOnly: false,
 					priority: 0,
 					weight: 100,
+					contextSizeLimit: 4096,
+					maxOutputLimit: 512,
+					disabledCapabilities: ["tools"],
 					sourcePrices: {},
 					customerPrices: {},
 					margin: {},
@@ -50,6 +60,9 @@ describe("filterProviderMappingsByCatalog", () => {
 					probeOnly: false,
 					priority: 1,
 					weight: 100,
+					contextSizeLimit: null,
+					maxOutputLimit: null,
+					disabledCapabilities: [],
 					sourcePrices: {},
 					customerPrices: {},
 					margin: {},
@@ -69,6 +82,9 @@ describe("filterProviderMappingsByCatalog", () => {
 				providerId: "relay",
 				region: "us-east",
 				externalId: "relay-priority",
+				tools: false,
+				contextSize: 4096,
+				maxOutput: 512,
 			}),
 			expect.objectContaining({
 				providerId: "openai",

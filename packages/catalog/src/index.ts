@@ -10,3 +10,4 @@ export * from "./pricing.js";
 export * from "./request-policy.js";
 export * from "./runtime.js";
 export * from "./snapshot-cache.js";
+export * from "./test-target.js";

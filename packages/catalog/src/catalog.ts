@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 
+import type { DisabledCatalogCapability } from "./contracts.js";
 import type { PriceMap } from "./pricing.js";
 
 export type CatalogLifecycle = "draft" | "active" | "deprecated" | "retired";
@@ -53,6 +54,9 @@ export interface MappingPolicy {
 	weight: number;
 	breakerEnabled: boolean;
 	externalIdOverride?: string | null;
+	contextSizeLimit?: number | null;
+	maxOutputLimit?: number | null;
+	disabledCapabilities?: DisabledCatalogCapability[];
 }
 
 export interface MappingReadiness {
@@ -135,6 +139,9 @@ export interface EffectiveMapping {
 	probeOnly: boolean;
 	priority: number;
 	weight: number;
+	contextSizeLimit: number | null;
+	maxOutputLimit: number | null;
+	disabledCapabilities: DisabledCatalogCapability[];
 	sourcePrices: PriceMap;
 	customerPrices: PriceMap;
 	margin: PriceMap;
@@ -330,6 +337,9 @@ export function resolveEffectiveCatalog(
 			probeOnly,
 			priority: mappingPolicy?.priority ?? 100,
 			weight: mappingPolicy?.weight ?? 0,
+			contextSizeLimit: mappingPolicy?.contextSizeLimit ?? null,
+			maxOutputLimit: mappingPolicy?.maxOutputLimit ?? null,
+			disabledCapabilities: mappingPolicy?.disabledCapabilities ?? [],
 			sourcePrices: readiness?.sourcePrices ?? {},
 			customerPrices: readiness?.customerPrices ?? {},
 			margin: readiness?.margin ?? {},

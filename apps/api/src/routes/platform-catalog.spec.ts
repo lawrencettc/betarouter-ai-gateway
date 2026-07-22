@@ -27,11 +27,16 @@ describe("platform catalog route security", () => {
 	});
 
 	afterEach(() => {
-		if (originalAdminEmails === undefined) delete process.env.ADMIN_EMAILS;
-		else process.env.ADMIN_EMAILS = originalAdminEmails;
-		if (originalPlatformAdminIds === undefined)
+		if (originalAdminEmails === undefined) {
+			delete process.env.ADMIN_EMAILS;
+		} else {
+			process.env.ADMIN_EMAILS = originalAdminEmails;
+		}
+		if (originalPlatformAdminIds === undefined) {
 			delete process.env.PLATFORM_ADMIN_USER_IDS;
-		else process.env.PLATFORM_ADMIN_USER_IDS = originalPlatformAdminIds;
+		} else {
+			process.env.PLATFORM_ADMIN_USER_IDS = originalPlatformAdminIds;
+		}
 	});
 
 	it("rejects anonymous catalog reads", async () => {

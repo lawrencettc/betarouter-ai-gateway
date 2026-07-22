@@ -1,4 +1,7 @@
-import type { CatalogOperationV1 } from "./contracts.js";
+import type {
+	CatalogOperationV1,
+	DisabledCatalogCapability,
+} from "./contracts.js";
 
 interface PolicyRecord {
 	updatedAt: string;
@@ -41,7 +44,7 @@ export interface MappingPolicyRecord extends PolicyRecord {
 	externalIdOverride?: string | null;
 	contextSizeLimit?: number | null;
 	maxOutputLimit?: number | null;
-	disabledCapabilities?: string[];
+	disabledCapabilities?: DisabledCatalogCapability[];
 	priority?: number;
 	weight?: number;
 	breakerEnabled?: boolean;

@@ -87,11 +87,29 @@ function applyCatalogCustomerPrices(
 			cacheWriteInputPrice1h: perUnit(prices.cacheWrite1h),
 		};
 	});
+	const restrictedCapabilities = Object.fromEntries(
+		mapping.disabledCapabilities.map((capability) => [capability, false]),
+	) as Partial<ProviderModelMapping>;
 	return {
 		...provider,
+		...restrictedCapabilities,
 		catalogPriority: mapping.priority,
 		catalogWeight: mapping.weight,
 		catalogMappingId: mapping.id,
+		contextSize:
+			mapping.contextSizeLimit === null
+				? provider.contextSize
+				: Math.min(
+						provider.contextSize ?? mapping.contextSizeLimit,
+						mapping.contextSizeLimit,
+					),
+		maxOutput:
+			mapping.maxOutputLimit === null
+				? provider.maxOutput
+				: Math.min(
+						provider.maxOutput ?? mapping.maxOutputLimit,
+						mapping.maxOutputLimit,
+					),
 		externalId: mapping.externalId,
 		region: mapping.region ?? undefined,
 		inputPrice: perUnit(prices.input),

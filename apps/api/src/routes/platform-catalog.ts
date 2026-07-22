@@ -8,9 +8,11 @@ import { validateProviderKey } from "@llmgateway/actions";
 import { redisClient } from "@llmgateway/cache";
 import {
 	applyCatalogOperations,
+	catalogMappingTestProfile,
 	catalogChangeSetInputSchema,
 	fixedPricesV1ToPriceMap,
 	getCatalogBreakerStates,
+	mappingPolicyPatchSchema,
 	mappingPricePolicySchema,
 	resolveEffectiveCatalog,
 	resolveMappingPrice,
@@ -95,6 +97,9 @@ const effectiveMappingSchema = z.object({
 	probeOnly: z.boolean(),
 	priority: z.number(),
 	weight: z.number(),
+	contextSizeLimit: z.number().int().positive().nullable(),
+	maxOutputLimit: z.number().int().positive().nullable(),
+	disabledCapabilities: z.array(z.string()),
 	sourcePrices: z.record(z.string(), z.string()),
 	customerPrices: z.record(z.string(), z.string()),
 	margin: z.record(z.string(), z.string()),
@@ -257,6 +262,12 @@ function toMappingPolicy(
 		weight: row.weight,
 		breakerEnabled: row.breakerEnabled,
 		externalIdOverride: row.externalIdOverride,
+		contextSizeLimit: row.contextSizeLimit,
+		maxOutputLimit: row.maxOutputLimit,
+		disabledCapabilities:
+			mappingPolicyPatchSchema.shape.disabledCapabilities.parse(
+				row.disabledCapabilities,
+			),
 	};
 }
 
@@ -319,6 +330,13 @@ async function loadCatalogView(): Promise<{
 	mappingPolicies: (typeof platformMappingPolicy.$inferSelect)[];
 	pricePolicies: (typeof platformMappingPricePolicy.$inferSelect)[];
 	credentialAvailability: Record<string, boolean>;
+	credentials: Array<{
+		id: string;
+		provider: string;
+		tokenFingerprint: string;
+		baseUrl: string | null;
+		options: unknown;
+	}>;
 	passedTests: Set<string>;
 }> {
 	const [
@@ -341,7 +359,13 @@ async function loadCatalogView(): Promise<{
 		db.select().from(platformMappingPolicy),
 		db.select().from(platformMappingPricePolicy),
 		db
-			.select({ provider: platformProviderCredential.provider })
+			.select({
+				id: platformProviderCredential.id,
+				provider: platformProviderCredential.provider,
+				tokenFingerprint: platformProviderCredential.tokenFingerprint,
+				baseUrl: platformProviderCredential.baseUrl,
+				options: platformProviderCredential.options,
+			})
 			.from(platformProviderCredential)
 			.where(
 				and(
@@ -419,17 +443,31 @@ async function loadCatalogView(): Promise<{
 		providerCredentialAvailability: credentialAvailability,
 		mappingReadiness: Object.fromEntries(
 			sourceMappings.map((item) => {
-				const requiredTestRevision = mappingPolicyById.get(
-					item.id,
-				)?.requiredTestRevision;
+				const mappingPolicy = mappingPolicyById.get(item.id);
+				const testPassed = credentials
+					.filter((credential) => credential.provider === item.providerId)
+					.some((credential) => {
+						const profile = catalogMappingTestProfile({
+							mappingId: item.id,
+							providerId: item.providerId,
+							region: item.region,
+							externalId: mappingPolicy?.externalIdOverride ?? item.externalId,
+							contextSizeLimit: mappingPolicy?.contextSizeLimit,
+							maxOutputLimit: mappingPolicy?.maxOutputLimit,
+							disabledCapabilities: mappingPolicy?.disabledCapabilities,
+							credentialId: credential.id,
+							credentialFingerprint: credential.tokenFingerprint,
+							baseUrl: credential.baseUrl,
+							credentialOptions: credential.options,
+						});
+						return passedTests.has(`${item.id}:${profile}`);
+					});
 				const prices = resolvePricePolicy(item, pricePolicyById.get(item.id));
 				return [
 					item.id,
 					{
 						priceReady: priceMappingIds.has(item.id) && prices.ready,
-						testPassed:
-							!requiredTestRevision ||
-							passedTests.has(`${item.id}:${requiredTestRevision}`),
+						testPassed,
 						sourcePrices: prices.sourcePrices,
 						customerPrices: prices.customerPrices,
 						margin: prices.margin,
@@ -451,6 +489,7 @@ async function loadCatalogView(): Promise<{
 		mappingPolicies,
 		pricePolicies,
 		credentialAvailability,
+		credentials,
 		passedTests,
 	};
 }
@@ -486,7 +525,14 @@ function policyStateFromView(view: CatalogView): CatalogPolicyState {
 		mappings: Object.fromEntries(
 			view.mappingPolicies.map((row) => [
 				row.mappingId,
-				{ ...row, updatedAt: row.updatedAt.toISOString() },
+				{
+					...row,
+					disabledCapabilities:
+						mappingPolicyPatchSchema.shape.disabledCapabilities.parse(
+							row.disabledCapabilities,
+						),
+					updatedAt: row.updatedAt.toISOString(),
+				},
 			]),
 		),
 		prices: Object.fromEntries(
@@ -567,20 +613,38 @@ function resolveStateSnapshot(
 			weight: item.weight ?? 100,
 			breakerEnabled: item.breakerEnabled ?? true,
 			externalIdOverride: item.externalIdOverride,
+			contextSizeLimit: item.contextSizeLimit,
+			maxOutputLimit: item.maxOutputLimit,
+			disabledCapabilities: item.disabledCapabilities,
 		})),
 		providerCredentialAvailability: view.credentialAvailability,
 		mappingReadiness: Object.fromEntries(
 			view.sourceMappings.map((item) => {
-				const requiredTestRevision =
-					state.mappings[item.id]?.requiredTestRevision;
+				const mappingPolicy = state.mappings[item.id];
+				const testPassed = view.credentials
+					.filter((credential) => credential.provider === item.providerId)
+					.some((credential) => {
+						const profile = catalogMappingTestProfile({
+							mappingId: item.id,
+							providerId: item.providerId,
+							region: item.region,
+							externalId: mappingPolicy?.externalIdOverride ?? item.externalId,
+							contextSizeLimit: mappingPolicy?.contextSizeLimit,
+							maxOutputLimit: mappingPolicy?.maxOutputLimit,
+							disabledCapabilities: mappingPolicy?.disabledCapabilities,
+							credentialId: credential.id,
+							credentialFingerprint: credential.tokenFingerprint,
+							baseUrl: credential.baseUrl,
+							credentialOptions: credential.options,
+						});
+						return view.passedTests.has(`${item.id}:${profile}`);
+					});
 				const prices = resolvePricePolicy(item, state.prices[item.id]?.policy);
 				return [
 					item.id,
 					{
 						priceReady: prices.ready,
-						testPassed:
-							!requiredTestRevision ||
-							view.passedTests.has(`${item.id}:${requiredTestRevision}`),
+						testPassed,
 						sourcePrices: prices.sourcePrices,
 						customerPrices: prices.customerPrices,
 						margin: prices.margin,
@@ -1430,7 +1494,15 @@ platformCatalog.openapi(
 			.where(eq(platformMappingTestRun.mappingId, mappingId))
 			.orderBy(desc(platformMappingTestRun.createdAt))
 			.limit(1);
-		if (!latestTest || latestTest.status !== "passed") {
+		const mapping = view.snapshot.mappings.find(
+			(item) => item.id === mappingId,
+		);
+		if (
+			!latestTest ||
+			latestTest.status !== "passed" ||
+			!mapping ||
+			mapping.reasons.includes("mapping_test_required")
+		) {
 			throw new HTTPException(409, {
 				message: "Run and pass a mapping test before resetting its breaker",
 			});
@@ -1508,6 +1580,9 @@ platformCatalog.openapi(
 				db
 					.select({
 						externalIdOverride: platformMappingPolicy.externalIdOverride,
+						contextSizeLimit: platformMappingPolicy.contextSizeLimit,
+						maxOutputLimit: platformMappingPolicy.maxOutputLimit,
+						disabledCapabilities: platformMappingPolicy.disabledCapabilities,
 					})
 					.from(platformMappingPolicy)
 					.where(eq(platformMappingPolicy.mappingId, mappingId))
@@ -1526,6 +1601,25 @@ platformCatalog.openapi(
 				message: "Select an active credential for the mapping provider",
 			});
 		}
+		const currentPolicy = mappingPolicy[0];
+		const testProfile = catalogMappingTestProfile({
+			mappingId,
+			providerId: mapping.providerId,
+			region: mapping.region,
+			externalId: currentPolicy?.externalIdOverride ?? mapping.externalId,
+			contextSizeLimit: currentPolicy?.contextSizeLimit,
+			maxOutputLimit: currentPolicy?.maxOutputLimit,
+			disabledCapabilities: currentPolicy
+				? mappingPolicyPatchSchema.shape.disabledCapabilities.parse(
+						currentPolicy.disabledCapabilities,
+					)
+				: [],
+			credentialId: credential.id,
+			credentialFingerprint: credential.tokenFingerprint,
+			baseUrl: credential.baseUrl,
+			credentialOptions: credential.options,
+			profile: input.testProfile,
+		});
 		const [run] = await db
 			.insert(platformMappingTestRun)
 			.values({
@@ -1534,7 +1628,7 @@ platformCatalog.openapi(
 				credentialId: credential.id,
 				catalogRevision: revision?.id ?? null,
 				status: "running",
-				testProfile: input.testProfile,
+				testProfile,
 			})
 			.returning();
 		if (!run) {
@@ -1559,8 +1653,7 @@ platformCatalog.openapi(
 				credential.options ?? undefined,
 				{
 					modelId: mapping.modelId,
-					externalId:
-						mappingPolicy[0]?.externalIdOverride ?? mapping.externalId,
+					externalId: currentPolicy?.externalIdOverride ?? mapping.externalId,
 					region: mapping.region,
 				},
 			);
@@ -1596,7 +1689,7 @@ platformCatalog.openapi(
 			metadata: {
 				testRunId: run.id,
 				credentialId: credential.id,
-				testProfile: input.testProfile,
+				testProfile,
 				status,
 				upstreamStatus,
 			},
