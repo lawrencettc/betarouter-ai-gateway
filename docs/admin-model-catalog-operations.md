@@ -45,7 +45,26 @@ file so emergency rollback remains independent of a new build.
 4. Record the current image digest and current public health for
    `betarouter.com`, `api.betarouter.com`, `platform-api.betarouter.com`, and
    `admin.betarouter.com`.
-5. Do not create the curated launch change set automatically during migration
+5. Measure the two existing tables that receive lineage indexes before running
+   migrations:
+
+   ```sql
+   SELECT relname, n_live_tup
+   FROM pg_stat_user_tables
+   WHERE relname IN ('log', 'video_job');
+
+   SELECT relname, pg_size_pretty(pg_total_relation_size(relid)) AS total_size
+   FROM pg_catalog.pg_statio_user_tables
+   WHERE relname IN ('log', 'video_job');
+   ```
+
+   The migration uses normal `CREATE INDEX`, which takes a write-blocking lock
+   while each index is built. Run it in a low-traffic window. If either table is
+   large enough that the expected build time does not fit the maintenance
+   window, stop the deploy and move those four lineage indexes to a separate
+   non-transactional `CREATE INDEX CONCURRENTLY` maintenance operation.
+
+6. Do not create the curated launch change set automatically during migration
    or container startup.
 
 ## Staged rollout
