@@ -8,6 +8,18 @@
 		".": {
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
+		},
+		"./db": {
+			"types": "./dist/db.d.ts",
+			"import": "./dist/db.js"
+		},
+		"./orm": {
+			"types": "./dist/orm.d.ts",
+			"import": "./dist/orm.js"
+		},
+		"./schema": {
+			"types": "./dist/schema.d.ts",
+			"import": "./dist/schema.js"
 		}
 	},
 	"module": "./dist/index.js",

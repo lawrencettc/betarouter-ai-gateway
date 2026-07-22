@@ -27,6 +27,7 @@
 		"@llmgateway/ai-sdk-provider": "3.7.0",
 		"@llmgateway/audit": "workspace:*",
 		"@llmgateway/cache": "workspace:*",
+		"@llmgateway/catalog": "workspace:*",
 		"@llmgateway/db": "workspace:*",
 		"@llmgateway/guardrails": "workspace:*",
 		"@llmgateway/instrumentation": "workspace:*",

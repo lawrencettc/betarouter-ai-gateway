@@ -10,6 +10,7 @@ import {
 	Gauge,
 	GitMerge,
 	LayoutDashboard,
+	LibraryBig,
 	LogOut,
 	Mail,
 	Menu,
@@ -95,6 +96,7 @@ export function AdminShell({ children }: AdminShellProps) {
 	const isRateLimits = pathname === "/rate-limits";
 	const isProviders = pathname === "/providers";
 	const isPlatformProviders = pathname.startsWith("/platform-providers");
+	const isCatalog = pathname.startsWith("/catalog");
 	const isModels = pathname === "/models";
 	const isModelProviderMappings = pathname === "/model-provider-mappings";
 	const isUnstableMappings = pathname.startsWith("/unstable-mappings");
@@ -210,6 +212,14 @@ export function AdminShell({ children }: AdminShellProps) {
 									<SidebarMenuButton isActive={isPlatformProviders} size="lg">
 										<ShieldCheck className="h-4 w-4" />
 										<span>Platform Providers</span>
+									</SidebarMenuButton>
+								</Link>
+							</SidebarMenuItem>
+							<SidebarMenuItem>
+								<Link href="/catalog" className="block">
+									<SidebarMenuButton isActive={isCatalog} size="lg">
+										<LibraryBig className="h-4 w-4" />
+										<span>Catalog</span>
 									</SidebarMenuButton>
 								</Link>
 							</SidebarMenuItem>

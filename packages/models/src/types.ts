@@ -432,6 +432,16 @@ export interface AvailableModelProvider {
 	providerId: string;
 	externalId: string;
 	region?: string;
+	/** Catalog fallback tier. Lower values are attempted first. */
+	catalogPriority?: number;
+	/** Relative preference inside one catalog priority tier. */
+	catalogWeight?: number;
+	/** Revisioned mapping identity used for routing and billing linkage. */
+	catalogMappingId?: string;
+	/** Exact tested encrypted credential used by managed routing. */
+	platformCredentialId?: string;
+	/** Fingerprint of the tested secret, endpoint, and credential options. */
+	platformCredentialProfile?: string;
 }
 
 // Function type definitions

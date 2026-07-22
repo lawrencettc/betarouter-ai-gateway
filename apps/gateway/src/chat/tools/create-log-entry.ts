@@ -19,6 +19,8 @@ export interface CreateLogEntryOptions {
 	providerKeyId?: string;
 	usedModel: string;
 	usedModelMapping?: string;
+	modelProviderMappingId?: string | null;
+	catalogRevisionId?: number | null;
 	usedProvider: string;
 	requestedModel: string;
 	requestedProvider?: string;
@@ -82,6 +84,8 @@ function buildLogEntry(options: CreateLogEntryOptions) {
 		usedMode: options.providerKeyId ? "api-keys" : "credits",
 		usedModel: options.usedModel,
 		usedModelMapping: options.usedModelMapping,
+		modelProviderMappingId: options.modelProviderMappingId ?? null,
+		catalogRevisionId: options.catalogRevisionId ?? null,
 		usedProvider: options.usedProvider,
 		requestedModel: options.requestedModel,
 		requestedProvider: options.requestedProvider,

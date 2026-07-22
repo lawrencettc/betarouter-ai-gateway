@@ -29,6 +29,11 @@ import {
 	findProjectById,
 	findProviderKey,
 } from "@/lib/cached-queries.js";
+import {
+	enforceCatalogRequest,
+	filterProviderMappingsByCatalog,
+	findCatalogMappingForProvider,
+} from "@/lib/catalog-policy.js";
 import { getClientIpFromRequest } from "@/lib/client-ip.js";
 import { assertProviderCompliant } from "@/lib/compliance.js";
 import {
@@ -497,7 +502,41 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 		);
 	}
 
-	const { mapping, modelDef, modelDefId, explicitProvider } = match;
+	const {
+		mapping: legacyMapping,
+		modelDef,
+		modelDefId,
+		explicitProvider,
+	} = match;
+	const catalogDecision = await enforceCatalogRequest(
+		{
+			modelId: modelDefId,
+			providerId: explicitProvider ? legacyMapping.providerId : undefined,
+			region: explicitProvider ? legacyMapping.region : undefined,
+		},
+		{
+			operation: "deferred_non_chat",
+			setHeader: (name, value) => c.header(name, value),
+		},
+	);
+	const [mapping] = filterProviderMappingsByCatalog(
+		modelDef.providers.filter(
+			(provider): provider is ProviderModelMapping =>
+				Boolean((provider as ProviderModelMapping).embeddings) &&
+				(!explicitProvider || provider.providerId === legacyMapping.providerId),
+		),
+		catalogDecision,
+	);
+	if (!mapping) {
+		throw new HTTPException(503, {
+			message: "No eligible embedding provider mapping is available",
+		});
+	}
+	const catalogMapping = findCatalogMappingForProvider(
+		catalogDecision,
+		mapping.providerId,
+		mapping.region ?? null,
+	);
 	const upstreamModel = mapping.externalId;
 	const providerId = mapping.providerId;
 
@@ -745,6 +784,8 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 			const envResult = await getProviderEnv(providerId, {
 				selectionScope: upstreamModel,
 				excludedIndices: excludedEnvKeyIndices,
+				requiredCredentialId: mapping.platformCredentialId,
+				requiredCredentialProfile: mapping.platformCredentialProfile,
 			});
 			usedToken = envResult.token;
 			configIndex = envResult.configIndex;
@@ -773,6 +814,8 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 				const envResult = await getProviderEnv(providerId, {
 					selectionScope: upstreamModel,
 					excludedIndices: excludedEnvKeyIndices,
+					requiredCredentialId: mapping.platformCredentialId,
+					requiredCredentialProfile: mapping.platformCredentialProfile,
 				});
 				usedToken = envResult.token;
 				configIndex = envResult.configIndex;
@@ -998,6 +1041,8 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 				providerKeyId: attempt.providerKey?.id,
 				usedModel: `${providerId}/${modelDefId}`,
 				usedModelMapping: upstreamModel,
+				modelProviderMappingId: catalogMapping?.id,
+				catalogRevisionId: catalogDecision?.revision,
 				usedProvider: providerId,
 				requestedModel,
 				requestedProvider: providerId,

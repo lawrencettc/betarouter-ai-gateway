@@ -43,6 +43,8 @@ import {
 } from "@llmgateway/shared";
 
 import { posthog } from "./posthog.js";
+import { aggregateCatalogHealth } from "./services/catalog-health.js";
+import { runCatalogSchedulerPass } from "./services/catalog-scheduler.js";
 import {
 	runFollowUpEmailsLoop,
 	sendLowBalanceEmail,
@@ -134,6 +136,10 @@ const VIDEO_JOB_POLL_INTERVAL_SECONDS =
 	Number(process.env.VIDEO_JOB_POLL_INTERVAL_SECONDS) || 5;
 const VIDEO_WEBHOOK_POLL_INTERVAL_SECONDS =
 	Number(process.env.VIDEO_WEBHOOK_POLL_INTERVAL_SECONDS) || 5;
+const CATALOG_SCHEDULER_INTERVAL_SECONDS =
+	Number(process.env.CATALOG_SCHEDULER_INTERVAL_SECONDS) || 15;
+const CATALOG_HEALTH_INTERVAL_SECONDS =
+	Number(process.env.CATALOG_HEALTH_INTERVAL_SECONDS) || 60;
 
 interface ApiKeyUsageEvent {
 	cost: Decimal;
@@ -2079,6 +2085,58 @@ async function runVideoJobsLoop() {
 	}
 }
 
+async function runCatalogSchedulerLoop() {
+	activeLoops++;
+	const interval = CATALOG_SCHEDULER_INTERVAL_SECONDS * 1000;
+	logger.info(
+		`Starting catalog scheduler loop (interval: ${CATALOG_SCHEDULER_INTERVAL_SECONDS} seconds)...`,
+	);
+
+	try {
+		while (!isStopRequested()) {
+			try {
+				await runCatalogSchedulerPass();
+				await interruptibleSleep(interval);
+			} catch (error) {
+				logger.error(
+					"Error in catalog scheduler loop",
+					error instanceof Error ? error : new Error(String(error)),
+				);
+				await interruptibleSleep(5000);
+			}
+		}
+	} finally {
+		activeLoops--;
+		logger.info("Catalog scheduler loop stopped");
+	}
+}
+
+async function runCatalogHealthLoop() {
+	activeLoops++;
+	const interval = CATALOG_HEALTH_INTERVAL_SECONDS * 1000;
+	logger.info(
+		`Starting catalog health loop (interval: ${CATALOG_HEALTH_INTERVAL_SECONDS} seconds)...`,
+	);
+
+	try {
+		while (!isStopRequested()) {
+			try {
+				await aggregateCatalogHealth();
+				await interruptibleSleep(interval);
+			} catch (error) {
+				logger.error(
+					"Error in catalog health loop",
+					error instanceof Error ? error : new Error(String(error)),
+				);
+				await interruptibleSleep(5000);
+			}
+		}
+	} finally {
+		activeLoops--;
+		logger.info("Catalog health loop stopped");
+	}
+}
+
 async function runVideoWebhookLoop() {
 	activeLoops++;
 	const interval = VIDEO_WEBHOOK_POLL_INTERVAL_SECONDS * 1000;
@@ -2755,6 +2813,12 @@ export async function startWorker() {
 		`- Video webhooks: runs every ${VIDEO_WEBHOOK_POLL_INTERVAL_SECONDS} seconds for callback delivery`,
 	);
 	logger.info(
+		`- Catalog scheduler: applies due catalog changes every ${CATALOG_SCHEDULER_INTERVAL_SECONDS} seconds`,
+	);
+	logger.info(
+		`- Catalog health: rolls up linked mapping traffic every ${CATALOG_HEALTH_INTERVAL_SECONDS} seconds`,
+	);
+	logger.info(
 		"- Aggregated stats: runs every 1 minute at the start of each minute",
 	);
 	logger.info(
@@ -2774,6 +2838,8 @@ export async function startWorker() {
 	void runCurrentMinuteHistoryLoop();
 	void runVideoJobsLoop();
 	void runVideoWebhookLoop();
+	void runCatalogSchedulerLoop();
+	void runCatalogHealthLoop();
 	void runAggregatedStatsLoop();
 	void runProjectStatsLoop();
 	void runGlobalStatsLoop();

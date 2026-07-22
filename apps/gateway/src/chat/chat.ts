@@ -29,6 +29,12 @@ import {
 	findProviderKeysByProviders,
 	type CustomModel,
 } from "@/lib/cached-queries.js";
+import {
+	enforceCatalogRequest,
+	filterAutoCandidateByCatalog,
+	filterProviderMappingsByCatalog,
+	findCatalogMappingForProvider,
+} from "@/lib/catalog-policy.js";
 import { getClientIpFromRequest } from "@/lib/client-ip.js";
 import {
 	isCodingModel,
@@ -337,7 +343,7 @@ function toDataStorageCostNumber(
 /**
  * Builds a synthetic provider mapping (providerId "custom") from an enterprise
  * custom model catalog entry. Used both to override the mock model info for
- * limit/capability enforcement and as the `customPricing` override threaded into
+ * limit/capability enforcement and as the pricing override threaded into
  * calculateCosts so custom-provider requests are billed at the catalog rates.
  */
 function customModelToProviderMapping(cm: CustomModel): ProviderModelMapping {
@@ -1642,6 +1648,10 @@ chat.openapi(completions, async (c) => {
 	// Wrapper that injects Responses API fields into every log entry.
 	// Only override the id for the final log entry (retried !== true) to avoid
 	// PK conflicts when the request retries across multiple providers.
+	// Guardrail and validation failures can be logged before provider routing is
+	// complete. Start with the base writer, then decorate it with catalog routing
+	// metadata once those values are available below.
+	let insertLog: typeof _insertLog = _insertLog;
 	const insertLogEntry = (logData: LogInsertData) =>
 		insertLog(
 			{
@@ -1674,6 +1684,21 @@ chat.openapi(completions, async (c) => {
 	const requestedModel = parseResult.requestedModel;
 	const customProviderName = parseResult.customProviderName;
 	const requestedRegion = parseResult.requestedRegion;
+	let catalogRequestDecision = await enforceCatalogRequest(
+		{
+			modelId: requestedModel,
+			providerId:
+				parseResult.requestedProvider === "llmgateway" ||
+				parseResult.requestedProvider === "custom"
+					? undefined
+					: parseResult.requestedProvider,
+			region: requestedRegion,
+		},
+		{
+			operation: "chat",
+			setHeader: (name, value) => c.header(name, value),
+		},
+	);
 
 	// Count input images from messages for cost calculation
 	const inputImageCount =
@@ -1692,22 +1717,32 @@ chat.openapi(completions, async (c) => {
 		Boolean(modelInfoResult.requestedProvider) &&
 		modelInfoResult.requestedProvider !== "llmgateway" &&
 		modelInfoResult.requestedProvider !== "custom";
-	const expandedActiveModelProviders = expandAllProviderRegions(
+	const catalogActiveModelProviders = filterProviderMappingsByCatalog(
 		modelInfoResult.modelInfo.providers,
+		catalogRequestDecision,
 	);
-	const expandedAllModelProviders = expandAllProviderRegions(
+	const catalogAllModelProviders = filterProviderMappingsByCatalog(
 		modelInfoResult.allModelProviders,
+		catalogRequestDecision,
+	);
+	const expandedActiveModelProviders = filterProviderMappingsByCatalog(
+		expandAllProviderRegions(catalogActiveModelProviders),
+		catalogRequestDecision,
+	);
+	const expandedAllModelProviders = filterProviderMappingsByCatalog(
+		expandAllProviderRegions(catalogAllModelProviders),
+		catalogRequestDecision,
 	);
 	let routingExpandedModelProviders = expandedActiveModelProviders;
 	let modelInfo = {
 		...modelInfoResult.modelInfo,
 		providers: useExpandedRoutingProviders
 			? expandedActiveModelProviders
-			: modelInfoResult.modelInfo.providers,
+			: catalogActiveModelProviders,
 	};
 	let allModelProviders = useExpandedRoutingProviders
 		? expandedAllModelProviders
-		: modelInfoResult.allModelProviders;
+		: catalogAllModelProviders;
 	let requestedProvider = modelInfoResult.requestedProvider;
 
 	// If a specific region was requested (e.g. "alibaba/qwen-plus:cn-beijing"),
@@ -2907,6 +2942,20 @@ chat.openapi(completions, async (c) => {
 		}
 	}
 
+	const getPricingOverride = (): ProviderModelMapping | undefined => {
+		if (customPricingMapping) {
+			return customPricingMapping;
+		}
+		if (!catalogRequestDecision) {
+			return undefined;
+		}
+		return modelInfo.providers.find(
+			(mapping) =>
+				mapping.providerId === usedProvider &&
+				(mapping.region ?? null) === (usedRegion ?? null),
+		);
+	};
+
 	// Apply routing logic after apiKey and project are available
 	if (
 		(usedProvider === "llmgateway" && usedInternalModel === "auto") ||
@@ -2965,6 +3014,7 @@ chat.openapi(completions, async (c) => {
 		];
 
 		let selectedModel: ModelDefinition | undefined;
+		let selectedCatalogDecision: typeof catalogRequestDecision = null;
 		let selectedProviders: any[] = [];
 		let selectedFilteredProviders: Array<{
 			providerId: string;
@@ -2996,6 +3046,7 @@ chat.openapi(completions, async (c) => {
 		// instead of the generic errors / hardcoded fallback below.
 		let anyPreComplianceCandidate = false;
 		let anyPostComplianceCandidate = false;
+		let catalogRoutingEnforced = false;
 
 		for (const modelDef of models) {
 			if (modelDef.id === "auto" || modelDef.id === "custom") {
@@ -3058,7 +3109,7 @@ chat.openapi(completions, async (c) => {
 			}
 			const candidateAllowedProviders = candidateIam.allowedProviders;
 
-			const candidateProviders = preferConcreteRegionalMappings(
+			const sourceCandidateProviders = preferConcreteRegionalMappings(
 				applyPinnedDefaultRegions(
 					project.mode === "credits"
 						? filterRegionsByAvailableKeys(
@@ -3075,6 +3126,12 @@ chat.openapi(completions, async (c) => {
 					},
 				),
 			);
+			const catalogCandidate = await filterAutoCandidateByCatalog(
+				modelDef.id,
+				sourceCandidateProviders,
+			);
+			const candidateProviders = catalogCandidate.providers;
+			catalogRoutingEnforced ||= catalogCandidate.enforced;
 			// Check if any of the model's providers are available
 			const availableModelProviders = candidateProviders.filter(
 				(provider) =>
@@ -3153,6 +3210,7 @@ chat.openapi(completions, async (c) => {
 					if (totalPrice < lowestPrice) {
 						lowestPrice = totalPrice;
 						selectedModel = modelDef;
+						selectedCatalogDecision = catalogCandidate.decision;
 						selectedProviders = preferredSuitableProviders;
 						selectedFilteredProviders = filteredOutForModel;
 					}
@@ -3164,6 +3222,7 @@ chat.openapi(completions, async (c) => {
 
 		// If we found a suitable model, use the cheapest provider from it
 		if (selectedModel && selectedProviders.length > 0) {
+			catalogRequestDecision = selectedCatalogDecision;
 			// Fetch uptime/latency metrics from last 5 minutes for provider selection
 			const metricsCombinations = selectedProviders.map((p) => ({
 				modelId: selectedModel.id,
@@ -3220,6 +3279,12 @@ chat.openapi(completions, async (c) => {
 				usedExternalId = selectedProviders[0].externalId;
 			}
 		} else {
+			if (catalogRoutingEnforced) {
+				throw new HTTPException(503, {
+					message:
+						"No catalog-approved model is currently available for auto routing",
+				});
+			}
 			// Compliance removed every otherwise-available candidate: fail closed
 			// with the policy 403 + security event rather than the generic errors or
 			// the hardcoded fallback below.
@@ -4503,7 +4568,13 @@ chat.openapi(completions, async (c) => {
 		if (rawFinalModelInfo) {
 			finalModelInfo = {
 				...rawFinalModelInfo,
-				providers: expandAllProviderRegions(rawFinalModelInfo.providers),
+				// Re-apply the effective decision after resolving auto/fallback routing.
+				// This preserves the exact tested credential binding through token
+				// selection instead of reverting to raw static provider metadata.
+				providers: filterProviderMappingsByCatalog(
+					expandAllProviderRegions(rawFinalModelInfo.providers),
+					catalogRequestDecision,
+				),
 			};
 		}
 	}
@@ -4713,6 +4784,9 @@ chat.openapi(completions, async (c) => {
 		const envResult = await getProviderEnv(usedProvider, {
 			selectionScope: usedInternalModel,
 			requireServiceTierSupport: isRequestedServiceTier(service_tier),
+			requiredCredentialId: getUsedProviderMapping()?.platformCredentialId,
+			requiredCredentialProfile:
+				getUsedProviderMapping()?.platformCredentialProfile,
 		});
 		usedToken = envResult.token;
 		configIndex = envResult.configIndex;
@@ -4847,6 +4921,9 @@ chat.openapi(completions, async (c) => {
 			const envResult = await getProviderEnv(usedProvider, {
 				selectionScope: usedInternalModel,
 				requireServiceTierSupport: isRequestedServiceTier(service_tier),
+				requiredCredentialId: getUsedProviderMapping()?.platformCredentialId,
+				requiredCredentialProfile:
+					getUsedProviderMapping()?.platformCredentialProfile,
 			});
 			usedToken = envResult.token;
 			configIndex = envResult.configIndex;
@@ -5048,13 +5125,22 @@ chat.openapi(completions, async (c) => {
 		.length
 		? openAIContentFilterResult.responses
 		: null;
-	const insertLog = (
+	insertLog = (
 		logData: Parameters<typeof _insertLog>[0],
 		options?: Parameters<typeof _insertLog>[1],
-	) =>
-		_insertLog(
+	) => {
+		const catalogMapping = findCatalogMappingForProvider(
+			catalogRequestDecision,
+			usedProvider,
+			usedRegion ?? null,
+		);
+		return _insertLog(
 			{
 				...logData,
+				modelProviderMappingId:
+					logData.modelProviderMappingId ?? catalogMapping?.id ?? null,
+				catalogRevisionId:
+					logData.catalogRevisionId ?? catalogRequestDecision?.revision ?? null,
 				sessionId: logData.sessionId ?? sessionId ?? null,
 				internalContentFilter: shouldTagContentFilter
 					? true
@@ -5064,6 +5150,7 @@ chat.openapi(completions, async (c) => {
 			},
 			options,
 		);
+	};
 
 	if (contentFilterBlocked) {
 		const contentFilterResponseId = `chatcmpl-${Date.now()}`;
@@ -5505,7 +5592,7 @@ chat.openapi(completions, async (c) => {
 						cacheWrite1hTokens,
 						audioInputTokens,
 						explicitCacheUsed,
-						customPricing: customPricingMapping,
+						pricingOverride: getPricingOverride(),
 					},
 				);
 
@@ -5716,7 +5803,7 @@ chat.openapi(completions, async (c) => {
 						audioInputTokens:
 							cachedResponse.usage?.prompt_tokens_details?.audio_tokens ?? null,
 						explicitCacheUsed,
-						customPricing: customPricingMapping,
+						pricingOverride: getPricingOverride(),
 					},
 				);
 
@@ -6564,7 +6651,7 @@ chat.openapi(completions, async (c) => {
 						{
 							explicitCacheUsed,
 							servedServiceTier,
-							customPricing: customPricingMapping,
+							pricingOverride: getPricingOverride(),
 						},
 						true,
 					);
@@ -7096,7 +7183,7 @@ chat.openapi(completions, async (c) => {
 									undefined, // imageQuality
 									null, // reportedImageInputTokens
 									null, // reportedImageOutputTokens
-									{ servedServiceTier, customPricing: customPricingMapping },
+									{ servedServiceTier, pricingOverride: getPricingOverride() },
 								);
 							}
 
@@ -7648,7 +7735,10 @@ chat.openapi(completions, async (c) => {
 										image_config?.image_quality,
 										null,
 										null,
-										{ servedServiceTier, customPricing: customPricingMapping },
+										{
+											servedServiceTier,
+											pricingOverride: getPricingOverride(),
+										},
 										true,
 									)
 								: null;
@@ -8728,7 +8818,7 @@ chat.openapi(completions, async (c) => {
 											cachedAudioInputTokens,
 											explicitCacheUsed,
 											servedServiceTier,
-											customPricing: customPricingMapping,
+											pricingOverride: getPricingOverride(),
 										},
 									);
 									streamingCosts.dataStorageCost = toDataStorageCostNumber(
@@ -10228,7 +10318,7 @@ chat.openapi(completions, async (c) => {
 											cachedAudioInputTokens,
 											explicitCacheUsed,
 											servedServiceTier,
-											customPricing: customPricingMapping,
+											pricingOverride: getPricingOverride(),
 										},
 										finishReason === "content_filter",
 									);
@@ -10580,7 +10670,7 @@ chat.openapi(completions, async (c) => {
 										cachedAudioInputTokens,
 										explicitCacheUsed,
 										servedServiceTier,
-										customPricing: customPricingMapping,
+										pricingOverride: getPricingOverride(),
 									},
 									finishReason === "content_filter",
 								));
@@ -10918,7 +11008,7 @@ chat.openapi(completions, async (c) => {
 				undefined, // imageQuality
 				null, // reportedImageInputTokens
 				null, // reportedImageOutputTokens
-				{ servedServiceTier, customPricing: customPricingMapping },
+				{ servedServiceTier, pricingOverride: getPricingOverride() },
 			);
 		}
 
@@ -11790,7 +11880,10 @@ chat.openapi(completions, async (c) => {
 							image_config?.image_quality,
 							null,
 							null,
-							{ servedServiceTier, customPricing: customPricingMapping },
+							{
+								servedServiceTier,
+								pricingOverride: getPricingOverride(),
+							},
 							true,
 						)
 					: null;
@@ -12766,7 +12859,7 @@ chat.openapi(completions, async (c) => {
 			cachedAudioInputTokens,
 			explicitCacheUsed,
 			servedServiceTier,
-			customPricing: customPricingMapping,
+			pricingOverride: getPricingOverride(),
 		},
 		finishReason === "content_filter",
 	);

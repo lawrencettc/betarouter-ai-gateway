@@ -1,8 +1,13 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
+import { Decimal } from "decimal.js";
 import { z } from "zod";
 
 import { findArenaMatch, getArenaBenchmarks } from "@/lib/arena-benchmarks.js";
 
+import {
+	getEffectiveCatalogSnapshot,
+	readCatalogFeatureFlags,
+} from "@llmgateway/catalog";
 import {
 	and,
 	asc,
@@ -15,12 +20,14 @@ import {
 	sql,
 	tables,
 } from "@llmgateway/db";
+import { logger } from "@llmgateway/logger";
 import {
 	models as modelDefinitions,
 	type ProviderModelMapping,
 } from "@llmgateway/models";
 
 import type { ServerTypes } from "@/vars.js";
+import type { EffectiveCatalog } from "@llmgateway/catalog";
 
 export const internalModels = new OpenAPIHono<ServerTypes>();
 
@@ -65,10 +72,14 @@ const modelProviderMappingSchema = z.object({
 	cacheWriteInputPrice1h: z.string().nullable(),
 	imageInputPrice: z.string().nullable(),
 	imageOutputPrice: z.string().nullable(),
+	inputAudioPrice: z.string().nullable(),
+	cachedImageInputPrice: z.string().nullable(),
+	cachedInputAudioPrice: z.string().nullable(),
 	imageInputTokensByResolution: z.record(z.number()).nullable(),
 	imageOutputTokensByResolution: z.record(z.number()).nullable(),
 	inputCharacterPrice: z.string().nullable(),
 	outputAudioPrice: z.string().nullable(),
+	ocrPagePrice: z.string().nullable(),
 	requestPrice: z.string().nullable(),
 	contextSize: z.number().nullable(),
 	maxOutput: z.number().nullable(),
@@ -116,8 +127,26 @@ const modelSchema = z.object({
 	imageInputRequired: z.boolean().nullable(),
 	stability: z.enum(["stable", "beta", "unstable", "experimental"]).nullable(),
 	status: z.enum(["active", "inactive"]),
+	catalogLifecycle: z
+		.enum(["draft", "active", "deprecated", "retired"])
+		.nullable(),
+	catalogDeprecatedAt: z.string().nullable(),
+	catalogRetireAt: z.string().nullable(),
+	replacementModelId: z.string().nullable(),
+	retirementMessage: z.string().nullable(),
 	mappings: z.array(modelProviderMappingSchema),
 });
+
+function catalogPerUnit(
+	value: string | undefined,
+	fallback: unknown = null,
+): string | null {
+	return value === undefined
+		? fallback === null || fallback === undefined
+			? null
+			: String(fallback)
+		: new Decimal(value).div(1_000_000).toString();
+}
 
 // GET /internal/models - Returns models with mappings sorted by createdAt desc
 const getModelsRoute = createRoute({
@@ -134,6 +163,8 @@ const getModelsRoute = createRoute({
 				"application/json": {
 					schema: z.object({
 						models: z.array(modelSchema),
+						catalogRevision: z.number().nullable(),
+						catalogChecksum: z.string().nullable(),
 					}),
 				},
 			},
@@ -142,8 +173,28 @@ const getModelsRoute = createRoute({
 	},
 });
 
+async function loadDiscoverySnapshot(): Promise<EffectiveCatalog | null> {
+	const flags = readCatalogFeatureFlags();
+	if (!flags.discoveryEnabled && !flags.shadowRead) {
+		return null;
+	}
+	try {
+		return await getEffectiveCatalogSnapshot();
+	} catch (error) {
+		if (flags.discoveryEnabled) {
+			throw error;
+		}
+		logger.warn("Catalog shadow snapshot unavailable", {
+			error: error instanceof Error ? error.message : String(error),
+		});
+		return null;
+	}
+}
+
 internalModels.openapi(getModelsRoute, async (c) => {
 	const now = new Date();
+	const flags = readCatalogFeatureFlags();
+	const catalogSnapshot = await loadDiscoverySnapshot();
 
 	const [models, activeMappings, globalDiscounts] = await Promise.all([
 		db.query.model.findMany({
@@ -177,8 +228,28 @@ internalModels.openapi(getModelsRoute, async (c) => {
 			),
 	]);
 
-	const mappingsByModelId = new Map<string, typeof activeMappings>();
-	for (const mapping of activeMappings) {
+	const visibleModelIds = new Set(catalogSnapshot?.visibleModelIds ?? []);
+	const displayableMappingIds = new Set(
+		catalogSnapshot?.mappings
+			.filter((mapping) => mapping.displayable)
+			.map((mapping) => mapping.id) ?? [],
+	);
+	const catalogModelById = new Map(
+		(catalogSnapshot?.models ?? []).map((model) => [model.id, model]),
+	);
+	const catalogMappingById = new Map(
+		(catalogSnapshot?.mappings ?? []).map((mapping) => [mapping.id, mapping]),
+	);
+	const effectiveModels =
+		flags.discoveryEnabled && catalogSnapshot
+			? models.filter((item) => visibleModelIds.has(item.id))
+			: models;
+	const effectiveMappings =
+		flags.discoveryEnabled && catalogSnapshot
+			? activeMappings.filter((item) => displayableMappingIds.has(item.id))
+			: activeMappings;
+	const mappingsByModelId = new Map<string, typeof effectiveMappings>();
+	for (const mapping of effectiveMappings) {
 		const existing = mappingsByModelId.get(mapping.modelId);
 		if (existing) {
 			existing.push(mapping);
@@ -227,105 +298,279 @@ internalModels.openapi(getModelsRoute, async (c) => {
 	};
 
 	// Transform and apply effective discount
-	const transformedModels = models.map((model) => ({
-		...model,
-		mappings: (mappingsByModelId.get(model.id) ?? []).map((mapping) => {
-			const sharedMapping: ProviderModelMapping | null =
-				modelDefinitions
-					.find((modelDefinition) => modelDefinition.id === model.id)
-					?.providers.find(
-						(provider) => provider.providerId === mapping.providerId,
-					) ?? null;
-			return {
-				...mapping,
-				discount: getGlobalDiscount(mapping.providerId, model.id),
-				reasoningEfforts: sharedMapping?.reasoningEfforts ?? null,
-				audio: sharedMapping?.audio ?? null,
-				document: sharedMapping?.document ?? null,
-				imageOutputPrice:
-					sharedMapping?.imageOutputPrice !== undefined
-						? String(sharedMapping.imageOutputPrice)
-						: null,
-				imageInputTokensByResolution:
-					sharedMapping?.imageInputTokensByResolution ?? null,
-				imageOutputTokensByResolution:
-					sharedMapping?.imageOutputTokensByResolution ?? null,
-				inputCharacterPrice:
-					sharedMapping?.inputCharacterPrice !== undefined
-						? String(sharedMapping.inputCharacterPrice)
-						: null,
-				outputAudioPrice:
-					sharedMapping?.outputAudioPrice !== undefined
-						? String(sharedMapping.outputAudioPrice)
-						: null,
-				supportedVideoSizes: sharedMapping?.supportedVideoSizes ?? null,
-				supportedVideoDurationsSeconds:
-					sharedMapping?.supportedVideoDurationsSeconds ?? null,
-				supportedVideoDurationsSecondsImageToVideo:
-					sharedMapping?.supportedVideoDurationsSecondsImageToVideo ?? null,
-				supportsVideoAudio: sharedMapping?.supportsVideoAudio ?? null,
-				supportsVideoWithoutAudio:
-					sharedMapping?.supportsVideoWithoutAudio ?? null,
-				perSecondPrice: sharedMapping?.perSecondPrice
-					? Object.fromEntries(
-							Object.entries(sharedMapping.perSecondPrice).map(
-								([key, price]) => [key, price.toString()],
-							),
-						)
-					: null,
-				pricingTiers: (() => {
-					const regionDef = mapping.region
-						? sharedMapping?.regions?.find((r) => r.id === mapping.region)
-						: null;
-					const rawTiers =
-						regionDef?.pricingTiers ?? sharedMapping?.pricingTiers ?? null;
-					if (!rawTiers) {
-						return null;
-					}
-					return rawTiers.map((t) => ({
-						name: t.name,
-						upToTokens: isFinite(t.upToTokens) ? t.upToTokens : null,
-						inputPrice: String(t.inputPrice),
-						outputPrice: String(t.outputPrice),
-						cachedInputPrice:
-							t.cachedInputPrice !== undefined
-								? String(t.cachedInputPrice)
-								: null,
-						cacheReadInputPrice:
-							t.cacheReadInputPrice !== undefined
-								? String(t.cacheReadInputPrice)
-								: null,
-						cacheWriteInputPrice:
-							t.cacheWriteInputPrice !== undefined
-								? String(t.cacheWriteInputPrice)
-								: null,
-						cacheWriteInputPrice1h:
-							t.cacheWriteInputPrice1h !== undefined
-								? String(t.cacheWriteInputPrice1h)
-								: null,
-					}));
-				})(),
-				serviceTiers: (() => {
-					const tiers = sharedMapping?.serviceTiers ?? null;
-					if (!tiers || tiers.length === 0) {
-						return null;
-					}
-					const tierRegions = sharedMapping?.serviceTierRegions;
-					if (tierRegions && tierRegions.length > 0) {
-						const effectiveRegion =
-							mapping.region ??
-							(tierRegions.includes("global") ? "global" : undefined);
-						if (!effectiveRegion || !tierRegions.includes(effectiveRegion)) {
+	const transformedModels = effectiveModels.map((model) => {
+		const catalogModel = catalogModelById.get(model.id);
+		return {
+			...model,
+			catalogLifecycle: catalogModel?.lifecycle ?? null,
+			catalogDeprecatedAt: catalogModel?.deprecatedAt ?? null,
+			catalogRetireAt: catalogModel?.retireAt ?? null,
+			replacementModelId: catalogModel?.replacementModelId ?? null,
+			retirementMessage: catalogModel?.retirementMessage ?? null,
+			mappings: (mappingsByModelId.get(model.id) ?? []).map((mapping) => {
+				const catalogMapping = catalogMappingById.get(mapping.id);
+				const sharedMapping: ProviderModelMapping | null = (() => {
+					const providers = modelDefinitions.find(
+						(modelDefinition) => modelDefinition.id === model.id,
+					)?.providers as readonly ProviderModelMapping[] | undefined;
+					return (
+						providers?.find(
+							(provider) =>
+								provider.providerId === mapping.providerId &&
+								(provider.region ?? null) === (mapping.region ?? null),
+						) ??
+						providers?.find(
+							(provider) =>
+								provider.providerId === mapping.providerId &&
+								provider.region === undefined &&
+								(mapping.region === null ||
+									provider.regions?.some(
+										(region) => region.id === mapping.region,
+									)),
+						) ??
+						null
+					);
+				})();
+				return {
+					...mapping,
+					...(catalogMapping
+						? {
+								externalId: catalogMapping.externalId,
+								inputPrice: catalogPerUnit(
+									catalogMapping.customerPrices.input,
+									mapping.inputPrice,
+								),
+								outputPrice: catalogPerUnit(
+									catalogMapping.customerPrices.output,
+									mapping.outputPrice,
+								),
+								cachedInputPrice: catalogPerUnit(
+									catalogMapping.customerPrices.cachedInput,
+									mapping.cachedInputPrice,
+								),
+								cacheWriteInputPrice: catalogPerUnit(
+									catalogMapping.customerPrices.cacheWrite,
+									mapping.cacheWriteInputPrice,
+								),
+								cacheWriteInputPrice1h: catalogPerUnit(
+									catalogMapping.customerPrices.cacheWrite1h,
+									mapping.cacheWriteInputPrice1h,
+								),
+								imageInputPrice: catalogPerUnit(
+									catalogMapping.customerPrices.imageInput,
+									mapping.imageInputPrice,
+								),
+								requestPrice:
+									catalogMapping.customerPrices.request ??
+									(mapping.requestPrice === null
+										? null
+										: String(mapping.requestPrice)),
+								webSearchPrice:
+									catalogMapping.customerPrices.webSearch ??
+									(mapping.webSearchPrice === null
+										? null
+										: String(mapping.webSearchPrice)),
+								contextSize:
+									catalogMapping.contextSizeLimit ?? mapping.contextSize,
+								maxOutput: catalogMapping.maxOutputLimit ?? mapping.maxOutput,
+							}
+						: {}),
+					discount: getGlobalDiscount(mapping.providerId, model.id),
+					reasoningEfforts: sharedMapping?.reasoningEfforts ?? null,
+					audio: sharedMapping?.audio ?? null,
+					document: sharedMapping?.document ?? null,
+					imageOutputPrice: catalogMapping
+						? catalogPerUnit(
+								catalogMapping.customerPrices.imageOutput,
+								sharedMapping?.imageOutputPrice,
+							)
+						: sharedMapping?.imageOutputPrice !== undefined
+							? String(sharedMapping.imageOutputPrice)
+							: null,
+					inputAudioPrice: catalogMapping
+						? catalogPerUnit(
+								catalogMapping.customerPrices.audioInput,
+								mapping.inputAudioPrice,
+							)
+						: mapping.inputAudioPrice === null
+							? null
+							: String(mapping.inputAudioPrice),
+					cachedImageInputPrice: catalogMapping
+						? catalogPerUnit(
+								catalogMapping.customerPrices.cachedImageInput,
+								mapping.cachedImageInputPrice,
+							)
+						: mapping.cachedImageInputPrice === null
+							? null
+							: String(mapping.cachedImageInputPrice),
+					cachedInputAudioPrice: catalogMapping
+						? catalogPerUnit(
+								catalogMapping.customerPrices.cachedAudioInput,
+								mapping.cachedInputAudioPrice,
+							)
+						: mapping.cachedInputAudioPrice === null
+							? null
+							: String(mapping.cachedInputAudioPrice),
+					imageInputTokensByResolution:
+						sharedMapping?.imageInputTokensByResolution ?? null,
+					imageOutputTokensByResolution:
+						sharedMapping?.imageOutputTokensByResolution ?? null,
+					inputCharacterPrice: catalogMapping
+						? catalogPerUnit(
+								catalogMapping.customerPrices.inputCharacters,
+								sharedMapping?.inputCharacterPrice,
+							)
+						: sharedMapping?.inputCharacterPrice !== undefined
+							? String(sharedMapping.inputCharacterPrice)
+							: null,
+					outputAudioPrice: catalogMapping
+						? catalogPerUnit(
+								catalogMapping.customerPrices.audioOutput,
+								sharedMapping?.outputAudioPrice,
+							)
+						: sharedMapping?.outputAudioPrice !== undefined
+							? String(sharedMapping.outputAudioPrice)
+							: null,
+					ocrPagePrice:
+						catalogMapping?.customerPrices.ocrPage ??
+						(mapping.ocrPagePrice === null
+							? null
+							: String(mapping.ocrPagePrice)),
+					supportedVideoSizes: sharedMapping?.supportedVideoSizes ?? null,
+					supportedVideoDurationsSeconds:
+						sharedMapping?.supportedVideoDurationsSeconds ?? null,
+					supportedVideoDurationsSecondsImageToVideo:
+						sharedMapping?.supportedVideoDurationsSecondsImageToVideo ?? null,
+					supportsVideoAudio: sharedMapping?.supportsVideoAudio ?? null,
+					supportsVideoWithoutAudio:
+						sharedMapping?.supportsVideoWithoutAudio ?? null,
+					perSecondPrice: catalogMapping
+						? (() => {
+								const prices = Object.fromEntries(
+									Object.entries(catalogMapping.customerPrices).flatMap(
+										([unit, price]) =>
+											unit.startsWith("second:") && price !== undefined
+												? [[unit.slice("second:".length), price]]
+												: [],
+									),
+								);
+								return Object.keys(prices).length > 0
+									? prices
+									: sharedMapping?.perSecondPrice
+										? Object.fromEntries(
+												Object.entries(sharedMapping.perSecondPrice).map(
+													([key, price]) => [key, price.toString()],
+												),
+											)
+										: null;
+							})()
+						: sharedMapping?.perSecondPrice
+							? Object.fromEntries(
+									Object.entries(sharedMapping.perSecondPrice).map(
+										([key, price]) => [key, price.toString()],
+									),
+								)
+							: null,
+					pricingTiers: (() => {
+						const regionDef = mapping.region
+							? sharedMapping?.regions?.find((r) => r.id === mapping.region)
+							: null;
+						const rawTiers =
+							regionDef?.pricingTiers ?? sharedMapping?.pricingTiers ?? null;
+						if (!rawTiers) {
 							return null;
 						}
-					}
-					return tiers;
-				})(),
-			};
-		}),
-	}));
+						const tierPrice = (
+							value: string | number | undefined,
+							unit:
+								| "input"
+								| "output"
+								| "cachedInput"
+								| "cacheRead"
+								| "cacheWrite"
+								| "cacheWrite1h",
+						): string | null => {
+							if (value === undefined) {
+								return null;
+							}
+							if (
+								!catalogMapping ||
+								catalogMapping.pricingMode === "source_cost"
+							) {
+								return String(value);
+							}
+							if (catalogMapping.pricingMode === "markup") {
+								return new Decimal(value)
+									.mul(
+										new Decimal(1).plus(
+											new Decimal(catalogMapping.markupBps ?? 0).div(10_000),
+										),
+									)
+									.toString();
+							}
+							return catalogPerUnit(catalogMapping.customerPrices[unit], value);
+						};
+						return rawTiers.map((t) => ({
+							name: t.name,
+							upToTokens: isFinite(t.upToTokens) ? t.upToTokens : null,
+							inputPrice: tierPrice(t.inputPrice, "input")!,
+							outputPrice: tierPrice(t.outputPrice, "output")!,
+							cachedInputPrice: tierPrice(t.cachedInputPrice, "cachedInput"),
+							cacheReadInputPrice: tierPrice(
+								t.cacheReadInputPrice,
+								"cacheRead",
+							),
+							cacheWriteInputPrice: tierPrice(
+								t.cacheWriteInputPrice,
+								"cacheWrite",
+							),
+							cacheWriteInputPrice1h: tierPrice(
+								t.cacheWriteInputPrice1h,
+								"cacheWrite1h",
+							),
+						}));
+					})(),
+					serviceTiers: (() => {
+						const tiers = sharedMapping?.serviceTiers ?? null;
+						if (!tiers || tiers.length === 0) {
+							return null;
+						}
+						const tierRegions = sharedMapping?.serviceTierRegions;
+						if (tierRegions && tierRegions.length > 0) {
+							const effectiveRegion =
+								mapping.region ??
+								(tierRegions.includes("global") ? "global" : undefined);
+							if (!effectiveRegion || !tierRegions.includes(effectiveRegion)) {
+								return null;
+							}
+						}
+						return tiers;
+					})(),
+				};
+			}),
+		};
+	});
 
-	return c.json({ models: transformedModels });
+	if (catalogSnapshot) {
+		c.header(
+			"ETag",
+			`W/"catalog-${catalogSnapshot.revision}-${catalogSnapshot.checksum.slice(-16)}"`,
+		);
+		if (flags.shadowRead) {
+			logger.info("Catalog discovery shadow comparison", {
+				revision: catalogSnapshot.revision,
+				legacyModelCount: models.length,
+				policyModelCount: catalogSnapshot.visibleModelIds.length,
+				legacyMappingCount: activeMappings.length,
+				policyMappingCount: displayableMappingIds.size,
+			});
+		}
+	}
+	return c.json({
+		models: transformedModels,
+		catalogRevision: catalogSnapshot?.revision ?? null,
+		catalogChecksum: catalogSnapshot?.checksum ?? null,
+	});
 });
 
 // GET /internal/providers - Returns providers sorted by createdAt desc
@@ -342,6 +587,8 @@ const getProvidersRoute = createRoute({
 				"application/json": {
 					schema: z.object({
 						providers: z.array(providerSchema),
+						catalogRevision: z.number().nullable(),
+						catalogChecksum: z.string().nullable(),
 					}),
 				},
 			},
@@ -351,7 +598,9 @@ const getProvidersRoute = createRoute({
 });
 
 internalModels.openapi(getProvidersRoute, async (c) => {
-	const providers = await db.query.provider.findMany({
+	const catalogSnapshot = await loadDiscoverySnapshot();
+	const flags = readCatalogFeatureFlags();
+	const sourceProviders = await db.query.provider.findMany({
 		where: {
 			status: { eq: "active" },
 		},
@@ -360,7 +609,22 @@ internalModels.openapi(getProvidersRoute, async (c) => {
 		},
 	});
 
-	return c.json({ providers });
+	const visibleProviderIds = new Set(catalogSnapshot?.visibleProviderIds ?? []);
+	const providers =
+		flags.discoveryEnabled && catalogSnapshot
+			? sourceProviders.filter((item) => visibleProviderIds.has(item.id))
+			: sourceProviders;
+	if (catalogSnapshot) {
+		c.header(
+			"ETag",
+			`W/"catalog-${catalogSnapshot.revision}-${catalogSnapshot.checksum.slice(-16)}"`,
+		);
+	}
+	return c.json({
+		providers,
+		catalogRevision: catalogSnapshot?.revision ?? null,
+		catalogChecksum: catalogSnapshot?.checksum ?? null,
+	});
 });
 
 // GET /internal/models/{modelId}/benchmarks - Per-provider performance stats

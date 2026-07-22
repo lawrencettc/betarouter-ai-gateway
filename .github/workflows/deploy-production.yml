@@ -84,6 +84,7 @@ jobs:
           curl --fail --silent --show-error --retry 12 --retry-delay 10 --retry-all-errors https://betarouter.com/ >/dev/null
           curl --fail --silent --show-error --retry 12 --retry-delay 10 --retry-all-errors https://api.betarouter.com/ >/dev/null
           curl --fail --silent --show-error --retry 12 --retry-delay 10 --retry-all-errors https://platform-api.betarouter.com/ >/dev/null
+          curl --fail --silent --show-error --retry 12 --retry-delay 10 --retry-all-errors https://admin.betarouter.com/ >/dev/null
 
       - name: Roll back application image after a failed deploy
         if: failure() && env.PREVIOUS_IMAGE != ''

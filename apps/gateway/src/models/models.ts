@@ -1,6 +1,15 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { HTTPException } from "hono/http-exception";
 
+import {
+	applyCatalogCustomerPrices,
+	findProviderMappingForCatalogMapping,
+} from "@/lib/catalog-policy.js";
+
+import {
+	getEffectiveCatalogSnapshot,
+	readCatalogFeatureFlags,
+} from "@llmgateway/catalog";
 import { logger, toError } from "@llmgateway/logger";
 import {
 	models as modelsList,
@@ -94,6 +103,10 @@ const modelSchema = z.object({
 	structured_outputs: z.boolean(),
 	free: z.boolean().optional(),
 	deprecated_at: z.string().optional(),
+	lifecycle: z.enum(["draft", "active", "deprecated", "retired"]).optional(),
+	retire_at: z.string().optional(),
+	replacement_model_id: z.string().optional(),
+	retirement_message: z.string().optional(),
 	deactivated_at: z.string().optional(),
 	stability: z.enum(["stable", "beta", "unstable", "experimental"]).optional(),
 });
@@ -151,6 +164,45 @@ modelsApi.openapi(listModels, async (c) => {
 		const excludeDeprecated = query.exclude_deprecated || false;
 		const noTraining = query.no_training || false;
 		const currentDate = new Date();
+		const catalogFlags = readCatalogFeatureFlags();
+		const catalogSnapshot =
+			catalogFlags.discoveryEnabled || catalogFlags.shadowRead
+				? await getEffectiveCatalogSnapshot()
+				: null;
+		const visibleModelIds = new Set(catalogSnapshot?.visibleModelIds ?? []);
+		const catalogModelById = new Map(
+			(catalogSnapshot?.models ?? []).map((model) => [model.id, model]),
+		);
+		const catalogModels: ModelDefinition[] =
+			catalogFlags.discoveryEnabled && catalogSnapshot
+				? modelsList
+						.filter((model) => visibleModelIds.has(model.id))
+						.map((model) => {
+							const effectiveMappings = catalogSnapshot.mappings.filter(
+								(mapping) =>
+									mapping.modelId === model.id && mapping.displayable,
+							);
+							return {
+								...model,
+								providers: effectiveMappings.flatMap((effective) => {
+									const provider = findProviderMappingForCatalogMapping(
+										model.providers as readonly ProviderModelMapping[],
+										effective,
+									);
+									return provider
+										? [applyCatalogCustomerPrices(provider, effective)]
+										: [];
+								}),
+							};
+						})
+				: [...modelsList];
+		if (catalogSnapshot && catalogFlags.shadowRead) {
+			logger.info("Catalog /v1/models shadow comparison", {
+				revision: catalogSnapshot.revision,
+				legacyModelCount: modelsList.length,
+				policyModelCount: catalogSnapshot.visibleModelIds.length,
+			});
+		}
 
 		// Set of provider ids that do not train on API data
 		const noTrainingProviderIds = new Set(
@@ -160,8 +212,9 @@ modelsApi.openapi(listModels, async (c) => {
 		);
 
 		// Filter models based on deactivation and deprecation status of their provider mappings
-		const deactivationFilteredModels = modelsList.filter(
+		const deactivationFilteredModels = catalogModels.filter(
 			(model: ModelDefinition) => {
+				const catalogModel = catalogModelById.get(model.id);
 				// Check if all provider mappings are deactivated
 				const allDeactivated = model.providers.every(
 					(provider) =>
@@ -182,7 +235,10 @@ modelsApi.openapi(listModels, async (c) => {
 				);
 
 				// Filter out models where all providers are deprecated if requested
-				if (excludeDeprecated && allDeprecated) {
+				if (
+					excludeDeprecated &&
+					(allDeprecated || catalogModel?.lifecycle === "deprecated")
+				) {
 					return false;
 				}
 
@@ -204,6 +260,7 @@ modelsApi.openapi(listModels, async (c) => {
 			: deactivationFilteredModels;
 
 		const modelData = filteredModels.map((model: ModelDefinition) => {
+			const catalogModel = catalogModelById.get(model.id);
 			// Determine input modalities (if model supports images)
 			const inputModalities: ("text" | "image" | "video" | "embedding")[] = [
 				"text",
@@ -301,9 +358,17 @@ modelsApi.openapi(listModels, async (c) => {
 				// the date the model fully deprecates/deactivates (when its last
 				// remaining mapping does), and only when every mapping carries a date;
 				// if any mapping has none, the model never fully deprecates/deactivates.
-				deprecated_at: getModelLevelDate(
-					model.providers.map((p) => (p as ProviderModelMapping).deprecatedAt),
-				),
+				deprecated_at:
+					catalogModel?.deprecatedAt ??
+					getModelLevelDate(
+						model.providers.map(
+							(p) => (p as ProviderModelMapping).deprecatedAt,
+						),
+					),
+				lifecycle: catalogModel?.lifecycle,
+				retire_at: catalogModel?.retireAt ?? undefined,
+				replacement_model_id: catalogModel?.replacementModelId ?? undefined,
+				retirement_message: catalogModel?.retirementMessage ?? undefined,
 				deactivated_at: getModelLevelDate(
 					model.providers.map((p) => (p as ProviderModelMapping).deactivatedAt),
 				),
@@ -311,6 +376,12 @@ modelsApi.openapi(listModels, async (c) => {
 			};
 		});
 
+		if (catalogSnapshot) {
+			c.header(
+				"ETag",
+				`W/"catalog-${catalogSnapshot.revision}-${catalogSnapshot.checksum.slice(-16)}"`,
+			);
+		}
 		return c.json({ data: modelData });
 	} catch (error) {
 		logger.error("Error in models endpoint", toError(error));

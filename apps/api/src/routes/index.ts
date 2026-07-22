@@ -21,6 +21,7 @@ import masterKeys from "./master-keys.js";
 import { modelRatings } from "./model-ratings.js";
 import organization from "./organization.js";
 import { payments } from "./payments.js";
+import platformCatalog from "./platform-catalog.js";
 import platformProviders from "./platform-providers.js";
 import playground from "./playground.js";
 import projects from "./projects.js";
@@ -57,6 +58,7 @@ routes.route("/logs", logs);
 routes.route("/activity", activity);
 
 routes.route("/admin/platform-providers", platformProviders);
+routes.route("/admin/catalog", platformCatalog);
 routes.route("/admin", admin);
 
 routes.route("/analytics", analytics);

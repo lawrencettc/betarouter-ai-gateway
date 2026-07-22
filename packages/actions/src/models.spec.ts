@@ -444,6 +444,73 @@ describe("getCheapestModelForProvider", () => {
 });
 
 describe("getCheapestFromAvailableProviders", () => {
+	it("selects only the highest-precedence catalog priority tier", async () => {
+		const model = {
+			id: "catalog-priority-test",
+			providers: [
+				{
+					providerId: "openai" as const,
+					externalId: "expensive-primary",
+					inputPrice: "0.01",
+					outputPrice: "0.01",
+					streaming: true as const,
+					catalogPriority: 10,
+					catalogWeight: 100,
+				},
+				{
+					providerId: "anthropic" as const,
+					externalId: "cheap-fallback",
+					inputPrice: "0.000001",
+					outputPrice: "0.000001",
+					streaming: true as const,
+					catalogPriority: 20,
+					catalogWeight: 100,
+				},
+			],
+		};
+
+		const result = await getCheapestFromAvailableProviders(
+			model.providers,
+			model,
+		);
+
+		expect(result?.provider.providerId).toBe("openai");
+		expect(result?.metadata.availableProviders).toEqual(["openai"]);
+	});
+
+	it("uses catalog weight inside a priority tier", async () => {
+		const model = {
+			id: "catalog-weight-test",
+			providers: [
+				{
+					providerId: "openai" as const,
+					externalId: "low-weight",
+					inputPrice: "0.000001",
+					outputPrice: "0.000001",
+					streaming: true as const,
+					catalogPriority: 10,
+					catalogWeight: 10,
+				},
+				{
+					providerId: "anthropic" as const,
+					externalId: "high-weight",
+					inputPrice: "0.000002",
+					outputPrice: "0.000002",
+					streaming: true as const,
+					catalogPriority: 10,
+					catalogWeight: 100,
+				},
+			],
+		};
+
+		const result = await getCheapestFromAvailableProviders(
+			model.providers,
+			model,
+		);
+
+		expect(result?.provider.providerId).toBe("anthropic");
+	});
+
 	it("should return cheapest provider from available providers", async () => {
 		// Find a model with multiple providers
 		const modelWithMultipleProviders = models.find(

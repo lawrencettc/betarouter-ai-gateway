@@ -43,3 +43,4 @@ scripts/*.jpg
 scripts/*.png
 .soulforge
 .empryo
+.gstack/

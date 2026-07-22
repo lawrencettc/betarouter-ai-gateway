@@ -152,6 +152,11 @@ export async function validateProviderKey(
 	baseUrl?: string,
 	skipValidation = false,
 	providerKeyOptions?: ProviderKeyOptions,
+	validationOverride?: {
+		modelId: string;
+		externalId: string;
+		region?: string | null;
+	},
 ): Promise<ProviderValidationResult> {
 	// Skip validation if requested (e.g. in test environment)
 	if (skipValidation) {
@@ -167,7 +172,9 @@ export async function validateProviderKey(
 
 	try {
 		validationModel =
-			getValidationModel(provider, providerKeyOptions) ?? undefined;
+			validationOverride ??
+			getValidationModel(provider, providerKeyOptions) ??
+			undefined;
 		if (!validationModel) {
 			throw new Error(
 				`No suitable validation model found for provider ${provider}`,
@@ -208,8 +215,9 @@ export async function validateProviderKey(
 		const modelDef = models.find((m) => m.id === validationModel!.modelId);
 
 		// For Azure, if we have a custom validation model, use it directly as modelId
-		const effectiveModelId =
-			provider === "azure" && providerKeyOptions?.azure_validation_model
+		const effectiveModelId = validationOverride
+			? validationOverride.externalId
+			: provider === "azure" && providerKeyOptions?.azure_validation_model
 				? providerKeyOptions.azure_validation_model
 				: validationModel.modelId;
 
@@ -218,11 +226,13 @@ export async function validateProviderKey(
 			| ProviderDefinition
 			| undefined;
 		const regionOptionsKey = providerDef?.regionConfig?.optionsKey;
-		const validationRegion = regionOptionsKey
-			? ((
-					providerKeyOptions as Record<string, string | undefined> | undefined
-				)?.[regionOptionsKey] ?? providerDef?.regionConfig?.defaultRegion)
-			: undefined;
+		const validationRegion = validationOverride
+			? (validationOverride.region ?? undefined)
+			: regionOptionsKey
+				? ((
+						providerKeyOptions as Record<string, string | undefined> | undefined
+					)?.[regionOptionsKey] ?? providerDef?.regionConfig?.defaultRegion)
+				: undefined;
 
 		const endpoint = getProviderEndpoint(
 			provider,
