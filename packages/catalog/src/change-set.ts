@@ -76,6 +76,47 @@ export class CatalogConflictError extends Error {
 	}
 }
 
+/**
+ * Revisions written before rollback patches were schema-normalized may contain
+ * the policy record identity and audit fields inside `patch`. Keep the public
+ * input schemas strict, but remove those known legacy fields when reading an
+ * internally persisted inverse operation.
+ */
+export function normalizePersistedInverseOperations(input: unknown): unknown {
+	if (!Array.isArray(input)) {
+		return input;
+	}
+
+	return input.map((value) => {
+		if (!value || typeof value !== "object" || Array.isArray(value)) {
+			return value;
+		}
+		const operation = value as Record<string, unknown>;
+		if (
+			!new Set([
+				"provider.set_policy",
+				"model.set_policy",
+				"mapping.set_policy",
+			]).has(String(operation.type)) ||
+			!operation.patch ||
+			typeof operation.patch !== "object" ||
+			Array.isArray(operation.patch)
+		) {
+			return value;
+		}
+
+		const {
+			providerId: _providerId,
+			modelId: _modelId,
+			mappingId: _mappingId,
+			updatedAt: _updatedAt,
+			updatedBy: _updatedBy,
+			...patch
+		} = operation.patch as Record<string, unknown>;
+		return { ...operation, patch };
+	});
+}
+
 interface ApplyCatalogOperationsInput {
 	state: CatalogPolicyState;
 	operations: CatalogOperationV1[];

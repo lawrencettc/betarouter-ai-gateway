@@ -13,6 +13,7 @@ import {
 	compareCatalogRevision,
 	findCatalogRoutabilityLosses,
 	catalogChangeSetInputSchema,
+	normalizePersistedInverseOperations,
 	fixedPricesV1ToPriceMap,
 	getCatalogBreakerStates,
 	getCatalogRevisionStatus,
@@ -2806,7 +2807,7 @@ platformCatalog.openapi(
 			});
 		}
 		const operations = catalogChangeSetInputSchema.shape.operations.parse(
-			original.inverseOperations,
+			normalizePersistedInverseOperations(original.inverseOperations),
 		);
 		const missing = missingOperationBlockers(view, operations);
 		const applied = applyCatalogOperations({
@@ -2988,7 +2989,7 @@ platformCatalog.openapi(
 					.limit(1);
 				const baseRevision = latestRevision?.id ?? null;
 				const operations = catalogChangeSetInputSchema.shape.operations.parse(
-					original.inverseOperations,
+					normalizePersistedInverseOperations(original.inverseOperations),
 				);
 				const missing = missingOperationBlockers(view, operations);
 				if (missing.length > 0) {
