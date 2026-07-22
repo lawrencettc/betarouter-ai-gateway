@@ -79,6 +79,14 @@ unified container, PostgreSQL, Redis, worker, and Cloudflare Tunnel are healthy.
 Verify existing sign-in, API traffic, billing, and encrypted Platform Providers
 before using the new catalog.
 
+Open the Catalog overview and inspect **Revision state**. If it reports
+**Refresh required**, compare the published and current counts, then use
+**Publish source refresh**. This creates an immutable revision from synchronized
+provider, model, mapping, credential-readiness, test, and price state without
+rewriting operator policies. The action is idempotent and recorded as
+`platform_catalog.source_refresh` in the platform audit log. Do not continue to
+mapping tests or activation previews while the revision is stale.
+
 ### Stage 2: shadow reads
 
 Set `PLATFORM_CATALOG_SHADOW_READ=true` and redeploy the same image. Keep
@@ -94,6 +102,10 @@ then preview an atomic change that enables its provider, model, mapping, and
 source-cost or approved customer pricing. Confirm the preview has no blockers,
 unexpected fallback loss, negative margin, scheduled conflict, or customer
 impact.
+
+Catalog search accepts model ID, provider ID, mapping ID, upstream external ID,
+and region. Use the exact model ID from the provider validation result when
+selecting the canary.
 
 Publish the canary, verify the revision in Admin, then verify the cache revision
 reaches API, gateway, and worker. Hide/disable it again and perform the audited

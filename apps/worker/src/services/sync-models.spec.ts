@@ -1,12 +1,26 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
-import { db, provider, model, modelProviderMapping, eq } from "@llmgateway/db";
+import {
+	db,
+	desc,
+	eq,
+	model,
+	modelProviderMapping,
+	platformCatalogRevision,
+	platformMappingPolicy,
+	platformModelPolicy,
+	platformProviderPolicy,
+	provider,
+} from "@llmgateway/db";
 
 import { syncProvidersAndModels } from "./sync-models.js";
 
 describe("sync-models", () => {
 	beforeEach(async () => {
 		// Clean up test data before each test
+		await db.delete(platformMappingPolicy);
+		await db.delete(platformModelPolicy);
+		await db.delete(platformProviderPolicy);
 		await db.delete(modelProviderMapping);
 		await db.delete(model);
 		await db.delete(provider);
@@ -14,6 +28,9 @@ describe("sync-models", () => {
 
 	afterEach(async () => {
 		// Clean up test data after each test
+		await db.delete(platformMappingPolicy);
+		await db.delete(platformModelPolicy);
+		await db.delete(platformProviderPolicy);
 		await db.delete(modelProviderMapping);
 		await db.delete(model);
 		await db.delete(provider);
@@ -176,6 +193,126 @@ describe("sync-models", () => {
 		expect(finalMappingCount.length).toBeGreaterThanOrEqual(
 			initialMappingCount.length,
 		);
+	});
+
+	it("publishes new source rows without overwriting operator policy", async () => {
+		await syncProvidersAndModels();
+		const [openaiMapping] = await db
+			.select()
+			.from(modelProviderMapping)
+			.where(eq(modelProviderMapping.id, "openai:gpt-4o"))
+			.limit(1);
+		const mapping =
+			openaiMapping ??
+			(
+				await db
+					.select()
+					.from(modelProviderMapping)
+					.where(eq(modelProviderMapping.modelId, "gpt-4o"))
+					.limit(1)
+			)[0];
+		expect(mapping).toBeDefined();
+
+		await db.insert(platformProviderPolicy).values({
+			providerId: "openai",
+			visible: false,
+			enabled: false,
+			sortOrder: 321,
+			lifecycle: "draft",
+			updatedBy: "test-operator",
+		});
+		await db.insert(platformModelPolicy).values({
+			modelId: "gpt-4o",
+			visible: false,
+			enabled: false,
+			allowDirect: false,
+			sortOrder: 654,
+			lifecycle: "draft",
+			updatedBy: "test-operator",
+		});
+		await db.insert(platformMappingPolicy).values({
+			mappingId: mapping!.id,
+			enabled: false,
+			priority: 77,
+			weight: 33,
+			updatedBy: "test-operator",
+		});
+
+		await db.insert(provider).values({
+			id: "source-refresh-test",
+			name: "Source refresh test",
+			description: "Synthetic source row for reconciliation coverage",
+			streaming: true,
+			cancellation: false,
+			color: "#000000",
+			website: "https://example.com",
+			status: "active",
+		});
+		await db.insert(model).values({
+			id: "source-refresh-model",
+			name: "Source refresh model",
+			family: "test",
+			status: "active",
+		});
+		await db.insert(modelProviderMapping).values({
+			id: "source-refresh-mapping",
+			providerId: "source-refresh-test",
+			modelId: "source-refresh-model",
+			externalId: "source-refresh-upstream",
+			status: "active",
+		});
+
+		const [before] = await db
+			.select({ id: platformCatalogRevision.id })
+			.from(platformCatalogRevision)
+			.orderBy(desc(platformCatalogRevision.id))
+			.limit(1);
+		await syncProvidersAndModels();
+		const [after] = await db
+			.select()
+			.from(platformCatalogRevision)
+			.orderBy(desc(platformCatalogRevision.id))
+			.limit(1);
+
+		expect(after?.id).toBeGreaterThan(before?.id ?? 0);
+		const snapshot = after?.snapshot as {
+			providers?: Array<{ id: string }>;
+			models?: Array<{ id: string }>;
+			mappings?: Array<{ id: string }>;
+		};
+		expect(snapshot.providers?.map((item) => item.id)).toContain(
+			"source-refresh-test",
+		);
+		expect(snapshot.models?.map((item) => item.id)).toContain(
+			"source-refresh-model",
+		);
+		expect(snapshot.mappings?.map((item) => item.id)).toContain(
+			"source-refresh-mapping",
+		);
+
+		const [providerPolicy] = await db
+			.select()
+			.from(platformProviderPolicy)
+			.where(eq(platformProviderPolicy.providerId, "openai"));
+		const [modelPolicy] = await db
+			.select()
+			.from(platformModelPolicy)
+			.where(eq(platformModelPolicy.modelId, "gpt-4o"));
+		const [mappingPolicy] = await db
+			.select()
+			.from(platformMappingPolicy)
+			.where(eq(platformMappingPolicy.mappingId, mapping!.id));
+		expect(providerPolicy?.sortOrder).toBe(321);
+		expect(modelPolicy?.sortOrder).toBe(654);
+		expect(mappingPolicy).toMatchObject({ priority: 77, weight: 33 });
+
+		await syncProvidersAndModels();
+		const [idempotent] = await db
+			.select({ id: platformCatalogRevision.id })
+			.from(platformCatalogRevision)
+			.orderBy(desc(platformCatalogRevision.id))
+			.limit(1);
+		expect(idempotent?.id).toBe(after?.id);
 	});
 
 	it("should handle models with pricing information", async () => {
