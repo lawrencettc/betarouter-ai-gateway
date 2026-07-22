@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { compareCatalogRevision } from "./catalog-store.js";
 import {
 	resolveEffectiveCatalog,
 	type CatalogResolverInput,
@@ -259,5 +260,69 @@ describe("resolveEffectiveCatalog", () => {
 
 		expect(restored.checksum).toBe(first.checksum);
 		expect(restored.revision).toBe(99);
+	});
+});
+
+describe("compareCatalogRevision", () => {
+	it("reports an unpublished catalog as drifted", () => {
+		const current = resolveEffectiveCatalog(input());
+		const status = compareCatalogRevision(null, current, null);
+
+		expect(status).toMatchObject({
+			revision: 0,
+			drifted: true,
+			sourceAhead: false,
+			publishedAt: null,
+			publishedChecksum: null,
+			publishedCounts: { providers: 0, models: 0, mappings: 0 },
+		});
+	});
+
+	it("reports a matching published checksum as current", () => {
+		const current = resolveEffectiveCatalog(input());
+		const status = compareCatalogRevision(
+			{
+				id: 7,
+				createdAt: now,
+				checksum: current.checksum,
+				snapshot: current as unknown as Record<string, unknown>,
+			},
+			current,
+			new Date("2026-07-22T00:01:00.000Z"),
+		);
+
+		expect(status).toMatchObject({
+			revision: 7,
+			drifted: false,
+			sourceAhead: false,
+			publishedChecksum: current.checksum,
+			currentChecksum: current.checksum,
+			publishedCounts: { providers: 1, models: 1, mappings: 1 },
+		});
+	});
+
+	it("reports checksum and source-count drift from the published snapshot", () => {
+		const current = resolveEffectiveCatalog(input());
+		const publishedAt = new Date("2026-07-22T00:00:00.000Z");
+		const status = compareCatalogRevision(
+			{
+				id: 6,
+				createdAt: publishedAt,
+				checksum: "sha256:previous",
+				snapshot: { providers: [], models: [], mappings: [] },
+			},
+			current,
+			new Date("2026-07-22T00:01:00.000Z"),
+		);
+
+		expect(status).toMatchObject({
+			revision: 6,
+			drifted: true,
+			sourceAhead: true,
+			publishedChecksum: "sha256:previous",
+			currentChecksum: current.checksum,
+			publishedCounts: { providers: 0, models: 0, mappings: 0 },
+			currentCounts: { providers: 1, models: 1, mappings: 1 },
+		});
 	});
 });

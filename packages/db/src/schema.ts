@@ -1426,6 +1426,7 @@ export const platformAuditLogActions = [
 	"platform_catalog.schedule",
 	"platform_catalog.cancel",
 	"platform_catalog.rollback",
+	"platform_catalog.source_refresh",
 	"platform_catalog.test",
 	"platform_catalog.circuit_open",
 	"platform_catalog.circuit_close",

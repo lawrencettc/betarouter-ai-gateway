@@ -10,12 +10,16 @@ import {
 	applyCatalogOperations,
 	catalogMappingTestProfile,
 	catalogCredentialConfigurationProfile,
+	compareCatalogRevision,
 	findCatalogRoutabilityLosses,
 	catalogChangeSetInputSchema,
 	fixedPricesV1ToPriceMap,
 	getCatalogBreakerStates,
+	getCatalogRevisionStatus,
 	mappingPolicyPatchSchema,
 	mappingPricePolicySchema,
+	publishCatalogRevisionInvalidation,
+	refreshCatalogRevisionFromSource,
 	resolveEffectiveCatalog,
 	resolveMappingPrice,
 	resetCatalogBreaker,
@@ -55,6 +59,7 @@ import type {
 	CatalogLifecycle,
 	CatalogOperationV1,
 	CatalogPolicyState,
+	CatalogRevisionStatus,
 	EffectiveCatalog,
 	MappingPolicy,
 	ModelPolicy,
@@ -217,6 +222,24 @@ const previewResponseSchema = z.object({
 	marginEstimate: z.string().nullable(),
 });
 
+const catalogRevisionCountsSchema = z.object({
+	providers: z.number(),
+	models: z.number(),
+	mappings: z.number(),
+});
+
+const catalogRevisionStatusSchema = z.object({
+	revision: z.number(),
+	publishedAt: z.string().nullable(),
+	publishedChecksum: z.string().nullable(),
+	currentChecksum: z.string(),
+	drifted: z.boolean(),
+	sourceAhead: z.boolean(),
+	sourceUpdatedAt: z.string().nullable(),
+	publishedCounts: catalogRevisionCountsSchema,
+	currentCounts: catalogRevisionCountsSchema,
+});
+
 function environmentCredentialAvailable(providerId: string): boolean {
 	const envVar = getProviderEnvVar(providerId as Provider);
 	if (!envVar || !process.env[envVar]?.trim()) {
@@ -345,6 +368,7 @@ async function loadCatalogView(): Promise<{
 		priority: number;
 	}>;
 	passedTests: Set<string>;
+	revisionStatus: CatalogRevisionStatus;
 }> {
 	const [
 		sourceProviders,
@@ -389,7 +413,12 @@ async function loadCatalogView(): Promise<{
 			.from(platformMappingTestRun)
 			.where(eq(platformMappingTestRun.status, "passed")),
 		db
-			.select({ id: platformCatalogRevision.id })
+			.select({
+				id: platformCatalogRevision.id,
+				createdAt: platformCatalogRevision.createdAt,
+				checksum: platformCatalogRevision.checksum,
+				snapshot: platformCatalogRevision.snapshot,
+			})
 			.from(platformCatalogRevision)
 			.orderBy(desc(platformCatalogRevision.id))
 			.limit(1),
@@ -500,8 +529,21 @@ async function loadCatalogView(): Promise<{
 		),
 		breakerStates: {},
 	});
+	const sourceTimestamps = [
+		...sourceProviders.map((item) => item.updatedAt.getTime()),
+		...sourceModels.map((item) => item.updatedAt.getTime()),
+		...sourceMappings.map((item) => item.updatedAt.getTime()),
+	];
+	const revisionStatus = compareCatalogRevision(
+		latestRevisions[0] ?? null,
+		snapshot,
+		sourceTimestamps.length > 0
+			? new Date(Math.max(...sourceTimestamps))
+			: null,
+	);
 	return {
 		snapshot,
+		revisionStatus,
 		sourceProviders,
 		sourceModels,
 		sourceMappings,
@@ -1153,6 +1195,10 @@ function paginate<T>(
 
 interface FilterableEffective {
 	id: string;
+	providerId?: string;
+	modelId?: string;
+	externalId?: string;
+	region?: string | null;
 	visible?: boolean;
 	displayable?: boolean;
 	available: boolean;
@@ -1161,13 +1207,33 @@ interface FilterableEffective {
 	reasons?: string[];
 }
 
+export function matchesCatalogSearch(
+	item: Pick<
+		FilterableEffective,
+		"id" | "providerId" | "modelId" | "externalId" | "region"
+	>,
+	search: string,
+): boolean {
+	const query = search.trim().toLowerCase();
+	if (!query) {
+		return true;
+	}
+	return [
+		item.id,
+		item.providerId,
+		item.modelId,
+		item.externalId,
+		item.region,
+	].some((value) => value?.toLowerCase().includes(query) ?? false);
+}
+
 function filterEffective<T extends FilterableEffective>(
 	items: T[],
 	query: z.infer<typeof listQuerySchema>,
 ): T[] {
 	const search = query.search?.trim().toLowerCase();
 	return items.filter((item) => {
-		if (search && !item.id.toLowerCase().includes(search)) {
+		if (search && !matchesCatalogSearch(item, search)) {
 			return false;
 		}
 		switch (query.state) {
@@ -1242,6 +1308,7 @@ platformCatalog.openapi(
 								routable: z.number(),
 								blocked: z.number(),
 							}),
+							revisionStatus: catalogRevisionStatusSchema,
 						}),
 					},
 				},
@@ -1249,7 +1316,7 @@ platformCatalog.openapi(
 		},
 	}),
 	async (c) => {
-		const { snapshot } = await loadCatalogView();
+		const { snapshot, revisionStatus } = await loadCatalogView();
 		return c.json({
 			revision: snapshot.revision,
 			checksum: snapshot.checksum,
@@ -1268,7 +1335,93 @@ platformCatalog.openapi(
 				routable: snapshot.routableMappingIds.length,
 				blocked: snapshot.mappings.filter((item) => !item.available).length,
 			},
+			revisionStatus,
 		});
+	},
+);
+
+platformCatalog.openapi(
+	createRoute({
+		method: "post",
+		path: "/source/refresh",
+		responses: {
+			200: {
+				description:
+					"Idempotently publish current synchronized source and readiness state",
+				content: {
+					"application/json": {
+						schema: z.object({
+							changed: z.boolean(),
+							changeSetId: z.string().nullable(),
+							catalogRevision: z.number(),
+							cacheInvalidation: z.enum(["published", "failed"]).nullable(),
+							status: catalogRevisionStatusSchema,
+						}),
+					},
+				},
+			},
+		},
+	}),
+	async (c) => {
+		const user = c.get("user");
+		if (!user) {
+			throw new HTTPException(401, { message: "Unauthorized" });
+		}
+		let beforeRevision = 0;
+		try {
+			const committed = await db.transaction(async (tx) => {
+				await tx.execute(sql`SELECT pg_advisory_xact_lock(7220260722)`);
+				const before = await getCatalogRevisionStatus({ transaction: tx });
+				beforeRevision = before.revision;
+				const result = await refreshCatalogRevisionFromSource({
+					actorId: user.id,
+					transaction: tx,
+					deferInvalidation: true,
+				});
+				const status = await getCatalogRevisionStatus({ transaction: tx });
+				await tx.insert(platformAuditLog).values({
+					userId: user.id,
+					action: "platform_catalog.source_refresh",
+					resourceId: result?.changeSetId ?? `revision:${status.revision}`,
+					success: true,
+					metadata: {
+						changed: result !== null,
+						beforeRevision,
+						catalogRevision: status.revision,
+					},
+					...requestMetadata(c),
+				});
+				return { result, status };
+			});
+			const result = committed.result
+				? await publishCatalogRevisionInvalidation(committed.result)
+				: null;
+			return c.json({
+				changed: result !== null,
+				changeSetId: result?.changeSetId ?? null,
+				catalogRevision: committed.status.revision,
+				cacheInvalidation: result?.cacheInvalidation ?? null,
+				status: committed.status,
+			});
+		} catch (error) {
+			try {
+				await db.insert(platformAuditLog).values({
+					userId: user.id,
+					action: "platform_catalog.source_refresh",
+					resourceId: `revision:${beforeRevision}`,
+					success: false,
+					metadata: {
+						beforeRevision,
+						errorClass:
+							error instanceof Error ? error.name : "catalog_refresh_error",
+					},
+					...requestMetadata(c),
+				});
+			} catch {
+				// Preserve the refresh error if the audit store is unavailable.
+			}
+			throw error;
+		}
 	},
 );
 

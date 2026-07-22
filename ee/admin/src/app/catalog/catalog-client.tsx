@@ -1021,6 +1021,7 @@ export function CatalogClient({
 	const [providerFilter, setProviderFilter] = useState("");
 	const [modality, setModality] = useState("all");
 	const [loading, setLoading] = useState(false);
+	const [refreshingSource, setRefreshingSource] = useState(false);
 	const [selected, setSelected] = useState<Map<string, Entity>>(new Map());
 	const [operations, setOperations] = useState<Operation[]>([]);
 	const [previewOpen, setPreviewOpen] = useState(false);
@@ -1129,6 +1130,26 @@ export function CatalogClient({
 			await fetchList(tab, 1);
 		}
 		setSelected(new Map());
+	};
+
+	const publishSourceRefresh = async () => {
+		setRefreshingSource(true);
+		try {
+			const result = await api.POST("/admin/catalog/source/refresh");
+			if (!result.data) {
+				throw new Error("Catalog source refresh failed");
+			}
+			toast.success(
+				result.data.changed
+					? `Catalog revision ${result.data.catalogRevision} published`
+					: "Catalog revision is already current",
+			);
+			await refreshAll();
+		} catch (error) {
+			toast.error(message(error));
+		} finally {
+			setRefreshingSource(false);
+		}
 	};
 
 	const stage = (next: Operation[]) => {
@@ -1296,11 +1317,21 @@ export function CatalogClient({
 						and lifecycle in one revisioned policy.
 					</p>
 				</div>
-				<div className="flex items-center gap-2">
+				<div className="flex flex-wrap items-center gap-2">
 					<Badge variant="outline">Revision {summary.revision}</Badge>
+					<Button
+						variant={summary.revisionStatus.drifted ? "default" : "outline"}
+						onClick={() => void publishSourceRefresh()}
+						disabled={!summary.revisionStatus.drifted || refreshingSource}
+					>
+						<RefreshCw
+							className={refreshingSource ? "size-4 animate-spin" : "size-4"}
+						/>
+						Publish source refresh
+					</Button>
 					<Button variant="outline" onClick={() => void refreshAll()}>
 						<RefreshCw className="size-4" />
-						Refresh
+						Reload
 					</Button>
 				</div>
 			</div>
@@ -1364,11 +1395,30 @@ export function CatalogClient({
 							</CardHeader>
 							<CardContent className="space-y-3">
 								<div className="flex items-center justify-between">
-									<span>Revision checksum</span>
+									<span>Revision state</span>
+									{healthBadge(
+										!summary.revisionStatus.drifted,
+										"Current",
+										"Refresh required",
+									)}
+								</div>
+								<div className="flex items-center justify-between">
+									<span>Published checksum</span>
 									<code className="max-w-64 truncate text-xs">
-										{summary.checksum}
+										{summary.revisionStatus.publishedChecksum ?? "None"}
 									</code>
 								</div>
+								{summary.revisionStatus.drifted && (
+									<Alert variant="destructive">
+										<AlertTriangle className="size-4" />
+										<AlertTitle>Published revision is stale</AlertTitle>
+										<AlertDescription>
+											The synchronized source catalog or mapping readiness
+											changed. Publish a source refresh before testing or
+											activating mappings.
+										</AlertDescription>
+									</Alert>
+								)}
 								<div className="flex items-center justify-between">
 									<span>Blocked mapping count</span>
 									{healthBadge(

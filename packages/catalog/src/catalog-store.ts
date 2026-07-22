@@ -456,6 +456,104 @@ export interface AppliedCatalogChangeSet {
 	alreadyApplied?: boolean;
 }
 
+export interface CatalogRevisionCounts {
+	providers: number;
+	models: number;
+	mappings: number;
+}
+
+export interface CatalogRevisionStatus {
+	revision: number;
+	publishedAt: string | null;
+	publishedChecksum: string | null;
+	currentChecksum: string;
+	drifted: boolean;
+	sourceAhead: boolean;
+	sourceUpdatedAt: string | null;
+	publishedCounts: CatalogRevisionCounts;
+	currentCounts: CatalogRevisionCounts;
+}
+
+function storedSnapshotCount(
+	snapshot: Record<string, unknown> | undefined,
+	key: "providers" | "models" | "mappings",
+): number {
+	const items = snapshot?.[key];
+	return Array.isArray(items) ? items.length : 0;
+}
+
+function latestSourceUpdate(view: StoreView): Date | null {
+	const timestamps = [
+		...view.providers.map((item) => item.updatedAt.getTime()),
+		...view.models.map((item) => item.updatedAt.getTime()),
+		...view.mappings.map((item) => item.updatedAt.getTime()),
+	];
+	return timestamps.length > 0 ? new Date(Math.max(...timestamps)) : null;
+}
+
+export function compareCatalogRevision(
+	latest: {
+		id: number;
+		createdAt: Date;
+		checksum: string;
+		snapshot: Record<string, unknown>;
+	} | null,
+	current: EffectiveCatalog,
+	sourceUpdatedAt: Date | null,
+): CatalogRevisionStatus {
+	const publishedAt = latest?.createdAt ?? null;
+	const drifted = latest?.checksum !== current.checksum;
+	return {
+		revision: latest?.id ?? 0,
+		publishedAt: publishedAt?.toISOString() ?? null,
+		publishedChecksum: latest?.checksum ?? null,
+		currentChecksum: current.checksum,
+		drifted,
+		sourceAhead:
+			drifted &&
+			sourceUpdatedAt !== null &&
+			(publishedAt === null || sourceUpdatedAt > publishedAt),
+		sourceUpdatedAt: sourceUpdatedAt?.toISOString() ?? null,
+		publishedCounts: {
+			providers: storedSnapshotCount(latest?.snapshot, "providers"),
+			models: storedSnapshotCount(latest?.snapshot, "models"),
+			mappings: storedSnapshotCount(latest?.snapshot, "mappings"),
+		},
+		currentCounts: {
+			providers: current.providers.length,
+			models: current.models.length,
+			mappings: current.mappings.length,
+		},
+	};
+}
+
+export async function getCatalogRevisionStatus(
+	input: { transaction?: CatalogTransaction } = {},
+): Promise<CatalogRevisionStatus> {
+	const inspect = async (tx: CatalogTransaction) => {
+		const view = await loadStoreView(tx);
+		const current = resolveStoreSnapshot(view, policyState(view), 0);
+		const [latest] = await tx
+			.select({
+				id: platformCatalogRevision.id,
+				createdAt: platformCatalogRevision.createdAt,
+				checksum: platformCatalogRevision.checksum,
+				snapshot: platformCatalogRevision.snapshot,
+			})
+			.from(platformCatalogRevision)
+			.orderBy(desc(platformCatalogRevision.id))
+			.limit(1);
+		return compareCatalogRevision(
+			latest ?? null,
+			current,
+			latestSourceUpdate(view),
+		);
+	};
+	return input.transaction
+		? await inspect(input.transaction)
+		: await db.transaction(inspect);
+}
+
 /**
  * Publish a new immutable revision when synchronized source metadata changes.
  * Operator policy rows are read, never rewritten, so upstream refreshes cannot
