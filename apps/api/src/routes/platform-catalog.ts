@@ -171,6 +171,8 @@ const adminModelSchema = effectiveModelSchema.extend({
 const adminMappingSchema = effectiveMappingSchema.extend({
 	credentialAvailable: z.boolean(),
 	policy: mappingPolicyViewSchema.nullable(),
+	providerPolicy: providerPolicyViewSchema.nullable(),
+	modelPolicy: modelPolicyViewSchema.nullable(),
 	pricePolicyUpdatedAt: z.string().nullable(),
 	pricePolicy: mappingPricePolicySchema.nullable(),
 });
@@ -1621,6 +1623,12 @@ platformCatalog.openapi(
 		const policyById = new Map(
 			view.mappingPolicies.map((item) => [item.mappingId, item]),
 		);
+		const providerPolicyById = new Map(
+			view.providerPolicies.map((item) => [item.providerId, item]),
+		);
+		const modelPolicyById = new Map(
+			view.modelPolicies.map((item) => [item.modelId, item]),
+		);
 		const pricePolicyById = new Map(
 			view.pricePolicies.map((item) => [item.mappingId, item]),
 		);
@@ -1635,6 +1643,8 @@ platformCatalog.openapi(
 		);
 		const filtered = filterEffective(mappingCandidates, query).map((item) => {
 			const policy = policyById.get(item.id);
+			const providerPolicy = providerPolicyById.get(item.providerId);
+			const modelPolicy = modelPolicyById.get(item.modelId);
 			const pricePolicy = pricePolicyById.get(item.id);
 			return {
 				...item,
@@ -1659,6 +1669,38 @@ platformCatalog.openapi(
 							contextSizeLimit: policy.contextSizeLimit,
 							maxOutputLimit: policy.maxOutputLimit,
 							disabledCapabilities: policy.disabledCapabilities,
+						}
+					: null,
+				providerPolicy: providerPolicy
+					? {
+							updatedAt: providerPolicy.updatedAt.toISOString(),
+							enabled: providerPolicy.enabled,
+							visible: providerPolicy.visible,
+							lifecycle: providerPolicy.lifecycle,
+							sortOrder: providerPolicy.sortOrder,
+							displayNameOverride: providerPolicy.displayNameOverride,
+							descriptionOverride: providerPolicy.descriptionOverride,
+							websiteOverride: providerPolicy.websiteOverride,
+							deprecatedAt: providerPolicy.deprecatedAt?.toISOString() ?? null,
+							retireAt: providerPolicy.retireAt?.toISOString() ?? null,
+							replacementProviderId: providerPolicy.replacementProviderId,
+						}
+					: null,
+				modelPolicy: modelPolicy
+					? {
+							updatedAt: modelPolicy.updatedAt.toISOString(),
+							enabled: modelPolicy.enabled,
+							visible: modelPolicy.visible,
+							allowDirect: modelPolicy.allowDirect,
+							lifecycle: modelPolicy.lifecycle,
+							replacementModelId: modelPolicy.replacementModelId,
+							deprecatedAt: modelPolicy.deprecatedAt?.toISOString() ?? null,
+							retireAt: modelPolicy.retireAt?.toISOString() ?? null,
+							retirementMessage: modelPolicy.retirementMessage,
+							displayNameOverride: modelPolicy.displayNameOverride,
+							descriptionOverride: modelPolicy.descriptionOverride,
+							aliasesOverride: modelPolicy.aliasesOverride,
+							sortOrder: modelPolicy.sortOrder,
 						}
 					: null,
 			};
