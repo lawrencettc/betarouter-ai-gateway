@@ -78,8 +78,37 @@ type Change =
 type ChangeBody =
 	paths["/admin/catalog/change-sets"]["post"]["requestBody"]["content"]["application/json"];
 type Operation = ChangeBody["operations"][number];
+type MappingPolicyOperation = Extract<
+	Operation,
+	{ type: "mapping.set_policy" }
+>;
+type DisabledCapability = NonNullable<
+	MappingPolicyOperation["patch"]["disabledCapabilities"]
+>[number];
+const disabledCapabilityValues = new Set<DisabledCapability>([
+	"streaming",
+	"vision",
+	"audio",
+	"document",
+	"reasoning",
+	"tools",
+	"jsonOutput",
+	"webSearch",
+	"embeddings",
+	"imageGenerations",
+	"videoGenerations",
+	"speechGenerations",
+	"ocr",
+	"supportsResponsesApi",
+]);
+
+function isDisabledCapability(value: string): value is DisabledCapability {
+	return disabledCapabilityValues.has(value as DisabledCapability);
+}
 type Preview =
 	paths["/admin/catalog/change-sets/preview"]["post"]["responses"]["200"]["content"]["application/json"];
+type RollbackPreview =
+	paths["/admin/catalog/change-sets/{id}/rollback/preview"]["post"]["responses"]["200"]["content"]["application/json"];
 type Credential =
 	paths["/admin/platform-providers"]["get"]["responses"]["200"]["content"]["application/json"]["credentials"][number];
 type ProviderItem = ProviderPage["items"][number];
@@ -388,6 +417,45 @@ function PreviewSheet({
 									</div>
 								))}
 							</div>
+							{(preview.stateChanges.length > 0 ||
+								preview.priceChanges.length > 0 ||
+								preview.fallbackLosses.length > 0 ||
+								preview.marginEstimate) && (
+								<div className="space-y-3 rounded-lg border p-3 text-sm">
+									{preview.stateChanges.length > 0 && (
+										<div>
+											<div className="font-medium">State changes</div>
+											<ul className="list-disc pl-5 text-muted-foreground">
+												{preview.stateChanges.map((item) => (
+													<li key={item}>{item}</li>
+												))}
+											</ul>
+										</div>
+									)}
+									{preview.priceChanges.length > 0 && (
+										<div>
+											<div className="font-medium">Customer price changes</div>
+											<ul className="list-disc pl-5 font-mono text-xs text-muted-foreground">
+												{preview.priceChanges.map((item) => (
+													<li key={item}>{item}</li>
+												))}
+											</ul>
+										</div>
+									)}
+									{preview.marginEstimate && (
+										<p>
+											<span className="font-medium">Margin estimate:</span>{" "}
+											{preview.marginEstimate}
+										</p>
+									)}
+									{preview.fallbackLosses.length > 0 && (
+										<p className="text-destructive">
+											Models losing fallback coverage:{" "}
+											{preview.fallbackLosses.join(", ")}
+										</p>
+									)}
+								</div>
+							)}
 							{preview.warnings.length > 0 && (
 								<Alert>
 									<AlertTriangle className="size-4" />
@@ -581,6 +649,19 @@ function EditEntityDialog({
 				},
 			];
 		} else {
+			const requestedCapabilities = disabledCapabilities
+				.split(",")
+				.map((value) => value.trim())
+				.filter(Boolean);
+			const invalidCapabilities = requestedCapabilities.filter(
+				(value) => !isDisabledCapability(value),
+			);
+			if (invalidCapabilities.length > 0) {
+				toast.error(
+					`Unsupported capability name${invalidCapabilities.length === 1 ? "" : "s"}: ${invalidCapabilities.join(", ")}`,
+				);
+				return;
+			}
 			operations = [
 				{
 					version: 1,
@@ -598,10 +679,8 @@ function EditEntityDialog({
 							? Number(contextSizeLimit)
 							: null,
 						maxOutputLimit: maxOutputLimit ? Number(maxOutputLimit) : null,
-						disabledCapabilities: disabledCapabilities
-							.split(",")
-							.map((value) => value.trim())
-							.filter(Boolean),
+						disabledCapabilities:
+							requestedCapabilities.filter(isDisabledCapability),
 					},
 				},
 			];
@@ -953,7 +1032,28 @@ export function CatalogClient({
 	const [healthOpen, setHealthOpen] = useState(false);
 	const [healthMapping, setHealthMapping] = useState<MappingItem | null>(null);
 	const [confirmRollback, setConfirmRollback] = useState<Change | null>(null);
+	const [rollbackPreview, setRollbackPreview] =
+		useState<RollbackPreview | null>(null);
 	const [rollbackConfirmText, setRollbackConfirmText] = useState("");
+	const rollbackAffectedCount = rollbackPreview
+		? rollbackPreview.affected.providers +
+			rollbackPreview.affected.models +
+			rollbackPreview.affected.mappings
+		: 0;
+	const rollbackConfirmPhrase = `ROLLBACK ${rollbackAffectedCount}`;
+
+	const openRollbackPreview = async (change: Change) => {
+		const result = await api.POST(
+			"/admin/catalog/change-sets/{id}/rollback/preview",
+			{ params: { path: { id: change.id } } },
+		);
+		if (result.error || !result.data) {
+			toast.error(message(result.error));
+			return;
+		}
+		setRollbackPreview(result.data);
+		setConfirmRollback(change);
+	};
 
 	const listForTab =
 		tab === "providers" ? providers : tab === "models" ? models : mappings;
@@ -1703,7 +1803,7 @@ export function CatalogClient({
 												<Button
 													variant="ghost"
 													size="sm"
-													onClick={() => setConfirmRollback(change)}
+													onClick={() => void openRollbackPreview(change)}
 												>
 													<RotateCcw className="size-4" />
 													Rollback
@@ -1773,6 +1873,7 @@ export function CatalogClient({
 				onOpenChange={(open) => {
 					if (!open) {
 						setConfirmRollback(null);
+						setRollbackPreview(null);
 						setRollbackConfirmText("");
 					}
 				}}
@@ -1792,9 +1893,45 @@ export function CatalogClient({
 							Rollback {confirmRollback?.title}?
 						</AlertDescription>
 					</Alert>
+					{rollbackPreview && (
+						<div className="space-y-3">
+							<div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
+								{Object.entries(rollbackPreview.affected).map(
+									([key, value]) => (
+										<div key={key} className="rounded-lg border p-3">
+											<div className="text-muted-foreground capitalize">
+												{key}
+											</div>
+											<div className="text-lg font-semibold">
+												{value ?? "Unknown"}
+											</div>
+										</div>
+									),
+								)}
+							</div>
+							{!rollbackPreview.valid && (
+								<Alert variant="destructive">
+									<AlertTitle>Rollback blocked</AlertTitle>
+									<AlertDescription>
+										{rollbackPreview.blockers
+											.map(
+												(item) =>
+													`${item.entityId}: ${item.reasons.join(", ")}`,
+											)
+											.join(" · ")}
+									</AlertDescription>
+								</Alert>
+							)}
+							{rollbackPreview.warnings.length > 0 && (
+								<p className="text-sm text-muted-foreground">
+									{rollbackPreview.warnings.join(" · ")}
+								</p>
+							)}
+						</div>
+					)}
 					<div className="space-y-2">
 						<Label htmlFor="rollback-confirm">
-							Type ROLLBACK 1 to continue
+							Type {rollbackConfirmPhrase} to continue
 						</Label>
 						<Input
 							id="rollback-confirm"
@@ -1804,12 +1941,22 @@ export function CatalogClient({
 						/>
 					</div>
 					<DialogFooter>
-						<Button variant="outline" onClick={() => setConfirmRollback(null)}>
+						<Button
+							variant="outline"
+							onClick={() => {
+								setConfirmRollback(null);
+								setRollbackPreview(null);
+								setRollbackConfirmText("");
+							}}
+						>
 							Cancel
 						</Button>
 						<Button
 							variant="destructive"
-							disabled={rollbackConfirmText !== "ROLLBACK 1"}
+							disabled={
+								!rollbackPreview?.valid ||
+								rollbackConfirmText !== rollbackConfirmPhrase
+							}
 							onClick={async () => {
 								if (!confirmRollback) {
 									return;
@@ -1825,6 +1972,8 @@ export function CatalogClient({
 										`Rollback revision ${result.data?.catalogRevision} applied`,
 									);
 									setConfirmRollback(null);
+									setRollbackPreview(null);
+									setRollbackConfirmText("");
 									await refreshAll();
 								}
 							}}

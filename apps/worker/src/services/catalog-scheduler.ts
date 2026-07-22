@@ -8,6 +8,9 @@ export async function runCatalogSchedulerPass(now = new Date()): Promise<void> {
 		now,
 	});
 	for (const result of results) {
+		if (result.alreadyApplied) {
+			continue;
+		}
 		const success = !result.error;
 		try {
 			await db.insert(platformAuditLog).values({

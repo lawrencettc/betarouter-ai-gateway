@@ -247,14 +247,12 @@ export async function calculateCosts(
 		 */
 		servedServiceTier?: string | null;
 		/**
-		 * Pricing override for custom-provider requests backed by an enterprise
-		 * custom model catalog entry. Custom models are not in the static catalog,
-		 * so when present this synthetic provider mapping (providerId "custom")
-		 * supplies pricing directly instead of the `models.find` lookup. Undefined
-		 * for all non-custom requests and for custom requests without a catalog
-		 * entry (which remain unbilled).
+		 * Pricing override for the exact provider mapping selected for this request.
+		 * This is used both by enterprise custom models and by the managed platform
+		 * catalog, whose customer prices can intentionally differ from the static
+		 * source catalog.
 		 */
-		customPricing?: ProviderModelMapping;
+		pricingOverride?: ProviderModelMapping;
 	},
 	contentFilterTriggered = false,
 ) {
@@ -264,19 +262,19 @@ export async function calculateCosts(
 	const cachedAudioInputTokens = options?.cachedAudioInputTokens ?? null;
 	const explicitCacheUsed = options?.explicitCacheUsed ?? false;
 	const servedServiceTier = options?.servedServiceTier ?? null;
-	const customPricing = options?.customPricing;
+	const pricingOverride = options?.pricingOverride;
 
 	// Look up the model definition by the canonical root id only.
 	// externalId-based lookups are intentionally not supported here — the
 	// upstream provider id must never leak into pricing/discount lookups.
-	// For custom-provider requests with a catalog override, use a synthetic
-	// model whose single provider mapping (providerId "custom") matches the
-	// `provider` argument, so the existing provider-pricing path applies.
-	const modelInfo = customPricing
+	// When a request carries an effective catalog mapping, use a synthetic model
+	// containing only that mapping so every pricing path uses the same revision
+	// that routing selected.
+	const modelInfo = pricingOverride
 		? ({
 				id: model,
-				family: "custom",
-				providers: [customPricing],
+				family: "catalog",
+				providers: [pricingOverride],
 			} as ModelDefinition)
 		: (models.find((m) => m.id === model) as ModelDefinition);
 

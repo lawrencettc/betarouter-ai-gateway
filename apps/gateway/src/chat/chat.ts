@@ -343,7 +343,7 @@ function toDataStorageCostNumber(
 /**
  * Builds a synthetic provider mapping (providerId "custom") from an enterprise
  * custom model catalog entry. Used both to override the mock model info for
- * limit/capability enforcement and as the `customPricing` override threaded into
+ * limit/capability enforcement and as the pricing override threaded into
  * calculateCosts so custom-provider requests are billed at the catalog rates.
  */
 function customModelToProviderMapping(cm: CustomModel): ProviderModelMapping {
@@ -1648,6 +1648,10 @@ chat.openapi(completions, async (c) => {
 	// Wrapper that injects Responses API fields into every log entry.
 	// Only override the id for the final log entry (retried !== true) to avoid
 	// PK conflicts when the request retries across multiple providers.
+	// Guardrail and validation failures can be logged before provider routing is
+	// complete. Start with the base writer, then decorate it with catalog routing
+	// metadata once those values are available below.
+	let insertLog: typeof _insertLog = _insertLog;
 	const insertLogEntry = (logData: LogInsertData) =>
 		insertLog(
 			{
@@ -2934,6 +2938,20 @@ chat.openapi(completions, async (c) => {
 			}
 		}
 	}
+
+	const getPricingOverride = (): ProviderModelMapping | undefined => {
+		if (customPricingMapping) {
+			return customPricingMapping;
+		}
+		if (!catalogRequestDecision) {
+			return undefined;
+		}
+		return modelInfo.providers.find(
+			(mapping) =>
+				mapping.providerId === usedProvider &&
+				(mapping.region ?? null) === (usedRegion ?? null),
+		);
+	};
 
 	// Apply routing logic after apiKey and project are available
 	if (
@@ -5092,7 +5110,7 @@ chat.openapi(completions, async (c) => {
 		.length
 		? openAIContentFilterResult.responses
 		: null;
-	const insertLog = (
+	insertLog = (
 		logData: Parameters<typeof _insertLog>[0],
 		options?: Parameters<typeof _insertLog>[1],
 	) => {
@@ -5559,7 +5577,7 @@ chat.openapi(completions, async (c) => {
 						cacheWrite1hTokens,
 						audioInputTokens,
 						explicitCacheUsed,
-						customPricing: customPricingMapping,
+						pricingOverride: getPricingOverride(),
 					},
 				);
 
@@ -5770,7 +5788,7 @@ chat.openapi(completions, async (c) => {
 						audioInputTokens:
 							cachedResponse.usage?.prompt_tokens_details?.audio_tokens ?? null,
 						explicitCacheUsed,
-						customPricing: customPricingMapping,
+						pricingOverride: getPricingOverride(),
 					},
 				);
 
@@ -6618,7 +6636,7 @@ chat.openapi(completions, async (c) => {
 						{
 							explicitCacheUsed,
 							servedServiceTier,
-							customPricing: customPricingMapping,
+							pricingOverride: getPricingOverride(),
 						},
 						true,
 					);
@@ -7150,7 +7168,7 @@ chat.openapi(completions, async (c) => {
 									undefined, // imageQuality
 									null, // reportedImageInputTokens
 									null, // reportedImageOutputTokens
-									{ servedServiceTier, customPricing: customPricingMapping },
+									{ servedServiceTier, pricingOverride: getPricingOverride() },
 								);
 							}
 
@@ -7702,7 +7720,10 @@ chat.openapi(completions, async (c) => {
 										image_config?.image_quality,
 										null,
 										null,
-										{ servedServiceTier, customPricing: customPricingMapping },
+										{
+											servedServiceTier,
+											pricingOverride: getPricingOverride(),
+										},
 										true,
 									)
 								: null;
@@ -8782,7 +8803,7 @@ chat.openapi(completions, async (c) => {
 											cachedAudioInputTokens,
 											explicitCacheUsed,
 											servedServiceTier,
-											customPricing: customPricingMapping,
+											pricingOverride: getPricingOverride(),
 										},
 									);
 									streamingCosts.dataStorageCost = toDataStorageCostNumber(
@@ -10282,7 +10303,7 @@ chat.openapi(completions, async (c) => {
 											cachedAudioInputTokens,
 											explicitCacheUsed,
 											servedServiceTier,
-											customPricing: customPricingMapping,
+											pricingOverride: getPricingOverride(),
 										},
 										finishReason === "content_filter",
 									);
@@ -10634,7 +10655,7 @@ chat.openapi(completions, async (c) => {
 										cachedAudioInputTokens,
 										explicitCacheUsed,
 										servedServiceTier,
-										customPricing: customPricingMapping,
+										pricingOverride: getPricingOverride(),
 									},
 									finishReason === "content_filter",
 								));
@@ -10972,7 +10993,7 @@ chat.openapi(completions, async (c) => {
 				undefined, // imageQuality
 				null, // reportedImageInputTokens
 				null, // reportedImageOutputTokens
-				{ servedServiceTier, customPricing: customPricingMapping },
+				{ servedServiceTier, pricingOverride: getPricingOverride() },
 			);
 		}
 
@@ -11844,7 +11865,10 @@ chat.openapi(completions, async (c) => {
 							image_config?.image_quality,
 							null,
 							null,
-							{ servedServiceTier, customPricing: customPricingMapping },
+							{
+								servedServiceTier,
+								pricingOverride: getPricingOverride(),
+							},
 							true,
 						)
 					: null;
@@ -12820,7 +12844,7 @@ chat.openapi(completions, async (c) => {
 			cachedAudioInputTokens,
 			explicitCacheUsed,
 			servedServiceTier,
-			customPricing: customPricingMapping,
+			pricingOverride: getPricingOverride(),
 		},
 		finishReason === "content_filter",
 	);

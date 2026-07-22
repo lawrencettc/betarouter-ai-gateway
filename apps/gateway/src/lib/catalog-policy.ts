@@ -25,7 +25,7 @@ function perUnit(value: string | undefined): string | undefined {
 		: new Decimal(value).div(1_000_000).toString();
 }
 
-function applyCatalogCustomerPrices(
+export function applyCatalogCustomerPrices(
 	provider: ProviderModelMapping,
 	mapping: EffectiveMapping,
 ): ProviderModelMapping {

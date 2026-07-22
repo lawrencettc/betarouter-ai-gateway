@@ -18,6 +18,7 @@ import {
 	resolveMappingPrice,
 	resetCatalogBreaker,
 	sourceMappingPricesToPriceMap,
+	validateCatalogActivation,
 } from "@llmgateway/catalog";
 import {
 	db,
@@ -200,6 +201,7 @@ const previewResponseSchema = z.object({
 		providers: z.number(),
 		models: z.number(),
 		mappings: z.number(),
+		credentials: z.number(),
 		requests: z.number().nullable(),
 		organizations: z.number().nullable(),
 		projects: z.number().nullable(),
@@ -207,6 +209,8 @@ const previewResponseSchema = z.object({
 		queuedJobs: z.number().nullable(),
 	}),
 	fallbackLosses: z.array(z.string()),
+	stateChanges: z.array(z.string()),
+	scheduledConflicts: z.array(z.string()),
 	priceChanges: z.array(z.string()),
 	marginEstimate: z.string().nullable(),
 });
@@ -496,6 +500,39 @@ async function loadCatalogView(): Promise<{
 
 type CatalogView = Awaited<ReturnType<typeof loadCatalogView>>;
 
+function missingOperationBlockers(
+	view: CatalogView,
+	operations: CatalogOperationV1[],
+): Array<{ entityId: string; reasons: string[] }> {
+	const providerIds = new Set(view.sourceProviders.map((item) => item.id));
+	const modelIds = new Set(view.sourceModels.map((item) => item.id));
+	const mappingIds = new Set(view.sourceMappings.map((item) => item.id));
+	const missing = operations.flatMap((operation) => {
+		if (operation.type === "provider.set_policy") {
+			return providerIds.has(operation.providerId)
+				? []
+				: [operation.providerId];
+		}
+		if (operation.type === "model.set_policy") {
+			return modelIds.has(operation.modelId) ? [] : [operation.modelId];
+		}
+		if (operation.type === "entity.archive_policy") {
+			const ids =
+				operation.entityType === "provider"
+					? providerIds
+					: operation.entityType === "model"
+						? modelIds
+						: mappingIds;
+			return ids.has(operation.entityId) ? [] : [operation.entityId];
+		}
+		return mappingIds.has(operation.mappingId) ? [] : [operation.mappingId];
+	});
+	return [...new Set(missing)].map((entityId) => ({
+		entityId,
+		reasons: ["source_entity_missing"],
+	}));
+}
+
 function policyStateFromView(view: CatalogView): CatalogPolicyState {
 	return {
 		providers: Object.fromEntries(
@@ -669,6 +706,20 @@ function requestMetadata(c: {
 	};
 }
 
+function changeSetMatchesInput(
+	existing: typeof platformCatalogChangeSet.$inferSelect,
+	input: z.infer<typeof catalogChangeSetInputSchema>,
+): boolean {
+	return (
+		existing.title === input.title &&
+		existing.reason === input.reason &&
+		existing.baseRevision === input.baseRevision &&
+		(existing.effectiveAt?.toISOString() ?? null) ===
+			(input.effectiveAt ?? null) &&
+		JSON.stringify(existing.operations) === JSON.stringify(input.operations)
+	);
+}
+
 async function calculateCatalogImpact(
 	view: CatalogView,
 	operations: CatalogOperationV1[],
@@ -728,37 +779,67 @@ async function calculateCatalogImpact(
 	);
 	const lookbackMs = 24 * 60 * 60 * 1000;
 	const since = new Date(Date.now() - lookbackMs);
-	const [traffic, queued] = await Promise.all([
-		scope
-			? db
-					.select({
-						requests: sql<number>`count(*)::int`,
-						organizations: sql<number>`count(distinct ${log.organizationId})::int`,
-						projects: sql<number>`count(distinct ${log.projectId})::int`,
-						apiKeys: sql<number>`count(distinct ${log.apiKeyId})::int`,
-					})
-					.from(log)
-					.where(and(gte(log.createdAt, since), scope))
-			: Promise.resolve([
-					{ requests: 0, organizations: 0, projects: 0, apiKeys: 0 },
-				]),
-		queuedScope
-			? db
-					.select({ count: sql<number>`count(*)::int` })
-					.from(videoJob)
-					.where(
-						and(
-							inArray(videoJob.status, ["queued", "in_progress"]),
-							queuedScope,
-						),
-					)
-			: Promise.resolve([{ count: 0 }]),
-	]);
+	const [traffic, queued, credentials, scheduledChangeSets] = await Promise.all(
+		[
+			scope
+				? db
+						.select({
+							requests: sql<number>`count(*)::int`,
+							organizations: sql<number>`count(distinct ${log.organizationId})::int`,
+							projects: sql<number>`count(distinct ${log.projectId})::int`,
+							apiKeys: sql<number>`count(distinct ${log.apiKeyId})::int`,
+						})
+						.from(log)
+						.where(and(gte(log.createdAt, since), scope))
+				: Promise.resolve([
+						{ requests: 0, organizations: 0, projects: 0, apiKeys: 0 },
+					]),
+			queuedScope
+				? db
+						.select({ count: sql<number>`count(*)::int` })
+						.from(videoJob)
+						.where(
+							and(
+								inArray(videoJob.status, ["queued", "in_progress"]),
+								queuedScope,
+							),
+						)
+				: Promise.resolve([{ count: 0 }]),
+			affectedProviderIds.length > 0
+				? db
+						.select({ count: sql<number>`count(*)::int` })
+						.from(platformProviderCredential)
+						.where(
+							and(
+								inArray(
+									platformProviderCredential.provider,
+									affectedProviderIds,
+								),
+								inArray(platformProviderCredential.status, [
+									"active",
+									"inactive",
+								]),
+							),
+						)
+				: Promise.resolve([{ count: 0 }]),
+			db
+				.select({
+					id: platformCatalogChangeSet.id,
+					operations: platformCatalogChangeSet.operations,
+				})
+				.from(platformCatalogChangeSet)
+				.where(eq(platformCatalogChangeSet.state, "scheduled")),
+		],
+	);
 	const previousMappings = new Map(
 		before.mappings.map((item) => [item.id, item]),
 	);
 	const priceChanges = after.mappings.flatMap((mapping) => {
-		if (!mappingIds.has(mapping.id)) {
+		if (
+			!mappingIds.has(mapping.id) &&
+			!providerIds.has(mapping.providerId) &&
+			!modelIds.has(mapping.modelId)
+		) {
 			return [];
 		}
 		const previous = previousMappings.get(mapping.id);
@@ -779,6 +860,87 @@ async function calculateCatalogImpact(
 					`${mapping.id}:${unit}:${previous?.customerPrices[unit as keyof typeof mapping.customerPrices] ?? "unset"}->${mapping.customerPrices[unit as keyof typeof mapping.customerPrices] ?? "unset"}`,
 			);
 	});
+	const beforeProviders = new Map(
+		before.providers.map((item) => [item.id, item]),
+	);
+	const beforeModels = new Map(before.models.map((item) => [item.id, item]));
+	const stateChanges = [
+		...after.providers.flatMap((item) => {
+			if (!providerIds.has(item.id)) {
+				return [];
+			}
+			const previous = beforeProviders.get(item.id);
+			return previous?.visible !== item.visible ||
+				previous?.available !== item.available ||
+				previous?.lifecycle !== item.lifecycle
+				? [
+						`provider:${item.id}:visible ${previous?.visible ?? false}->${item.visible}, available ${previous?.available ?? false}->${item.available}, lifecycle ${previous?.lifecycle ?? "unset"}->${item.lifecycle}`,
+					]
+				: [];
+		}),
+		...after.models.flatMap((item) => {
+			if (!modelIds.has(item.id)) {
+				return [];
+			}
+			const previous = beforeModels.get(item.id);
+			return previous?.visible !== item.visible ||
+				previous?.available !== item.available ||
+				previous?.allowDirect !== item.allowDirect ||
+				previous?.lifecycle !== item.lifecycle
+				? [
+						`model:${item.id}:visible ${previous?.visible ?? false}->${item.visible}, available ${previous?.available ?? false}->${item.available}, direct ${previous?.allowDirect ?? false}->${item.allowDirect}, lifecycle ${previous?.lifecycle ?? "unset"}->${item.lifecycle}`,
+					]
+				: [];
+		}),
+	];
+	const affectedEntityIds = new Set([
+		...affectedProviderIds,
+		...affectedModelIds,
+		...affectedMappingIds,
+	]);
+	const scheduledConflicts = scheduledChangeSets.flatMap((changeSet) => {
+		const scheduledIds = new Set(
+			catalogChangeSetInputSchema.shape.operations
+				.parse(changeSet.operations)
+				.flatMap((operation) =>
+					operation.type === "provider.set_policy"
+						? [operation.providerId]
+						: operation.type === "model.set_policy"
+							? [operation.modelId]
+							: operation.type === "entity.archive_policy"
+								? [operation.entityId]
+								: [operation.mappingId],
+				),
+		);
+		return [...scheduledIds].some((id) => affectedEntityIds.has(id))
+			? [changeSet.id]
+			: [];
+	});
+	const previousMargins = new Map(
+		before.mappings.map((item) => [item.id, item.margin]),
+	);
+	const marginChangeCount = after.mappings.reduce((count, mapping) => {
+		if (
+			!mappingIds.has(mapping.id) &&
+			!providerIds.has(mapping.providerId) &&
+			!modelIds.has(mapping.modelId)
+		) {
+			return count;
+		}
+		const previous = previousMargins.get(mapping.id) ?? {};
+		const units = new Set([
+			...Object.keys(previous),
+			...Object.keys(mapping.margin),
+		]);
+		return (
+			count +
+			[...units].filter(
+				(unit) =>
+					previous[unit as keyof typeof previous] !==
+					mapping.margin[unit as keyof typeof mapping.margin],
+			).length
+		);
+	}, 0);
 	return {
 		providerIds,
 		modelIds,
@@ -788,7 +950,14 @@ async function calculateCatalogImpact(
 		projects: Number(traffic[0]?.projects ?? 0),
 		apiKeys: Number(traffic[0]?.apiKeys ?? 0),
 		queuedJobs: Number(queued[0]?.count ?? 0),
+		credentials: Number(credentials[0]?.count ?? 0),
 		priceChanges,
+		stateChanges,
+		scheduledConflicts,
+		marginEstimate:
+			marginChangeCount > 0
+				? `${marginChangeCount} per-unit margin change${marginChangeCount === 1 ? "" : "s"} across ${Number(traffic[0]?.requests ?? 0)} requests in the last 24 hours`
+				: null,
 	};
 }
 
@@ -1780,13 +1949,21 @@ platformCatalog.openapi(
 			throw new HTTPException(401, { message: "Unauthorized" });
 		}
 		const input = c.req.valid("json");
-		const [existing] = await db
+		const [idempotentReplay] = await db
 			.select()
 			.from(platformCatalogChangeSet)
 			.where(eq(platformCatalogChangeSet.idempotencyKey, input.idempotencyKey))
 			.limit(1);
-		if (existing) {
-			return c.json(existing);
+		if (idempotentReplay) {
+			if (!changeSetMatchesInput(idempotentReplay, input)) {
+				return c.json(
+					{
+						message: "Idempotency key was already used for another change set",
+					},
+					409,
+				);
+			}
+			return c.json(idempotentReplay);
 		}
 		const view = await loadCatalogView();
 		const currentRevision = view.snapshot.revision || null;
@@ -1807,9 +1984,27 @@ platformCatalog.openapi(
 				effectiveAt,
 				idempotencyKey: input.idempotencyKey,
 			})
+			.onConflictDoNothing({
+				target: platformCatalogChangeSet.idempotencyKey,
+			})
 			.returning();
 		if (!created) {
-			throw new HTTPException(500, { message: "Change set was not saved" });
+			const [existing] = await db
+				.select()
+				.from(platformCatalogChangeSet)
+				.where(
+					eq(platformCatalogChangeSet.idempotencyKey, input.idempotencyKey),
+				)
+				.limit(1);
+			if (!existing || !changeSetMatchesInput(existing, input)) {
+				return c.json(
+					{
+						message: "Idempotency key was already used for another change set",
+					},
+					409,
+				);
+			}
+			return c.json(existing);
 		}
 		await db.insert(platformAuditLog).values({
 			userId: user.id,
@@ -1961,8 +2156,31 @@ platformCatalog.openapi(
 						entityId,
 						reasons: ["no_available_mapping"],
 					})),
+				...Object.values(applied.state.models)
+					.filter((policy) => {
+						if (
+							!impact.modelIds.has(policy.modelId) ||
+							!policy.replacementModelId
+						) {
+							return false;
+						}
+						const replacement = snapshot.models.find(
+							(item) => item.id === policy.replacementModelId,
+						);
+						return (
+							!replacement?.available || replacement.lifecycle !== "active"
+						);
+					})
+					.map((policy) => ({
+						entityId: policy.modelId,
+						reasons: ["replacement_model_unavailable"],
+					})),
 			];
-			const blockers = [...mappingBlockers, ...entityBlockers];
+			const blockers = [
+				...missingOperationBlockers(view, input.operations),
+				...mappingBlockers,
+				...entityBlockers,
+			];
 			const fallbackLosses = snapshot.models
 				.filter(
 					(item) =>
@@ -1986,11 +2204,22 @@ platformCatalog.openapi(
 								`${impact.queuedJobs} queued or in-progress jobs retain their accepted mapping and revision`,
 							]
 						: []),
+					...(impact.scheduledConflicts.length > 0
+						? [
+								`Overlaps scheduled change sets: ${impact.scheduledConflicts.join(", ")}`,
+							]
+						: []),
+					...(impact.marginEstimate && impact.requests === 0
+						? [
+								"Margin changed but no matching requests were found in the 24-hour impact window",
+							]
+						: []),
 				],
 				affected: {
 					providers: impact.providerIds.size,
 					models: impact.modelIds.size,
 					mappings: inspectedMappings.length,
+					credentials: impact.credentials,
 					requests: impact.requests,
 					organizations: impact.organizations,
 					projects: impact.projects,
@@ -1998,8 +2227,10 @@ platformCatalog.openapi(
 					queuedJobs: impact.queuedJobs,
 				},
 				fallbackLosses,
+				stateChanges: impact.stateChanges,
+				scheduledConflicts: impact.scheduledConflicts,
 				priceChanges: impact.priceChanges,
-				marginEstimate: null,
+				marginEstimate: impact.marginEstimate,
 			};
 			await db.insert(platformAuditLog).values({
 				userId: user.id,
@@ -2112,7 +2343,6 @@ platformCatalog.openapi(
 			throw new HTTPException(401, { message: "Unauthorized" });
 		}
 		const changeSetId = c.req.valid("param").id;
-		const view = await loadCatalogView();
 		let result: {
 			changeSetId: string;
 			catalogRevision: number;
@@ -2121,6 +2351,7 @@ platformCatalog.openapi(
 		try {
 			result = await db.transaction(async (tx) => {
 				await tx.execute(sql`SELECT pg_advisory_xact_lock(7220260722)`);
+				const view = await loadCatalogView();
 				const [changeSet] = await tx
 					.select()
 					.from(platformCatalogChangeSet)
@@ -2163,6 +2394,14 @@ platformCatalog.openapi(
 				const operations = catalogChangeSetInputSchema.shape.operations.parse(
 					changeSet.operations,
 				);
+				const missing = missingOperationBlockers(view, operations);
+				if (missing.length > 0) {
+					throw new HTTPException(400, {
+						message: `Catalog source entities do not exist: ${missing
+							.map((item) => item.entityId)
+							.join(", ")}`,
+					});
+				}
 				const updatedAt = new Date().toISOString();
 				const applied = applyCatalogOperations({
 					state: policyStateFromView(view),
@@ -2175,28 +2414,18 @@ platformCatalog.openapi(
 					applied.state,
 					0,
 				);
-				const affectedMappings = provisionalSnapshot.mappings.filter(
-					(mapping) =>
-						applied.affectedEntityIds.includes(mapping.id) ||
-						applied.affectedEntityIds.includes(mapping.providerId) ||
-						applied.affectedEntityIds.includes(mapping.modelId),
-				);
-				const blockers = affectedMappings.filter((mapping) => {
-					const policy = applied.state.mappings[mapping.id];
-					return (
-						policy?.enabled === true &&
-						!mapping.available &&
-						mapping.reasons.some(
-							(reason) =>
-								reason !== "circuit_open" && reason !== "circuit_half_open",
-						)
+				try {
+					validateCatalogActivation(
+						provisionalSnapshot,
+						applied.state,
+						applied.affectedEntityIds,
 					);
-				});
-				if (blockers.length > 0) {
+				} catch (error) {
 					throw new HTTPException(400, {
-						message: `Catalog activation is blocked: ${blockers
-							.map((item) => `${item.id} (${item.reasons.join(", ")})`)
-							.join("; ")}`,
+						message:
+							error instanceof Error
+								? error.message
+								: "Catalog activation is blocked",
 					});
 				}
 				await tx
@@ -2286,6 +2515,146 @@ platformCatalog.openapi(
 platformCatalog.openapi(
 	createRoute({
 		method: "post",
+		path: "/change-sets/{id}/rollback/preview",
+		request: { params: z.object({ id: z.string().min(1) }) },
+		responses: {
+			200: {
+				description:
+					"Validate and calculate impact for an inverse catalog revision",
+				content: { "application/json": { schema: previewResponseSchema } },
+			},
+			404: { description: "Applied change set not found" },
+		},
+	}),
+	async (c) => {
+		const user = c.get("user");
+		if (!user) {
+			throw new HTTPException(401, { message: "Unauthorized" });
+		}
+		const originalId = c.req.valid("param").id;
+		const view = await loadCatalogView();
+		const [original] = await db
+			.select()
+			.from(platformCatalogChangeSet)
+			.where(eq(platformCatalogChangeSet.id, originalId))
+			.limit(1);
+		if (
+			!original ||
+			!new Set(["applied", "rolled_back"]).has(original.state) ||
+			!original.inverseOperations
+		) {
+			throw new HTTPException(404, {
+				message: "Applied change set is not rollbackable",
+			});
+		}
+		const operations = catalogChangeSetInputSchema.shape.operations.parse(
+			original.inverseOperations,
+		);
+		const missing = missingOperationBlockers(view, operations);
+		const applied = applyCatalogOperations({
+			state: policyStateFromView(view),
+			operations,
+			actor: user.id,
+			updatedAt: new Date().toISOString(),
+		});
+		const snapshot = resolveStateSnapshot(
+			view,
+			applied.state,
+			view.snapshot.revision + 1,
+		);
+		const blockers = [...missing];
+		if (blockers.length === 0) {
+			try {
+				validateCatalogActivation(
+					snapshot,
+					applied.state,
+					applied.affectedEntityIds,
+				);
+			} catch (error) {
+				blockers.push({
+					entityId: "catalog",
+					reasons: [
+						error instanceof Error
+							? error.message
+							: "Rollback conflicts with current catalog state",
+					],
+				});
+			}
+		}
+		const impact = await calculateCatalogImpact(
+			view,
+			operations,
+			view.snapshot,
+			snapshot,
+		);
+		const inspectedMappings = snapshot.mappings.filter(
+			(mapping) =>
+				impact.providerIds.has(mapping.providerId) ||
+				impact.modelIds.has(mapping.modelId) ||
+				impact.mappingIds.has(mapping.id),
+		);
+		const fallbackLosses = snapshot.models
+			.filter(
+				(item) =>
+					item.available &&
+					!snapshot.mappings.some(
+						(mapping) => mapping.modelId === item.id && mapping.routable,
+					),
+			)
+			.map((item) => item.id);
+		const response = {
+			valid: blockers.length === 0,
+			baseRevision: view.snapshot.revision || null,
+			resultingChecksum: snapshot.checksum,
+			blockers,
+			warnings: [
+				...(impact.queuedJobs > 0
+					? [
+							`${impact.queuedJobs} queued or in-progress jobs retain their accepted mapping and revision`,
+						]
+					: []),
+				...(impact.scheduledConflicts.length > 0
+					? [
+							`Overlaps scheduled change sets: ${impact.scheduledConflicts.join(", ")}`,
+						]
+					: []),
+			],
+			affected: {
+				providers: impact.providerIds.size,
+				models: impact.modelIds.size,
+				mappings: inspectedMappings.length,
+				credentials: impact.credentials,
+				requests: impact.requests,
+				organizations: impact.organizations,
+				projects: impact.projects,
+				apiKeys: impact.apiKeys,
+				queuedJobs: impact.queuedJobs,
+			},
+			fallbackLosses,
+			stateChanges: impact.stateChanges,
+			scheduledConflicts: impact.scheduledConflicts,
+			priceChanges: impact.priceChanges,
+			marginEstimate: impact.marginEstimate,
+		};
+		await db.insert(platformAuditLog).values({
+			userId: user.id,
+			action: "platform_catalog.preview",
+			resourceId: originalId,
+			success: true,
+			metadata: {
+				kind: "rollback",
+				operationCount: operations.length,
+				valid: response.valid,
+			},
+			...requestMetadata(c),
+		});
+		return c.json(response);
+	},
+);
+
+platformCatalog.openapi(
+	createRoute({
+		method: "post",
 		path: "/change-sets/{id}/rollback",
 		request: { params: z.object({ id: z.string().min(1) }) },
 		responses: {
@@ -2312,7 +2681,6 @@ platformCatalog.openapi(
 			throw new HTTPException(401, { message: "Unauthorized" });
 		}
 		const originalId = c.req.valid("param").id;
-		const view = await loadCatalogView();
 		let rollback: {
 			changeSetId: string;
 			inverseOf: string;
@@ -2321,6 +2689,7 @@ platformCatalog.openapi(
 		try {
 			rollback = await db.transaction(async (tx) => {
 				await tx.execute(sql`SELECT pg_advisory_xact_lock(7220260722)`);
+				const view = await loadCatalogView();
 				const [original] = await tx
 					.select()
 					.from(platformCatalogChangeSet)
@@ -2360,6 +2729,14 @@ platformCatalog.openapi(
 				const operations = catalogChangeSetInputSchema.shape.operations.parse(
 					original.inverseOperations,
 				);
+				const missing = missingOperationBlockers(view, operations);
+				if (missing.length > 0) {
+					throw new HTTPException(409, {
+						message: `Rollback source entities no longer exist: ${missing
+							.map((item) => item.entityId)
+							.join(", ")}`,
+					});
+				}
 				const [rollbackChangeSet] = await tx
 					.insert(platformCatalogChangeSet)
 					.values({
@@ -2390,6 +2767,20 @@ platformCatalog.openapi(
 					applied.state,
 					0,
 				);
+				try {
+					validateCatalogActivation(
+						provisionalSnapshot,
+						applied.state,
+						applied.affectedEntityIds,
+					);
+				} catch (error) {
+					throw new HTTPException(409, {
+						message:
+							error instanceof Error
+								? error.message
+								: "Rollback conflicts with current catalog state",
+					});
+				}
 				await persistPolicyState(tx, applied.state, operations);
 				const [revision] = await tx
 					.insert(platformCatalogRevision)

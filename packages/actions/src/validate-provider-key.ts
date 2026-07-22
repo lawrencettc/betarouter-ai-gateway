@@ -215,8 +215,9 @@ export async function validateProviderKey(
 		const modelDef = models.find((m) => m.id === validationModel!.modelId);
 
 		// For Azure, if we have a custom validation model, use it directly as modelId
-		const effectiveModelId =
-			provider === "azure" && providerKeyOptions?.azure_validation_model
+		const effectiveModelId = validationOverride
+			? validationOverride.externalId
+			: provider === "azure" && providerKeyOptions?.azure_validation_model
 				? providerKeyOptions.azure_validation_model
 				: validationModel.modelId;
 

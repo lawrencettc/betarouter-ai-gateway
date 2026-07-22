@@ -128,8 +128,6 @@ CREATE TABLE "platform_provider_policy" (
 );
 --> statement-breakpoint
 ALTER TABLE "platform_audit_log" DROP CONSTRAINT "platform_audit_log_15Y5ZyW9mO0x_fkey";--> statement-breakpoint
-DROP INDEX "account_user_id_idx";--> statement-breakpoint
-DROP INDEX "platform_provider_credential_active_fingerprint_unique";--> statement-breakpoint
 ALTER TABLE "log" ADD COLUMN "model_provider_mapping_id" text;--> statement-breakpoint
 ALTER TABLE "log" ADD COLUMN "catalog_revision_id" bigint;--> statement-breakpoint
 ALTER TABLE "video_job" ADD COLUMN "model_provider_mapping_id" text;--> statement-breakpoint
@@ -143,8 +141,6 @@ CREATE INDEX "platform_mapping_policy_enabled_priority_idx" ON "platform_mapping
 CREATE INDEX "platform_mapping_test_run_mapping_created_at_idx" ON "platform_mapping_test_run" ("mapping_id","created_at");--> statement-breakpoint
 CREATE INDEX "platform_model_policy_visible_enabled_idx" ON "platform_model_policy" ("visible","enabled");--> statement-breakpoint
 CREATE INDEX "platform_provider_policy_visible_enabled_idx" ON "platform_provider_policy" ("visible","enabled");--> statement-breakpoint
-CREATE INDEX "account_user_id_idx" ON "account" ("user_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "platform_provider_credential_active_fingerprint_unique" ON "platform_provider_credential" ("token_fingerprint") WHERE "status" <> 'deleted';--> statement-breakpoint
 ALTER TABLE "log" ADD CONSTRAINT "log_model_provider_mapping_id_model_provider_mapping_id_fkey" FOREIGN KEY ("model_provider_mapping_id") REFERENCES "model_provider_mapping"("id") ON DELETE SET NULL;--> statement-breakpoint
 ALTER TABLE "log" ADD CONSTRAINT "log_catalog_revision_id_platform_catalog_revision_id_fkey" FOREIGN KEY ("catalog_revision_id") REFERENCES "platform_catalog_revision"("id") ON DELETE SET NULL;--> statement-breakpoint
 ALTER TABLE "platform_catalog_change_set" ADD CONSTRAINT "platform_catalog_change_set_EByU555E9lzX_fkey" FOREIGN KEY ("base_revision") REFERENCES "platform_catalog_revision"("id");--> statement-breakpoint

@@ -116,6 +116,40 @@ async function loadStoreView(tx: CatalogTransaction) {
 
 type StoreView = Awaited<ReturnType<typeof loadStoreView>>;
 
+function validateOperationEntities(
+	view: StoreView,
+	operations: CatalogOperationV1[],
+): void {
+	const providerIds = new Set(view.providers.map((item) => item.id));
+	const modelIds = new Set(view.models.map((item) => item.id));
+	const mappingIds = new Set(view.mappings.map((item) => item.id));
+	const missing = operations.flatMap((operation) => {
+		if (operation.type === "provider.set_policy") {
+			return providerIds.has(operation.providerId)
+				? []
+				: [operation.providerId];
+		}
+		if (operation.type === "model.set_policy") {
+			return modelIds.has(operation.modelId) ? [] : [operation.modelId];
+		}
+		if (operation.type === "entity.archive_policy") {
+			const ids =
+				operation.entityType === "provider"
+					? providerIds
+					: operation.entityType === "model"
+						? modelIds
+						: mappingIds;
+			return ids.has(operation.entityId) ? [] : [operation.entityId];
+		}
+		return mappingIds.has(operation.mappingId) ? [] : [operation.mappingId];
+	});
+	if (missing.length > 0) {
+		throw new Error(
+			`Catalog source entities do not exist: ${[...new Set(missing)].join(", ")}`,
+		);
+	}
+}
+
 function policyState(view: StoreView): CatalogPolicyState {
 	return {
 		providers: Object.fromEntries(
@@ -300,7 +334,7 @@ function resolveStoreSnapshot(
 	});
 }
 
-function validateActivation(
+export function validateCatalogActivation(
 	snapshot: EffectiveCatalog,
 	state: CatalogPolicyState,
 	affectedIds: string[],
@@ -459,6 +493,7 @@ export interface AppliedCatalogChangeSet {
 	catalogRevision: number;
 	affectedEntities: string[];
 	cacheInvalidation: "published" | "failed";
+	alreadyApplied?: boolean;
 }
 
 /**
@@ -580,6 +615,7 @@ export async function applyStoredCatalogChangeSet(input: {
 					catalogRevision: changeSet.appliedRevision,
 					affectedEntities: [],
 					cacheInvalidation: "published" as const,
+					alreadyApplied: true,
 				};
 			}
 			if (!new Set(["draft", "scheduled"]).has(changeSet.state)) {
@@ -601,6 +637,7 @@ export async function applyStoredCatalogChangeSet(input: {
 				changeSet.operations,
 			);
 			const view = await loadStoreView(tx);
+			validateOperationEntities(view, operations);
 			const applied = applyCatalogOperations({
 				state: policyState(view),
 				operations,
@@ -608,7 +645,11 @@ export async function applyStoredCatalogChangeSet(input: {
 				updatedAt: now.toISOString(),
 			});
 			const provisional = resolveStoreSnapshot(view, applied.state, 0);
-			validateActivation(provisional, applied.state, applied.affectedEntityIds);
+			validateCatalogActivation(
+				provisional,
+				applied.state,
+				applied.affectedEntityIds,
+			);
 			await tx
 				.update(platformCatalogChangeSet)
 				.set({ state: "applying", errorCode: null })
@@ -648,6 +689,9 @@ export async function applyStoredCatalogChangeSet(input: {
 				cacheInvalidation: "published" as const,
 			};
 		});
+		if (result.alreadyApplied) {
+			return result;
+		}
 		try {
 			await redisClient.publish(
 				CATALOG_INVALIDATION_CHANNEL,

@@ -1712,7 +1712,7 @@ describe("calculateCosts", () => {
 				null,
 				null,
 				{
-					customPricing: {
+					pricingOverride: {
 						providerId: "custom",
 						externalId: "gpt-5.5",
 						inputPrice: "0.000002",
@@ -1725,6 +1725,40 @@ describe("calculateCosts", () => {
 			expect(result.inputCost).toBeCloseTo(0.0002); // 100 * 0.000002
 			expect(result.outputCost).toBeCloseTo(0.0004); // 50 * 0.000008
 			expect(result.totalCost).toBeCloseTo(0.0006);
+		});
+
+		it("uses a platform catalog price override for a standard provider", async () => {
+			const result = await calculateCosts(
+				"gpt-4",
+				"openai",
+				null,
+				100,
+				50,
+				null,
+				undefined,
+				null,
+				0,
+				undefined,
+				0,
+				null,
+				null,
+				undefined,
+				null,
+				null,
+				{
+					pricingOverride: {
+						providerId: "openai",
+						externalId: "gpt-4",
+						inputPrice: "0.000001",
+						outputPrice: "0.000003",
+						streaming: true,
+					},
+				},
+			);
+
+			expect(result.inputCost).toBeCloseTo(0.0001);
+			expect(result.outputCost).toBeCloseTo(0.00015);
+			expect(result.totalCost).toBeCloseTo(0.00025);
 		});
 	});
 });
