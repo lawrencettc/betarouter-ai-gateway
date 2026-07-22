@@ -349,6 +349,35 @@ function resolvePricePolicy(
 	};
 }
 
+export function serializeMappingPricePolicy(
+	pricePolicy: typeof platformMappingPricePolicy.$inferSelect,
+) {
+	const common = {
+		currency: pricePolicy.currency,
+		allowNegativeMargin: pricePolicy.allowNegativeMargin,
+	};
+	if (pricePolicy.mode === "source_cost") {
+		return mappingPricePolicySchema.parse({
+			...common,
+			mode: "source_cost",
+		});
+	}
+	if (pricePolicy.mode === "markup") {
+		return mappingPricePolicySchema.parse({
+			...common,
+			mode: "markup",
+			markupBps: pricePolicy.markupBps,
+			negativeMarginReason: pricePolicy.negativeMarginReason ?? undefined,
+		});
+	}
+	return mappingPricePolicySchema.parse({
+		...common,
+		mode: "fixed",
+		fixedPrices: pricePolicy.fixedPrices,
+		negativeMarginReason: pricePolicy.negativeMarginReason ?? undefined,
+	});
+}
+
 async function loadCatalogView(): Promise<{
 	snapshot: EffectiveCatalog;
 	sourceProviders: (typeof provider.$inferSelect)[];
@@ -1614,15 +1643,7 @@ platformCatalog.openapi(
 				margin: definedPriceRecord(item.margin),
 				pricePolicyUpdatedAt: pricePolicy?.updatedAt.toISOString() ?? null,
 				pricePolicy: pricePolicy
-					? mappingPricePolicySchema.parse({
-							mode: pricePolicy.mode,
-							currency: pricePolicy.currency,
-							markupBps: pricePolicy.markupBps ?? undefined,
-							fixedPrices: pricePolicy.fixedPrices ?? undefined,
-							allowNegativeMargin: pricePolicy.allowNegativeMargin,
-							negativeMarginReason:
-								pricePolicy.negativeMarginReason ?? undefined,
-						})
+					? serializeMappingPricePolicy(pricePolicy)
 					: null,
 				credentialAvailable:
 					view.credentialAvailability[item.providerId] ?? false,

@@ -1,7 +1,10 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import platformCatalog, { matchesCatalogSearch } from "./platform-catalog.js";
+import platformCatalog, {
+	matchesCatalogSearch,
+	serializeMappingPricePolicy,
+} from "./platform-catalog.js";
 
 import type { Variables } from "@/auth/config.js";
 import type { ServerTypes } from "@/vars.js";
@@ -77,5 +80,76 @@ describe("platform catalog search", () => {
 		expect(matchesCatalogSearch(mapping, "openai")).toBe(true);
 		expect(matchesCatalogSearch(mapping, "relay/gpt-5.5")).toBe(true);
 		expect(matchesCatalogSearch(mapping, "anthropic")).toBe(false);
+	});
+});
+
+describe("platform catalog price policy serialization", () => {
+	it("serializes source-cost and markup policies without foreign fields", () => {
+		const updatedAt = new Date("2026-07-22T14:00:00.000Z");
+		const common = {
+			mappingId: "mapping-policy",
+			currency: "USD" as const,
+			fixedPrices: null,
+			allowNegativeMargin: false,
+			negativeMarginReason: null,
+			updatedAt,
+			updatedBy: "operator",
+		};
+
+		expect(
+			serializeMappingPricePolicy({
+				...common,
+				mode: "source_cost",
+				markupBps: null,
+			}),
+		).toEqual({
+			mode: "source_cost",
+			currency: "USD",
+			allowNegativeMargin: false,
+		});
+
+		expect(
+			serializeMappingPricePolicy({
+				...common,
+				mode: "markup",
+				markupBps: 2500,
+			}),
+		).toEqual({
+			mode: "markup",
+			currency: "USD",
+			markupBps: 2500,
+			allowNegativeMargin: false,
+		});
+	});
+
+	it("omits markup-only fields from a fixed price policy", () => {
+		const updatedAt = new Date("2026-07-22T14:00:00.000Z");
+
+		expect(
+			serializeMappingPricePolicy({
+				mappingId: "mapping-fixed",
+				currency: "USD",
+				mode: "fixed",
+				markupBps: null,
+				fixedPrices: {
+					version: 1,
+					inputPerMillionTokens: "5",
+					outputPerMillionTokens: "30",
+				},
+				allowNegativeMargin: false,
+				negativeMarginReason: null,
+				updatedAt,
+				updatedBy: "operator",
+			}),
+		).toEqual({
+			mode: "fixed",
+			currency: "USD",
+			fixedPrices: {
+				version: 1,
+				inputPerMillionTokens: "5",
+				outputPerMillionTokens: "30",
+			},
+			allowNegativeMargin: false,
+		});
 	});
 });
