@@ -12,6 +12,12 @@ const target = {
 };
 
 describe("catalogMappingTestProfile", () => {
+	it("uses the launch chat profile by default", () => {
+		expect(catalogMappingTestProfile(target)).toMatch(
+			/^minimal-chat@sha256:[a-f0-9]{64}$/,
+		);
+	});
+
 	it("is stable across object key order", () => {
 		expect(catalogMappingTestProfile(target)).toBe(
 			catalogMappingTestProfile({

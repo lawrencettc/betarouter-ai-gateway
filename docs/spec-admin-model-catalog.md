@@ -652,11 +652,13 @@ not compete visually with the three primary state columns.
 
 ## Testing console
 
-The test console selects a mapping, credential, and operation-specific test
-profile. It sends a minimal non-sensitive request through the same adapter,
-URL-safety validation, credential resolution, and response normalization used
-by production. Profiles cover only supported capabilities such as chat,
-streaming, embeddings, moderation, image, audio, OCR, and video.
+The launch test console selects a mapping and credential and runs the
+`minimal-chat` profile. It sends a minimal non-sensitive request through the
+same adapter, URL-safety validation, credential resolution, and response
+normalization used by production. Non-chat mappings remain disabled at launch;
+operation-specific profiles for embeddings, moderation, image, audio, OCR, and
+video are tracked in the future build plan and are required before those
+mappings can activate.
 
 Activation requires a passing test after changes to external ID, credential,
 base URL, provider options, or capability-critical mapping fields. Price-only,
@@ -814,7 +816,8 @@ preserved for a later retry.
 ## Future build plan
 
 The following are intentionally deferred and must not be accidentally folded
-into the launch implementation:
+into the launch implementation. The maintained execution backlog is
+`docs/future-build-plan-admin-model-catalog.md`:
 
 1. Role-based separation for catalog editors, credential administrators,
    approvers, and read-only operators.

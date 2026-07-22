@@ -284,7 +284,9 @@ Phase 3 API   Phase 4 Gateway  Phase 5 Worker/jobs
 
 ### Work
 
-1. Add sanitized mapping test profiles that call the production adapters.
+1. Add the sanitized `minimal-chat` mapping test through the production adapter
+   and block non-chat mappings until their operation-specific future profile is
+   implemented.
 2. Invalidate required test revisions after connection-critical changes.
 3. Aggregate mapping health from existing request metrics while excluding
    customer-caused 4xx responses.
@@ -397,7 +399,8 @@ review wait and production observation windows:
 
 ## Explicit future backlog
 
-Track, but do not implement in this build:
+Track, but do not implement in this build. Detailed scope and entry gates live
+in `docs/future-build-plan-admin-model-catalog.md`:
 
 - operator role separation and multi-operator approvals;
 - scoped catalogs by organization/project/plan/region/key;

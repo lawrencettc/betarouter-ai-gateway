@@ -32,6 +32,7 @@ export interface CatalogMappingTestTarget {
 export function catalogMappingTestProfile(
 	input: CatalogMappingTestTarget,
 ): string {
+	const profile = input.profile ?? "minimal-chat";
 	const payload = canonical({
 		version: 1,
 		mappingId: input.mappingId,
@@ -45,9 +46,9 @@ export function catalogMappingTestProfile(
 		credentialFingerprint: input.credentialFingerprint,
 		baseUrl: input.baseUrl ?? null,
 		credentialOptions: input.credentialOptions ?? null,
-		profile: input.profile ?? "minimal",
+		profile,
 	});
-	return `minimal@sha256:${createHash("sha256")
+	return `${profile}@sha256:${createHash("sha256")
 		.update(JSON.stringify(payload))
 		.digest("hex")}`;
 }

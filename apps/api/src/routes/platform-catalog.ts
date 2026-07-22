@@ -1705,7 +1705,7 @@ platformCatalog.openapi(
 					"application/json": {
 						schema: z.object({
 							credentialId: z.string().min(1),
-							testProfile: z.string().trim().min(1).max(100).default("minimal"),
+							testProfile: z.literal("minimal-chat").default("minimal-chat"),
 						}),
 					},
 				},
@@ -1768,6 +1768,17 @@ platformCatalog.openapi(
 		) {
 			throw new HTTPException(400, {
 				message: "Select an active credential for the mapping provider",
+			});
+		}
+		const [sourceModel] = await db
+			.select({ output: model.output })
+			.from(model)
+			.where(eq(model.id, mapping.modelId))
+			.limit(1);
+		if (!sourceModel?.output.includes("text")) {
+			throw new HTTPException(400, {
+				message:
+					"This launch supports mapping probes for text/chat models only. Keep this mapping disabled until its operation-specific probe profile is available.",
 			});
 		}
 		const currentPolicy = mappingPolicy[0];

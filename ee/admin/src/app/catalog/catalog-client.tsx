@@ -1271,7 +1271,7 @@ export function CatalogClient({
 		}
 		const result = await api.POST("/admin/catalog/mappings/{id}/test", {
 			params: { path: { id: item.id } },
-			body: { credentialId: credential.id, testProfile: "minimal" },
+			body: { credentialId: credential.id, testProfile: "minimal-chat" },
 		});
 		if (result.error) {
 			toast.error(message(result.error));
