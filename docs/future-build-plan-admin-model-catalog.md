@@ -27,6 +27,11 @@ production evidence.
    `log` and `video_job` during a measured low-traffic maintenance window. New
    writes are enforced at launch; the historical scan is deferred to avoid a
    surprise lock on these high-volume tables.
+7. Add an explicit application-start barrier so API, worker, scheduler, catalog
+   health, and video-job loops do not start until database migrations complete.
+   The first production rollout exposed a short-lived race where worker queries
+   ran before the new catalog tables and lineage columns existed; migrations
+   completed successfully, but startup should be quiet and deterministic.
 
 ## Provider and model expansion
 
