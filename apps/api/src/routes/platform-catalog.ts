@@ -102,6 +102,65 @@ const effectiveMappingSchema = z.object({
 	markupBps: z.number().nullable(),
 	reasons: z.array(z.string()),
 });
+const providerPolicyViewSchema = z.object({
+	updatedAt: z.string(),
+	enabled: z.boolean(),
+	visible: z.boolean(),
+	lifecycle: lifecycleSchema,
+	sortOrder: z.number(),
+	displayNameOverride: z.string().nullable(),
+	descriptionOverride: z.string().nullable(),
+	websiteOverride: z.string().nullable(),
+	deprecatedAt: z.string().nullable(),
+	retireAt: z.string().nullable(),
+	replacementProviderId: z.string().nullable(),
+});
+const modelPolicyViewSchema = z.object({
+	updatedAt: z.string(),
+	enabled: z.boolean(),
+	visible: z.boolean(),
+	allowDirect: z.boolean(),
+	lifecycle: lifecycleSchema,
+	replacementModelId: z.string().nullable(),
+	deprecatedAt: z.string().nullable(),
+	retireAt: z.string().nullable(),
+	retirementMessage: z.string().nullable(),
+	displayNameOverride: z.string().nullable(),
+	descriptionOverride: z.string().nullable(),
+	aliasesOverride: z.array(z.string()).nullable(),
+	sortOrder: z.number(),
+});
+const mappingPolicyViewSchema = z.object({
+	updatedAt: z.string(),
+	enabled: z.boolean(),
+	externalIdOverride: z.string().nullable(),
+	priority: z.number(),
+	weight: z.number(),
+	breakerEnabled: z.boolean(),
+	requiredTestRevision: z.string().nullable(),
+	contextSizeLimit: z.number().nullable(),
+	maxOutputLimit: z.number().nullable(),
+	disabledCapabilities: z.array(z.string()),
+});
+const adminProviderSchema = effectiveProviderSchema.extend({
+	name: z.string(),
+	description: z.string(),
+	credentialAvailable: z.boolean(),
+	policy: providerPolicyViewSchema.nullable(),
+});
+const adminModelSchema = effectiveModelSchema.extend({
+	name: z.string(),
+	description: z.string(),
+	family: z.string(),
+	output: z.array(z.string()),
+	policy: modelPolicyViewSchema.nullable(),
+});
+const adminMappingSchema = effectiveMappingSchema.extend({
+	credentialAvailable: z.boolean(),
+	policy: mappingPolicyViewSchema.nullable(),
+	pricePolicyUpdatedAt: z.string().nullable(),
+	pricePolicy: mappingPricePolicySchema.nullable(),
+});
 const listQuerySchema = z.object({
 	search: z.string().optional(),
 	state: z
@@ -270,7 +329,12 @@ async function loadCatalogView(): Promise<{
 		db
 			.select({ provider: platformProviderCredential.provider })
 			.from(platformProviderCredential)
-			.where(eq(platformProviderCredential.status, "active")),
+			.where(
+				and(
+					eq(platformProviderCredential.status, "active"),
+					eq(platformProviderCredential.validationStatus, "valid"),
+				),
+			),
 		db
 			.select({
 				mappingId: platformMappingTestRun.mappingId,
@@ -817,11 +881,6 @@ interface FilterableEffective {
 	available: boolean;
 }
 
-type EffectiveListItem =
-	| z.infer<typeof effectiveProviderSchema>
-	| z.infer<typeof effectiveModelSchema>
-	| z.infer<typeof effectiveMappingSchema>;
-
 function filterEffective<T extends FilterableEffective>(
 	items: T[],
 	query: z.infer<typeof listQuerySchema>,
@@ -846,6 +905,16 @@ function filterEffective<T extends FilterableEffective>(
 				return false;
 		}
 	});
+}
+
+function definedPriceRecord(
+	values: Record<string, string | undefined>,
+): Record<string, string> {
+	return Object.fromEntries(
+		Object.entries(values).filter(
+			(entry): entry is [string, string] => entry[1] !== undefined,
+		),
+	);
 }
 
 platformCatalog.openapi(
@@ -905,47 +974,210 @@ platformCatalog.openapi(
 	},
 );
 
-for (const definition of [
-	{ path: "/providers", key: "providers", schema: effectiveProviderSchema },
-	{ path: "/models", key: "models", schema: effectiveModelSchema },
-	{ path: "/mappings", key: "mappings", schema: effectiveMappingSchema },
-] as const) {
-	platformCatalog.openapi(
-		createRoute({
-			method: "get",
-			path: definition.path,
-			request: { query: listQuerySchema },
-			responses: {
-				200: {
-					description: "Paginated effective catalog entities",
-					content: {
-						"application/json": {
-							schema: z.object({
-								items: z.array(definition.schema),
-								total: z.number(),
-								page: z.number(),
-								pageSize: z.number(),
-								revision: z.number(),
-								checksum: z.string(),
-							}),
-						},
+function catalogListResponse<T extends z.ZodTypeAny>(item: T) {
+	return z.object({
+		items: z.array(item),
+		total: z.number(),
+		page: z.number(),
+		pageSize: z.number(),
+		revision: z.number(),
+		checksum: z.string(),
+	});
+}
+
+platformCatalog.openapi(
+	createRoute({
+		method: "get",
+		path: "/providers",
+		request: { query: listQuerySchema },
+		responses: {
+			200: {
+				description: "Paginated effective catalog providers",
+				content: {
+					"application/json": {
+						schema: catalogListResponse(adminProviderSchema),
 					},
 				},
 			},
-		}),
-		async (c) => {
-			const query = c.req.valid("query");
-			const { snapshot } = await loadCatalogView();
-			const sourceItems = snapshot[definition.key] as EffectiveListItem[];
-			const items = filterEffective(sourceItems, query);
-			return c.json({
-				...paginate(items, query.page, query.pageSize),
-				revision: snapshot.revision,
-				checksum: snapshot.checksum,
-			});
 		},
-	);
-}
+	}),
+	async (c) => {
+		const query = c.req.valid("query");
+		const view = await loadCatalogView();
+		const sourceById = new Map(
+			view.sourceProviders.map((item) => [item.id, item]),
+		);
+		const policyById = new Map(
+			view.providerPolicies.map((item) => [item.providerId, item]),
+		);
+		const filtered = filterEffective(view.snapshot.providers, query).map(
+			(item) => {
+				const source = sourceById.get(item.id)!;
+				const policy = policyById.get(item.id);
+				return {
+					...item,
+					name: source.name,
+					description: source.description,
+					credentialAvailable: view.credentialAvailability[item.id] ?? false,
+					policy: policy
+						? {
+								updatedAt: policy.updatedAt.toISOString(),
+								enabled: policy.enabled,
+								visible: policy.visible,
+								lifecycle: policy.lifecycle,
+								sortOrder: policy.sortOrder,
+								displayNameOverride: policy.displayNameOverride,
+								descriptionOverride: policy.descriptionOverride,
+								websiteOverride: policy.websiteOverride,
+								deprecatedAt: policy.deprecatedAt?.toISOString() ?? null,
+								retireAt: policy.retireAt?.toISOString() ?? null,
+								replacementProviderId: policy.replacementProviderId,
+							}
+						: null,
+				};
+			},
+		);
+		return c.json({
+			...paginate(filtered, query.page, query.pageSize),
+			revision: view.snapshot.revision,
+			checksum: view.snapshot.checksum,
+		});
+	},
+);
+
+platformCatalog.openapi(
+	createRoute({
+		method: "get",
+		path: "/models",
+		request: { query: listQuerySchema },
+		responses: {
+			200: {
+				description: "Paginated effective catalog models",
+				content: {
+					"application/json": { schema: catalogListResponse(adminModelSchema) },
+				},
+			},
+		},
+	}),
+	async (c) => {
+		const query = c.req.valid("query");
+		const view = await loadCatalogView();
+		const sourceById = new Map(
+			view.sourceModels.map((item) => [item.id, item]),
+		);
+		const policyById = new Map(
+			view.modelPolicies.map((item) => [item.modelId, item]),
+		);
+		const filtered = filterEffective(view.snapshot.models, query).map(
+			(item) => {
+				const source = sourceById.get(item.id)!;
+				const policy = policyById.get(item.id);
+				return {
+					...item,
+					name: source.name,
+					description: source.description,
+					family: source.family,
+					output: source.output,
+					policy: policy
+						? {
+								updatedAt: policy.updatedAt.toISOString(),
+								enabled: policy.enabled,
+								visible: policy.visible,
+								allowDirect: policy.allowDirect,
+								lifecycle: policy.lifecycle,
+								replacementModelId: policy.replacementModelId,
+								deprecatedAt: policy.deprecatedAt?.toISOString() ?? null,
+								retireAt: policy.retireAt?.toISOString() ?? null,
+								retirementMessage: policy.retirementMessage,
+								displayNameOverride: policy.displayNameOverride,
+								descriptionOverride: policy.descriptionOverride,
+								aliasesOverride: policy.aliasesOverride,
+								sortOrder: policy.sortOrder,
+							}
+						: null,
+				};
+			},
+		);
+		return c.json({
+			...paginate(filtered, query.page, query.pageSize),
+			revision: view.snapshot.revision,
+			checksum: view.snapshot.checksum,
+		});
+	},
+);
+
+platformCatalog.openapi(
+	createRoute({
+		method: "get",
+		path: "/mappings",
+		request: { query: listQuerySchema },
+		responses: {
+			200: {
+				description: "Paginated effective catalog mappings",
+				content: {
+					"application/json": {
+						schema: catalogListResponse(adminMappingSchema),
+					},
+				},
+			},
+		},
+	}),
+	async (c) => {
+		const query = c.req.valid("query");
+		const view = await loadCatalogView();
+		const policyById = new Map(
+			view.mappingPolicies.map((item) => [item.mappingId, item]),
+		);
+		const pricePolicyById = new Map(
+			view.pricePolicies.map((item) => [item.mappingId, item]),
+		);
+		const filtered = filterEffective(view.snapshot.mappings, query).map(
+			(item) => {
+				const policy = policyById.get(item.id);
+				const pricePolicy = pricePolicyById.get(item.id);
+				return {
+					...item,
+					sourcePrices: definedPriceRecord(item.sourcePrices),
+					customerPrices: definedPriceRecord(item.customerPrices),
+					margin: definedPriceRecord(item.margin),
+					pricePolicyUpdatedAt: pricePolicy?.updatedAt.toISOString() ?? null,
+					pricePolicy: pricePolicy
+						? mappingPricePolicySchema.parse({
+								mode: pricePolicy.mode,
+								currency: pricePolicy.currency,
+								markupBps: pricePolicy.markupBps ?? undefined,
+								fixedPrices: pricePolicy.fixedPrices ?? undefined,
+								allowNegativeMargin: pricePolicy.allowNegativeMargin,
+								negativeMarginReason:
+									pricePolicy.negativeMarginReason ?? undefined,
+							})
+						: null,
+					credentialAvailable:
+						view.credentialAvailability[item.providerId] ?? false,
+					policy: policy
+						? {
+								updatedAt: policy.updatedAt.toISOString(),
+								enabled: policy.enabled,
+								externalIdOverride: policy.externalIdOverride,
+								priority: policy.priority,
+								weight: policy.weight,
+								breakerEnabled: policy.breakerEnabled,
+								requiredTestRevision: policy.requiredTestRevision,
+								contextSizeLimit: policy.contextSizeLimit,
+								maxOutputLimit: policy.maxOutputLimit,
+								disabledCapabilities: policy.disabledCapabilities,
+							}
+						: null,
+				};
+			},
+		);
+		return c.json({
+			...paginate(filtered, query.page, query.pageSize),
+			revision: view.snapshot.revision,
+			checksum: view.snapshot.checksum,
+		});
+	},
+);
 
 const mappingTestResponseSchema = z.object({
 	id: z.string(),
@@ -1047,7 +1279,9 @@ platformCatalog.openapi(
 			getCatalogBreakerStates({
 				revision: view.snapshot.revision,
 				mappingIds: [mappingId],
-			}),
+			}).catch(
+				() => ({}) as Awaited<ReturnType<typeof getCatalogBreakerStates>>,
+			),
 			db
 				.select({
 					status: platformProviderCredential.status,
