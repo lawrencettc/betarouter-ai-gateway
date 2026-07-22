@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { platformAdminMiddleware } from "@/middleware/admin.js";
 
+import { validateProviderKey } from "@llmgateway/actions";
 import { redisClient } from "@llmgateway/cache";
 import {
 	applyCatalogOperations,
@@ -16,6 +17,7 @@ import {
 } from "@llmgateway/catalog";
 import {
 	db,
+	decryptPlatformProviderToken,
 	desc,
 	eq,
 	and,
@@ -52,7 +54,7 @@ import type {
 	ResolvedMappingPrice,
 } from "@llmgateway/catalog";
 import type { PlatformCatalogOperationV1 } from "@llmgateway/db";
-import type { Provider } from "@llmgateway/models";
+import type { Provider, ProviderId } from "@llmgateway/models";
 
 const platformCatalog = new OpenAPIHono<ServerTypes>();
 platformCatalog.use("/*", platformAdminMiddleware);
@@ -564,7 +566,8 @@ async function calculateCatalogImpact(
 			? inArray(videoJob.usedProvider, affectedProviderIds)
 			: undefined,
 	);
-	const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+	const lookbackMs = 24 * 60 * 60 * 1000;
+	const since = new Date(Date.now() - lookbackMs);
 	const [traffic, queued] = await Promise.all([
 		scope
 			? db
@@ -926,6 +929,213 @@ for (const definition of [
 	);
 }
 
+const mappingTestResponseSchema = z.object({
+	id: z.string(),
+	createdAt: z.string(),
+	mappingId: z.string(),
+	credentialId: z.string().nullable(),
+	catalogRevision: z.number().nullable(),
+	status: z.enum(["running", "passed", "failed", "error"]),
+	testProfile: z.string(),
+	latencyMs: z.number().nullable(),
+	upstreamStatus: z.number().nullable(),
+	errorClass: z.string().nullable(),
+	sanitizedMessage: z.string().nullable(),
+	finishedAt: z.string().nullable(),
+});
+
+platformCatalog.openapi(
+	createRoute({
+		method: "get",
+		path: "/mappings/{id}/tests",
+		request: { params: z.object({ id: z.string().min(1) }) },
+		responses: {
+			200: {
+				description: "Sanitized mapping test history",
+				content: {
+					"application/json": { schema: z.array(mappingTestResponseSchema) },
+				},
+			},
+		},
+	}),
+	async (c) => {
+		const rows = await db
+			.select()
+			.from(platformMappingTestRun)
+			.where(eq(platformMappingTestRun.mappingId, c.req.valid("param").id))
+			.orderBy(desc(platformMappingTestRun.createdAt))
+			.limit(100);
+		return c.json(
+			rows.map((row) => ({
+				...row,
+				createdAt: row.createdAt.toISOString(),
+				finishedAt: row.finishedAt?.toISOString() ?? null,
+			})),
+		);
+	},
+);
+
+platformCatalog.openapi(
+	createRoute({
+		method: "post",
+		path: "/mappings/{id}/tests",
+		request: {
+			params: z.object({ id: z.string().min(1) }),
+			body: {
+				required: true,
+				content: {
+					"application/json": {
+						schema: z.object({
+							credentialId: z.string().min(1),
+							testProfile: z.string().trim().min(1).max(100).default("minimal"),
+						}),
+					},
+				},
+			},
+		},
+		responses: {
+			200: {
+				description: "Completed mapping test",
+				content: {
+					"application/json": { schema: mappingTestResponseSchema },
+				},
+			},
+			400: { description: "Credential does not match mapping" },
+			404: { description: "Mapping or credential not found" },
+		},
+	}),
+	async (c) => {
+		const user = c.get("user");
+		if (!user) {
+			throw new HTTPException(401, { message: "Unauthorized" });
+		}
+		const mappingId = c.req.valid("param").id;
+		const input = c.req.valid("json");
+		const [[mapping], [credential], [revision], mappingPolicy] =
+			await Promise.all([
+				db
+					.select()
+					.from(modelProviderMapping)
+					.where(eq(modelProviderMapping.id, mappingId))
+					.limit(1),
+				db
+					.select()
+					.from(platformProviderCredential)
+					.where(eq(platformProviderCredential.id, input.credentialId))
+					.limit(1),
+				db
+					.select({ id: platformCatalogRevision.id })
+					.from(platformCatalogRevision)
+					.orderBy(desc(platformCatalogRevision.id))
+					.limit(1),
+				db
+					.select({
+						externalIdOverride: platformMappingPolicy.externalIdOverride,
+					})
+					.from(platformMappingPolicy)
+					.where(eq(platformMappingPolicy.mappingId, mappingId))
+					.limit(1),
+			]);
+		if (!mapping || !credential || credential.status === "deleted") {
+			throw new HTTPException(404, {
+				message: "Mapping or platform credential not found",
+			});
+		}
+		if (
+			credential.status !== "active" ||
+			credential.provider !== mapping.providerId
+		) {
+			throw new HTTPException(400, {
+				message: "Select an active credential for the mapping provider",
+			});
+		}
+		const [run] = await db
+			.insert(platformMappingTestRun)
+			.values({
+				createdBy: user.id,
+				mappingId,
+				credentialId: credential.id,
+				catalogRevision: revision?.id ?? null,
+				status: "running",
+				testProfile: input.testProfile,
+			})
+			.returning();
+		if (!run) {
+			throw new HTTPException(500, { message: "Mapping test was not created" });
+		}
+		const startedAt = Date.now();
+		let status: "passed" | "failed" | "error" = "error";
+		let upstreamStatus: number | null = null;
+		let errorClass: string | null = null;
+		let sanitizedMessage = "Mapping test could not be completed";
+		try {
+			const token = decryptPlatformProviderToken(
+				credential,
+				credential.id,
+				credential.provider,
+			);
+			const result = await validateProviderKey(
+				credential.provider as ProviderId,
+				token,
+				credential.baseUrl ?? undefined,
+				process.env.NODE_ENV === "test",
+				credential.options ?? undefined,
+				{
+					modelId: mapping.modelId,
+					externalId:
+						mappingPolicy[0]?.externalIdOverride ?? mapping.externalId,
+					region: mapping.region,
+				},
+			);
+			status = result.valid ? "passed" : "failed";
+			upstreamStatus = result.statusCode ?? null;
+			errorClass = result.valid ? null : "upstream_validation_failed";
+			sanitizedMessage = result.valid
+				? "Mapping test passed"
+				: result.statusCode
+					? `Mapping test failed (upstream status ${result.statusCode})`
+					: "Mapping test failed";
+		} catch (error) {
+			errorClass = error instanceof Error ? error.name : "mapping_test_error";
+		}
+		const finishedAt = new Date();
+		const [updated] = await db
+			.update(platformMappingTestRun)
+			.set({
+				status,
+				latencyMs: Date.now() - startedAt,
+				upstreamStatus,
+				errorClass,
+				sanitizedMessage,
+				finishedAt,
+			})
+			.where(eq(platformMappingTestRun.id, run.id))
+			.returning();
+		await db.insert(platformAuditLog).values({
+			userId: user.id,
+			action: "platform_catalog.test",
+			resourceId: mappingId,
+			success: status === "passed",
+			metadata: {
+				testRunId: run.id,
+				credentialId: credential.id,
+				testProfile: input.testProfile,
+				status,
+				upstreamStatus,
+			},
+			...requestMetadata(c),
+		});
+		if (!updated) {
+			throw new HTTPException(500, { message: "Mapping test was not saved" });
+		}
+		return c.json({
+			...updated,
+			createdAt: updated.createdAt.toISOString(),
+			finishedAt: updated.finishedAt?.toISOString() ?? null,
+		});
+	},
+);
+
 platformCatalog.openapi(
 	createRoute({
 		method: "get",
@@ -1134,17 +1344,6 @@ platformCatalog.openapi(
 					)
 					.map((operation) =>
 						operation.type === "model.set_policy" ? operation.modelId : "",
-					),
-			);
-			const activatingMappingIds = new Set(
-				input.operations
-					.filter(
-						(operation) =>
-							operation.type === "mapping.set_policy" &&
-							operation.patch.enabled === true,
-					)
-					.map((operation) =>
-						operation.type === "mapping.set_policy" ? operation.mappingId : "",
 					),
 			);
 			const inspectedMappings = snapshot.mappings.filter(
