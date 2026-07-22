@@ -94,8 +94,33 @@ function assertExpected(
 	}
 }
 
-function withoutMetadata<T extends PolicyRecord>(record: T) {
-	const { updatedAt: _updatedAt, updatedBy: _updatedBy, ...policy } = record;
+function providerPolicyPatch(record: ProviderPolicyRecord) {
+	const {
+		providerId: _providerId,
+		updatedAt: _updatedAt,
+		updatedBy: _updatedBy,
+		...policy
+	} = record;
+	return policy;
+}
+
+function modelPolicyPatch(record: ModelPolicyRecord) {
+	const {
+		modelId: _modelId,
+		updatedAt: _updatedAt,
+		updatedBy: _updatedBy,
+		...policy
+	} = record;
+	return policy;
+}
+
+function mappingPolicyPatch(record: MappingPolicyRecord) {
+	const {
+		mappingId: _mappingId,
+		updatedAt: _updatedAt,
+		updatedBy: _updatedBy,
+		...policy
+	} = record;
 	return policy;
 }
 
@@ -138,7 +163,7 @@ export function applyCatalogOperations(input: ApplyCatalogOperationsInput): {
 					providerId: operation.providerId,
 					expectedUpdatedAt: input.updatedAt,
 					patch: current
-						? withoutMetadata(current)
+						? providerPolicyPatch(current)
 						: { visible: false, enabled: false, lifecycle: "draft" },
 				});
 				affectedEntityIds.add(operation.providerId);
@@ -171,7 +196,7 @@ export function applyCatalogOperations(input: ApplyCatalogOperationsInput): {
 					modelId: operation.modelId,
 					expectedUpdatedAt: input.updatedAt,
 					patch: current
-						? withoutMetadata(current)
+						? modelPolicyPatch(current)
 						: {
 								visible: false,
 								enabled: false,
@@ -210,7 +235,7 @@ export function applyCatalogOperations(input: ApplyCatalogOperationsInput): {
 					type: "mapping.set_policy",
 					mappingId: operation.mappingId,
 					expectedUpdatedAt: input.updatedAt,
-					patch: current ? withoutMetadata(current) : { enabled: false },
+					patch: current ? mappingPolicyPatch(current) : { enabled: false },
 				});
 				affectedEntityIds.add(operation.mappingId);
 				break;
@@ -297,7 +322,7 @@ export function applyCatalogOperations(input: ApplyCatalogOperationsInput): {
 						type: "provider.set_policy",
 						providerId: operation.entityId,
 						expectedUpdatedAt: input.updatedAt,
-						patch: withoutMetadata(current),
+						patch: providerPolicyPatch(current),
 					});
 				} else if (operation.entityType === "model") {
 					const current = next.models[operation.entityId];
@@ -323,7 +348,7 @@ export function applyCatalogOperations(input: ApplyCatalogOperationsInput): {
 						type: "model.set_policy",
 						modelId: operation.entityId,
 						expectedUpdatedAt: input.updatedAt,
-						patch: withoutMetadata(current),
+						patch: modelPolicyPatch(current),
 					});
 				} else {
 					const current = next.mappings[operation.entityId];
@@ -347,7 +372,7 @@ export function applyCatalogOperations(input: ApplyCatalogOperationsInput): {
 						type: "mapping.set_policy",
 						mappingId: operation.entityId,
 						expectedUpdatedAt: input.updatedAt,
-						patch: withoutMetadata(current),
+						patch: mappingPolicyPatch(current),
 					});
 				}
 				affectedEntityIds.add(operation.entityId);
