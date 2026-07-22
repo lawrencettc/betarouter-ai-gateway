@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { compareCatalogRevision } from "./catalog-store.js";
 import {
+	calculateCatalogChecksum,
 	resolveEffectiveCatalog,
 	type CatalogResolverInput,
 } from "./catalog.js";
@@ -36,6 +37,22 @@ function input(
 }
 
 describe("resolveEffectiveCatalog", () => {
+	it("calculates the same v2 checksum regardless of object key order", () => {
+		const left = {
+			providers: [{ id: "openai", visible: false }],
+			prices: { input: "5", output: "30" },
+		};
+		const right = {
+			prices: { output: "30", input: "5" },
+			providers: [{ visible: false, id: "openai" }],
+		};
+
+		expect(calculateCatalogChecksum(left)).toBe(
+			calculateCatalogChecksum(right),
+		);
+		expect(calculateCatalogChecksum(left)).toMatch(/^sha256:v2:[a-f0-9]{64}$/);
+	});
+
 	it("keeps source entries hidden and unavailable until the operator publishes policy", () => {
 		const catalog = resolveEffectiveCatalog(input());
 
