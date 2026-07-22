@@ -165,10 +165,19 @@ modelsApi.openapi(listModels, async (c) => {
 		const noTraining = query.no_training || false;
 		const currentDate = new Date();
 		const catalogFlags = readCatalogFeatureFlags();
-		const catalogSnapshot =
-			catalogFlags.discoveryEnabled || catalogFlags.shadowRead
-				? await getEffectiveCatalogSnapshot()
-				: null;
+		let catalogSnapshot = null;
+		if (catalogFlags.discoveryEnabled || catalogFlags.shadowRead) {
+			try {
+				catalogSnapshot = await getEffectiveCatalogSnapshot();
+			} catch (error) {
+				if (catalogFlags.discoveryEnabled) {
+					throw error;
+				}
+				logger.warn("Catalog /v1/models shadow snapshot unavailable", {
+					error: error instanceof Error ? error.message : String(error),
+				});
+			}
+		}
 		const visibleModelIds = new Set(catalogSnapshot?.visibleModelIds ?? []);
 		const catalogModelById = new Map(
 			(catalogSnapshot?.models ?? []).map((model) => [model.id, model]),
