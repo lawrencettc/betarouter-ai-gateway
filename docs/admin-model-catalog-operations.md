@@ -94,6 +94,54 @@ discovery, routing, and breaker enforcement off. Review shadow comparison logs
 for model/mapping counts and route decisions. Investigate every unexplained
 difference before continuing.
 
+#### Shadow completion audit
+
+Keep the shadow stage active for at least 24 hours from the current revision's
+`created_at`. At the end of the window, perform these read-only checks before
+closing the launch gate:
+
+1. Require Gateway `/v1/models` and Platform `/internal/models` to return HTTP
+   200 with the same catalog revision and checksum. A weak ETag is acceptable,
+   but both surfaces must return the same value.
+2. Confirm the latest revision ID, checksum, provider/model/mapping counts, and
+   total revision-row count still match the recorded launch baseline.
+3. Recompute operator-policy fingerprints with the canonical aggregation below.
+   Compare every row count and fingerprint with the values recorded at the
+   beginning of the window:
+
+   ```sql
+   SELECT count(*),
+          md5(jsonb_agg(to_jsonb(policy) ORDER BY provider_id)::text)
+   FROM platform_provider_policy AS policy;
+
+   SELECT count(*),
+          md5(jsonb_agg(to_jsonb(policy) ORDER BY model_id)::text)
+   FROM platform_model_policy AS policy;
+
+   SELECT count(*),
+          md5(jsonb_agg(to_jsonb(policy) ORDER BY mapping_id)::text)
+   FROM platform_mapping_policy AS policy;
+
+   SELECT count(*),
+          md5(jsonb_agg(to_jsonb(policy) ORDER BY mapping_id)::text)
+   FROM platform_mapping_price_policy AS policy;
+   ```
+
+4. Confirm `PLATFORM_CATALOG_SHADOW_READ=true`, discovery and routing remain
+   `false`, and breaker mode remains `off` in the running container.
+5. Review logs from the recorded UTC start time. Record the number of Gateway
+   model-list comparisons, Platform discovery comparisons, routing decisions,
+   snapshot/breaker availability warnings, and catalog-specific errors.
+6. Confirm the unified container, PostgreSQL, Redis, worker, and Cloudflare
+   Tunnel are healthy. Recheck the production backup integrity and the saved
+   rollback image reference.
+
+Stop and investigate if a policy fingerprint changes, the revision changes
+without an audited catalog action or source-content change, the two discovery
+surfaces disagree, any required process is unhealthy, or an unexplained catalog
+warning/error remains. Do not enable discovery, routing, or breaker enforcement
+as part of this audit; each later stage requires separate operator approval.
+
 ### Stage 3: hidden canary
 
 In Admin, choose one low-risk text/chat model with at least one validated
