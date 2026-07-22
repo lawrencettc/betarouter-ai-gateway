@@ -1,1 +1,1 @@
-export { desc } from "drizzle-orm";
+export { and, desc, eq, inArray, lte, sql } from "drizzle-orm";
