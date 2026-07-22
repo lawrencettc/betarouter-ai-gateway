@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { redisClient } from "@llmgateway/cache";
 import { db } from "@llmgateway/db/db";
 import { desc } from "@llmgateway/db/orm";
 import { platformCatalogRevision } from "@llmgateway/db/schema";
@@ -88,11 +89,46 @@ export async function loadLatestCatalogSnapshot(): Promise<EffectiveCatalog | nu
 const maxStaleMs = Number(
 	process.env.PLATFORM_CATALOG_MAX_STALE_MS ?? 5 * 60 * 1000,
 );
+const refreshIntervalMs = Number(
+	process.env.PLATFORM_CATALOG_REFRESH_INTERVAL_MS ?? 10_000,
+);
 const runtimeCache = new CatalogSnapshotCache({
 	loadLatest: loadLatestCatalogSnapshot,
 	maxStaleMs:
 		Number.isFinite(maxStaleMs) && maxStaleMs >= 0 ? maxStaleMs : 300_000,
+	refreshIntervalMs:
+		Number.isFinite(refreshIntervalMs) && refreshIntervalMs >= 0
+			? refreshIntervalMs
+			: 10_000,
 });
+
+const CATALOG_INVALIDATION_CHANNEL = "platform-catalog:invalidate";
+let invalidationListenerStarted = false;
+
+function ensureInvalidationListener(): void {
+	if (invalidationListenerStarted || process.env.NODE_ENV === "test") {
+		return;
+	}
+	invalidationListenerStarted = true;
+	const subscriber = redisClient.duplicate({ lazyConnect: true });
+	subscriber.on("message", (channel, payload) => {
+		if (channel !== CATALOG_INVALIDATION_CHANNEL) {
+			return;
+		}
+		try {
+			const revision = z
+				.object({ revision: z.number().int().positive() })
+				.parse(JSON.parse(payload)).revision;
+			void runtimeCache.handleInvalidation(revision).catch(() => undefined);
+		} catch {
+			// Ignore malformed events; bounded polling still refreshes the revision.
+		}
+	});
+	void subscriber
+		.connect()
+		.then(async () => await subscriber.subscribe(CATALOG_INVALIDATION_CHANNEL))
+		.catch(() => undefined);
+}
 
 async function withRuntimeBreakers(
 	snapshot: EffectiveCatalog,
@@ -143,6 +179,7 @@ async function withRuntimeBreakers(
 export async function getEffectiveCatalogSnapshot(
 	options: { claimBreakerProbes?: boolean } = {},
 ): Promise<EffectiveCatalog> {
+	ensureInvalidationListener();
 	return await withRuntimeBreakers(
 		(await runtimeCache.get()).snapshot,
 		options.claimBreakerProbes ?? false,

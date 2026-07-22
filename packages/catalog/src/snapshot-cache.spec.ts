@@ -78,4 +78,42 @@ describe("CatalogSnapshotCache", () => {
 
 		await expect(cache.poll()).rejects.toBeInstanceOf(CatalogUnavailableError);
 	});
+
+	it("self-heals a missed event after the refresh interval", async () => {
+		let now = 1_000;
+		let current = snapshot(1);
+		const cache = new CatalogSnapshotCache({
+			loadLatest: async () => current,
+			now: () => now,
+			maxStaleMs: 60_000,
+			refreshIntervalMs: 10_000,
+		});
+
+		expect((await cache.get()).snapshot.revision).toBe(1);
+		current = snapshot(2);
+		now += 9_999;
+		expect((await cache.get()).snapshot.revision).toBe(1);
+		now += 1;
+		expect((await cache.get()).snapshot.revision).toBe(2);
+	});
+
+	it("coalesces concurrent refreshes", async () => {
+		let resolveLoad!: (value: ReturnType<typeof snapshot>) => void;
+		let loads = 0;
+		const cache = new CatalogSnapshotCache({
+			loadLatest: async () => {
+				loads += 1;
+				return await new Promise<ReturnType<typeof snapshot>>((resolve) => {
+					resolveLoad = resolve;
+				});
+			},
+			maxStaleMs: 60_000,
+		});
+
+		const first = cache.get();
+		const second = cache.get();
+		resolveLoad(snapshot(3));
+		await expect(Promise.all([first, second])).resolves.toHaveLength(2);
+		expect(loads).toBe(1);
+	});
 });

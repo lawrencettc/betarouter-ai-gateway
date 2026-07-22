@@ -19,29 +19,36 @@ interface CatalogSnapshotCacheOptions {
 	loadLatest: () => Promise<EffectiveCatalog | null>;
 	now?: () => number;
 	maxStaleMs: number;
+	refreshIntervalMs?: number;
 }
 
 export class CatalogSnapshotCache {
 	private readonly loadLatest: () => Promise<EffectiveCatalog | null>;
 	private readonly now: () => number;
 	private readonly maxStaleMs: number;
+	private readonly refreshIntervalMs: number;
 	private cached: CatalogSnapshotResult | null = null;
+	private refreshPromise: Promise<CatalogSnapshotResult> | null = null;
 
 	public constructor(options: CatalogSnapshotCacheOptions) {
 		this.loadLatest = options.loadLatest;
 		this.now = options.now ?? Date.now;
 		this.maxStaleMs = options.maxStaleMs;
+		this.refreshIntervalMs = options.refreshIntervalMs ?? 10_000;
 	}
 
 	public async get(): Promise<CatalogSnapshotResult> {
-		if (this.cached) {
+		if (
+			this.cached &&
+			this.now() - this.cached.loadedAt < this.refreshIntervalMs
+		) {
 			return this.cached;
 		}
-		return await this.refresh();
+		return await this.coalescedRefresh();
 	}
 
 	public async poll(): Promise<CatalogSnapshotResult> {
-		return await this.refresh();
+		return await this.coalescedRefresh();
 	}
 
 	public async handleInvalidation(
@@ -50,7 +57,14 @@ export class CatalogSnapshotCache {
 		if (this.cached && revision <= this.cached.snapshot.revision) {
 			return this.cached;
 		}
-		return await this.refresh();
+		return await this.coalescedRefresh();
+	}
+
+	private async coalescedRefresh(): Promise<CatalogSnapshotResult> {
+		this.refreshPromise ??= this.refresh().finally(() => {
+			this.refreshPromise = null;
+		});
+		return await this.refreshPromise;
 	}
 
 	private async refresh(): Promise<CatalogSnapshotResult> {
