@@ -1578,6 +1578,9 @@ importers:
       '@llmgateway/actions':
         specifier: workspace:*
         version: link:../actions
+      '@llmgateway/catalog':
+        specifier: workspace:*
+        version: link:../catalog
       '@llmgateway/db':
         specifier: workspace:*
         version: link:../db
