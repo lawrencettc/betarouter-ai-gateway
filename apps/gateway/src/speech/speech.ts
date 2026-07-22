@@ -791,6 +791,8 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 			const envResult = await getProviderEnv(providerId, {
 				selectionScope: upstreamModel,
 				excludedIndices: excludedEnvKeyIndices,
+				requiredCredentialId: mapping.platformCredentialId,
+				requiredCredentialProfile: mapping.platformCredentialProfile,
 			});
 			usedToken = envResult.token;
 			configIndex = envResult.configIndex;
@@ -819,6 +821,8 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 				const envResult = await getProviderEnv(providerId, {
 					selectionScope: upstreamModel,
 					excludedIndices: excludedEnvKeyIndices,
+					requiredCredentialId: mapping.platformCredentialId,
+					requiredCredentialProfile: mapping.platformCredentialProfile,
 				});
 				usedToken = envResult.token;
 				configIndex = envResult.configIndex;

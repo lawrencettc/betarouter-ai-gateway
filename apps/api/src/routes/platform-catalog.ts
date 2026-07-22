@@ -9,6 +9,8 @@ import { redisClient } from "@llmgateway/cache";
 import {
 	applyCatalogOperations,
 	catalogMappingTestProfile,
+	catalogCredentialConfigurationProfile,
+	findCatalogRoutabilityLosses,
 	catalogChangeSetInputSchema,
 	fixedPricesV1ToPriceMap,
 	getCatalogBreakerStates,
@@ -340,6 +342,7 @@ async function loadCatalogView(): Promise<{
 		tokenFingerprint: string;
 		baseUrl: string | null;
 		options: unknown;
+		priority: number;
 	}>;
 	passedTests: Set<string>;
 }> {
@@ -369,6 +372,7 @@ async function loadCatalogView(): Promise<{
 				tokenFingerprint: platformProviderCredential.tokenFingerprint,
 				baseUrl: platformProviderCredential.baseUrl,
 				options: platformProviderCredential.options,
+				priority: platformProviderCredential.priority,
 			})
 			.from(platformProviderCredential)
 			.where(
@@ -448,9 +452,13 @@ async function loadCatalogView(): Promise<{
 		mappingReadiness: Object.fromEntries(
 			sourceMappings.map((item) => {
 				const mappingPolicy = mappingPolicyById.get(item.id);
-				const testPassed = credentials
+				const testedCredential = credentials
 					.filter((credential) => credential.provider === item.providerId)
-					.some((credential) => {
+					.sort(
+						(left, right) =>
+							left.priority - right.priority || left.id.localeCompare(right.id),
+					)
+					.find((credential) => {
 						const profile = catalogMappingTestProfile({
 							mappingId: item.id,
 							providerId: item.providerId,
@@ -471,7 +479,16 @@ async function loadCatalogView(): Promise<{
 					item.id,
 					{
 						priceReady: priceMappingIds.has(item.id) && prices.ready,
-						testPassed,
+						testPassed: testedCredential !== undefined,
+						platformCredentialId: testedCredential?.id ?? null,
+						platformCredentialProfile: testedCredential
+							? catalogCredentialConfigurationProfile({
+									credentialId: testedCredential.id,
+									credentialFingerprint: testedCredential.tokenFingerprint,
+									baseUrl: testedCredential.baseUrl,
+									credentialOptions: testedCredential.options,
+								})
+							: null,
 						sourcePrices: prices.sourcePrices,
 						customerPrices: prices.customerPrices,
 						margin: prices.margin,
@@ -658,9 +675,13 @@ function resolveStateSnapshot(
 		mappingReadiness: Object.fromEntries(
 			view.sourceMappings.map((item) => {
 				const mappingPolicy = state.mappings[item.id];
-				const testPassed = view.credentials
+				const testedCredential = view.credentials
 					.filter((credential) => credential.provider === item.providerId)
-					.some((credential) => {
+					.sort(
+						(left, right) =>
+							left.priority - right.priority || left.id.localeCompare(right.id),
+					)
+					.find((credential) => {
 						const profile = catalogMappingTestProfile({
 							mappingId: item.id,
 							providerId: item.providerId,
@@ -681,7 +702,16 @@ function resolveStateSnapshot(
 					item.id,
 					{
 						priceReady: prices.ready,
-						testPassed,
+						testPassed: testedCredential !== undefined,
+						platformCredentialId: testedCredential?.id ?? null,
+						platformCredentialProfile: testedCredential
+							? catalogCredentialConfigurationProfile({
+									credentialId: testedCredential.id,
+									credentialFingerprint: testedCredential.tokenFingerprint,
+									baseUrl: testedCredential.baseUrl,
+									credentialOptions: testedCredential.options,
+								})
+							: null,
 						sourcePrices: prices.sourcePrices,
 						customerPrices: prices.customerPrices,
 						margin: prices.margin,
@@ -2187,20 +2217,20 @@ platformCatalog.openapi(
 						reasons: ["replacement_model_unavailable"],
 					})),
 			];
+			const fallbackLosses = findCatalogRoutabilityLosses(
+				view.snapshot,
+				snapshot,
+				applied.state,
+			);
 			const blockers = [
 				...missingOperationBlockers(view, input.operations),
 				...mappingBlockers,
 				...entityBlockers,
+				...fallbackLosses.map((entityId) => ({
+					entityId,
+					reasons: ["fallback_coverage_lost"],
+				})),
 			];
-			const fallbackLosses = snapshot.models
-				.filter(
-					(item) =>
-						item.available &&
-						!snapshot.mappings.some(
-							(mapping) => mapping.modelId === item.id && mapping.routable,
-						),
-				)
-				.map((item) => item.id);
 			const response = {
 				valid: blockers.length === 0,
 				baseRevision: input.baseRevision,
@@ -2604,15 +2634,17 @@ platformCatalog.openapi(
 				impact.modelIds.has(mapping.modelId) ||
 				impact.mappingIds.has(mapping.id),
 		);
-		const fallbackLosses = snapshot.models
-			.filter(
-				(item) =>
-					item.available &&
-					!snapshot.mappings.some(
-						(mapping) => mapping.modelId === item.id && mapping.routable,
-					),
-			)
-			.map((item) => item.id);
+		const fallbackLosses = findCatalogRoutabilityLosses(
+			view.snapshot,
+			snapshot,
+			applied.state,
+		);
+		blockers.push(
+			...fallbackLosses.map((entityId) => ({
+				entityId,
+				reasons: ["fallback_coverage_lost"],
+			})),
+		);
 		const response = {
 			valid: blockers.length === 0,
 			baseRevision: view.snapshot.revision || null,

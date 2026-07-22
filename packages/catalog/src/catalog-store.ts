@@ -16,6 +16,7 @@ import {
 } from "@llmgateway/db/schema";
 import { getProviderEnvConfig, getProviderEnvVar } from "@llmgateway/models";
 
+import { validateCatalogActivation } from "./activation.js";
 import { resolveEffectiveCatalog } from "./catalog.js";
 import { applyCatalogOperations } from "./change-set.js";
 import {
@@ -28,7 +29,10 @@ import {
 	resolveMappingPrice,
 	sourceMappingPricesToPriceMap,
 } from "./pricing.js";
-import { catalogMappingTestProfile } from "./test-target.js";
+import {
+	catalogCredentialConfigurationProfile,
+	catalogMappingTestProfile,
+} from "./test-target.js";
 
 import type {
 	CatalogLifecycle,
@@ -42,7 +46,9 @@ import type { Provider } from "@llmgateway/models";
 
 const CATALOG_INVALIDATION_CHANNEL = "platform-catalog:invalidate";
 
-type CatalogTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+export type CatalogTransaction = Parameters<
+	Parameters<typeof db.transaction>[0]
+>[0];
 
 function environmentCredentialAvailable(providerId: string): boolean {
 	const envVar = getProviderEnvVar(providerId as Provider);
@@ -82,6 +88,7 @@ async function loadStoreView(tx: CatalogTransaction) {
 				tokenFingerprint: platformProviderCredential.tokenFingerprint,
 				baseUrl: platformProviderCredential.baseUrl,
 				options: platformProviderCredential.options,
+				priority: platformProviderCredential.priority,
 			})
 			.from(platformProviderCredential)
 			.where(
@@ -252,9 +259,13 @@ function resolveStoreSnapshot(
 				})
 			: null;
 		const mappingPolicy = state.mappings[mapping.id];
-		const testPassed = view.credentials
+		const testedCredential = view.credentials
 			.filter((credential) => credential.provider === mapping.providerId)
-			.some((credential) => {
+			.sort(
+				(left, right) =>
+					left.priority - right.priority || left.id.localeCompare(right.id),
+			)
+			.find((credential) => {
 				const profile = catalogMappingTestProfile({
 					mappingId: mapping.id,
 					providerId: mapping.providerId,
@@ -272,7 +283,16 @@ function resolveStoreSnapshot(
 			});
 		mappingReadiness[mapping.id] = {
 			priceReady: prices?.ready ?? false,
-			testPassed,
+			testPassed: testedCredential !== undefined,
+			platformCredentialId: testedCredential?.id ?? null,
+			platformCredentialProfile: testedCredential
+				? catalogCredentialConfigurationProfile({
+						credentialId: testedCredential.id,
+						credentialFingerprint: testedCredential.tokenFingerprint,
+						baseUrl: testedCredential.baseUrl,
+						credentialOptions: testedCredential.options,
+					})
+				: null,
 			sourcePrices,
 			customerPrices: prices?.customerPrices ?? {},
 			margin: prices?.margin ?? {},
@@ -332,66 +352,6 @@ function resolveStoreSnapshot(
 		mappingReadiness,
 		breakerStates: {},
 	});
-}
-
-export function validateCatalogActivation(
-	snapshot: EffectiveCatalog,
-	state: CatalogPolicyState,
-	affectedIds: string[],
-): void {
-	const affected = new Set(affectedIds);
-	const blockers: string[] = [];
-	for (const mapping of snapshot.mappings) {
-		if (
-			affected.has(mapping.id) &&
-			state.mappings[mapping.id]?.enabled &&
-			!mapping.available
-		) {
-			const reasons = mapping.reasons.filter(
-				(reason) => reason !== "circuit_open" && reason !== "circuit_half_open",
-			);
-			if (reasons.length > 0) {
-				blockers.push(`${mapping.id} (${reasons.join(", ")})`);
-			}
-		}
-	}
-	for (const providerPolicy of Object.values(state.providers)) {
-		if (
-			affected.has(providerPolicy.providerId) &&
-			providerPolicy.enabled &&
-			!snapshot.mappings.some(
-				(mapping) =>
-					mapping.providerId === providerPolicy.providerId && mapping.available,
-			)
-		) {
-			blockers.push(`${providerPolicy.providerId} (no available mapping)`);
-		}
-	}
-	for (const modelPolicy of Object.values(state.models)) {
-		if (
-			affected.has(modelPolicy.modelId) &&
-			modelPolicy.enabled &&
-			!snapshot.mappings.some(
-				(mapping) =>
-					mapping.modelId === modelPolicy.modelId && mapping.available,
-			)
-		) {
-			blockers.push(`${modelPolicy.modelId} (no available mapping)`);
-		}
-		if (modelPolicy.replacementModelId) {
-			const replacement = snapshot.models.find(
-				(item) => item.id === modelPolicy.replacementModelId,
-			);
-			if (!replacement?.available || replacement.lifecycle !== "active") {
-				blockers.push(
-					`${modelPolicy.modelId} (replacement model is not active and available)`,
-				);
-			}
-		}
-	}
-	if (blockers.length > 0) {
-		throw new Error(`Catalog activation is blocked: ${blockers.join("; ")}`);
-	}
 }
 
 async function persistState(
@@ -505,12 +465,16 @@ export async function refreshCatalogRevisionFromSource(
 	input: {
 		actorId?: string;
 		now?: Date;
+		transaction?: CatalogTransaction;
+		deferInvalidation?: boolean;
 	} = {},
 ): Promise<AppliedCatalogChangeSet | null> {
 	const actorId = input.actorId ?? "system:source-sync";
 	const now = input.now ?? new Date();
-	const result = await db.transaction(async (tx) => {
-		await tx.execute(sql`SELECT pg_advisory_xact_lock(7220260722)`);
+	const publishRevision = async (tx: CatalogTransaction, takeLock: boolean) => {
+		if (takeLock) {
+			await tx.execute(sql`SELECT pg_advisory_xact_lock(7220260722)`);
+		}
 		const view = await loadStoreView(tx);
 		const provisional = resolveStoreSnapshot(view, policyState(view), 0);
 		const [latest] = await tx
@@ -576,10 +540,22 @@ export async function refreshCatalogRevisionFromSource(
 			],
 			cacheInvalidation: "published" as const,
 		};
-	});
+	};
+	const result = input.transaction
+		? await publishRevision(input.transaction, false)
+		: await db.transaction(async (tx) => await publishRevision(tx, true));
 	if (!result) {
 		return null;
 	}
+	if (input.deferInvalidation) {
+		return result;
+	}
+	return await publishCatalogRevisionInvalidation(result);
+}
+
+export async function publishCatalogRevisionInvalidation(
+	result: AppliedCatalogChangeSet,
+): Promise<AppliedCatalogChangeSet> {
 	try {
 		await redisClient.publish(
 			CATALOG_INVALIDATION_CHANNEL,

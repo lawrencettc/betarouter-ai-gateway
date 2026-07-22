@@ -29,6 +29,31 @@ export interface CatalogMappingTestTarget {
 	profile?: string;
 }
 
+export interface CatalogCredentialConfigurationTarget {
+	credentialId: string;
+	credentialFingerprint: string;
+	baseUrl?: string | null;
+	credentialOptions?: unknown;
+}
+
+export function catalogCredentialConfigurationProfile(
+	input: CatalogCredentialConfigurationTarget,
+): string {
+	return `sha256:${createHash("sha256")
+		.update(
+			JSON.stringify(
+				canonical({
+					version: 1,
+					credentialId: input.credentialId,
+					credentialFingerprint: input.credentialFingerprint,
+					baseUrl: input.baseUrl ?? null,
+					credentialOptions: input.credentialOptions ?? null,
+				}),
+			),
+		)
+		.digest("hex")}`;
+}
+
 export function catalogMappingTestProfile(
 	input: CatalogMappingTestTarget,
 ): string {

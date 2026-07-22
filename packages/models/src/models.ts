@@ -187,6 +187,10 @@ export interface ProviderModelMapping {
 	catalogWeight?: number;
 	/** Runtime-only revisioned mapping identity. */
 	catalogMappingId?: string;
+	/** Runtime-only exact tested encrypted credential for managed routing. */
+	platformCredentialId?: string;
+	/** Fingerprint of the tested secret, endpoint, and credential options. */
+	platformCredentialProfile?: string;
 	/**
 	 * Provider-specific upstream model id used when calling the upstream
 	 * provider. Distinct from the root `ModelDefinition.id` and from any

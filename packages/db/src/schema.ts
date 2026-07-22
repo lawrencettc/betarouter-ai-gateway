@@ -1712,6 +1712,8 @@ export const log = pgTable(
 	(table) => [
 		index("log_project_id_created_at_idx").on(table.projectId, table.createdAt),
 		index("log_request_id_idx").on(table.requestId),
+		index("log_model_provider_mapping_id_idx").on(table.modelProviderMappingId),
+		index("log_catalog_revision_id_idx").on(table.catalogRevisionId),
 		// Index for worker stats queries: WHERE createdAt >= ? AND createdAt < ? GROUP BY usedModel, usedProvider
 		index("log_created_at_used_model_used_provider_idx").on(
 			table.createdAt,
@@ -1899,6 +1901,10 @@ export const videoJob = pgTable(
 		index("video_job_log_id_idx").on(table.logId),
 		index("video_job_callback_status_idx").on(table.callbackStatus),
 		index("video_job_end_user_session_id_idx").on(table.endUserSessionId),
+		index("video_job_model_provider_mapping_id_idx").on(
+			table.modelProviderMappingId,
+		),
+		index("video_job_catalog_revision_id_idx").on(table.catalogRevisionId),
 	],
 );
 

@@ -438,6 +438,10 @@ export interface AvailableModelProvider {
 	catalogWeight?: number;
 	/** Revisioned mapping identity used for routing and billing linkage. */
 	catalogMappingId?: string;
+	/** Exact tested encrypted credential used by managed routing. */
+	platformCredentialId?: string;
+	/** Fingerprint of the tested secret, endpoint, and credential options. */
+	platformCredentialProfile?: string;
 }
 
 // Function type definitions

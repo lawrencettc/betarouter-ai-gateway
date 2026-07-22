@@ -459,6 +459,9 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 	} else if (project.mode === "credits") {
 		const envResult = await getProviderEnv("openai", {
 			selectionScope: resolvedUpstreamModel,
+			requiredCredentialId: catalogMapping?.platformCredentialId ?? undefined,
+			requiredCredentialProfile:
+				catalogMapping?.platformCredentialProfile ?? undefined,
 		});
 		usedToken = envResult.token;
 		configIndex = envResult.configIndex;
@@ -475,6 +478,9 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 		} else {
 			const envResult = await getProviderEnv("openai", {
 				selectionScope: resolvedUpstreamModel,
+				requiredCredentialId: catalogMapping?.platformCredentialId ?? undefined,
+				requiredCredentialProfile:
+					catalogMapping?.platformCredentialProfile ?? undefined,
 			});
 			usedToken = envResult.token;
 			configIndex = envResult.configIndex;

@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { reportKeyError, resetKeyHealth } from "@/lib/api-key-health.js";
 import { resetRoundRobinCounters } from "@/lib/round-robin-env.js";
 
+import { catalogCredentialConfigurationProfile } from "@llmgateway/catalog";
+
 import {
 	getEnvKeyCount,
 	getProviderEnv,
@@ -132,6 +134,66 @@ describe("getProviderEnv", () => {
 
 		expect(result.token).toBe("sk-platform-2");
 		expect(result.configIndex).toBe(1);
+	});
+
+	it("uses the exact credential bound to a tested catalog mapping", async () => {
+		enablePlatformStorage();
+		platformMocks.findCredentials.mockResolvedValue([
+			{ id: "untested", provider: "openai", priority: 1 },
+			{ id: "tested", provider: "openai", priority: 100 },
+		]);
+		platformMocks.decryptToken.mockImplementation(
+			(credential: { id: string }) => `sk-${credential.id}`,
+		);
+
+		const result = await getProviderEnv("openai", {
+			requiredCredentialId: "tested",
+		});
+
+		expect(result).toMatchObject({
+			token: "sk-tested",
+			credentialId: "tested",
+			configIndex: 1,
+		});
+	});
+
+	it("does not fall back when a catalog-bound credential is unavailable", async () => {
+		enablePlatformStorage();
+		platformMocks.findCredentials.mockResolvedValue([
+			{ id: "other", provider: "openai", priority: 1 },
+		]);
+
+		await expect(
+			getProviderEnv("openai", { requiredCredentialId: "tested" }),
+		).rejects.toMatchObject({ status: 503 });
+		expect(platformMocks.decryptToken).not.toHaveBeenCalled();
+	});
+
+	it("fails closed when a bound credential changes after testing", async () => {
+		enablePlatformStorage();
+		platformMocks.findCredentials.mockResolvedValue([
+			{
+				id: "tested",
+				provider: "openai",
+				tokenFingerprint: "new-fingerprint",
+				baseUrl: "https://new.example.com",
+				options: null,
+			},
+		]);
+		const testedProfile = catalogCredentialConfigurationProfile({
+			credentialId: "tested",
+			credentialFingerprint: "old-fingerprint",
+			baseUrl: "https://old.example.com",
+			credentialOptions: null,
+		});
+
+		await expect(
+			getProviderEnv("openai", {
+				requiredCredentialId: "tested",
+				requiredCredentialProfile: testedProfile,
+			}),
+		).rejects.toMatchObject({ status: 503 });
+		expect(platformMocks.decryptToken).not.toHaveBeenCalled();
 	});
 
 	it("keeps a healthy higher-priority database credential ahead of lower priorities", async () => {

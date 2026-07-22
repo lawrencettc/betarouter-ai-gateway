@@ -743,38 +743,6 @@ function EditEntityDialog({
 								<Label>Visible to customers</Label>
 								<Switch checked={visible} onCheckedChange={setVisible} />
 							</div>
-							<div className="grid grid-cols-2 gap-3">
-								<div className="space-y-2">
-									<Label>Context limit</Label>
-									<Input
-										type="number"
-										value={contextSizeLimit}
-										onChange={(event) =>
-											setContextSizeLimit(event.target.value)
-										}
-										placeholder="Source limit"
-									/>
-								</div>
-								<div className="space-y-2">
-									<Label>Max output limit</Label>
-									<Input
-										type="number"
-										value={maxOutputLimit}
-										onChange={(event) => setMaxOutputLimit(event.target.value)}
-										placeholder="Source limit"
-									/>
-								</div>
-							</div>
-							<div className="space-y-2">
-								<Label>Disabled capabilities (comma-separated)</Label>
-								<Input
-									value={disabledCapabilities}
-									onChange={(event) =>
-										setDisabledCapabilities(event.target.value)
-									}
-									placeholder="tools, vision, streaming"
-								/>
-							</div>
 							<div className="flex items-center justify-between rounded-lg border p-3">
 								<Label>API available</Label>
 								<Switch checked={enabled} onCheckedChange={setEnabled} />
@@ -909,6 +877,38 @@ function EditEntityDialog({
 								<Input
 									value={externalId}
 									onChange={(event) => setExternalId(event.target.value)}
+								/>
+							</div>
+							<div className="grid grid-cols-2 gap-3">
+								<div className="space-y-2">
+									<Label>Context limit</Label>
+									<Input
+										type="number"
+										value={contextSizeLimit}
+										onChange={(event) =>
+											setContextSizeLimit(event.target.value)
+										}
+										placeholder="Source limit"
+									/>
+								</div>
+								<div className="space-y-2">
+									<Label>Max output limit</Label>
+									<Input
+										type="number"
+										value={maxOutputLimit}
+										onChange={(event) => setMaxOutputLimit(event.target.value)}
+										placeholder="Source limit"
+									/>
+								</div>
+							</div>
+							<div className="space-y-2">
+								<Label>Disabled capabilities (comma-separated)</Label>
+								<Input
+									value={disabledCapabilities}
+									onChange={(event) =>
+										setDisabledCapabilities(event.target.value)
+									}
+									placeholder="tools, vision, streaming"
 								/>
 							</div>
 							<div className="grid grid-cols-2 gap-3">

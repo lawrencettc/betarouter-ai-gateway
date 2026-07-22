@@ -4775,6 +4775,9 @@ chat.openapi(completions, async (c) => {
 		const envResult = await getProviderEnv(usedProvider, {
 			selectionScope: usedInternalModel,
 			requireServiceTierSupport: isRequestedServiceTier(service_tier),
+			requiredCredentialId: getUsedProviderMapping()?.platformCredentialId,
+			requiredCredentialProfile:
+				getUsedProviderMapping()?.platformCredentialProfile,
 		});
 		usedToken = envResult.token;
 		configIndex = envResult.configIndex;
@@ -4909,6 +4912,9 @@ chat.openapi(completions, async (c) => {
 			const envResult = await getProviderEnv(usedProvider, {
 				selectionScope: usedInternalModel,
 				requireServiceTierSupport: isRequestedServiceTier(service_tier),
+				requiredCredentialId: getUsedProviderMapping()?.platformCredentialId,
+				requiredCredentialProfile:
+					getUsedProviderMapping()?.platformCredentialProfile,
 			});
 			usedToken = envResult.token;
 			configIndex = envResult.configIndex;

@@ -47,6 +47,8 @@ const storedCatalogSnapshotSchema = z
 				modelId: z.string(),
 				region: z.string().nullable(),
 				externalId: z.string(),
+				platformCredentialId: z.string().nullable(),
+				platformCredentialProfile: z.string().startsWith("sha256:").nullable(),
 				displayable: z.boolean(),
 				available: z.boolean(),
 				routable: z.boolean(),

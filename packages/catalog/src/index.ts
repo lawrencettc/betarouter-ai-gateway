@@ -1,5 +1,6 @@
 export * from "./breaker.js";
 export * from "./breaker-store.js";
+export * from "./activation.js";
 export * from "./bootstrap.js";
 export * from "./catalog.js";
 export * from "./catalog-store.js";

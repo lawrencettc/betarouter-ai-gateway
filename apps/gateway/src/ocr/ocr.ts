@@ -642,6 +642,9 @@ ocr.openapi(createOcr, async (c): Promise<any> => {
 			const envResult = await getProviderEnv(providerId, {
 				selectionScope: upstreamModel,
 				excludedIndices: excludedEnvKeyIndices,
+				requiredCredentialId: catalogMapping?.platformCredentialId ?? undefined,
+				requiredCredentialProfile:
+					catalogMapping?.platformCredentialProfile ?? undefined,
 			});
 			usedToken = envResult.token;
 			configIndex = envResult.configIndex;
@@ -668,6 +671,10 @@ ocr.openapi(createOcr, async (c): Promise<any> => {
 				const envResult = await getProviderEnv(providerId, {
 					selectionScope: upstreamModel,
 					excludedIndices: excludedEnvKeyIndices,
+					requiredCredentialId:
+						catalogMapping?.platformCredentialId ?? undefined,
+					requiredCredentialProfile:
+						catalogMapping?.platformCredentialProfile ?? undefined,
 				});
 				usedToken = envResult.token;
 				configIndex = envResult.configIndex;

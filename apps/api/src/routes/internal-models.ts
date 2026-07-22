@@ -309,12 +309,28 @@ internalModels.openapi(getModelsRoute, async (c) => {
 			retirementMessage: catalogModel?.retirementMessage ?? null,
 			mappings: (mappingsByModelId.get(model.id) ?? []).map((mapping) => {
 				const catalogMapping = catalogMappingById.get(mapping.id);
-				const sharedMapping: ProviderModelMapping | null =
-					modelDefinitions
-						.find((modelDefinition) => modelDefinition.id === model.id)
-						?.providers.find(
-							(provider) => provider.providerId === mapping.providerId,
-						) ?? null;
+				const sharedMapping: ProviderModelMapping | null = (() => {
+					const providers = modelDefinitions.find(
+						(modelDefinition) => modelDefinition.id === model.id,
+					)?.providers as readonly ProviderModelMapping[] | undefined;
+					return (
+						providers?.find(
+							(provider) =>
+								provider.providerId === mapping.providerId &&
+								(provider.region ?? null) === (mapping.region ?? null),
+						) ??
+						providers?.find(
+							(provider) =>
+								provider.providerId === mapping.providerId &&
+								provider.region === undefined &&
+								(mapping.region === null ||
+									provider.regions?.some(
+										(region) => region.id === mapping.region,
+									)),
+						) ??
+						null
+					);
+				})();
 				return {
 					...mapping,
 					...(catalogMapping

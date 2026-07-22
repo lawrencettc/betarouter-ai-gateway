@@ -309,7 +309,13 @@ export function formatUsedModelForDisplay(
  * Used by the retry loop to quickly set up a new provider context on fallback.
  */
 export async function resolveProviderContext(
-	providerMapping: { providerId: string; externalId: string; region?: string },
+	providerMapping: {
+		providerId: string;
+		externalId: string;
+		region?: string;
+		platformCredentialId?: string;
+		platformCredentialProfile?: string;
+	},
 	project: ProjectInfo,
 	organization: OrgInfo,
 	modelInfo: ModelDefinition,
@@ -385,6 +391,8 @@ export async function resolveProviderContext(
 			excludedIndices: options.excludedEnvKeyIndices,
 			selectionScope: usedInternalModel,
 			requireServiceTierSupport: Boolean(serviceTierKeyFilter),
+			requiredCredentialId: providerMapping.platformCredentialId,
+			requiredCredentialProfile: providerMapping.platformCredentialProfile,
 		});
 		usedToken = envResult.token;
 		configIndex = envResult.configIndex;
@@ -418,6 +426,8 @@ export async function resolveProviderContext(
 				excludedIndices: options.excludedEnvKeyIndices,
 				selectionScope: usedInternalModel,
 				requireServiceTierSupport: Boolean(serviceTierKeyFilter),
+				requiredCredentialId: providerMapping.platformCredentialId,
+				requiredCredentialProfile: providerMapping.platformCredentialProfile,
 			});
 			usedToken = envResult.token;
 			configIndex = envResult.configIndex;

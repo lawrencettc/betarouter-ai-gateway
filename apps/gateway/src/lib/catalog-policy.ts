@@ -96,6 +96,8 @@ export function applyCatalogCustomerPrices(
 		catalogPriority: mapping.priority,
 		catalogWeight: mapping.weight,
 		catalogMappingId: mapping.id,
+		platformCredentialId: mapping.platformCredentialId ?? undefined,
+		platformCredentialProfile: mapping.platformCredentialProfile ?? undefined,
 		contextSize:
 			mapping.contextSizeLimit === null
 				? provider.contextSize

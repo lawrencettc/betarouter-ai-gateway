@@ -23,6 +23,10 @@ production evidence.
    and removed upstream models. Every suggestion remains operator-approved.
 5. Add customer-visible maintenance windows and opt-in catalog change
    notifications.
+6. Validate the four launch-time `NOT VALID` catalog lineage foreign keys on
+   `log` and `video_job` during a measured low-traffic maintenance window. New
+   writes are enforced at launch; the historical scan is deferred to avoid a
+   surprise lock on these high-volume tables.
 
 ## Provider and model expansion
 

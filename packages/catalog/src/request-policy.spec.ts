@@ -30,6 +30,8 @@ function snapshot(overrides: Partial<EffectiveCatalog> = {}): EffectiveCatalog {
 				modelId: "gpt",
 				region: null,
 				externalId: "gpt-upstream",
+				platformCredentialId: "credential-1",
+				platformCredentialProfile: "sha256:credential-profile",
 				displayable: true,
 				available: true,
 				routable: true,

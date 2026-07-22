@@ -781,6 +781,8 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 			const envResult = await getProviderEnv(providerId, {
 				selectionScope: upstreamModel,
 				excludedIndices: excludedEnvKeyIndices,
+				requiredCredentialId: mapping.platformCredentialId,
+				requiredCredentialProfile: mapping.platformCredentialProfile,
 			});
 			usedToken = envResult.token;
 			configIndex = envResult.configIndex;
@@ -809,6 +811,8 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 				const envResult = await getProviderEnv(providerId, {
 					selectionScope: upstreamModel,
 					excludedIndices: excludedEnvKeyIndices,
+					requiredCredentialId: mapping.platformCredentialId,
+					requiredCredentialProfile: mapping.platformCredentialProfile,
 				});
 				usedToken = envResult.token;
 				configIndex = envResult.configIndex;

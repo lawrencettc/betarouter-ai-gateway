@@ -62,6 +62,9 @@ export interface MappingPolicy {
 export interface MappingReadiness {
 	priceReady: boolean;
 	testPassed: boolean;
+	/** Exact encrypted platform credential whose current configuration passed. */
+	platformCredentialId?: string | null;
+	platformCredentialProfile?: string | null;
 	sourcePrices?: PriceMap;
 	customerPrices?: PriceMap;
 	margin?: PriceMap;
@@ -133,6 +136,10 @@ export interface EffectiveMapping {
 	modelId: string;
 	region: string | null;
 	externalId: string;
+	/** Exact tested credential that managed-credit routing must use. */
+	platformCredentialId: string | null;
+	/** Fingerprint of the exact tested secret, endpoint, and credential options. */
+	platformCredentialProfile: string | null;
 	displayable: boolean;
 	available: boolean;
 	routable: boolean;
@@ -331,6 +338,8 @@ export function resolveEffectiveCatalog(
 			modelId: mapping.modelId,
 			region: mapping.region ?? null,
 			externalId: mappingPolicy?.externalIdOverride ?? mapping.externalId,
+			platformCredentialId: readiness?.platformCredentialId ?? null,
+			platformCredentialProfile: readiness?.platformCredentialProfile ?? null,
 			displayable,
 			available,
 			routable,

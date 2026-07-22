@@ -1,6 +1,8 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { HTTPException } from "hono/http-exception";
 
+import { applyCatalogCustomerPrices } from "@/lib/catalog-policy.js";
+
 import {
 	getEffectiveCatalogSnapshot,
 	readCatalogFeatureFlags,
@@ -14,7 +16,6 @@ import {
 } from "@llmgateway/models";
 
 import type { ServerTypes } from "@/vars.js";
-import { applyCatalogCustomerPrices } from "@/lib/catalog-policy.js";
 
 export const modelsApi = new OpenAPIHono<ServerTypes>();
 

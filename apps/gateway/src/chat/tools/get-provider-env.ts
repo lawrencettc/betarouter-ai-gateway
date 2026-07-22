@@ -13,6 +13,7 @@ import {
 } from "@/lib/round-robin-env.js";
 
 import { providerKeyBaseUrlSupportsServiceTier } from "@llmgateway/actions";
+import { catalogCredentialConfigurationProfile } from "@llmgateway/catalog";
 import {
 	decryptPlatformProviderToken,
 	isPlatformProviderCryptoConfigured,
@@ -164,6 +165,9 @@ interface GetProviderEnvOptions {
 	excludedIndices?: ReadonlySet<number>;
 	selectionScope?: string;
 	requireServiceTierSupport?: boolean;
+	/** Select only the encrypted credential proven by the active catalog mapping. */
+	requiredCredentialId?: string;
+	requiredCredentialProfile?: string;
 }
 
 /**
@@ -195,12 +199,32 @@ export async function getProviderEnv(
 				}
 			});
 		}
-		const selectedIndex = selectPlatformCredentialIndex(
-			sourceName,
-			platformCredentials.map((credential) => credential.priority),
-			options.selectionScope,
-			excludedPlatformIndices,
-		);
+		const requiredIndex = options.requiredCredentialId
+			? platformCredentials.findIndex(
+					(credential) => credential.id === options.requiredCredentialId,
+				)
+			: undefined;
+		if (requiredIndex === -1) {
+			throw new HTTPException(503, {
+				message: `The tested platform credential is no longer active for provider: ${usedProvider}`,
+			});
+		}
+		if (
+			requiredIndex !== undefined &&
+			excludedPlatformIndices.has(requiredIndex)
+		) {
+			throw new HTTPException(503, {
+				message: `The tested platform credential is not eligible for this request: ${usedProvider}`,
+			});
+		}
+		const selectedIndex =
+			requiredIndex ??
+			selectPlatformCredentialIndex(
+				sourceName,
+				platformCredentials.map((credential) => credential.priority),
+				options.selectionScope,
+				excludedPlatformIndices,
+			);
 		const selected =
 			selectedIndex === undefined
 				? undefined
@@ -208,6 +232,19 @@ export async function getProviderEnv(
 		if (!selected) {
 			throw new HTTPException(500, {
 				message: `No eligible platform credentials remain for provider: ${usedProvider}`,
+			});
+		}
+		if (
+			options.requiredCredentialProfile &&
+			catalogCredentialConfigurationProfile({
+				credentialId: selected.id,
+				credentialFingerprint: selected.tokenFingerprint,
+				baseUrl: selected.baseUrl,
+				credentialOptions: selected.options,
+			}) !== options.requiredCredentialProfile
+		) {
+			throw new HTTPException(503, {
+				message: `The platform credential changed after its catalog test: ${usedProvider}`,
 			});
 		}
 		const resolvedIndex = selectedIndex;
@@ -240,6 +277,11 @@ export async function getProviderEnv(
 			credentialId: selected.id,
 			source: "database",
 		};
+	}
+	if (options.requiredCredentialId) {
+		throw new HTTPException(503, {
+			message: `The tested platform credential is unavailable for provider: ${usedProvider}`,
+		});
 	}
 
 	const envVar = getProviderEnvVar(usedProvider);

@@ -135,14 +135,18 @@ ALTER TABLE "video_job" ADD COLUMN "catalog_revision_id" bigint;--> statement-br
 CREATE UNIQUE INDEX "platform_catalog_change_set_idempotency_key_unique" ON "platform_catalog_change_set" ("idempotency_key");--> statement-breakpoint
 CREATE INDEX "platform_catalog_change_set_state_effective_at_idx" ON "platform_catalog_change_set" ("state","effective_at");--> statement-breakpoint
 CREATE UNIQUE INDEX "platform_catalog_revision_change_set_id_unique" ON "platform_catalog_revision" ("change_set_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "platform_catalog_revision_checksum_unique" ON "platform_catalog_revision" ("checksum");--> statement-breakpoint
+CREATE INDEX "platform_catalog_revision_checksum_unique" ON "platform_catalog_revision" ("checksum");--> statement-breakpoint
+CREATE INDEX "log_model_provider_mapping_id_idx" ON "log" ("model_provider_mapping_id");--> statement-breakpoint
+CREATE INDEX "log_catalog_revision_id_idx" ON "log" ("catalog_revision_id");--> statement-breakpoint
+CREATE INDEX "video_job_model_provider_mapping_id_idx" ON "video_job" ("model_provider_mapping_id");--> statement-breakpoint
+CREATE INDEX "video_job_catalog_revision_id_idx" ON "video_job" ("catalog_revision_id");--> statement-breakpoint
 CREATE INDEX "platform_mapping_health_summary_mapping_created_at_idx" ON "platform_mapping_health_summary" ("mapping_id","created_at");--> statement-breakpoint
 CREATE INDEX "platform_mapping_policy_enabled_priority_idx" ON "platform_mapping_policy" ("enabled","priority");--> statement-breakpoint
 CREATE INDEX "platform_mapping_test_run_mapping_created_at_idx" ON "platform_mapping_test_run" ("mapping_id","created_at");--> statement-breakpoint
 CREATE INDEX "platform_model_policy_visible_enabled_idx" ON "platform_model_policy" ("visible","enabled");--> statement-breakpoint
 CREATE INDEX "platform_provider_policy_visible_enabled_idx" ON "platform_provider_policy" ("visible","enabled");--> statement-breakpoint
-ALTER TABLE "log" ADD CONSTRAINT "log_model_provider_mapping_id_model_provider_mapping_id_fkey" FOREIGN KEY ("model_provider_mapping_id") REFERENCES "model_provider_mapping"("id") ON DELETE SET NULL;--> statement-breakpoint
-ALTER TABLE "log" ADD CONSTRAINT "log_catalog_revision_id_platform_catalog_revision_id_fkey" FOREIGN KEY ("catalog_revision_id") REFERENCES "platform_catalog_revision"("id") ON DELETE SET NULL;--> statement-breakpoint
+ALTER TABLE "log" ADD CONSTRAINT "log_model_provider_mapping_id_model_provider_mapping_id_fkey" FOREIGN KEY ("model_provider_mapping_id") REFERENCES "model_provider_mapping"("id") ON DELETE SET NULL NOT VALID;--> statement-breakpoint
+ALTER TABLE "log" ADD CONSTRAINT "log_catalog_revision_id_platform_catalog_revision_id_fkey" FOREIGN KEY ("catalog_revision_id") REFERENCES "platform_catalog_revision"("id") ON DELETE SET NULL NOT VALID;--> statement-breakpoint
 ALTER TABLE "platform_catalog_change_set" ADD CONSTRAINT "platform_catalog_change_set_EByU555E9lzX_fkey" FOREIGN KEY ("base_revision") REFERENCES "platform_catalog_revision"("id");--> statement-breakpoint
 ALTER TABLE "platform_catalog_change_set" ADD CONSTRAINT "platform_catalog_change_set_BeIaQXhZ9ly9_fkey" FOREIGN KEY ("applied_revision") REFERENCES "platform_catalog_revision"("id");--> statement-breakpoint
 ALTER TABLE "platform_catalog_change_set" ADD CONSTRAINT "platform_catalog_change_set_Cpnl2u5LqnBo_fkey" FOREIGN KEY ("inverse_of") REFERENCES "platform_catalog_change_set"("id");--> statement-breakpoint
@@ -158,5 +162,5 @@ ALTER TABLE "platform_model_policy" ADD CONSTRAINT "platform_model_policy_model_
 ALTER TABLE "platform_model_policy" ADD CONSTRAINT "platform_model_policy_replacement_model_id_model_id_fkey" FOREIGN KEY ("replacement_model_id") REFERENCES "model"("id") ON DELETE SET NULL;--> statement-breakpoint
 ALTER TABLE "platform_provider_policy" ADD CONSTRAINT "platform_provider_policy_provider_id_provider_id_fkey" FOREIGN KEY ("provider_id") REFERENCES "provider"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "platform_provider_policy" ADD CONSTRAINT "platform_provider_policy_KzgdY2NgsBKP_fkey" FOREIGN KEY ("replacement_provider_id") REFERENCES "provider"("id") ON DELETE SET NULL;--> statement-breakpoint
-ALTER TABLE "video_job" ADD CONSTRAINT "video_job_hSFrcdoaXLZP_fkey" FOREIGN KEY ("model_provider_mapping_id") REFERENCES "model_provider_mapping"("id") ON DELETE SET NULL;--> statement-breakpoint
-ALTER TABLE "video_job" ADD CONSTRAINT "video_job_catalog_revision_id_platform_catalog_revision_id_fkey" FOREIGN KEY ("catalog_revision_id") REFERENCES "platform_catalog_revision"("id") ON DELETE SET NULL;
+ALTER TABLE "video_job" ADD CONSTRAINT "video_job_hSFrcdoaXLZP_fkey" FOREIGN KEY ("model_provider_mapping_id") REFERENCES "model_provider_mapping"("id") ON DELETE SET NULL NOT VALID;--> statement-breakpoint
+ALTER TABLE "video_job" ADD CONSTRAINT "video_job_catalog_revision_id_platform_catalog_revision_id_fkey" FOREIGN KEY ("catalog_revision_id") REFERENCES "platform_catalog_revision"("id") ON DELETE SET NULL NOT VALID;

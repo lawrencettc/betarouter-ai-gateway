@@ -25019,7 +25019,7 @@
           "opclass": null
         }
       ],
-      "isUnique": true,
+      "isUnique": false,
       "where": null,
       "with": "",
       "method": "btree",
