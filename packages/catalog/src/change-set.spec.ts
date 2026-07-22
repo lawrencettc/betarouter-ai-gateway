@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
 	applyCatalogOperations,
 	CatalogConflictError,
+	normalizePersistedInverseOperations,
 	type CatalogPolicyState,
 } from "./change-set.js";
 import { catalogOperationV1Schema } from "./contracts.js";
@@ -113,6 +114,54 @@ describe("applyCatalogOperations", () => {
 				(operation) => catalogOperationV1Schema.safeParse(operation).success,
 			),
 		).toEqual([true, true, true]);
+	});
+
+	it("normalizes identity fields from legacy persisted inverse patches", () => {
+		const legacyOperations = [
+			{
+				version: 1,
+				type: "provider.set_policy",
+				providerId: "openai",
+				expectedUpdatedAt: "2026-07-22T01:00:00.000Z",
+				patch: {
+					providerId: "openai",
+					enabled: false,
+					updatedAt: "2026-07-22T00:00:00.000Z",
+					updatedBy: "admin-1",
+				},
+			},
+			{
+				version: 1,
+				type: "model.set_policy",
+				modelId: "gpt-5.5",
+				expectedUpdatedAt: "2026-07-22T01:00:00.000Z",
+				patch: {
+					modelId: "gpt-5.5",
+					enabled: false,
+					updatedAt: "2026-07-22T00:00:00.000Z",
+					updatedBy: "admin-1",
+				},
+			},
+			{
+				version: 1,
+				type: "mapping.set_policy",
+				mappingId: "mapping-1",
+				expectedUpdatedAt: "2026-07-22T01:00:00.000Z",
+				patch: {
+					mappingId: "mapping-1",
+					enabled: false,
+					updatedAt: "2026-07-22T00:00:00.000Z",
+					updatedBy: "admin-1",
+				},
+			},
+		];
+
+		expect(
+			catalogOperationV1Schema
+				.array()
+				.safeParse(normalizePersistedInverseOperations(legacyOperations))
+				.success,
+		).toBe(true);
 	});
 
 	it("rejects the complete batch atomically on an optimistic conflict", () => {
