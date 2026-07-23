@@ -1,6 +1,5 @@
 import { enterpriseFeatures } from "@/lib/enterprise-features";
 import { features } from "@/lib/features";
-import { slugify } from "@/lib/slugify";
 
 import {
 	getProviderCountries,
@@ -58,14 +57,8 @@ const timelineYears = (() => {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	const baseUrl = "https://betarouter.com";
 
-	const {
-		allBlogs,
-		allGuides,
-		allChangelogs,
-		allLegals,
-		allMigrations,
-		allUseCases,
-	} = await import("content-collections");
+	const { allGuides, allChangelogs, allLegals, allMigrations, allUseCases } =
+		await import("content-collections");
 
 	// Static pages
 	const staticPages: MetadataRoute.Sitemap = [
@@ -86,12 +79,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 			lastModified: buildDate,
 			changeFrequency: "weekly",
 			priority: 0.9,
-		},
-		{
-			url: `${baseUrl}/blog`,
-			lastModified: buildDate,
-			changeFrequency: "daily",
-			priority: 0.8,
 		},
 		{
 			url: `${baseUrl}/guides`,
@@ -182,12 +169,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 			lastModified: buildDate,
 			changeFrequency: "monthly",
 			priority: 0.6,
-		},
-		{
-			url: `${baseUrl}/blog/category`,
-			lastModified: buildDate,
-			changeFrequency: "weekly",
-			priority: 0.5,
 		},
 		{
 			url: `${baseUrl}/models/compare`,
@@ -437,35 +418,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		}),
 	);
 
-	// Blog pages
-	const blogPages: MetadataRoute.Sitemap = allBlogs
-		.filter((blog) => !blog.draft)
-		.map((blog) => ({
-			url: `${baseUrl}/blog/${blog.slug}`,
-			lastModified: new Date(blog.date),
-			changeFrequency: "monthly" as const,
-			priority: 0.6,
-		}));
-
-	// Blog category pages
-	const blogCategorySlugs = new Set<string>();
-	for (const blog of allBlogs) {
-		if (blog.draft) {
-			continue;
-		}
-		for (const category of blog.categories ?? []) {
-			blogCategorySlugs.add(slugify(category));
-		}
-	}
-	const blogCategoryPages: MetadataRoute.Sitemap = Array.from(
-		blogCategorySlugs,
-	).map((category) => ({
-		url: `${baseUrl}/blog/category/${encodeURIComponent(category)}`,
-		lastModified: buildDate,
-		changeFrequency: "weekly" as const,
-		priority: 0.5,
-	}));
-
 	// Guide pages
 	const guidePages: MetadataRoute.Sitemap = allGuides.map((guide) => ({
 		url: `${baseUrl}/guides/${guide.slug}`,
@@ -531,8 +483,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		...providerCountryPages,
 		...featurePages,
 		...enterpriseFeaturePages,
-		...blogPages,
-		...blogCategoryPages,
 		...guidePages,
 		...changelogPages,
 		...legalPages,

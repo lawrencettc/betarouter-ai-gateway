@@ -22,12 +22,12 @@ interface ProcurementItem {
 const items: ProcurementItem[] = [
 	{
 		icon: FileCheck,
-		title: "SOC 2 Type II report",
+		title: "Security review materials",
 		description:
-			"Independently audited controls, verified in operation. The full report and evidence are one request away.",
-		href: "https://security.betarouter.com/",
-		linkLabel: "Request the report",
-		external: true,
+			"Architecture, access-control, and data-handling details are available for your security review.",
+		href: "/enterprise#contact",
+		linkLabel: "Contact us",
+		external: false,
 	},
 	{
 		icon: ScrollText,
