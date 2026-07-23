@@ -1,23 +1,23 @@
 import { redisClient } from "@/auth/config.js";
 
-import { logger } from "@llmgateway/logger";
+import { logger } from "@betarouter/logger";
 
 // Domains whose sitemaps are crawled to build the support assistant's
 // knowledge of every public page across the product suite. The agent links to
 // these URLs and can fetch their content on demand to ground answers.
 const KNOWLEDGE_SITEMAPS = [
-	"https://llmgateway.io/sitemap.xml",
-	"https://devpass.llmgateway.io/sitemap.xml",
-	"https://docs.llmgateway.io/sitemap.xml",
-	"https://chat.llmgateway.io/sitemap.xml",
+	"https://betarouter.com/sitemap.xml",
+	"https://devpass.betarouter.com/sitemap.xml",
+	"https://docs.betarouter.com/sitemap.xml",
+	"https://chat.betarouter.com/sitemap.xml",
 ];
 
 // Only pages on these hosts may be fetched by the agent's grounding tool.
 const ALLOWED_HOSTS = [
-	"llmgateway.io",
-	"devpass.llmgateway.io",
-	"docs.llmgateway.io",
-	"chat.llmgateway.io",
+	"betarouter.com",
+	"devpass.betarouter.com",
+	"docs.betarouter.com",
+	"chat.betarouter.com",
 ];
 
 const URLS_CACHE_KEY = "chat_support_knowledge_urls";
@@ -38,7 +38,7 @@ async function fetchText(url: string): Promise<string | null> {
 	try {
 		const res = await fetch(url, {
 			signal: controller.signal,
-			headers: { "User-Agent": "LLMGateway-SupportBot/1.0" },
+			headers: { "User-Agent": "betarouter-SupportBot/1.0" },
 		});
 		if (!res.ok) {
 			return null;
@@ -165,7 +165,7 @@ function htmlToText(html: string): string {
 
 export async function fetchKnowledgePage(url: string): Promise<string> {
 	if (!isAllowedKnowledgeUrl(url)) {
-		return "This page is outside the LLM Gateway documentation and cannot be read.";
+		return "This page is outside the betarouter documentation and cannot be read.";
 	}
 
 	const cacheKey = `chat_support_page:${url}`;

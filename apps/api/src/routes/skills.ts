@@ -1,4 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
+import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
 import { generateText, tool } from "ai";
 import { HTTPException } from "hono/http-exception";
 
@@ -7,8 +8,7 @@ import {
 	resolvePlaygroundToken,
 } from "@/utils/playground-key.js";
 
-import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
-import { db, tables, eq, and } from "@llmgateway/db";
+import { db, tables, eq, and } from "@betarouter/db";
 
 import type { ServerTypes } from "@/vars.js";
 
@@ -337,7 +337,7 @@ const generatedSkillSchema = z.object({
 		),
 });
 
-const SKILL_CREATOR_SYSTEM = `You are a skill creator for LLM Gateway Chat. A skill is a reusable instruction set that guides an AI assistant in a specific context.
+const SKILL_CREATOR_SYSTEM = `You are a skill creator for betarouter Chat. A skill is a reusable instruction set that guides an AI assistant in a specific context.
 
 Given the user's request, design a high-quality skill and save it with the save_skill tool:
 - name: short kebab-case identifier (e.g. "code-reviewer", "brand-guidelines")
@@ -394,7 +394,7 @@ skills.openapi(generateSkill, async (c) => {
 		apiKey: token,
 		baseURL: gatewayUrl,
 		headers: {
-			"x-source": "chat.llmgateway.io",
+			"x-source": "chat.betarouter.com",
 		},
 	});
 

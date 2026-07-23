@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 
-import { db, eq, tables } from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+import { db, eq, tables } from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 
 import { app } from "./app.js";
 import {

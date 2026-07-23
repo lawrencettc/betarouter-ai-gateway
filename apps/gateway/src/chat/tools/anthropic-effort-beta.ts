@@ -1,7 +1,7 @@
 import type {
 	AnthropicRequestBody,
 	ProviderRequestBody,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 /**
  * Anthropic's `effort-2025-11-24` beta unlocks effort-based reasoning, i.e. the

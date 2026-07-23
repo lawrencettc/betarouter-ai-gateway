@@ -16,7 +16,7 @@ import {
 	HIGH_COST_OUTPUT_PRICE,
 	MARKETING_STATS,
 	type DevPlanTier,
-} from "@llmgateway/shared";
+} from "@betarouter/shared";
 
 export type DevPlanCredits = Record<DevPlanTier, number>;
 
@@ -233,10 +233,10 @@ export function PricingPlans({ credits, paygoUrl }: PricingPlansProps) {
 						days of your first purchase and we&apos;ll refund your first month
 						minus the usage you consumed at provider rates — one email to{" "}
 						<a
-							href="mailto:contact@llmgateway.io"
+							href="mailto:contact@betarouter.com"
 							className="font-medium text-foreground underline underline-offset-4"
 						>
-							contact@llmgateway.io
+							contact@betarouter.com
 						</a>
 						.
 					</p>
@@ -251,7 +251,7 @@ export function PricingPlans({ credits, paygoUrl }: PricingPlansProps) {
 						</p>
 						<p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
 							The same 200+ models are on{" "}
-							<span className="font-semibold text-foreground">LLM Gateway</span>{" "}
+							<span className="font-semibold text-foreground">betarouter</span>{" "}
 							without a plan — top up credits and pay per token at provider
 							rates with a flat {MARKETING_STATS.platformFee} platform fee, or
 							bring your own provider keys for free. DevPass simply triples

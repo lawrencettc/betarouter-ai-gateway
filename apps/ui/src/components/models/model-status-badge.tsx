@@ -1,1 +1,1 @@
-export { ModelStatusBadge } from "@llmgateway/shared/components";
+export { ModelStatusBadge } from "@betarouter/shared/components";

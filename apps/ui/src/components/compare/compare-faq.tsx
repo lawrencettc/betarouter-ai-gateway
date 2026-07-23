@@ -57,7 +57,7 @@ export function CompareFaq({ heading, description, faqs }: CompareFaqProps) {
 						<p className="mt-6 text-sm text-muted-foreground">
 							Can't find an answer?{" "}
 							<a
-								href="mailto:contact@llmgateway.io"
+								href="mailto:contact@betarouter.com"
 								className="text-foreground underline underline-offset-4"
 							>
 								Contact us

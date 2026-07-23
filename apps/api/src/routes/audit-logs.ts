@@ -13,7 +13,7 @@ import {
 	tables,
 	auditLogActions,
 	auditLogResourceTypes,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 import type { ServerTypes } from "@/vars.js";
 

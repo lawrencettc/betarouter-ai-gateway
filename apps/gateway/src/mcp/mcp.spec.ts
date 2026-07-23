@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { app } from "@/app.js";
 import { clearCache } from "@/test-utils/test-helpers.js";
 
-import { db, eq, tables } from "@llmgateway/db";
+import { db, eq, tables } from "@betarouter/db";
 
 describe("MCP endpoint authentication", () => {
 	async function seedActiveKey() {

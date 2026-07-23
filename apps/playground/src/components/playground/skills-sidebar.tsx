@@ -42,6 +42,7 @@ import {
 	SidebarMenuItem,
 	useSidebar,
 } from "@/components/ui/sidebar";
+import { Wordmark } from "@/components/ui/wordmark";
 import { useUser } from "@/hooks/useUser";
 import { clearLastUsedProjectCookiesAction } from "@/lib/actions/project";
 import { useAuth } from "@/lib/auth-client";
@@ -101,7 +102,7 @@ export function SkillsSidebar({
 					router.push(
 						process.env.NODE_ENV === "development"
 							? "http://localhost:3003/login"
-							: "https://chat.llmgateway.io/login",
+							: "https://chat.betarouter.com/login",
 					);
 				},
 			},
@@ -125,7 +126,9 @@ export function SkillsSidebar({
 							prefetch={true}
 						>
 							<Logo className="size-6" />
-							<h1 className="text-xl font-semibold">LLM Gateway</h1>
+							<h1 className="text-xl font-semibold">
+								<Wordmark />
+							</h1>
 						</Link>
 						<div className="w-full rounded-md border p-4 text-sm">
 							<div className="font-medium mb-2">Sign in required</div>
@@ -149,13 +152,13 @@ export function SkillsSidebar({
 			<SidebarHeader>
 				<SidebarMenu>
 					<SidebarMenuItem>
-						<SidebarMenuButton size="lg" asChild tooltip="LLM Gateway">
+						<SidebarMenuButton size="lg" asChild tooltip="betarouter">
 							<Link href="/" prefetch={true}>
 								<div className="flex aspect-square size-8 items-center justify-center">
 									<Logo className="size-6" />
 								</div>
 								<span className="text-lg font-bold tracking-tight">
-									LLM Gateway
+									<Wordmark />
 								</span>
 							</Link>
 						</SidebarMenuButton>
@@ -337,7 +340,7 @@ export function SkillsSidebar({
 										href={
 											process.env.NODE_ENV === "development"
 												? "http://localhost:3002/dashboard"
-												: "https://llmgateway.io/dashboard"
+												: "https://betarouter.com/dashboard"
 										}
 										target="_blank"
 										rel="noopener noreferrer"

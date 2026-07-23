@@ -5,14 +5,14 @@ import { z } from "zod";
 import { ensureStripeCustomer } from "@/stripe.js";
 import { getOrCreateChatOrg } from "@/utils/personal-org.js";
 
-import { logAuditEvent } from "@llmgateway/audit";
-import { db, tables, eq } from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+import { logAuditEvent } from "@betarouter/audit";
+import { db, tables, eq } from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 import {
 	CHAT_PLAN_PRICES,
 	getChatPlanCreditsLimit,
 	type ChatPlanTier,
-} from "@llmgateway/shared";
+} from "@betarouter/shared";
 
 import { getStripe } from "./payments.js";
 

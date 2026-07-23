@@ -4,7 +4,7 @@ import {
 	type ModelDefinition,
 	type ProviderDefinition,
 	type ProviderModelMapping,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 // ─── Active-provider helpers ─────────────────────────────────────────────────
 

@@ -10,13 +10,13 @@ import {
 	apiKeyPeriodDurationUnits,
 	db,
 	getApiKeyCurrentPeriodState,
-} from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+} from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 import {
 	calculateFees,
 	CREDIT_TOP_UP_MAX_AMOUNT,
 	CREDIT_TOP_UP_MIN_AMOUNT,
-} from "@llmgateway/shared";
+} from "@betarouter/shared";
 
 import type { ServerTypes } from "@/vars.js";
 

@@ -14,7 +14,7 @@ import {
 	prepareRequestBody,
 	providerKeyBaseUrlSupportsServiceTier,
 	selectProviderMapping,
-} from "@llmgateway/actions";
+} from "@betarouter/actions";
 import {
 	type BaseMessage,
 	getRegionSpecificEnvValue,
@@ -32,13 +32,13 @@ import {
 	type ToolChoiceType,
 	type VertexTokenType,
 	type WebSearchTool,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 import {
 	DEV_PLAN_PREMIUM_WEEK_LENGTH_MS,
 	type DevPlanTier,
 	getRemainingPremiumWeeklyAllowance,
 	isPremiumModel,
-} from "@llmgateway/shared";
+} from "@betarouter/shared";
 
 import { getProviderEnv } from "./get-provider-env.js";
 
@@ -46,12 +46,12 @@ import type {
 	InferSelectModel,
 	ProviderKeyOptions,
 	tables,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 export interface ProviderContext {
 	usedProvider: Provider;
 	/**
-	 * Canonical LLM Gateway model id. Used for everything internal: pricing,
+	 * Canonical betarouter model id. Used for everything internal: pricing,
 	 * discounts, rate limits, IAM, key selection, logging display. Never the
 	 * upstream provider's model id.
 	 */
@@ -234,7 +234,7 @@ export function formatTimeUntilReset(ms: number): string {
 }
 
 // Mirrors the initial credit gate in chat.ts so retry/fallback paths that
-// switch to LLMGateway env-var tokens cannot be used to bill an organization
+// switch to betarouter env-var tokens cannot be used to bill an organization
 // with non-positive credits. Free models (explicitly flagged in the catalog)
 // are exempt.
 function assertOrganizationHasCreditsForEnvFallback(
@@ -326,7 +326,7 @@ export async function resolveProviderContext(
 	// The upstream model id (sent verbatim to the provider API). For BYOK
 	// Azure deployments this is overridden by `azure_deployment_name` below.
 	const usedExternalId = providerMapping.externalId;
-	// The canonical LLM Gateway model id (used for everything internal:
+	// The canonical betarouter model id (used for everything internal:
 	// pricing, discounts, rate limits, IAM, key selection, logging display).
 	// `modelInfo.id` falls back to `usedExternalId` only for custom providers,
 	// which have no entry in the registry.

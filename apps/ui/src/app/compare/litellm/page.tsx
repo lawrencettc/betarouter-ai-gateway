@@ -7,9 +7,9 @@ import type { CompareFaqItem } from "@/components/compare/compare-faq";
 
 const liteLlmFaqs: CompareFaqItem[] = [
 	{
-		question: "What's the difference between LLM Gateway and LiteLLM?",
+		question: "What's the difference between betarouter and LiteLLM?",
 		answer:
-			"LiteLLM is a self-hosted proxy you run and operate yourself. LLM Gateway is a production-ready gateway with a managed hosted option, a dashboard, real-time analytics, and automatic provider routing and fallback — so there's no infrastructure to run unless you want to self-host.",
+			"LiteLLM is a self-hosted proxy you run and operate yourself. betarouter is a production-ready gateway with a managed hosted option, a dashboard, real-time analytics, and automatic provider routing and fallback — so there's no infrastructure to run unless you want to self-host.",
 	},
 	{
 		question: "Do I have to host it myself like LiteLLM?",
@@ -17,7 +17,7 @@ const liteLlmFaqs: CompareFaqItem[] = [
 			"No. You can use the fully managed gateway, or self-host the AGPLv3 build on your own infrastructure — the choice is yours.",
 	},
 	{
-		question: "Is LLM Gateway open source?",
+		question: "Is betarouter open source?",
 		answer:
 			"Yes. The core gateway is AGPLv3 licensed and free to self-host forever, just like LiteLLM, while also offering a managed service.",
 	},
@@ -34,7 +34,7 @@ const liteLlmFaqs: CompareFaqItem[] = [
 	{
 		question: "What are the best LiteLLM alternatives?",
 		answer:
-			"LLM Gateway is the most complete LiteLLM alternative: open source, self-hostable, and available as a managed cloud with zero markup on your own keys. Other options teams evaluate include OpenRouter (managed, no self-hosting), Bifrost (self-hosted Go proxy), and Portkey (enterprise governance).",
+			"betarouter is the most complete LiteLLM alternative: open source, self-hostable, and available as a managed cloud with zero markup on your own keys. Other options teams evaluate include OpenRouter (managed, no self-hosting), Bifrost (self-hosted Go proxy), and Portkey (enterprise governance).",
 	},
 ];
 
@@ -44,7 +44,7 @@ export default function CompareLiteLLMPage() {
 			<main>
 				<HeroCompare
 					content={{
-						heading: "Why Choose LLM Gateway Over LiteLLM?",
+						heading: "Why Choose betarouter Over LiteLLM?",
 						description:
 							"Compare our production-ready managed gateway with advanced analytics, routing, and enterprise features against LiteLLM's self-hosted proxy solution.",
 						badges: [
@@ -60,7 +60,7 @@ export default function CompareLiteLLMPage() {
 							},
 							secondary: {
 								text: "View Documentation",
-								href: "https://docs.llmgateway.io",
+								href: "https://docs.betarouter.com",
 								external: true,
 							},
 						},
@@ -68,8 +68,8 @@ export default function CompareLiteLLMPage() {
 				/>
 				<ComparisonLiteLLM />
 				<CompareFaq
-					heading="LLM Gateway vs LiteLLM"
-					description="Common questions about choosing LLM Gateway over LiteLLM."
+					heading="betarouter vs LiteLLM"
+					description="Common questions about choosing betarouter over LiteLLM."
 					faqs={liteLlmFaqs}
 				/>
 			</main>
@@ -80,20 +80,20 @@ export default function CompareLiteLLMPage() {
 
 export async function generateMetadata() {
 	return {
-		title: "LLM Gateway vs LiteLLM — Feature Comparison",
+		title: "betarouter vs LiteLLM — Feature Comparison",
 		description:
 			"Compare managed infrastructure, analytics, and enterprise features vs LiteLLM's self-hosted proxy. See why teams pick a production-ready gateway.",
 		alternates: { canonical: "/compare/litellm" },
 		openGraph: {
-			title: "LLM Gateway vs LiteLLM — Feature Comparison",
+			title: "betarouter vs LiteLLM — Feature Comparison",
 			description:
 				"Compare managed infrastructure, analytics, and enterprise features vs LiteLLM's self-hosted proxy.",
 			type: "website",
-			url: "https://llmgateway.io/compare/litellm",
+			url: "https://betarouter.com/compare/litellm",
 		},
 		twitter: {
 			card: "summary_large_image",
-			title: "LLM Gateway vs LiteLLM — Feature Comparison",
+			title: "betarouter vs LiteLLM — Feature Comparison",
 			description:
 				"Compare managed infrastructure, analytics, and enterprise features vs LiteLLM's self-hosted proxy.",
 		},

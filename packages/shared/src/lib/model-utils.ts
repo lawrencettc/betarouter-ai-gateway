@@ -1,4 +1,4 @@
-import type { ModelDefinition, ProviderDefinition } from "@llmgateway/models";
+import type { ModelDefinition, ProviderDefinition } from "@betarouter/models";
 
 export function formatPrice(price: number | string | undefined): string {
 	// Unknown / missing pricing

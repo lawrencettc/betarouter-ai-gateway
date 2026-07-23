@@ -2,16 +2,16 @@
 id: kilo-code
 slug: kilo-code
 title: Kilo Code Integration
-description: Use LLM Gateway with Kilo Code in VS Code. Built-in provider — just search, connect your API key, and start coding.
+description: Use betarouter with Kilo Code in VS Code. Built-in provider — just search, connect your API key, and start coding.
 date: 2026-05-12
 ---
 
-[Kilo Code](https://kilo.ai/) is an AI coding assistant that runs as a VS Code extension. It supports autonomous coding, file editing, terminal commands, and browser automation. LLM Gateway is a built-in provider in Kilo Code, so setup takes under a minute — no manual base URL configuration required.
+[Kilo Code](https://kilo.ai/) is an AI coding assistant that runs as a VS Code extension. It supports autonomous coding, file editing, terminal commands, and browser automation. betarouter is a built-in provider in Kilo Code, so setup takes under a minute — no manual base URL configuration required.
 
 ## Prerequisites
 
 - VS Code or a VS Code-based editor (Cursor, Windsurf, etc.)
-- An LLM Gateway API key — [sign up free](/signup) (no credit card required)
+- A betarouter API key — [sign up free](/signup) (no credit card required)
 
 ## Setup
 
@@ -27,29 +27,29 @@ Click the Kilo Code icon in the VS Code sidebar, then open **Settings > Provider
 
 ![Kilo Code Providers screen](/images/guides/kilo-code/0-providers.png)
 
-### Step 3: Find LLM Gateway
+### Step 3: Find betarouter
 
-Click **Show more providers** at the bottom of the list. In the "Connect provider" dialog, type `llm` in the search box — **LLM Gateway** will appear:
+Click **Show more providers** at the bottom of the list. In the "Connect provider" dialog, type `llm` in the search box — **betarouter** will appear:
 
-![Searching for LLM Gateway](/images/guides/kilo-code/1-search-llm.png)
+![Searching for betarouter](/images/guides/kilo-code/1-search-llm.png)
 
-Click the **+** button next to LLM Gateway.
+Click the **+** button next to betarouter.
 
 ### Step 4: Enter Your API Key
 
-Kilo Code will show the **Connect LLM Gateway** dialog. Paste your LLM Gateway API key (starts with `llmgtwy_`) and click **Submit**:
+Kilo Code will show the **Connect betarouter** dialog. Paste your betarouter API key (starts with `llmgtwy_`) and click **Submit**:
 
-![Connect LLM Gateway — enter API key](/images/guides/kilo-code/2-connect-api-key.png)
+![Connect betarouter — enter API key](/images/guides/kilo-code/2-connect-api-key.png)
 
-[Sign up](/signup) or log in to your LLM Gateway dashboard and navigate to **API Keys** to get your key.
+[Sign up](/signup) or log in to your betarouter dashboard and navigate to **API Keys** to get your key.
 
 ### Step 5: Start Coding
 
-Once connected, select an LLM Gateway model from the model picker at the bottom of the chat panel. All requests now route through LLM Gateway — you'll see usage, costs, and logs in your [dashboard](/dashboard):
+Once connected, select a betarouter model from the model picker at the bottom of the chat panel. All requests now route through betarouter — you'll see usage, costs, and logs in your [dashboard](/dashboard):
 
-![Kilo Code chat active with LLM Gateway](/images/guides/kilo-code/3-chat-active.png)
+![Kilo Code chat active with betarouter](/images/guides/kilo-code/3-chat-active.png)
 
-## Why Use LLM Gateway with Kilo Code?
+## Why Use betarouter with Kilo Code?
 
 - **200+ models** — Claude, GPT, Gemini, Llama, DeepSeek, and more from 40+ providers
 - **One API key** — Stop managing separate keys for each provider
@@ -60,7 +60,7 @@ Once connected, select an LLM Gateway model from the model picker at the bottom 
 
 ## Features
 
-Once configured, you can use all of Kilo Code's features with LLM Gateway:
+Once configured, you can use all of Kilo Code's features with betarouter:
 
 - **Autonomous coding** — Create and edit files, build features from natural language
 - **Terminal commands** — Run builds, tests, and scripts directly from the chat
@@ -70,11 +70,11 @@ Once configured, you can use all of Kilo Code's features with LLM Gateway:
 
 ## Switching Models
 
-Click the model name at the bottom of the Kilo Code chat panel to open the model picker. Select any LLM Gateway model — the switch takes effect immediately for the next message.
+Click the model name at the bottom of the Kilo Code chat panel to open the model picker. Select any betarouter model — the switch takes effect immediately for the next message.
 
 ## Troubleshooting
 
-### LLM Gateway not in provider list
+### betarouter not in provider list
 
 Click **Show more providers** at the bottom of the Providers page. In the search dialog, type "llm" or "gateway" to find it.
 

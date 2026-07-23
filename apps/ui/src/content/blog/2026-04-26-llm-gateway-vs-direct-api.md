@@ -2,12 +2,12 @@
 id: blog-llm-gateway-vs-direct-api
 slug: llm-gateway-vs-direct-api
 date: 2026-04-26
-title: "LLM Gateway vs Direct API: When the Provider SDK Stops Scaling"
+title: "betarouter vs Direct API: When the Provider SDK Stops Scaling"
 summary: "Calling OpenAI or Anthropic directly is the right first call. Here's the honest case for when a gateway starts paying for itself — and when you don't need one yet."
 categories: ["Guides"]
 image:
   src: "/blog/llm-gateway-vs-direct-api.png"
-  alt: "LLM Gateway vs Direct API: When the Provider SDK Stops Scaling"
+  alt: "betarouter vs Direct API: When the Provider SDK Stops Scaling"
   width: 1672
   height: 941
 ---
@@ -39,7 +39,7 @@ A gateway normalizes that to one OpenAI-compatible call, for every provider:
 
 ```typescript
 const client = new OpenAI({
-  baseURL: "https://api.llmgateway.io/v1",
+  baseURL: "https://api.betarouter.com/v1",
   apiKey: process.env.LLM_GATEWAY_API_KEY,
 });
 
@@ -88,7 +88,7 @@ If your codebase has a file called `llm-client.ts` or `ai-provider.ts` that's st
 
 ## Direct API vs Gateway: Side by Side
 
-| Concern                     | Direct API                        | LLM Gateway                               |
+| Concern                     | Direct API                        | betarouter                                |
 | --------------------------- | --------------------------------- | ----------------------------------------- |
 | Setup                       | SDK install                       | SDK install + base URL change             |
 | Multiple providers          | One adapter per provider          | One API, 200+ models                      |
@@ -105,8 +105,8 @@ If your codebase has a file called `llm-client.ts` or `ai-provider.ts` that's st
 
 A fair question. Three honest answers:
 
-1. **Gateways reduce total failure surface, not increase it.** A well-run gateway with multi-provider failover has higher effective uptime than any single provider it routes to. LLM Gateway's managed tier runs 99.9% availability; behind it, the routing layer shifts load to whichever provider is healthy.
-2. **You can self-host.** LLM Gateway is AGPLv3 open source. Run it on your own infrastructure and the gateway and your app live or die together — no external dependency.
+1. **Gateways reduce total failure surface, not increase it.** A well-run gateway with multi-provider failover has higher effective uptime than any single provider it routes to. betarouter's managed tier runs 99.9% availability; behind it, the routing layer shifts load to whichever provider is healthy.
+2. **You can self-host.** betarouter is AGPLv3 open source. Run it on your own infrastructure and the gateway and your app live or die together — no external dependency.
 3. **The escape hatch is trivial.** Because the gateway is OpenAI-compatible, going back to direct APIs is the same two-line change as adopting it. You're not locked in.
 
 ## Migration Is Two Lines
@@ -116,7 +116,7 @@ A fair question. Three honest answers:
 -   apiKey: process.env.OPENAI_API_KEY,
 - });
 + const client = new OpenAI({
-+   baseURL: "https://api.llmgateway.io/v1",
++   baseURL: "https://api.betarouter.com/v1",
 +   apiKey: process.env.LLM_GATEWAY_API_KEY,
 + });
 ```
@@ -128,7 +128,7 @@ Using the Vercel AI SDK? Swap the provider import:
 ```diff
 - import { openai } from "@ai-sdk/openai";
 + import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
-+ const llmgateway = createLLMGateway({ apiKey: process.env.LLM_GATEWAY_API_KEY });
++ const betarouter = createLLMGateway({ apiKey: process.env.LLM_GATEWAY_API_KEY });
 ```
 
 ## A Decision Framework
@@ -150,6 +150,6 @@ Two or three yeses: you're building the gateway either way. Use one that exists.
 - Start with the direct API. Don't add infrastructure you don't need.
 - When you add a second provider, need failover, or need per-request cost visibility, a gateway stops being optional.
 - An OpenAI-compatible gateway means two-line adoption and two-line exit. Lock-in is near zero.
-- LLM Gateway is open source, self-hostable, and has a free tier. Try it when you're ready.
+- betarouter is open source, self-hostable, and has a free tier. Try it when you're ready.
 
-**[Try LLM Gateway free](/signup)** | **[How we handle failover](/blog/how-we-handle-llm-provider-failover)** | **[Why your AI app needs a gateway](/blog/why-your-ai-app-needs-a-gateway)**
+**[Try betarouter free](/signup)** | **[How we handle failover](/blog/how-we-handle-llm-provider-failover)** | **[Why your AI app needs a gateway](/blog/why-your-ai-app-needs-a-gateway)**

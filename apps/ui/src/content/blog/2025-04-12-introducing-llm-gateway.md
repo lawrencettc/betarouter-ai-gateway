@@ -2,35 +2,35 @@
 id: blog-introducing-llm-gateway
 slug: introducing-llm-gateway
 date: 2025-04-12
-title: Introducing LLM Gateway
+title: Introducing betarouter
 summary: One API for 280+ models across 35+ providers. Route requests, track costs, and switch models without changing your code.
 categories: ["Announcements"]
 image:
   src: "/blog/blog-introducing-llm-gateway.png"
-  alt: "LLM Gateway"
+  alt: "betarouter"
   width: 2282
   height: 1198
 ---
 
-# LLM Gateway
+# betarouter
 
-LLM Gateway is an open-source API gateway that sits between your apps and LLM providers. One integration gives you access to 280+ models from 35+ providers—and the visibility to control costs.
+betarouter is an open-source API gateway that sits between your apps and LLM providers. One integration gives you access to 280+ models from 35+ providers—and the visibility to control costs.
 
 - **Route**: Switch between OpenAI, Anthropic, Google, and 35+ other providers without changing your code
 - **Manage**: One dashboard for all your API keys—no more scattered credentials
 - **Observe**: Track every request's cost, latency, and token usage in real-time
 - **Optimize**: Compare models side-by-side to find the best price-to-performance ratio
 
-## Why LLM Gateway?
+## Why betarouter?
 
-If you've built with multiple LLM providers, you know the pain: different SDKs, scattered API keys, no unified view of what you're spending. LLM Gateway gives you a single API that works with any provider—and a dashboard that shows exactly where your money goes.
+If you've built with multiple LLM providers, you know the pain: different SDKs, scattered API keys, no unified view of what you're spending. betarouter gives you a single API that works with any provider—and a dashboard that shows exactly where your money goes.
 
 ## One Compatible Endpoint
 
 Already using OpenAI's SDK? Keep your code. Just change the base URL:
 
 ```bash
-curl -X POST https://api.llmgateway.io/v1/chat/completions \
+curl -X POST https://api.betarouter.com/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -d '{

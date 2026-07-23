@@ -1,6 +1,6 @@
 ---
 title: Embeddable Payments
-description: Embed end-user payments and sessions into your own site with the Payments SDK. Your end-users get their own wallet, buy credits, and pay per request — billed through LLM Gateway, with your markup as margin.
+description: Embed end-user payments and sessions into your own site with the Payments SDK. Your end-users get their own wallet, buy credits, and pay per request — billed through betarouter, with your markup as margin.
 icon: Wallet
 ---
 
@@ -8,18 +8,18 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 # Embeddable Payments (Payments SDK)
 
-The **Payments SDK** lets you drop **end-user payments + in-app credit purchases** into your product the same way Stripe Elements lets you drop in payments. Your end-users get their **own wallet**, buy credits **inside your app**, and pay per request for any model the gateway supports. LLM Gateway is the merchant of record; you set a markup and keep the margin.
+The **Payments SDK** lets you drop **end-user payments + in-app credit purchases** into your product the same way Stripe Elements lets you drop in payments. Your end-users get their **own wallet**, buy credits **inside your app**, and pay per request for any model the gateway supports. betarouter is the merchant of record; you set a markup and keep the margin.
 
 <Callout type="warn">
 	**Preview — opt-in only.** Embeddable Payments is in preview and enabled on an
 	opt-in basis per project. The **Settings → Payments SDK** dashboard page shows
 	a read-only preview until the feature is turned on for your project. [Contact
-	us](mailto:contact@llmgateway.io) to request access before integrating.
+	us](mailto:contact@betarouter.com) to request access before integrating.
 </Callout>
 
 ## When to use this
 
-Reach for the Payments SDK when **you embed LLM Gateway's billing on your own site** and want **your end-users to pay for the AI they use**, each with their own wallet and credit balance. It handles end-user **payments and sessions**: per-user wallets, in-app credit top-ups (Stripe), short-lived browser sessions scoped to a single wallet, and developer-margin payouts.
+Reach for the Payments SDK when **you embed betarouter's billing on your own site** and want **your end-users to pay for the AI they use**, each with their own wallet and credit balance. It handles end-user **payments and sessions**: per-user wallets, in-app credit top-ups (Stripe), short-lived browser sessions scoped to a single wallet, and developer-margin payouts.
 
 <Callout type="info">
 	**This is a payments product, not an AI client SDK.** Do not confuse it with a
@@ -64,7 +64,7 @@ Your backend ──(secret key sk_)──▶ POST /v1/sessions ──▶ ephemer
 
 Before you write any code, configure the project you want to embed:
 
-1. Open the LLM Gateway dashboard and select your project.
+1. Open the betarouter dashboard and select your project.
 2. Go to **Settings → Payments SDK** and turn on **End-user sessions** (this requires the preview to be enabled for your project).
 3. _(Optional)_ Set a **markup percent** — the margin you earn on every top-up — and/or a **top-up bonus percent** to gift end-users extra credit (funded from your organization's credit balance).
 4. Add the browser origins allowed to call the gateway, one per line (e.g. `https://app.example.com`), then click **Save Settings**.
@@ -104,7 +104,7 @@ npm install @llmgateway/client     # headless / non-React
 Identify your signed-in user and mint a session bound to their wallet. Scope which models they may call.
 
 ```ts
-// app/api/llmgateway/session/route.ts  (Next.js Route Handler)
+// app/api/betarouter/session/route.ts  (Next.js Route Handler)
 import { LLMGateway } from "@llmgateway/server";
 
 const lg = new LLMGateway({ secretKey: process.env.LLMGATEWAY_SECRET_KEY! });
@@ -138,7 +138,7 @@ import {
 } from "@llmgateway/elements";
 
 const fetchSession = () =>
-	fetch("/api/llmgateway/session", { method: "POST" }).then((r) => r.json());
+	fetch("/api/betarouter/session", { method: "POST" }).then((r) => r.json());
 
 export default function Assistant({ session }) {
 	return (
@@ -213,9 +213,9 @@ const { balance, limits } = await client.getBalance();
 
 ## Buying credits
 
-`<BuyCredits amount={10} />` creates a Stripe PaymentIntent scoped to the user's wallet, renders Stripe's `PaymentElement`, and confirms the payment. Once LLM Gateway's webhook processes it, the wallet is credited the **net** amount (after your markup) and your margin accrues to your organization. If you've configured a **top-up bonus**, the additional developer-funded credit is applied on top of the net amount at the same time (debited from your organization's credit balance). The top-up API response and the `wallet.credited` webhook include `bonusCredited` and `totalCredited` so you can show the boosted total.
+`<BuyCredits amount={10} />` creates a Stripe PaymentIntent scoped to the user's wallet, renders Stripe's `PaymentElement`, and confirms the payment. Once betarouter's webhook processes it, the wallet is credited the **net** amount (after your markup) and your margin accrues to your organization. If you've configured a **top-up bonus**, the additional developer-funded credit is applied on top of the net amount at the same time (debited from your organization's credit balance). The top-up API response and the `wallet.credited` webhook include `bonusCredited` and `totalCredited` so you can show the boosted total.
 
-`@llmgateway/elements` bundles LLM Gateway's browser-safe Stripe publishable keys. Pass `mode="test"` to `<LLMGatewayProvider>` while developing to use Stripe test mode; omit it or pass `mode="prod"` for live payments (`"prod"` is the default). You never need to provide LLM Gateway's Stripe publishable key yourself, and the end-user never sees your `sk_…` secret key.
+`@llmgateway/elements` bundles betarouter's browser-safe Stripe publishable keys. Pass `mode="test"` to `<LLMGatewayProvider>` while developing to use Stripe test mode; omit it or pass `mode="prod"` for live payments (`"prod"` is the default). You never need to provide betarouter's Stripe publishable key yourself, and the end-user never sees your `sk_…` secret key.
 
 <Callout type="warn">
 	The frontend `mode` prop and the backend secret key must match. A `sk_test_…`
@@ -243,7 +243,7 @@ Register an endpoint to react to wallet events. Events are signed (`X-LLMGateway
 
 ```ts
 await lg.webhookEndpoints.create({
-	url: "https://yourapp.com/webhooks/llmgateway",
+	url: "https://yourapp.com/webhooks/betarouter",
 	enabledEvents: ["wallet.credited", "wallet.low_balance"],
 });
 

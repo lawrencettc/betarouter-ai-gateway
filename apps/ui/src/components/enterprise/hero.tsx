@@ -74,7 +74,7 @@ export function HeroEnterprise({
 						</span>
 					</Link>
 					<h1 className="mb-6 text-4xl font-bold tracking-tight text-balance sm:text-6xl lg:text-7xl">
-						Enterprise LLM Gateway for mission-critical applications
+						Enterprise betarouter for mission-critical applications
 					</h1>
 					<p className="mb-10 text-lg text-muted-foreground text-balance sm:text-xl max-w-3xl mx-auto leading-relaxed">
 						Deploy a fully-managed or self-hosted LLM gateway with enterprise

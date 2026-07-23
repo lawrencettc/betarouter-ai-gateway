@@ -5,17 +5,17 @@ import {
 	scrypt,
 } from "crypto";
 
-import { redisClient } from "@llmgateway/cache";
+import { redisClient } from "@betarouter/cache";
 import {
 	models as allModels,
 	providers as allProviders,
-} from "@llmgateway/models";
-import { getDevPlanCreditsLimit } from "@llmgateway/shared";
+} from "@betarouter/models";
+import { getDevPlanCreditsLimit } from "@betarouter/shared";
 
 import { closeDatabase, db, tables } from "./index.js";
 import { logs } from "./logs.js";
 
-import type { ModelDefinition, ProviderModelMapping } from "@llmgateway/models";
+import type { ModelDefinition, ProviderModelMapping } from "@betarouter/models";
 import type { PgTable } from "drizzle-orm/pg-core";
 
 /**
@@ -2300,7 +2300,7 @@ async function seed() {
 		country: "United States",
 		size: "201-500",
 		message:
-			"Hi, we're evaluating LLM Gateway for our engineering team of ~300 developers. We currently use a mix of OpenAI and Anthropic APIs directly and are looking for a unified gateway with usage tracking, cost controls, and SSO integration. Could we schedule a call to discuss enterprise pricing and onboarding?",
+			"Hi, we're evaluating betarouter for our engineering team of ~300 developers. We currently use a mix of OpenAI and Anthropic APIs directly and are looking for a unified gateway with usage tracking, cost controls, and SSO integration. Could we schedule a call to discuss enterprise pricing and onboarding?",
 		spamFilterStatus: "delivered",
 		ipAddress: "203.0.113.42",
 		userAgent:

@@ -39,10 +39,10 @@ import { cn } from "@/lib/utils";
 import {
 	formatServiceTierMultiplier,
 	getServiceTier,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 import type { LogDetailData } from "@/types/activity";
-import type { Log } from "@llmgateway/db";
+import type { Log } from "@betarouter/db";
 
 type LogWithResources = Log & {
 	organizationName?: string | null;

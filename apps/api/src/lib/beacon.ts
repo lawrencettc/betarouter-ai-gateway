@@ -1,8 +1,8 @@
 import { randomUUID } from "crypto";
 
-import { db, tables } from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
-import { providers } from "@llmgateway/models";
+import { db, tables } from "@betarouter/db";
+import { logger } from "@betarouter/logger";
+import { providers } from "@betarouter/models";
 
 interface BeaconData {
 	uuid: string;
@@ -37,7 +37,7 @@ function detectConfiguredProviders(): string[] {
  * Sends installation beacon data to the tracking endpoint
  */
 async function sendBeacon(data: BeaconData): Promise<void> {
-	const response = await fetch("https://internal.llmgateway.io/beacon", {
+	const response = await fetch("https://internal.betarouter.com/beacon", {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",

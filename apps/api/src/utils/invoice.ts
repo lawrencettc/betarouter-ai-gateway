@@ -1,6 +1,6 @@
 import { jsPDF } from "jspdf";
 
-import { logger } from "@llmgateway/logger";
+import { logger } from "@betarouter/logger";
 
 import { sendTransactionalEmail } from "./email.js";
 
@@ -382,7 +382,7 @@ export async function generateAndEmailInvoice(
 		await sendTransactionalEmail({
 			to: data.billingEmail,
 			organizationId: data.organizationId,
-			subject: `Invoice ${escapedInvoiceNumber} - LLMGateway`,
+			subject: `Invoice ${escapedInvoiceNumber} - betarouter`,
 			attachments: [
 				{
 					filename: `invoice-${escapedInvoiceNumber}.pdf`,
@@ -426,10 +426,10 @@ export async function generateAndEmailInvoice(
 						<tr>
 							<td style="padding: 30px 40px; background-color: #f8f9fa; border-radius: 0 0 8px 8px; border-top: 1px solid #e9ecef;">
 								<p style="margin: 0 0 12px; color: #666666; font-size: 14px; line-height: 1.6;">
-									If you have any questions about this invoice, please contact us at <a href="mailto:contact@llmgateway.io" style="color: #000000; text-decoration: none;">contact@llmgateway.io</a>
+									If you have any questions about this invoice, please contact us at <a href="mailto:contact@betarouter.com" style="color: #000000; text-decoration: none;">contact@betarouter.com</a>
 								</p>
 								<p style="margin: 0; color: #999999; font-size: 12px;">
-									© 2025 LLM Gateway. All rights reserved.
+									© 2025 betarouter. All rights reserved.
 								</p>
 							</td>
 						</tr>

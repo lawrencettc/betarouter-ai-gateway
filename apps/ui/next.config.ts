@@ -17,9 +17,9 @@ const nextConfig: NextConfig = {
 		serverSourceMaps: true,
 	},
 	async redirects() {
-		// Docs pages that ended up indexed on llmgateway.io because the proxied
+		// Docs pages that ended up indexed on betarouter.com because the proxied
 		// llms-full.txt contained relative links. Redirect them to their real
-		// home on docs.llmgateway.io.
+		// home on docs.betarouter.com.
 		const docsFeatureSlugs = [
 			"anthropic-endpoint",
 			"api-keys",
@@ -120,27 +120,27 @@ const nextConfig: NextConfig = {
 			},
 			{
 				source: "/docs",
-				destination: "https://docs.llmgateway.io",
+				destination: "https://docs.betarouter.com",
 				permanent: true,
 			},
 			{
 				source: "/chat",
-				destination: "https://chat.llmgateway.io",
+				destination: "https://chat.betarouter.com",
 				permanent: true,
 			},
 			{
 				source: "/playground",
-				destination: "https://chat.llmgateway.io",
+				destination: "https://chat.betarouter.com",
 				permanent: true,
 			},
 			{
 				source: "/code",
-				destination: "https://devpass.llmgateway.io",
+				destination: "https://devpass.betarouter.com",
 				permanent: true,
 			},
 			{
 				source: "/devpass",
-				destination: "https://devpass.llmgateway.io",
+				destination: "https://devpass.betarouter.com",
 				permanent: true,
 			},
 			{
@@ -211,114 +211,115 @@ const nextConfig: NextConfig = {
 			// Docs content indexed on the wrong domain (see comment above).
 			{
 				source: "/quick-start",
-				destination: "https://docs.llmgateway.io/quick-start",
+				destination: "https://docs.betarouter.com/quick-start",
 				permanent: true,
 			},
 			{
 				source: "/overview",
-				destination: "https://docs.llmgateway.io/overview",
+				destination: "https://docs.betarouter.com/overview",
 				permanent: true,
 			},
 			{
 				source: "/self-host",
-				destination: "https://docs.llmgateway.io/self-host",
+				destination: "https://docs.betarouter.com/self-host",
 				permanent: true,
 			},
 			{
 				source: "/self-host/:path*",
-				destination: "https://docs.llmgateway.io/self-host/:path*",
+				destination: "https://docs.betarouter.com/self-host/:path*",
 				permanent: true,
 			},
 			{
 				source: "/learn/:path*",
-				destination: "https://docs.llmgateway.io/learn/:path*",
+				destination: "https://docs.betarouter.com/learn/:path*",
 				permanent: true,
 			},
 			{
 				source: "/resources/:path*",
-				destination: "https://docs.llmgateway.io/resources/:path*",
+				destination: "https://docs.betarouter.com/resources/:path*",
 				permanent: true,
 			},
 			{
 				source: "/docs/:path*",
-				destination: "https://docs.llmgateway.io/:path*",
+				destination: "https://docs.betarouter.com/:path*",
 				permanent: true,
 			},
 			{
 				source: "/health",
-				destination: "https://docs.llmgateway.io/health",
+				destination: "https://docs.betarouter.com/health",
 				permanent: true,
 			},
 			{
 				source: "/metrics",
-				destination: "https://docs.llmgateway.io/learn/usage-metrics",
+				destination: "https://docs.betarouter.com/learn/usage-metrics",
 				permanent: true,
 			},
 			{
 				source: "/guides/agent-skills",
-				destination: "https://docs.llmgateway.io/guides/agent-skills",
+				destination: "https://docs.betarouter.com/guides/agent-skills",
 				permanent: true,
 			},
 			{
 				source: "/guides/cli",
-				destination: "https://docs.llmgateway.io/guides/cli",
+				destination: "https://docs.betarouter.com/guides/cli",
 				permanent: true,
 			},
 			{
 				source: "/integrations/aws-bedrock",
-				destination: "https://docs.llmgateway.io/integrations/aws-bedrock",
+				destination: "https://docs.betarouter.com/integrations/aws-bedrock",
 				permanent: true,
 			},
 			{
 				source: "/integrations/azure",
-				destination: "https://docs.llmgateway.io/integrations/azure",
+				destination: "https://docs.betarouter.com/integrations/azure",
 				permanent: true,
 			},
 			{
 				source: "/integrations/vertex-anthropic",
-				destination: "https://docs.llmgateway.io/integrations/vertex-anthropic",
+				destination:
+					"https://docs.betarouter.com/integrations/vertex-anthropic",
 				permanent: true,
 			},
 			...docsFeatureSlugs.map((slug) => ({
 				source: `/features/${slug}`,
-				destination: `https://docs.llmgateway.io/features/${slug}`,
+				destination: `https://docs.betarouter.com/features/${slug}`,
 				permanent: true,
 			})),
 			{
 				source: "/features/auto-routing",
-				destination: "https://docs.llmgateway.io/features/routing",
+				destination: "https://docs.betarouter.com/features/routing",
 				permanent: true,
 			},
 			// API reference pages (fumadocs OpenAPI slugs) indexed on the
 			// marketing domain.
 			...apiReferenceSlugs.map((slug) => ({
 				source: `/${slug}`,
-				destination: `https://docs.llmgateway.io/${slug}`,
+				destination: `https://docs.betarouter.com/${slug}`,
 				permanent: true,
 			})),
 			{
 				source: "/v1",
-				destination: "https://docs.llmgateway.io/v1_chat_completions",
+				destination: "https://docs.betarouter.com/v1_chat_completions",
 				permanent: true,
 			},
 			{
 				source: "/v1_videos",
-				destination: "https://docs.llmgateway.io/v1_videos_create",
+				destination: "https://docs.betarouter.com/v1_videos_create",
 				permanent: true,
 			},
 			{
 				source: "/v1/chat/completions",
-				destination: "https://docs.llmgateway.io/v1_chat_completions",
+				destination: "https://docs.betarouter.com/v1_chat_completions",
 				permanent: true,
 			},
 			{
 				source: "/v1/images/generations",
-				destination: "https://docs.llmgateway.io/v1_images_generations",
+				destination: "https://docs.betarouter.com/v1_images_generations",
 				permanent: true,
 			},
 			{
 				source: "/v1/images/edits",
-				destination: "https://docs.llmgateway.io/v1_images_edits",
+				destination: "https://docs.betarouter.com/v1_images_edits",
 				permanent: true,
 			},
 			// Removed/renamed models and providers.
@@ -416,11 +417,11 @@ const nextConfig: NextConfig = {
 			// precedence over rewrites), so it is intentionally not proxied here.
 			{
 				source: "/llms-full.txt",
-				destination: "https://docs.llmgateway.io/llms-full.txt",
+				destination: "https://docs.betarouter.com/llms-full.txt",
 			},
 			{
 				source: "/docs-health",
-				destination: "https://docs.llmgateway.io/health",
+				destination: "https://docs.betarouter.com/health",
 			},
 			// First-party PostHog ingestion proxy — ad blockers block
 			// *.posthog.com directly, silently dropping client events. The

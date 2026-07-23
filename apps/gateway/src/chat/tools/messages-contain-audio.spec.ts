@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { models } from "@llmgateway/models";
+import { models } from "@betarouter/models";
 
 import {
 	getAudioFormatsFromMessages,
 	messagesContainAudio,
 } from "./messages-contain-audio.js";
 
-import type { BaseMessage, ProviderModelMapping } from "@llmgateway/models";
+import type { BaseMessage, ProviderModelMapping } from "@betarouter/models";
 
 describe("messagesContainAudio", () => {
 	it("returns false for plain text-only messages", () => {

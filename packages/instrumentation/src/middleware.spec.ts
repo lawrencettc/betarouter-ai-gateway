@@ -5,7 +5,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { createTracingMiddleware } from "./middleware.js";
 
 // Mock the logger
-vi.mock("@llmgateway/logger", () => ({
+vi.mock("@betarouter/logger", () => ({
 	logger: {
 		error: vi.fn(),
 	},

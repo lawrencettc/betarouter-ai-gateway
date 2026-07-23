@@ -4,7 +4,7 @@
  * This helps test dashboards and visualizations with realistic data.
  *
  * Usage:
- *   pnpm --filter @llmgateway/scripts generate-test-logs 1000 proj_123 key_456 org_789
+ *   pnpm --filter @betarouter/scripts generate-test-logs 1000 proj_123 key_456 org_789
  *
  * Environment:
  *   DATABASE_URL - PostgreSQL connection string
@@ -12,7 +12,7 @@
 
 import { customAlphabet } from "nanoid";
 
-import { db, tables } from "@llmgateway/db";
+import { db, tables } from "@betarouter/db";
 
 const generate = customAlphabet(
 	"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
@@ -278,11 +278,11 @@ async function main() {
 
 	if (args.length < 4) {
 		console.log(
-			"Usage: pnpm --filter @llmgateway/scripts generate-test-logs <count> <projectId> <apiKeyId> <organizationId> [daysBack]",
+			"Usage: pnpm --filter @betarouter/scripts generate-test-logs <count> <projectId> <apiKeyId> <organizationId> [daysBack]",
 		);
 		console.log("\nExample:");
 		console.log(
-			"  pnpm --filter @llmgateway/scripts generate-test-logs 1000 proj_123 key_456 org_789 30",
+			"  pnpm --filter @betarouter/scripts generate-test-logs 1000 proj_123 key_456 org_789 30",
 		);
 		console.log("\nArguments:");
 		console.log("  count          - Number of logs to generate");

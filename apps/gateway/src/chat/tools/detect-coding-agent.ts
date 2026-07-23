@@ -1,4 +1,4 @@
-import { CLAW_FORK_PATTERN, CODING_AGENTS } from "@llmgateway/shared";
+import { CLAW_FORK_PATTERN, CODING_AGENTS } from "@betarouter/shared";
 
 /**
  * Detects which coding agent made a request by inspecting the User-Agent header.

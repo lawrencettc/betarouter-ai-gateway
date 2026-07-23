@@ -1,7 +1,7 @@
 import * as crypto from "node:crypto";
 
-import { redisClient } from "@llmgateway/cache";
-import { logger } from "@llmgateway/logger";
+import { redisClient } from "@betarouter/cache";
+import { logger } from "@betarouter/logger";
 
 interface ServiceAccountKey {
 	client_email: string;

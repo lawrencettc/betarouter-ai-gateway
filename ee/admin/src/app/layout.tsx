@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { Bricolage_Grotesque, Inter, JetBrains_Mono } from "next/font/google";
 
 import { AdminShell } from "@/components/admin-shell";
 import { getConfig } from "@/lib/config-server";
@@ -9,23 +9,29 @@ import "./globals.css";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
-const geistSans = Geist({
+const geistSans = Inter({
 	variable: "--font-geist-sans",
 	subsets: ["latin"],
 	display: "swap",
 });
 
-const geistMono = Geist_Mono({
+const geistMono = JetBrains_Mono({
 	variable: "--font-geist-mono",
 	subsets: ["latin"],
+});
+
+const bricolage = Bricolage_Grotesque({
+	variable: "--font-bricolage",
+	subsets: ["latin"],
+	weight: ["600", "700", "800"],
 });
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
 	metadataBase: new URL("https://admin.betarouter.com"),
-	title: "BetaRouter Admin",
-	description: "Admin dashboard for BetaRouter.",
+	title: "betarouter admin",
+	description: "Admin dashboard for betarouter.",
 	icons: {
 		icon: "/favicon/favicon.ico?v=2",
 	},
@@ -41,7 +47,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 	return (
 		<html lang="en" suppressHydrationWarning>
 			<body
-				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+				className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} antialiased`}
 			>
 				<Providers config={config}>
 					<AdminShell>{children}</AdminShell>

@@ -9,4 +9,4 @@ export {
 	OPEN_SOURCE_FAMILIES,
 	OPEN_SOURCE_MODEL_IDS,
 	type ModelCategoryFilter,
-} from "@llmgateway/shared/components";
+} from "@betarouter/shared/components";

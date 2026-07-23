@@ -1,7 +1,7 @@
 import { ProviderKeysClient } from "@/components/provider-keys/provider-keys-client";
 import { fetchServerData } from "@/lib/server-api";
 
-import type { ProviderKeyOptions } from "@llmgateway/db";
+import type { ProviderKeyOptions } from "@betarouter/db";
 
 interface ProviderKeysData {
 	providerKeys: {

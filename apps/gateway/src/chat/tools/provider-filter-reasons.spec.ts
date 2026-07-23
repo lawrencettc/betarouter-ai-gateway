@@ -6,7 +6,7 @@ import {
 	type FilteredProvider,
 } from "./provider-filter-reasons.js";
 
-import type { ProviderModelMapping } from "@llmgateway/models";
+import type { ProviderModelMapping } from "@betarouter/models";
 
 function mapping(overrides: Partial<ProviderModelMapping> = {}) {
 	return {

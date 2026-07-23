@@ -7,7 +7,7 @@ import {
 } from "@opentelemetry/api";
 import { createMiddleware } from "hono/factory";
 
-import { logger } from "@llmgateway/logger";
+import { logger } from "@betarouter/logger";
 
 import type { Attributes } from "@opentelemetry/api";
 import type { Context } from "hono";

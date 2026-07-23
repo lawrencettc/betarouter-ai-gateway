@@ -15,7 +15,7 @@ import {
 } from "@/lib/components/card";
 import { formatContextSize } from "@/lib/utils";
 
-import type { ProviderModelMapping } from "@llmgateway/models";
+import type { ProviderModelMapping } from "@betarouter/models";
 
 interface ModelCardProps {
 	modelName: string;

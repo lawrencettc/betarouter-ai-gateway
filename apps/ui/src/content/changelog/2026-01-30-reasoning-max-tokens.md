@@ -20,7 +20,7 @@ We've added a new `reasoning` configuration object that gives you flexible contr
 Use `reasoning.effort` to control reasoning intensity:
 
 ```bash
-curl -X POST https://api.llmgateway.io/v1/chat/completions \
+curl -X POST https://api.betarouter.com/v1/chat/completions \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -39,7 +39,7 @@ Supported effort levels: `none`, `minimal`, `low`, `medium`, `high`, `xhigh`
 Use `reasoning.max_tokens` for precise control over reasoning token allocation:
 
 ```bash
-curl -X POST https://api.llmgateway.io/v1/chat/completions \
+curl -X POST https://api.betarouter.com/v1/chat/completions \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -75,4 +75,4 @@ When using auto-routing (e.g., `claude-sonnet-4` without provider prefix) or roo
 - **Anthropic**: Budget must be between 1,024 and 128,000 tokens (values are automatically clamped)
 - **Google**: No specific constraints
 
-**[Read the docs](https://docs.llmgateway.io/features/reasoning#specifying-reasoning-token-budget)** for more details.
+**[Read the docs](https://docs.betarouter.com/features/reasoning#specifying-reasoning-token-budget)** for more details.

@@ -2,7 +2,7 @@
 
 set -eu
 
-BASE_URL="https://api.llmgateway.io"
+BASE_URL="https://api.betarouter.com"
 API_KEY="${LLM_GATEWAY_API_KEY:-test-token}"
 MODEL="veo-3.1-generate-preview"
 SIZE=""

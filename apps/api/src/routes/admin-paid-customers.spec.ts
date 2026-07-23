@@ -4,7 +4,7 @@ import { app } from "@/index.js";
 import { createTestUser, deleteAll } from "@/testing.js";
 import { paidTransactionTypes } from "@/utils/devpass-filter.js";
 
-import { db, tables } from "@llmgateway/db";
+import { db, tables } from "@betarouter/db";
 
 const allTransactionTypes = tables.transaction.type.enumValues;
 const nonPaidTransactionTypes = allTransactionTypes.filter(

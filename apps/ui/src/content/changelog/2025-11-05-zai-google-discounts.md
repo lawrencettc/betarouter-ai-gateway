@@ -3,7 +3,7 @@ id: "27"
 slug: "zai-google-discounts"
 date: "2025-11-05"
 title: "Z.ai 10% Off & Google 20% Off All Models"
-summary: "Save on all Z.ai models with 10% off and get 20% off all Google models through LLM Gateway."
+summary: "Save on all Z.ai models with 10% off and get 20% off all Google models through betarouter."
 image:
   src: "/changelog/zai-google-discounts.png"
   alt: "Z.ai 10% off and Google 20% off all models"
@@ -11,11 +11,11 @@ image:
   height: 677
 ---
 
-We're excited to announce new discounts on two popular providers: **10% off all Z.ai models** and **20% off all Google models** through LLM Gateway!
+We're excited to announce new discounts on two popular providers: **10% off all Z.ai models** and **20% off all Google models** through betarouter!
 
 ## 💰 Z.ai - 10% Off All Models
 
-All [Z.ai models](/providers/zai) are now available with a **10% discount** applied automatically when using LLM Gateway.
+All [Z.ai models](/providers/zai) are now available with a **10% discount** applied automatically when using betarouter.
 
 **Savings Applied To:**
 
@@ -25,7 +25,7 @@ All [Z.ai models](/providers/zai) are now available with a **10% discount** appl
 
 ## 🎉 Google - 20% Off All Models
 
-Get **20% off all Google models** including Gemini and other Google AI offerings through LLM Gateway.
+Get **20% off all Google models** including Gemini and other Google AI offerings through betarouter.
 
 **Savings Applied To:**
 
@@ -33,6 +33,6 @@ Get **20% off all Google models** including Gemini and other Google AI offerings
 - Automatic discount on both input and output tokens
 - No additional configuration required
 
-These discounts are applied automatically to all requests through LLM Gateway. Start using these providers today and enjoy the savings!
+These discounts are applied automatically to all requests through betarouter. Start using these providers today and enjoy the savings!
 
-**[Try them now in the Playground](https://chat.llmgateway.io/?model=zai%2Fglm-4.5)** 🚀
+**[Try them now in the Playground](https://chat.betarouter.com/?model=zai%2Fglm-4.5)** 🚀

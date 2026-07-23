@@ -1,8 +1,8 @@
 import { afterAll, afterEach, beforeAll, beforeEach, expect } from "vitest";
 
-import { db, eq, pool, tables } from "@llmgateway/db";
-import { getProviderDefinition, models } from "@llmgateway/models";
-import { verifyVideoContentAccessToken } from "@llmgateway/shared/video-access";
+import { db, eq, pool, tables } from "@betarouter/db";
+import { getProviderDefinition, models } from "@betarouter/models";
+import { verifyVideoContentAccessToken } from "@betarouter/shared/video-access";
 
 import {
 	resetMockVideoState,

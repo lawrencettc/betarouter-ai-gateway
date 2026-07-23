@@ -3,7 +3,7 @@ id: "30"
 slug: "canopywave-kimi-k2-thinking-discount"
 date: "2025-11-11"
 title: "CanopyWave: 75% Off Kimi K2 Thinking"
-summary: "CanopyWave brings Kimi K2 Thinking to LLM Gateway with an exclusive 75% discount."
+summary: "CanopyWave brings Kimi K2 Thinking to betarouter with an exclusive 75% discount."
 image:
   src: "/changelog/canopywave75-off-kimi-k2.png"
   alt: "CanopyWave: 75% Off Kimi K2 Thinking"
@@ -30,7 +30,7 @@ Enhanced reasoning and tool calling capabilities
 All models support streaming, tool calling, and JSON output mode:
 
 ```bash
-curl -X POST https://api.llmgateway.io/v1/chat/completions \
+curl -X POST https://api.betarouter.com/v1/chat/completions \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -41,6 +41,6 @@ curl -X POST https://api.llmgateway.io/v1/chat/completions \
 
 ---
 
-**[Try it now in the Playground](https://chat.llmgateway.io/?model=canopywave/kimi-k2-thinking)** 🚀
+**[Try it now in the Playground](https://chat.betarouter.com/?model=canopywave/kimi-k2-thinking)** 🚀
 
 **[Get started now](/signup)** 🚀

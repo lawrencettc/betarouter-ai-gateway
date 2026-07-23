@@ -9,7 +9,7 @@ export function EnterpriseCTA() {
 
 	return (
 		<Link
-			href="https://llmgateway.io/enterprise"
+			href="https://betarouter.com/enterprise"
 			target="_blank"
 			rel="noopener noreferrer"
 			onClick={() => {

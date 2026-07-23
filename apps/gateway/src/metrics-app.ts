@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 
-import { getMetrics, getMetricsContentType } from "@llmgateway/instrumentation";
+import { getMetrics, getMetricsContentType } from "@betarouter/instrumentation";
 
 // Standalone Prometheus metrics app. This is served on a separate port
 // (METRICS_PORT) that is only exposed inside the cluster, so the metrics are

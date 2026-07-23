@@ -7,7 +7,7 @@ import {
 	resolveServedServiceTier,
 } from "./apply-google-service-tier.js";
 
-import type { GoogleRequestBody } from "@llmgateway/models";
+import type { GoogleRequestBody } from "@betarouter/models";
 
 function googleBody(): GoogleRequestBody {
 	return { contents: [] };

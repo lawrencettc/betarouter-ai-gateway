@@ -69,7 +69,7 @@ Let's put concrete numbers on it.
 
 An LLM gateway sits between your application and the providers. You integrate once with the gateway's API, and the gateway handles the provider complexity:
 
-**One integration, every provider.** LLM Gateway exposes an OpenAI-compatible API. Use any provider — OpenAI, Anthropic, Google, Meta, Mistral, and more — through the same interface.
+**One integration, every provider.** betarouter exposes an OpenAI-compatible API. Use any provider — OpenAI, Anthropic, Google, Meta, Mistral, and more — through the same interface.
 
 **Automatic failover.** If a provider goes down, requests route to an alternative. Your users never notice.
 
@@ -90,6 +90,6 @@ If any of these apply, you're already paying the lock-in tax:
 
 ## Get Started
 
-LLM Gateway supports 200+ models across every major provider with a single, OpenAI-compatible API.
+betarouter supports 200+ models across every major provider with a single, OpenAI-compatible API.
 
-**[Create a free account](/signup)** | **[Browse supported models](/models)** | **[Read the docs](https://docs.llmgateway.io)**
+**[Create a free account](/signup)** | **[Browse supported models](/models)** | **[Read the docs](https://docs.betarouter.com)**

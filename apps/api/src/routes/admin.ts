@@ -27,7 +27,7 @@ import {
 	pickModelHistoryTable,
 } from "@/utils/history-window.js";
 
-import { logAuditEvent } from "@llmgateway/audit";
+import { logAuditEvent } from "@betarouter/audit";
 import {
 	aliasedTable,
 	and,
@@ -55,20 +55,20 @@ import {
 	modelHistory,
 	modelProviderMappingHistoryHourly,
 	modelHistoryHourly,
-} from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
-import { models, providers } from "@llmgateway/models";
+} from "@betarouter/db";
+import { logger } from "@betarouter/logger";
+import { models, providers } from "@betarouter/models";
 import {
 	CHAT_PLAN_PRICES,
 	DEV_PLAN_PRICES,
 	type DevPlanTier,
 	getDevPlanPremiumWeeklyLimit,
-} from "@llmgateway/shared";
+} from "@betarouter/shared";
 import {
 	getResendClient,
 	fromEmail,
 	replyToEmail,
-} from "@llmgateway/shared/email";
+} from "@betarouter/shared/email";
 
 import type { ServerTypes } from "@/vars.js";
 
@@ -9068,7 +9068,7 @@ admin.openapi(replyContactSubmission, async (c) => {
 	}
 
 	const { getResendClient, fromEmail, replyToEmail } = await import(
-		"@llmgateway/shared/email"
+		"@betarouter/shared/email"
 	);
 
 	const resend = getResendClient();
@@ -9133,7 +9133,7 @@ admin.openapi(sendEmail, async (c) => {
 	const { to, subject, body: emailBody } = c.req.valid("json");
 
 	const { getResendClient, fromEmail, replyToEmail } = await import(
-		"@llmgateway/shared/email"
+		"@betarouter/shared/email"
 	);
 
 	const resend = getResendClient();
@@ -9644,7 +9644,7 @@ admin.openapi(replyChatSupportConversation, async (c) => {
 			from: fromEmail,
 			to: [conversation.email],
 			replyTo: replyToEmail,
-			subject: `Reply to your support conversation — LLM Gateway`,
+			subject: `Reply to your support conversation — betarouter`,
 			html: `
 <!DOCTYPE html>
 <html lang="en">
@@ -9654,7 +9654,7 @@ admin.openapi(replyChatSupportConversation, async (c) => {
 <tr><td align="center" style="padding:40px 20px;">
 <table role="presentation" style="max-width:600px;width:100%;border-collapse:collapse;">
 <tr><td style="background-color:#000;padding:30px;text-align:center;border-radius:8px 8px 0 0;">
-<h1 style="margin:0;color:#fff;font-size:22px;font-weight:600;">LLM Gateway Support</h1>
+<h1 style="margin:0;color:#fff;font-size:22px;font-weight:600;">betarouter Support</h1>
 </td></tr>
 <tr><td style="background-color:#f8f9fa;padding:30px;border-radius:0 0 8px 8px;">
 <p style="margin:0 0 15px;font-size:16px;color:#333;">Hi${escapedName ? ` ${escapedName}` : ""},</p>

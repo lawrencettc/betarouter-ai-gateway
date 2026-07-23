@@ -8,7 +8,7 @@ import {
 	UnsupportedDocumentFormatError,
 } from "./transform-google-messages.js";
 
-import type { BaseMessage } from "@llmgateway/models";
+import type { BaseMessage } from "@betarouter/models";
 
 type AudioFormat =
 	| "wav"

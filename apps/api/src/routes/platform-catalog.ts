@@ -4,8 +4,8 @@ import { z } from "zod";
 
 import { platformAdminMiddleware } from "@/middleware/admin.js";
 
-import { validateProviderKey } from "@llmgateway/actions";
-import { redisClient } from "@llmgateway/cache";
+import { validateProviderKey } from "@betarouter/actions";
+import { redisClient } from "@betarouter/cache";
 import {
 	applyCatalogOperations,
 	catalogMappingTestProfile,
@@ -26,7 +26,7 @@ import {
 	resetCatalogBreaker,
 	sourceMappingPricesToPriceMap,
 	validateCatalogActivation,
-} from "@llmgateway/catalog";
+} from "@betarouter/catalog";
 import {
 	db,
 	decryptPlatformProviderToken,
@@ -52,8 +52,8 @@ import {
 	or,
 	sql,
 	videoJob,
-} from "@llmgateway/db";
-import { getProviderEnvConfig, getProviderEnvVar } from "@llmgateway/models";
+} from "@betarouter/db";
+import { getProviderEnvConfig, getProviderEnvVar } from "@betarouter/models";
 
 import type { ServerTypes } from "@/vars.js";
 import type {
@@ -66,9 +66,9 @@ import type {
 	ModelPolicy,
 	ProviderPolicy,
 	ResolvedMappingPrice,
-} from "@llmgateway/catalog";
-import type { PlatformCatalogOperationV1 } from "@llmgateway/db";
-import type { Provider, ProviderId } from "@llmgateway/models";
+} from "@betarouter/catalog";
+import type { PlatformCatalogOperationV1 } from "@betarouter/db";
+import type { Provider, ProviderId } from "@betarouter/models";
 
 const platformCatalog = new OpenAPIHono<ServerTypes>();
 platformCatalog.use("/*", platformAdminMiddleware);

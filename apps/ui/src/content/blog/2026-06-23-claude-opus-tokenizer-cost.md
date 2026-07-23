@@ -12,7 +12,7 @@ image:
   height: 1024
 ---
 
-Look at Anthropic's pricing page and Claude Opus has barely moved: Opus 4.6, 4.7, and 4.8 all list at **$5 per million input tokens and $25 per million output**. Reassuring — until your invoice goes up after a model upgrade you expected to be cost-neutral. The culprit isn't the per-token rate. It's the **tokenizer**: how the model chops your text into billable tokens. This is the hidden tax that LLM cost comparisons almost always miss, and **LLM Gateway** makes it visible per request.
+Look at Anthropic's pricing page and Claude Opus has barely moved: Opus 4.6, 4.7, and 4.8 all list at **$5 per million input tokens and $25 per million output**. Reassuring — until your invoice goes up after a model upgrade you expected to be cost-neutral. The culprit isn't the per-token rate. It's the **tokenizer**: how the model chops your text into billable tokens. This is the hidden tax that LLM cost comparisons almost always miss, and **betarouter** makes it visible per request.
 
 ## The sticker price is flat. The real bill isn't.
 
@@ -44,7 +44,7 @@ A tokenizer maps text to integers from a fixed vocabulary. A vocabulary tuned fo
 
 ## See your real token usage
 
-The only way to manage this is to measure tokens consumed, not tokens quoted. Every request through LLM Gateway logs the exact input and output token counts and the real cost, per model and per provider, in the dashboard. When you upgrade a model, you can compare the actual token consumption for the same workload side by side — not the list price, the real spend.
+The only way to manage this is to measure tokens consumed, not tokens quoted. Every request through betarouter logs the exact input and output token counts and the real cost, per model and per provider, in the dashboard. When you upgrade a model, you can compare the actual token consumption for the same workload side by side — not the list price, the real spend.
 
 To estimate before you switch, drop your real prompt and expected volume into the [Token Cost Calculator](/token-cost-calculator) and compare models on total cost, not headline rate.
 
@@ -62,7 +62,7 @@ The per-token price is the same — $5 input / $25 output per million. But the n
 
 ### How do I know how many tokens my requests actually use?
 
-Measure them. LLM Gateway logs exact input and output token counts and the real cost for every request, so you can see actual consumption per model instead of estimating from the list price.
+Measure them. betarouter logs exact input and output token counts and the real cost for every request, so you can see actual consumption per model instead of estimating from the list price.
 
 ### Why does the same text cost different amounts on different models?
 
@@ -70,6 +70,6 @@ Because each model's tokenizer splits text differently. A more granular tokenize
 
 ## Measure tokens, not list prices
 
-A flat per-token rate can hide a real increase in what you pay. The fix is visibility: see the actual tokens and cost behind every request, compare models on total spend, and cache or route to cut the tokens you send. LLM Gateway gives you all three behind one OpenAI-compatible API.
+A flat per-token rate can hide a real increase in what you pay. The fix is visibility: see the actual tokens and cost behind every request, compare models on total spend, and cache or route to cut the tokens you send. betarouter gives you all three behind one OpenAI-compatible API.
 
-**[Try LLM Gateway free](https://llmgateway.io/signup)** | **[Run the Token Cost Calculator](/token-cost-calculator)** | **[OpenAI vs Anthropic vs Google: real cost comparison](/blog/openai-vs-anthropic-vs-google-cost-comparison)**
+**[Try betarouter free](https://betarouter.com/signup)** | **[Run the Token Cost Calculator](/token-cost-calculator)** | **[OpenAI vs Anthropic vs Google: real cost comparison](/blog/openai-vs-anthropic-vs-google-cost-comparison)**

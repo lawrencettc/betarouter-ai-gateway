@@ -19,17 +19,17 @@ import {
 	models,
 	type ModelDefinition,
 	type ProviderId,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 import { findWalletById } from "./cached-queries.js";
 
 import type { GatewayApiKey } from "./cached-queries.js";
-import type { InferSelectModel } from "@llmgateway/db";
+import type { InferSelectModel } from "@betarouter/db";
 import type {
 	organization as organizationTable,
 	project as projectTable,
 	wallet as walletTable,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 import type { Context } from "hono";
 
 type Project = InferSelectModel<typeof projectTable>;
@@ -83,7 +83,7 @@ export async function loadEndUserWallet(
  * `test`-mode end-user wallets are funded by Stripe-sandbox top-ups, so they
  * must only ever spend on free models — otherwise sandbox money would pay for
  * real provider calls. Free models carry only zero-priced provider mappings
- * (enforced by a catalog invariant test in @llmgateway/models), so the
+ * (enforced by a catalog invariant test in @betarouter/models), so the
  * model-level free check is authoritative. Throws 403 (pointing at the `auto`
  * route) otherwise. No-op for live wallets and normal developer keys.
  */

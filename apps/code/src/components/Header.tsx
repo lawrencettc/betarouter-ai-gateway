@@ -31,7 +31,7 @@ export function Header() {
 						rel="noopener noreferrer"
 						className="text-xs text-muted-foreground hover:text-foreground transition-colors"
 					>
-						by LLM Gateway
+						by betarouter
 					</a>
 				</div>
 

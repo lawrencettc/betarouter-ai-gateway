@@ -7,7 +7,7 @@ import { findArenaMatch, getArenaBenchmarks } from "@/lib/arena-benchmarks.js";
 import {
 	getEffectiveCatalogSnapshot,
 	readCatalogFeatureFlags,
-} from "@llmgateway/catalog";
+} from "@betarouter/catalog";
 import {
 	and,
 	asc,
@@ -19,15 +19,15 @@ import {
 	or,
 	sql,
 	tables,
-} from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+} from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 import {
 	models as modelDefinitions,
 	type ProviderModelMapping,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 import type { ServerTypes } from "@/vars.js";
-import type { EffectiveCatalog } from "@llmgateway/catalog";
+import type { EffectiveCatalog } from "@betarouter/catalog";
 
 export const internalModels = new OpenAPIHono<ServerTypes>();
 

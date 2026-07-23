@@ -1,4 +1,4 @@
-import { db } from "@llmgateway/db";
+import { db } from "@betarouter/db";
 
 // Live (non-deleted) projects for an org, oldest first. The oldest project is
 // the org's original "Default Project", used as the SSO provisioning fallback

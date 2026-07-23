@@ -6,7 +6,7 @@ import { resolveDefaultProjectIds } from "@/lib/sso-default-projects.js";
 import { recomputeUserRole as applyUserRole } from "@/lib/sso-roles.js";
 import { acceptPendingInvitesForUser } from "@/lib/team-invites.js";
 
-import { logAuditEvent } from "@llmgateway/audit";
+import { logAuditEvent } from "@betarouter/audit";
 import {
 	and,
 	count,
@@ -16,9 +16,9 @@ import {
 	type AuditLogAction,
 	type AuditLogMetadata,
 	type AuditLogResourceType,
-} from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
-import { getApiKeyFingerprint } from "@llmgateway/shared/api-key-hash";
+} from "@betarouter/db";
+import { logger } from "@betarouter/logger";
+import { getApiKeyFingerprint } from "@betarouter/shared/api-key-hash";
 
 import type { Context } from "hono";
 
@@ -205,7 +205,7 @@ scim.get("/ServiceProviderConfig", (c) => {
 	void orgId;
 	return scimJson({
 		schemas: ["urn:ietf:params:scim:schemas:core:2.0:ServiceProviderConfig"],
-		documentationUri: "https://docs.llmgateway.io",
+		documentationUri: "https://docs.betarouter.com",
 		patch: { supported: true },
 		bulk: { supported: false, maxOperations: 0, maxPayloadSize: 0 },
 		filter: { supported: true, maxResults: 200 },

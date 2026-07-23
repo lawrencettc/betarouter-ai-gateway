@@ -6,7 +6,7 @@ title: "Claude Opus 4.8 + a Wave of New Models"
 summary: "Claude Opus 4.8 lands with a 1M context window, Sonnet 4.6 gets 1M context too, and Qwen3.7 Max, Grok Build 0.1, Kimi K2.6, and GLM-5.1 join the gateway."
 image:
   src: "/changelog/claude-opus-4-8-and-new-models.png"
-  alt: "Claude Opus 4.8 and a wave of new models on LLM Gateway"
+  alt: "Claude Opus 4.8 and a wave of new models on betarouter"
   width: 1536
   height: 1024
 ---
@@ -80,4 +80,4 @@ embercloud/glm-5.1
 
 Every model above works through the same API key, the same OpenAI-compatible endpoint, and shows up in your usage and cost dashboards automatically. Switch between them by changing one string.
 
-**[Browse all models →](https://llmgateway.io/models)** | **[Read the docs →](https://docs.llmgateway.io)**
+**[Browse all models →](https://betarouter.com/models)** | **[Read the docs →](https://docs.betarouter.com)**

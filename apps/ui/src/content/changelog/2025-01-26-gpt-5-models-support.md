@@ -6,12 +6,12 @@ title: "GPT-5 Model Family Now Available"
 summary: "Get instant access to OpenAI's powerful new GPT-5 model family including gpt-5, gpt-5-mini, gpt-5-nano, and gpt-5-chat-latest with 400k context windows."
 image:
   src: "/changelog/gpt-5-models.png"
-  alt: "GPT-5 models now available on LLM Gateway"
+  alt: "GPT-5 models now available on betarouter"
   width: 1768
   height: 677
 ---
 
-OpenAI's **GPT-5 model family** is now available on LLM Gateway! Access all four models instantly with 400k context windows - **no organization verification needed**.
+OpenAI's **GPT-5 model family** is now available on betarouter! Access all four models instantly with 400k context windows - **no organization verification needed**.
 
 ## 🤖 New GPT-5 Models Available
 
@@ -70,7 +70,7 @@ const { text } = await generateText({
 ```
 
 ```bash
-curl -X POST https://api.llmgateway.io/v1/chat/completions \
+curl -X POST https://api.betarouter.com/v1/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

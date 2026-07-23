@@ -4,8 +4,8 @@ import { z } from "zod";
 
 import { userHasProjectAccess } from "@/utils/authorization.js";
 
-import { logAuditEvent } from "@llmgateway/audit";
-import { cdb, db, eq, tables } from "@llmgateway/db";
+import { logAuditEvent } from "@betarouter/audit";
+import { cdb, db, eq, tables } from "@betarouter/db";
 
 import type { ServerTypes } from "@/vars.js";
 
@@ -598,7 +598,7 @@ export async function createProjectForOrg(
 
 	if (existingProjects.length >= projectLimit) {
 		throw new HTTPException(403, {
-			message: `You have reached the limit of ${projectLimit} projects. Contact us at contact@llmgateway.io to unlock more.`,
+			message: `You have reached the limit of ${projectLimit} projects. Contact us at contact@betarouter.com to unlock more.`,
 		});
 	}
 

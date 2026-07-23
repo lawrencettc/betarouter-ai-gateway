@@ -3,7 +3,7 @@
 import { Check, ChevronDown, X } from "lucide-react";
 import { useState, useCallback } from "react";
 
-import { getProviderIcon } from "@llmgateway/shared/components";
+import { getProviderIcon } from "@betarouter/shared/components";
 
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
@@ -16,7 +16,7 @@ import {
 } from "./ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 
-import type { ProviderDefinition } from "@llmgateway/models";
+import type { ProviderDefinition } from "@betarouter/models";
 
 interface ApiProvider {
 	id: string;

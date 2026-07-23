@@ -19,7 +19,7 @@ import type {
 	ApiModelProviderMapping,
 	ApiProvider,
 } from "@/lib/fetch-models";
-import type { StabilityLevel } from "@llmgateway/models";
+import type { StabilityLevel } from "@betarouter/models";
 import type { LucideProps } from "lucide-react";
 
 interface ModelWithProviders extends ApiModel {

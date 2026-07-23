@@ -14,7 +14,7 @@ import {
 import { app } from "@/app.js";
 import { clearCache } from "@/test-utils/test-helpers.js";
 
-import { db, pool, tables } from "@llmgateway/db";
+import { db, pool, tables } from "@betarouter/db";
 
 // A trivial upstream that always returns a valid completion, so the gateway
 // path runs end-to-end without touching a real provider.

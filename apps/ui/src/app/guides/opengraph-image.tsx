@@ -160,7 +160,7 @@ export default async function GuidesOgImage() {
 						}}
 					>
 						<span style={{ color: "#ffffff", fontWeight: 600 }}>
-							LLM Gateway
+							betarouter
 						</span>
 						<span style={{ opacity: 0.6 }}>•</span>
 						<span>Guides</span>
@@ -315,7 +315,7 @@ export default async function GuidesOgImage() {
 						color: "#9CA3AF",
 					}}
 				>
-					<span>llmgateway.io</span>
+					<span>betarouter.com</span>
 				</div>
 			</div>
 		),

@@ -10,13 +10,13 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
 	title: "Blog Categories",
 	description:
-		"Browse LLM Gateway blog posts by category — product updates, tutorials, deep-dives, and more.",
+		"Browse betarouter blog posts by category — product updates, tutorials, deep-dives, and more.",
 	alternates: { canonical: "/blog/category" },
 	openGraph: {
-		title: "Blog Categories | LLM Gateway",
+		title: "Blog Categories | betarouter",
 		description:
-			"Browse LLM Gateway blog posts by category — product updates, tutorials, deep-dives, and more.",
-		url: "https://llmgateway.io/blog/category",
+			"Browse betarouter blog posts by category — product updates, tutorials, deep-dives, and more.",
+		url: "https://betarouter.com/blog/category",
 		type: "website",
 		images: ["/opengraph.png?v=2"],
 	},
@@ -48,7 +48,7 @@ export default function BlogCategoryIndexPage() {
 					Blog Categories
 				</h1>
 				<p className="mb-10 text-muted-foreground">
-					Browse posts by topic across the LLM Gateway blog.
+					Browse posts by topic across the betarouter blog.
 				</p>
 				{sorted.length === 0 ? (
 					<p className="text-muted-foreground">

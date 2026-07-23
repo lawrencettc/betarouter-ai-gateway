@@ -9,7 +9,7 @@
 import {
 	DEFAULT_ROUTING_TIMEOUTS,
 	type ResolvedRoutingConfig,
-} from "@llmgateway/shared/routing-config";
+} from "@betarouter/shared/routing-config";
 
 type RoutingCfg = Pick<ResolvedRoutingConfig, "timeouts">;
 

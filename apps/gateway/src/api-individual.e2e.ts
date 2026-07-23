@@ -8,8 +8,8 @@ import {
 	validateLogByRequestId,
 } from "@/chat-helpers.e2e.js";
 
-import { db, tables, eq } from "@llmgateway/db";
-import { models, providers, getProviderEnvVar } from "@llmgateway/models";
+import { db, tables, eq } from "@betarouter/db";
+import { models, providers, getProviderEnvVar } from "@betarouter/models";
 
 import { app } from "./app.js";
 import {

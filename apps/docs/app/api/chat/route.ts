@@ -1,3 +1,4 @@
+import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
 import {
 	convertToModelMessages,
 	stepCountIs,
@@ -9,8 +10,6 @@ import { Document, type DocumentData } from "flexsearch";
 import { z } from "zod";
 
 import { source } from "@/lib/source";
-
-import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -141,18 +140,18 @@ async function chunkedAll<O>(promises: Promise<O>[]): Promise<O[]> {
 }
 
 const systemPrompt = [
-	"You are the LLM Gateway documentation assistant. You only answer questions about LLM Gateway — the unified API gateway for multiple LLM providers — and its products.",
+	"You are the betarouter documentation assistant. You only answer questions about betarouter — the unified API gateway for multiple LLM providers — and its products.",
 	"Use the `search` tool to retrieve relevant docs context before answering. The tool returns raw JSON results from the documentation; ground your answer in those results.",
 	"Cite sources as markdown links using the document `url` field when available.",
-	"Be concise and helpful. If the question is not related to LLM Gateway, politely decline and suggest asking about LLM Gateway instead.",
-	"If you cannot find the answer in the search results, say you do not know and point the user to https://docs.llmgateway.io or contact@llmgateway.io.",
+	"Be concise and helpful. If the question is not related to betarouter, politely decline and suggest asking about betarouter instead.",
+	"If you cannot find the answer in the search results, say you do not know and point the user to https://docs.betarouter.com or contact@betarouter.com.",
 ].join("\n");
 
 export type SearchTool = typeof searchTool;
 
 const searchTool = tool({
 	description:
-		"Search the LLM Gateway docs content and return raw JSON results.",
+		"Search the betarouter docs content and return raw JSON results.",
 	inputSchema: z.object({
 		query: z.string(),
 		limit: z.number().int().min(1).max(100).default(10),
@@ -206,7 +205,7 @@ export async function POST(req: Request) {
 
 	const llmgateway = createLLMGateway({
 		apiKey,
-		baseURL: process.env.GATEWAY_URL ?? "https://api.llmgateway.io/v1",
+		baseURL: process.env.GATEWAY_URL ?? "https://api.betarouter.com/v1",
 		headers: {
 			"x-source": "docs-ask-ai",
 		},

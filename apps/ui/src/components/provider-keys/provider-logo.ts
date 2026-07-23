@@ -1,6 +1,6 @@
-import { ProviderIcons } from "@llmgateway/shared/components";
+import { ProviderIcons } from "@betarouter/shared/components";
 
-import type { ProviderId } from "@llmgateway/models";
+import type { ProviderId } from "@betarouter/models";
 
 export const providerLogoUrls: Partial<
 	Record<ProviderId, React.FC<React.SVGProps<SVGSVGElement>>>

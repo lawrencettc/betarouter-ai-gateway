@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { models, type ProviderModelMapping } from "@llmgateway/models";
+import { models, type ProviderModelMapping } from "@betarouter/models";
 
 const FIVE_MIN_WRITE_MULTIPLIER = 1.25;
 const ONE_HOUR_WRITE_MULTIPLIER = 2;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { models, type ProviderModelMapping } from "@llmgateway/models";
+import { models, type ProviderModelMapping } from "@betarouter/models";
 
 import {
 	applyDiscount,

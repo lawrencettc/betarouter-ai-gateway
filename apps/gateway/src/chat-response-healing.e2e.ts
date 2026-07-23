@@ -14,7 +14,7 @@ import {
 import { app } from "@/app.js";
 import { clearCache, readAll } from "@/test-utils/test-helpers.js";
 
-import { db, tables } from "@llmgateway/db";
+import { db, tables } from "@betarouter/db";
 
 // Create a mock server that returns configurable JSON responses
 const mockServer = new Hono();

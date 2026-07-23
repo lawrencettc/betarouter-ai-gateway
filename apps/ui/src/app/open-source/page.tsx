@@ -40,14 +40,14 @@ const reasons = [
 
 const openSourceFaqs: CompareFaqItem[] = [
 	{
-		question: "Is LLM Gateway really open source?",
+		question: "Is betarouter really open source?",
 		answer:
 			"Yes. The entire platform — gateway, API, dashboard, and worker — is licensed under AGPLv3 and free to self-host forever. Most alternatives only open-source a thin router, or nothing at all.",
 	},
 	{
 		question: "What does the AGPLv3 license mean for my company?",
 		answer:
-			"You can run LLM Gateway internally and in production for free. AGPLv3's source-availability requirement applies when you offer a modified version to others as a network service. For commercial terms outside AGPLv3, an enterprise license is available.",
+			"You can run betarouter internally and in production for free. AGPLv3's source-availability requirement applies when you offer a modified version to others as a network service. For commercial terms outside AGPLv3, an enterprise license is available.",
 	},
 	{
 		question: "How do I self-host the LLM gateway?",
@@ -67,7 +67,7 @@ const openSourceFaqs: CompareFaqItem[] = [
 ];
 
 const closedComparison = [
-	{ name: "LLM Gateway", scope: "Full platform (AGPLv3)", selfHost: true },
+	{ name: "betarouter", scope: "Full platform (AGPLv3)", selfHost: true },
 	{ name: "OpenRouter", scope: "Closed source", selfHost: false },
 	{ name: "Vercel AI Gateway", scope: "Closed source", selfHost: false },
 	{ name: "Cloudflare AI Gateway", scope: "Closed source", selfHost: false },
@@ -79,7 +79,7 @@ export default function OpenSourcePage() {
 	const softwareSchema = {
 		"@context": "https://schema.org",
 		"@type": "SoftwareApplication",
-		name: "LLM Gateway",
+		name: "betarouter",
 		applicationCategory: "DeveloperApplication",
 		operatingSystem: "Docker, Linux, macOS",
 		offers: {
@@ -89,7 +89,7 @@ export default function OpenSourcePage() {
 		},
 		description:
 			"Open source LLM API gateway. Route 200+ models across 40+ providers through one OpenAI-compatible endpoint. AGPLv3, self-hostable in one Docker command.",
-		url: "https://llmgateway.io/open-source",
+		url: "https://betarouter.com/open-source",
 		license: "https://www.gnu.org/licenses/agpl-3.0.html",
 	};
 
@@ -104,7 +104,7 @@ export default function OpenSourcePage() {
 							AGPLv3 · Self-hostable
 						</Badge>
 						<h1 className="text-4xl md:text-6xl font-bold tracking-tight text-balance">
-							The Open Source LLM Gateway
+							The Open Source betarouter
 						</h1>
 						<p className="mx-auto mt-6 max-w-2xl text-base md:text-lg text-muted-foreground">
 							Route 200+ models across 40+ providers through one
@@ -191,7 +191,7 @@ export default function OpenSourcePage() {
 								Open vs closed gateways
 							</h2>
 							<p className="text-muted-foreground">
-								Most gateways open-source a router at best. LLM Gateway
+								Most gateways open-source a router at best. betarouter
 								open-sources the whole platform.
 							</p>
 						</div>
@@ -262,7 +262,7 @@ export default function OpenSourcePage() {
 }
 
 export async function generateMetadata() {
-	const title = "Open Source LLM Gateway — Self-Hostable AI API Gateway";
+	const title = "Open Source betarouter — Self-Hostable AI API Gateway";
 	const description =
 		"Open-source, self-hostable LLM API gateway. Route 200+ models across 40+ providers via one OpenAI-compatible endpoint under AGPLv3.";
 	return {
@@ -275,7 +275,7 @@ export async function generateMetadata() {
 			title,
 			description,
 			type: "website",
-			url: "https://llmgateway.io/open-source",
+			url: "https://betarouter.com/open-source",
 		},
 		twitter: {
 			card: "summary_large_image",

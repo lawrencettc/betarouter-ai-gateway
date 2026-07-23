@@ -25,7 +25,7 @@ const code = createCodePlugin({
 	themes: ["github-light", "github-dark"],
 });
 
-const TRUSTED_LINK_HOSTS = ["llmgateway.io"];
+const TRUSTED_LINK_HOSTS = ["betarouter.com"];
 
 // Trusted links open directly; everything else goes through Streamdown's
 // open/cancel confirmation gate.

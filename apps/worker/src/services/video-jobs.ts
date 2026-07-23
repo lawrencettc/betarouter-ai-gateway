@@ -2,11 +2,11 @@ import { createHmac } from "node:crypto";
 
 import { getStopSignal, isStopRequested } from "@/shutdown.js";
 
-import { redisClient } from "@llmgateway/cache";
+import { redisClient } from "@betarouter/cache";
 import {
 	readCatalogFeatureFlags,
 	recordCatalogBreakerOutcome,
-} from "@llmgateway/catalog";
+} from "@betarouter/catalog";
 import {
 	and,
 	asc,
@@ -21,8 +21,8 @@ import {
 	shortid,
 	tables,
 	UnifiedFinishReason,
-} from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+} from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 import {
 	getProviderEnvConfig,
 	getProviderEnvValue,
@@ -32,7 +32,7 @@ import {
 	type ProviderModelMapping,
 	resolveVertexTokenType,
 	type VertexTokenType,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 import {
 	buildGatewayVideoLogContentUrl,
 	getAvalancheApiBaseUrl,
@@ -40,14 +40,14 @@ import {
 	getVideoProxyRedisKey,
 	isContentFilterErrorText,
 	VIDEO_PROXY_REDIS_TTL_SECONDS,
-} from "@llmgateway/shared";
+} from "@betarouter/shared";
 import {
 	createSignedGcsReadUrl,
 	getVideoStorageExpiryDate,
 	parseGcsUri,
-} from "@llmgateway/shared/gcs";
-import { assertSafeProviderUrl } from "@llmgateway/shared/url-safety-node";
-import { buildSignedGatewayVideoLogContentUrl } from "@llmgateway/shared/video-access";
+} from "@betarouter/shared/gcs";
+import { assertSafeProviderUrl } from "@betarouter/shared/url-safety-node";
+import { buildSignedGatewayVideoLogContentUrl } from "@betarouter/shared/video-access";
 
 const UPSTREAM_FETCH_TIMEOUT_MS = 30_000;
 const WEBHOOK_DELIVERY_TIMEOUT_MS = 30_000;

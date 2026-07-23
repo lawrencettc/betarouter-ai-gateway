@@ -251,13 +251,13 @@ function DashboardSidebarHeader({
 		<SidebarHeader>
 			<SidebarMenu>
 				<SidebarMenuItem>
-					<SidebarMenuButton size="lg" asChild tooltip="LLM Gateway">
+					<SidebarMenuButton size="lg" asChild tooltip="betarouter">
 						<Link href={buildUrl()} prefetch={true}>
 							<div className="flex aspect-square size-8 items-center justify-center">
 								<Logo className="size-6 text-black dark:text-white" />
 							</div>
 							<span className="text-lg font-bold tracking-tight">
-								LLM Gateway
+								betarouter
 							</span>
 						</Link>
 					</SidebarMenuButton>
@@ -1016,7 +1016,7 @@ export function DashboardSidebar({
 				href:
 					process.env.NODE_ENV === "development"
 						? "http://localhost:3004"
-						: "https://devpass.llmgateway.io",
+						: "https://devpass.betarouter.com",
 				label: "DevPass",
 				icon: AnimatedTerminal,
 				internal: false,
@@ -1031,13 +1031,13 @@ export function DashboardSidebar({
 				href:
 					process.env.NODE_ENV === "development"
 						? "http://localhost:3003"
-						: "https://chat.llmgateway.io",
+						: "https://chat.betarouter.com",
 				label: "Chat",
 				icon: AnimatedBotMessageSquare,
 				internal: false,
 			},
 			{
-				href: "https://docs.llmgateway.io",
+				href: "https://docs.betarouter.com",
 				label: "Documentation",
 				icon: AnimatedExternalLink,
 				internal: false,

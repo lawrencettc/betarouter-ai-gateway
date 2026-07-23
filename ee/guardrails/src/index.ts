@@ -31,7 +31,7 @@ export type {
 	CustomRuleConfig,
 	GuardrailActionTaken,
 	CustomRuleType,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 export {
 	guardrailConfig,
@@ -39,4 +39,4 @@ export {
 	guardrailViolation,
 	defaultSystemRulesConfig,
 	defaultAllowedFileTypes,
-} from "@llmgateway/db";
+} from "@betarouter/db";

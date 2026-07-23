@@ -1,5 +1,5 @@
 {
-	"name": "@llmgateway/db",
+	"name": "@betarouter/db",
 	"version": "0.0.0",
 	"private": true,
 	"license": "SEE LICENSE IN ../../LICENSE",
@@ -38,11 +38,11 @@
 		"seed": "node dist/seed.js"
 	},
 	"dependencies": {
+		"@betarouter/cache": "workspace:*",
+		"@betarouter/logger": "workspace:*",
+		"@betarouter/models": "workspace:*",
+		"@betarouter/shared": "workspace:*",
 		"@kubiks/otel-drizzle": "2.0.3",
-		"@llmgateway/cache": "workspace:*",
-		"@llmgateway/logger": "workspace:*",
-		"@llmgateway/models": "workspace:*",
-		"@llmgateway/shared": "workspace:*",
 		"@opentelemetry/api": "1.9.0",
 		"drizzle-orm": "1.0.0-beta.1",
 		"nanoid": "5.1.5",

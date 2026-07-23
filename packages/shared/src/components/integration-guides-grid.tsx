@@ -38,7 +38,7 @@ export const DEFAULT_INTEGRATION_GUIDES: IntegrationGuide[] = [
 	{
 		name: "DevPass Code",
 		description:
-			"Our open-source terminal coding agent built for LLM Gateway. One browser login, every model, no per-provider keys.",
+			"Our open-source terminal coding agent built for betarouter. One browser login, every model, no per-provider keys.",
 		href: "/guides/devpass-code",
 		icon: DevPassCodeIcon,
 		comingSoon: false,
@@ -46,7 +46,7 @@ export const DEFAULT_INTEGRATION_GUIDES: IntegrationGuide[] = [
 	{
 		name: "Autohand Code",
 		description:
-			"Use LLM Gateway with Autohand Code for autonomous AI-powered coding in your terminal, IDE, and Slack.",
+			"Use betarouter with Autohand Code for autonomous AI-powered coding in your terminal, IDE, and Slack.",
 		href: "/guides/autohand",
 		icon: AutohandIcon,
 		comingSoon: false,
@@ -54,7 +54,7 @@ export const DEFAULT_INTEGRATION_GUIDES: IntegrationGuide[] = [
 	{
 		name: "Claude Code",
 		description:
-			"Use LLM Gateway with Claude Code for AI-powered terminal assistance and coding.",
+			"Use betarouter with Claude Code for AI-powered terminal assistance and coding.",
 		href: "/guides/claude-code",
 		icon: AnthropicIcon,
 		comingSoon: false,
@@ -62,8 +62,8 @@ export const DEFAULT_INTEGRATION_GUIDES: IntegrationGuide[] = [
 	{
 		name: "Cursor",
 		description:
-			"Use LLM Gateway with Cursor IDE in plan mode only. Cursor's coding agent does not work with external API endpoints.",
-		href: "https://docs.llmgateway.io/guides/cursor",
+			"Use betarouter with Cursor IDE in plan mode only. Cursor's coding agent does not work with external API endpoints.",
+		href: "https://docs.betarouter.com/guides/cursor",
 		icon: CursorIcon,
 		comingSoon: false,
 		badge: "Plan mode only",
@@ -71,7 +71,7 @@ export const DEFAULT_INTEGRATION_GUIDES: IntegrationGuide[] = [
 	{
 		name: "Codex CLI",
 		description:
-			"Use LLM Gateway with OpenAI's Codex CLI for AI-powered terminal coding.",
+			"Use betarouter with OpenAI's Codex CLI for AI-powered terminal coding.",
 		href: "/guides/codex-cli",
 		icon: CodexIcon,
 		comingSoon: false,
@@ -79,15 +79,15 @@ export const DEFAULT_INTEGRATION_GUIDES: IntegrationGuide[] = [
 	{
 		name: "Cline",
 		description:
-			"Use LLM Gateway with Cline for AI-powered coding assistance in VS Code.",
-		href: "https://docs.llmgateway.io/guides/cline",
+			"Use betarouter with Cline for AI-powered coding assistance in VS Code.",
+		href: "https://docs.betarouter.com/guides/cline",
 		icon: ClineIcon,
 		comingSoon: false,
 	},
 	{
 		name: "Continue CLI",
 		description:
-			"Use LLM Gateway with Continue's open-source AI code assistant CLI.",
+			"Use betarouter with Continue's open-source AI code assistant CLI.",
 		href: "/guides/continue",
 		icon: ContinueIcon,
 		comingSoon: false,
@@ -95,7 +95,7 @@ export const DEFAULT_INTEGRATION_GUIDES: IntegrationGuide[] = [
 	{
 		name: "Hermes Agent",
 		description:
-			"Use LLM Gateway with Nous Research's Hermes Agent for terminal-based AI coding.",
+			"Use betarouter with Nous Research's Hermes Agent for terminal-based AI coding.",
 		href: "/guides/hermes-agent",
 		icon: HermesIcon,
 		comingSoon: false,
@@ -103,7 +103,7 @@ export const DEFAULT_INTEGRATION_GUIDES: IntegrationGuide[] = [
 	{
 		name: "Kilo Code",
 		description:
-			"Use LLM Gateway with Kilo Code in VS Code for autonomous AI coding with built-in provider support.",
+			"Use betarouter with Kilo Code in VS Code for autonomous AI coding with built-in provider support.",
 		href: "/guides/kilo-code",
 		icon: KiloCodeIcon,
 		comingSoon: false,
@@ -111,7 +111,7 @@ export const DEFAULT_INTEGRATION_GUIDES: IntegrationGuide[] = [
 	{
 		name: "Kimi Code",
 		description:
-			"Use LLM Gateway with Kimi Code CLI for autonomous terminal-based AI coding.",
+			"Use betarouter with Kimi Code CLI for autonomous terminal-based AI coding.",
 		href: "/guides/kimi-code",
 		icon: KimiIcon,
 		comingSoon: false,
@@ -119,15 +119,15 @@ export const DEFAULT_INTEGRATION_GUIDES: IntegrationGuide[] = [
 	{
 		name: "n8n",
 		description:
-			"Connect n8n workflow automation to LLM Gateway for AI-powered workflows.",
-		href: "https://docs.llmgateway.io/guides/n8n",
+			"Connect n8n workflow automation to betarouter for AI-powered workflows.",
+		href: "https://docs.betarouter.com/guides/n8n",
 		icon: N8nIcon,
 		comingSoon: false,
 	},
 	{
 		name: "OpenCode",
 		description:
-			"Use LLM Gateway with OpenCode CLI for AI-powered development workflows.",
+			"Use betarouter with OpenCode CLI for AI-powered development workflows.",
 		href: "/guides/opencode",
 		icon: OpenCodeIcon,
 		comingSoon: false,
@@ -135,7 +135,7 @@ export const DEFAULT_INTEGRATION_GUIDES: IntegrationGuide[] = [
 	{
 		name: "OpenCode Desktop",
 		description:
-			"Use LLM Gateway with OpenCode Desktop app — connect via GUI, no config files needed.",
+			"Use betarouter with OpenCode Desktop app — connect via GUI, no config files needed.",
 		href: "/guides/opencode-desktop",
 		icon: OpenCodeIcon,
 		comingSoon: false,
@@ -143,7 +143,7 @@ export const DEFAULT_INTEGRATION_GUIDES: IntegrationGuide[] = [
 	{
 		name: "OpenClaw",
 		description:
-			"Use LLM Gateway with OpenClaw for AI-powered chat across Discord, WhatsApp, Telegram, and more.",
+			"Use betarouter with OpenClaw for AI-powered chat across Discord, WhatsApp, Telegram, and more.",
 		href: "/guides/openclaw",
 		icon: OpenClawIcon,
 		comingSoon: false,
@@ -151,7 +151,7 @@ export const DEFAULT_INTEGRATION_GUIDES: IntegrationGuide[] = [
 	{
 		name: "Pi",
 		description:
-			"Use LLM Gateway with Pi coding agent for AI-powered terminal coding with any model.",
+			"Use betarouter with Pi coding agent for AI-powered terminal coding with any model.",
 		href: "/guides/pi",
 		icon: PiIcon,
 		comingSoon: false,
@@ -176,7 +176,7 @@ interface IntegrationGuidesGridProps {
 	}) => React.ReactNode;
 	/**
 	 * Prefix for internal `/guides/...` hrefs. Use to point to a different
-	 * origin (e.g. "https://llmgateway.io") when consuming from another app.
+	 * origin (e.g. "https://betarouter.com") when consuming from another app.
 	 * When set, the prefix is prepended and the link is rendered as external.
 	 */
 	internalHrefPrefix?: string;

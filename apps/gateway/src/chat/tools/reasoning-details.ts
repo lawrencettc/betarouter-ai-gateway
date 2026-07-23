@@ -1,4 +1,4 @@
-import type { ReasoningDetail } from "@llmgateway/models";
+import type { ReasoningDetail } from "@betarouter/models";
 
 const THINK_TAG_PAIRS = [
 	{

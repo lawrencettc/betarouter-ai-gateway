@@ -8,7 +8,7 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 # Cost Breakdown
 
-LLM Gateway provides real-time cost information for each API request directly in the response's `usage` object. This allows you to track costs programmatically without needing to query the dashboard.
+betarouter provides real-time cost information for each API request directly in the response's `usage` object. This allows you to track costs programmatically without needing to query the dashboard.
 
 <Callout type="info">
 	Cost breakdown is available for all users on both hosted and self-hosted
@@ -77,7 +77,7 @@ When cost breakdown is enabled, your API responses will include additional cost 
 | `cost_details.upstream_inference_cost`             | Combined upstream inference cost in USD (prompt + completions)                                                                                         |
 | `cost_details.upstream_inference_prompt_cost`      | Upstream cost for prompt tokens in USD (includes cached prompt discount)                                                                               |
 | `cost_details.upstream_inference_completions_cost` | Upstream cost for completion tokens in USD                                                                                                             |
-| `cost_details.total_cost`                          | Total request cost in USD (LLM Gateway extended field)                                                                                                 |
+| `cost_details.total_cost`                          | Total request cost in USD (betarouter extended field)                                                                                                  |
 | `cost_details.input_cost`                          | Cost for non-cached prompt tokens in USD                                                                                                               |
 | `cost_details.output_cost`                         | Cost for completion tokens in USD                                                                                                                      |
 | `cost_details.cached_input_cost`                   | Cost for cached prompt tokens in USD                                                                                                                   |
@@ -123,7 +123,7 @@ import OpenAI from "openai";
 
 const client = new OpenAI({
 	apiKey: process.env.LLM_GATEWAY_API_KEY,
-	baseURL: "https://api.llmgateway.io/v1",
+	baseURL: "https://api.betarouter.com/v1",
 });
 
 async function trackCosts() {
@@ -239,4 +239,4 @@ async function loggedRequest(model: string, messages: Message[]) {
 
 ## Self-Hosted Deployments
 
-If you're running a self-hosted LLM Gateway deployment, cost breakdown is always included in API responses regardless of plan. This allows you to track internal costs and allocate them across teams or projects.
+If you're running a self-hosted betarouter deployment, cost breakdown is always included in API responses regardless of plan. This allows you to track internal costs and allocate them across teams or projects.

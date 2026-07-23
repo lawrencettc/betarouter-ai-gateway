@@ -84,7 +84,7 @@ import { toast } from "@/lib/components/use-toast";
 import { useApi } from "@/lib/fetch-client";
 import { getBrowserTimeZone } from "@/lib/timezone";
 
-import { SSO_TEAM_DEFAULT_DEVELOPER_BUDGET } from "@llmgateway/shared";
+import { SSO_TEAM_DEFAULT_DEVELOPER_BUDGET } from "@betarouter/shared";
 
 import type { Route } from "next";
 
@@ -191,7 +191,7 @@ function MemberUsageUpsell() {
 					</div>
 				</div>
 				<Button asChild variant="outline" className="shrink-0">
-					<a href="mailto:contact@llmgateway.io">
+					<a href="mailto:contact@betarouter.com">
 						<Mail className="mr-2 h-4 w-4" />
 						Contact Sales
 					</a>
@@ -574,7 +574,7 @@ function EnterpriseDeveloperNote() {
 	return (
 		<p className="text-muted-foreground text-xs">
 			Project-scoped developer access requires the Enterprise plan.{" "}
-			<a href="mailto:contact@llmgateway.io" className="underline">
+			<a href="mailto:contact@betarouter.com" className="underline">
 				Contact sales
 			</a>
 			.
@@ -969,10 +969,10 @@ export function TeamClient({ initialData }: { initialData?: TeamMembersData }) {
 													Organizations can have up to {data?.seatLimit ?? 5}{" "}
 													team members. Contact us at{" "}
 													<a
-														href="mailto:contact@llmgateway.io"
+														href="mailto:contact@betarouter.com"
 														className="underline"
 													>
-														contact@llmgateway.io
+														contact@betarouter.com
 													</a>{" "}
 													to unlock more seats and role-based access control
 													(RBAC).

@@ -4,16 +4,16 @@ import { HTTPException } from "hono/http-exception";
 import { getStripe } from "@/routes/payments.js";
 import { getPaymentIntentFromInvoicePayments } from "@/stripe.js";
 
-import { logAuditEvent } from "@llmgateway/audit";
+import { logAuditEvent } from "@betarouter/audit";
 import {
 	CHAT_PLAN_PRICES,
 	DEV_PLAN_PRICES,
 	DEV_PLAN_RESET_PASS_PRICES,
 	type ChatPlanTier,
 	type DevPlanTier,
-} from "@llmgateway/shared";
+} from "@betarouter/shared";
 
-import type { tables } from "@llmgateway/db";
+import type { tables } from "@betarouter/db";
 
 type OrganizationRow = typeof tables.organization.$inferSelect;
 type TransactionRow = typeof tables.transaction.$inferSelect;

@@ -38,7 +38,7 @@ const tools: Tool[] = [
 	{
 		title: "MCP Server",
 		description:
-			"Use LLM Gateway as an MCP server for Claude Code, Cursor, and other MCP-compatible clients.",
+			"Use betarouter as an MCP server for Claude Code, Cursor, and other MCP-compatible clients.",
 		href: "/guides/mcp",
 		icon: <Plug className="size-5" />,
 	},
@@ -53,7 +53,7 @@ const tools: Tool[] = [
 		title: "Templates & Agents",
 		description:
 			"Pre-built templates and agent configurations to get started quickly.",
-		href: "https://llmgateway.io/templates",
+		href: "https://betarouter.com/templates",
 		icon: <Bot className="size-5" />,
 	},
 ];

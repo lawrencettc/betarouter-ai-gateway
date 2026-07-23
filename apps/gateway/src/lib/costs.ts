@@ -3,7 +3,7 @@ import { Decimal } from "decimal.js";
 import { estimateTokensFromContent } from "@/chat/tools/estimate-tokens-from-content.js";
 import { encodeChatMessages } from "@/chat/tools/tokenizer.js";
 
-import { getEffectiveDiscount } from "@llmgateway/db";
+import { getEffectiveDiscount } from "@betarouter/db";
 import {
 	type ModelDefinition,
 	type ProviderModelMapping,
@@ -12,7 +12,7 @@ import {
 	type ToolCall,
 	expandAllProviderRegions,
 	getSupportedServiceTiers,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 /**
  * Resolve the price multiplier for a served processing tier (Flex / Priority).

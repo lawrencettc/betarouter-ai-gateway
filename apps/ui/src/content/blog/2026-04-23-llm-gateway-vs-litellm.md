@@ -2,23 +2,23 @@
 id: blog-llm-gateway-vs-litellm
 slug: llm-gateway-vs-litellm
 date: 2026-04-23
-title: "LLM Gateway vs LiteLLM: An Honest Comparison"
-summary: "A straightforward comparison of LLM Gateway and LiteLLM — features, operational cost, and trade-offs — so you can pick the right one for your stack."
+title: "betarouter vs LiteLLM: An Honest Comparison"
+summary: "A straightforward comparison of betarouter and LiteLLM — features, operational cost, and trade-offs — so you can pick the right one for your stack."
 categories: ["Guides"]
 image:
   src: "/blog/llm-gateway-vs-litellm.png"
-  alt: "LLM Gateway vs LiteLLM: An Honest Comparison"
+  alt: "betarouter vs LiteLLM: An Honest Comparison"
   width: 1024
   height: 572
 ---
 
-LLM Gateway and LiteLLM solve the same core problem: give developers a single API to access many LLM providers. But they approach it from opposite ends. LiteLLM is a Python library and self-hosted proxy you run yourself. LLM Gateway is a managed (or self-hosted) platform with the proxy, dashboard, billing, caching, routing, and audit logs already wired together.
+betarouter and LiteLLM solve the same core problem: give developers a single API to access many LLM providers. But they approach it from opposite ends. LiteLLM is a Python library and self-hosted proxy you run yourself. betarouter is a managed (or self-hosted) platform with the proxy, dashboard, billing, caching, routing, and audit logs already wired together.
 
-We built LLM Gateway, so we're biased — but we'll tell you where LiteLLM is the right call too.
+We built betarouter, so we're biased — but we'll tell you where LiteLLM is the right call too.
 
 ## The Quick Version
 
-| Feature               | LLM Gateway                                            | LiteLLM                             |
+| Feature               | betarouter                                             | LiteLLM                             |
 | --------------------- | ------------------------------------------------------ | ----------------------------------- |
 | Models                | 200+ models, 40+ providers                             | 100+ providers via SDK              |
 | API compatibility     | OpenAI-compatible                                      | OpenAI-compatible                   |
@@ -36,19 +36,19 @@ We built LLM Gateway, so we're biased — but we'll tell you where LiteLLM is th
 | AI SDK provider       | Yes (`@llmgateway/ai-sdk-provider`)                    | Community SDK                       |
 | Pricing model         | Free (self-host) or 5% platform fee / BYOK (0% fee)    | Free (self-host); infra costs apply |
 
-## Where LLM Gateway Wins
+## Where betarouter Wins
 
 ### No Infrastructure to Babysit
 
 LiteLLM's proxy is a Python service. You deploy it, you scale it, you monitor it, you update it. Add Redis for caching. Add a database for spend tracking. Add a second instance for high availability. Add a load balancer. Add CI to test config changes. It's not hard — but it's a project, and it never shrinks.
 
-LLM Gateway's managed tier takes that entire stack off your plate:
+betarouter's managed tier takes that entire stack off your plate:
 
 ```typescript
 import OpenAI from "openai";
 
 const client = new OpenAI({
-  baseURL: "https://api.llmgateway.io/v1",
+  baseURL: "https://api.betarouter.com/v1",
   apiKey: process.env.LLM_GATEWAY_API_KEY,
 });
 ```
@@ -59,7 +59,7 @@ Prefer to self-host? One Docker command gets you the same features on your own i
 
 ```bash
 docker run -d \
-  --name llmgateway \
+  --name betarouter \
   -p 3002:3002 -p 4001:4001 -p 4002:4002 \
   -e AUTH_SECRET="your-secret" \
   -e GATEWAY_API_KEY_HASH_SECRET="your-hash-secret" \
@@ -70,7 +70,7 @@ docker run -d \
 
 LiteLLM ships a native usage dashboard and per-request spend logs, and it can fan out to LangSmith, Langfuse, or Datadog. It covers the basics. But assembling a single, turnkey view across cost, cache, and provider health is still on you.
 
-LLM Gateway ships with:
+betarouter ships with:
 
 - **Per-request logs** — prompt, response, model, provider, latency, tokens, cost, cache status
 - **Real-time cost breakdown** — by model, project, API key, and user
@@ -84,7 +84,7 @@ Nothing to wire up. Open the dashboard and it's there.
 
 LiteLLM's fallback is a static list: "if this fails, try that." You write it in config. You update it when providers change.
 
-LLM Gateway's router scores every available provider for a model using the last 5 minutes of real metrics:
+betarouter's router scores every available provider for a model using the last 5 minutes of real metrics:
 
 - **Uptime (50%)** — exponential penalty below 95%
 - **Throughput (20%)** — tokens per second
@@ -97,7 +97,7 @@ Epsilon-greedy exploration (1% of requests) probes underused providers so the sc
 
 Caching in LiteLLM is built in, but you wire it up yourself — pick a backend, configure keys, set TTLs, and run the Redis.
 
-In LLM Gateway, caching is a project-level switch. TTL from 10 seconds to 1 year. Works with streaming and non-streaming. Cached responses cost nothing. For workloads with repeat prompts (FAQ bots, classification, CI tests, batch jobs), teams routinely see 30–90% hit rates.
+In betarouter, caching is a project-level switch. TTL from 10 seconds to 1 year. Works with streaming and non-streaming. Cached responses cost nothing. For workloads with repeat prompts (FAQ bots, classification, CI tests, batch jobs), teams routinely see 30–90% hit rates.
 
 ### Enterprise Features Out of the Box
 
@@ -106,7 +106,7 @@ In LLM Gateway, caching is a project-level switch. TTL from 10 seconds to 1 year
 - **Team management** — roles and permissions across organizations and projects
 - **Data retention controls** — full payload retention, metadata-only, or zero retention per project
 
-LiteLLM covers some of this through plugins or external services. LLM Gateway bundles it.
+LiteLLM covers some of this through plugins or external services. betarouter bundles it.
 
 ## Where LiteLLM Wins
 
@@ -114,13 +114,13 @@ LiteLLM covers some of this through plugins or external services. LLM Gateway bu
 
 If your requirement is "run it entirely on my hardware with zero external dependencies and total control over the Python stack," LiteLLM is purpose-built for that. It's a library first, a proxy second. You can embed it in your own service, patch it, fork it, and bend it to any shape.
 
-LLM Gateway self-hosts too (AGPLv3, one Docker image), but it's an opinionated platform — dashboard, database, worker, gateway. If you only want a thin routing layer inside your own app, LiteLLM is leaner.
+betarouter self-hosts too (AGPLv3, one Docker image), but it's an opinionated platform — dashboard, database, worker, gateway. If you only want a thin routing layer inside your own app, LiteLLM is leaner.
 
 ### Python-First Codebases
 
 LiteLLM's native interface is the `litellm` Python library. If your stack is Python and you want provider routing inside your process — no network hop, no proxy — calling `litellm.completion()` is the shortest path.
 
-LLM Gateway is accessed over HTTP (OpenAI-compatible). That's fine for every language, but it is a network call.
+betarouter is accessed over HTTP (OpenAI-compatible). That's fine for every language, but it is a network call.
 
 ### Community and Longevity
 
@@ -128,25 +128,25 @@ LiteLLM has been around longer and has a deep community. More StackOverflow answ
 
 ## Migration Is Two Lines
 
-If you're running a LiteLLM proxy and want to try LLM Gateway:
+If you're running a LiteLLM proxy and want to try betarouter:
 
 ```diff
 - const baseURL = "http://localhost:4000/v1";  // LiteLLM proxy
 - const apiKey = process.env.LITELLM_API_KEY;
-+ const baseURL = "https://api.llmgateway.io/v1";
++ const baseURL = "https://api.betarouter.com/v1";
 + const apiKey = process.env.LLM_GATEWAY_API_KEY;
 ```
 
-Most model names are compatible. LLM Gateway accepts both bare model IDs (routed automatically) and provider-prefixed ones:
+Most model names are compatible. betarouter accepts both bare model IDs (routed automatically) and provider-prefixed ones:
 
-| LiteLLM                         | LLM Gateway                                                           |
+| LiteLLM                         | betarouter                                                            |
 | ------------------------------- | --------------------------------------------------------------------- |
 | `gpt-5.2`                       | `gpt-5.2` or `openai/gpt-5.2`                                         |
 | `claude-opus-4-5-20251101`      | `claude-opus-4-5-20251101` or `anthropic/claude-opus-4-5-20251101`    |
 | `gemini/gemini-3-flash-preview` | `gemini-3-flash-preview` or `google-ai-studio/gemini-3-flash-preview` |
 | `bedrock/claude-opus-4-5-...`   | `claude-opus-4-5-...` or `aws-bedrock/claude-opus-4-5-...`            |
 
-Using the LiteLLM library directly? Point it at LLM Gateway:
+Using the LiteLLM library directly? Point it at betarouter:
 
 ```python
 import litellm
@@ -154,16 +154,16 @@ import litellm
 response = litellm.completion(
     model="gpt-4",
     messages=[{"role": "user", "content": "Hello!"}],
-    api_base="https://api.llmgateway.io/v1",
+    api_base="https://api.betarouter.com/v1",
     api_key=os.environ["LLM_GATEWAY_API_KEY"],
 )
 ```
 
-Full guide: [docs.llmgateway.io/migrations/litellm](https://docs.llmgateway.io/migrations/litellm).
+Full guide: [docs.betarouter.com/migrations/litellm](https://docs.betarouter.com/migrations/litellm).
 
 ## Who Should Use What
 
-**Choose LLM Gateway if:**
+**Choose betarouter if:**
 
 - You want a managed gateway without standing up Python infrastructure
 - You need a dashboard, audit logs, and team management without assembling them
@@ -180,10 +180,10 @@ Full guide: [docs.llmgateway.io/migrations/litellm](https://docs.llmgateway.io/m
 
 ## The Bottom Line
 
-LiteLLM gives you a proxy and a library. LLM Gateway gives you the proxy, plus the dashboard, caching, routing, guardrails, audit logs, team management, and cloud operations that production AI eventually needs.
+LiteLLM gives you a proxy and a library. betarouter gives you the proxy, plus the dashboard, caching, routing, guardrails, audit logs, team management, and cloud operations that production AI eventually needs.
 
-If you enjoy owning infrastructure, LiteLLM is excellent at being what it is. If you'd rather ship features than babysit a proxy, LLM Gateway takes that operational work and makes it a checkbox.
+If you enjoy owning infrastructure, LiteLLM is excellent at being what it is. If you'd rather ship features than babysit a proxy, betarouter takes that operational work and makes it a checkbox.
 
 Still shopping around? We compared the [8 best LiteLLM alternatives](/blog/litellm-alternatives) — including the managed routers and self-hosted proxies teams switch to.
 
-**[Try LLM Gateway free](/signup)** | **[Migration guide](https://docs.llmgateway.io/migrations/litellm)** | **[Compare all features](/compare/litellm)**
+**[Try betarouter free](/signup)** | **[Migration guide](https://docs.betarouter.com/migrations/litellm)** | **[Compare all features](/compare/litellm)**

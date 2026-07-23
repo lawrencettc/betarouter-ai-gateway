@@ -16,10 +16,10 @@ import { resolveSignupName } from "@/utils/infer-name.js";
 import { getOrCreatePersonalOrg } from "@/utils/personal-org.js";
 import { autoJoinByEmailDomain } from "@/utils/sso-domain.js";
 
-import { logAuditEvent } from "@llmgateway/audit";
-import { db, eq, tables } from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
-import { getResendClient, resendAudienceId } from "@llmgateway/shared/email";
+import { logAuditEvent } from "@betarouter/audit";
+import { db, eq, tables } from "@betarouter/db";
+import { logger } from "@betarouter/logger";
+import { getResendClient, resendAudienceId } from "@betarouter/shared/email";
 
 const apiUrl = getApiBaseUrl();
 const cookieDomain = process.env.COOKIE_DOMAIN ?? "localhost";
@@ -652,7 +652,7 @@ export const apiAuth: ReturnType<typeof instrumentBetterAuth> =
 			plugins: [
 				passkey({
 					rpID: process.env.PASSKEY_RP_ID ?? "localhost",
-					rpName: process.env.PASSKEY_RP_NAME ?? "LLMGateway",
+					rpName: process.env.PASSKEY_RP_NAME ?? "betarouter",
 					// Accept passkey ceremonies from both the main dashboard and the
 					// DevPass (code) app, which share the same registrable rpID.
 					origin: [uiUrl, codeUrl],
@@ -688,7 +688,7 @@ export const apiAuth: ReturnType<typeof instrumentBetterAuth> =
 				}) => {
 					const text = `Hey${user.name ? ` ${user.name}` : ""},
 
-We received a request to reset the password for your LLM Gateway account.
+We received a request to reset the password for your betarouter account.
 
 Click the link below to set a new password — it expires in 1 hour:
 
@@ -696,7 +696,7 @@ ${url}
 
 If you didn't request this, you can safely ignore this email. Your password won't change.
 
-— The LLM Gateway Team`.trim();
+— The betarouter Team`.trim();
 
 					if (process.env.NODE_ENV !== "production") {
 						const redactedUrl = url.replace(
@@ -712,7 +712,7 @@ If you didn't request this, you can safely ignore this email. Your password won'
 					try {
 						await sendTransactionalEmail({
 							to: user.email,
-							subject: "Reset your LLM Gateway password",
+							subject: "Reset your betarouter password",
 							text,
 							strict: true,
 							logSafe: true,
@@ -807,7 +807,7 @@ If you didn't request this, you can safely ignore this email. Your password won'
 
 							const text = `Hey${user.name ? ` ${user.name}` : ""}!
 
-Welcome to LLM Gateway — glad to have you here.
+Welcome to betarouter — glad to have you here.
 
 First things first, verify your email by clicking the link below:
 
@@ -820,12 +820,12 @@ Also, if you're interested in free credits to get started, reply to this email a
 If you didn't create this account, feel free to ignore this.
 
 Cheers,
-The LLM Gateway Team`.trim();
+The betarouter Team`.trim();
 
 							try {
 								await sendTransactionalEmail({
 									to: user.email,
-									subject: "Welcome to LLM Gateway — verify your email",
+									subject: "Welcome to betarouter — verify your email",
 									text,
 								});
 							} catch (error) {
@@ -1167,7 +1167,7 @@ The LLM Gateway Team`.trim();
 					}
 
 					// DevPass (code app) signups get a personal organization instead of
-					// the shared "Default Organization" used by the main LLM Gateway
+					// the shared "Default Organization" used by the main betarouter
 					// dashboard. For social sign-in the request hits the OAuth callback
 					// (no app origin header), so fall back to the redirect target.
 					const isCodeAppSignup =

@@ -50,7 +50,7 @@ export default function TemplatesPage() {
 							</h3>
 							<p className="mt-2 flex-1 text-muted-foreground leading-relaxed">
 								Ship an app on any template and add it to the Showcase — a
-								public, filterable gallery of apps built with LLM Gateway.
+								public, filterable gallery of apps built with betarouter.
 								It&apos;s a deployable template itself, so you can host your
 								own.
 							</p>
@@ -94,7 +94,7 @@ export default function TemplatesPage() {
 							<div className="mt-6">
 								<Button variant="outline" asChild>
 									<a
-										href="https://docs.llmgateway.io/features/llm-sdk"
+										href="https://docs.betarouter.com/features/llm-sdk"
 										target="_blank"
 										rel="noopener noreferrer"
 									>

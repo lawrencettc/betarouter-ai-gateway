@@ -29,27 +29,27 @@ Toggle **Compare** mode to select up to 3 image models and generate from all of 
 
 ### Supported Models
 
-Image Studio works with every image generation model on LLM Gateway, including Gemini 3.1 Flash Image, Gemini 3 Pro Image, Qwen Image, Seedream, CogView, and more.
+Image Studio works with every image generation model on betarouter, including Gemini 3.1 Flash Image, Gemini 3 Pro Image, Qwen Image, Seedream, CogView, and more.
 
-**[Try it now](https://chat.llmgateway.io/image)**
+**[Try it now](https://chat.betarouter.com/image)**
 
 ---
 
 ## AI SDK Provider: `generateImage()` Support
 
-Our `@llmgateway/ai-sdk-provider` now supports the Vercel AI SDK's `generateImage()` function. Use `llmgateway.image()` to get an image model:
+Our `@llmgateway/ai-sdk-provider` now supports the Vercel AI SDK's `generateImage()` function. Use `betarouter.image()` to get an image model:
 
 ```ts
 import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
 import { generateImage } from "ai";
 import { writeFileSync } from "fs";
 
-const llmgateway = createLLMGateway({
+const betarouter = createLLMGateway({
   apiKey: process.env.LLM_GATEWAY_API_KEY,
 });
 
 const result = await generateImage({
-  model: llmgateway.image("gemini-3-pro-image-preview"),
+  model: betarouter.image("gemini-3-pro-image-preview"),
   prompt:
     "A cozy cabin in a snowy mountain landscape at night with aurora borealis",
   size: "1024x1024",
@@ -71,7 +71,7 @@ result.images.forEach((image, i) => {
 A fully OpenAI-compatible endpoint for image generation. Use the same request format you already know:
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/images/generations" \
+curl -X POST "https://api.betarouter.com/v1/images/generations" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -87,7 +87,7 @@ curl -X POST "https://api.llmgateway.io/v1/images/generations" \
 Edit existing images with a new dedicated endpoint — send an image and a prompt describing the changes you want:
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/images/edits" \
+curl -X POST "https://api.betarouter.com/v1/images/edits" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -F "model=gemini-3-pro-image-preview" \
   -F "prompt=Make it nighttime with neon lights" \
@@ -96,7 +96,7 @@ curl -X POST "https://api.llmgateway.io/v1/images/edits" \
 
 Both endpoints support the `aspect_ratio` parameter for controlling output dimensions.
 
-**[Read the full image generation docs](https://docs.llmgateway.io/features/image-generation)** for all parameters, model-specific configuration, and more examples.
+**[Read the full image generation docs](https://docs.betarouter.com/features/image-generation)** for all parameters, model-specific configuration, and more examples.
 
 ---
 

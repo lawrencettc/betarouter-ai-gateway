@@ -1,6 +1,6 @@
-import { db, eq, isNull, or } from "@llmgateway/db";
+import { db, eq, isNull, or } from "@betarouter/db";
 
-import type { SQL, Column } from "@llmgateway/db";
+import type { SQL, Column } from "@betarouter/db";
 
 // Build an org filter for user-owned history (chats, image/video generations).
 // When an organizationId is given we scope to it; for the dedicated Chat org

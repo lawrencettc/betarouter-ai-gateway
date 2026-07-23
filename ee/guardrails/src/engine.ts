@@ -1,4 +1,4 @@
-import { swrWrap } from "@llmgateway/cache";
+import { swrWrap } from "@betarouter/cache";
 import {
 	cdb,
 	db,
@@ -10,7 +10,7 @@ import {
 	defaultAllowedFileTypes,
 	eq,
 	desc,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 import {
 	systemRules,
@@ -35,7 +35,7 @@ import type {
 	CustomRegexRuleConfig,
 	TopicRestrictionRuleConfig,
 	GuardrailAction,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 const guardrailConfigTableName = getTableName(guardrailConfig);
 const guardrailRuleTableName = getTableName(guardrailRule);

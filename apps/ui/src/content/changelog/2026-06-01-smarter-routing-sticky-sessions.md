@@ -6,7 +6,7 @@ title: "Smarter Routing: Sticky Sessions, Bedrock Regions & More"
 summary: "Pin conversations to one provider for warm caches with x-session-id, route Bedrock by region, and reach Gemini via Google AI Studio plus Vertex embeddings."
 image:
   src: "/changelog/smarter-routing-sticky-sessions.png"
-  alt: "Smarter routing on LLM Gateway: sticky sessions, Bedrock regions and more"
+  alt: "Smarter routing on betarouter: sticky sessions, Bedrock regions and more"
   width: 1536
   height: 1024
 ---
@@ -20,7 +20,7 @@ Multi-turn conversations now stay on the same upstream provider, so provider-sid
 Just pass a stable identifier on the request:
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
+curl -X POST "https://api.betarouter.com/v1/chat/completions" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "x-session-id: conversation-1234" \
   -H "Content-Type: application/json" \
@@ -56,4 +56,4 @@ Following the [embeddings launch](/changelog/openai-compatible-embeddings), the 
 
 ---
 
-**[Read the routing docs →](https://docs.llmgateway.io)** | **[Browse all models →](https://llmgateway.io/models)**
+**[Read the routing docs →](https://docs.betarouter.com)** | **[Browse all models →](https://betarouter.com/models)**

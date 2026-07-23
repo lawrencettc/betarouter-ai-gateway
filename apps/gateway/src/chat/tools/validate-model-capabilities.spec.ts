@@ -1,11 +1,11 @@
 import { HTTPException } from "hono/http-exception";
 import { describe, expect, it } from "vitest";
 
-import { models } from "@llmgateway/models";
+import { models } from "@betarouter/models";
 
 import { validateModelCapabilities } from "./validate-model-capabilities.js";
 
-import type { ModelDefinition } from "@llmgateway/models";
+import type { ModelDefinition } from "@betarouter/models";
 
 function getModel(id: string): ModelDefinition {
 	const m = models.find((model) => model.id === id);

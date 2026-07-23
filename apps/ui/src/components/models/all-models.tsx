@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Footer from "@/components/landing/footer";
 import { ModelCtaButton } from "@/components/models/model-cta-button";
 
-import { AllModels as SharedAllModels } from "@llmgateway/shared/components";
+import { AllModels as SharedAllModels } from "@betarouter/shared/components";
 
 import type { ComponentProps } from "react";
 

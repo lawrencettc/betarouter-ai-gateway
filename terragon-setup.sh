@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Terragon Labs - LLMGateway Development Environment Setup
+# Terragon Labs - betarouter Development Environment Setup
 # This script sets up all dependencies and services needed for E2E testing
 
 set -e  # Exit on any error
 
-echo "🚀 Setting up LLMGateway development environment..."
+echo "🚀 Setting up betarouter development environment..."
 
 pnpm install
 pnpm build:core

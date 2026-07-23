@@ -1,6 +1,6 @@
 import { hasInvalidProviderCredentialError } from "@/lib/provider-auth-errors.js";
 
-import { DEFAULT_ROUTING_RETRY } from "@llmgateway/shared/routing-config";
+import { DEFAULT_ROUTING_RETRY } from "@betarouter/shared/routing-config";
 
 export const MAX_RETRIES = DEFAULT_ROUTING_RETRY.maxRetries;
 

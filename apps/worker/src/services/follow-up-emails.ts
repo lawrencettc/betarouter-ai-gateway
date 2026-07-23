@@ -13,13 +13,13 @@ import {
 	sql,
 	transaction,
 	userOrganization,
-} from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+} from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 import {
 	fromEmail,
 	getResendClient,
 	replyToEmail,
-} from "@llmgateway/shared/email";
+} from "@betarouter/shared/email";
 
 type FollowUpEmailType = "no_purchase" | "low_usage" | "no_repurchase";
 
@@ -78,62 +78,62 @@ function getEmailContent(type: FollowUpEmailType): {
 		case "no_purchase":
 			return {
 				subject:
-					"Get started with LLM Gateway - Add credits to unlock all models",
+					"Get started with betarouter - Add credits to unlock all models",
 				text: `Hi there,
 
-Thanks for signing up for LLM Gateway! We noticed you haven't added any credits yet.
+Thanks for signing up for betarouter! We noticed you haven't added any credits yet.
 
 With credits you can access 300+ AI models from OpenAI, Anthropic, Google, and more through a single API. Here's how to get started:
 
-1. Log in at https://llmgateway.io/dashboard
+1. Log in at https://betarouter.com/dashboard
 2. Add credits under Settings > Billing
 3. Create an API key
 4. Start making requests using the OpenAI-compatible API
 
-Read our quickstart here: https://docs.llmgateway.io/quick-start
+Read our quickstart here: https://docs.betarouter.com/quick-start
 
 If you have any questions, just reply to this email and we'll be happy to help.
 
 Best,
-The LLM Gateway Team`,
+The betarouter Team`,
 			};
 
 		case "low_usage":
 			return {
 				subject:
-					"Your LLM Gateway credits are waiting - Need help getting started?",
+					"Your betarouter credits are waiting - Need help getting started?",
 				text: `Hi there,
 
-We noticed you added credits to your LLM Gateway account a few days ago but haven't used much yet.
+We noticed you added credits to your betarouter account a few days ago but haven't used much yet.
 
 If you're having trouble getting started, here are some resources:
 
-- Getting started in 5 minutes: https://llmgateway.io/blog/getting-started-in-5-minutes
-- Documentation: https://docs.llmgateway.io
-- Chat Playground: https://chat.llmgateway.io (test models without writing code)
+- Getting started in 5 minutes: https://betarouter.com/blog/getting-started-in-5-minutes
+- Documentation: https://docs.betarouter.com
+- Chat Playground: https://chat.betarouter.com (test models without writing code)
 
 If something isn't working as expected or you need help with your setup, reply to this email and we'll get you sorted out.
 
 Best,
-The LLM Gateway Team`,
+The betarouter Team`,
 			};
 
 		case "no_repurchase":
 			return {
-				subject: "Your LLM Gateway credits are running low",
+				subject: "Your betarouter credits are running low",
 				text: `Hi there,
 
-You've been making great use of LLM Gateway! We noticed your credits are getting low and you haven't topped up in a while.
+You've been making great use of betarouter! We noticed your credits are getting low and you haven't topped up in a while.
 
 To keep your API access running smoothly, you can:
 
-1. Top up credits: https://llmgateway.io/dashboard
+1. Top up credits: https://betarouter.com/dashboard
 2. Enable auto top-up under Settings > Billing so you never run out
 
 If there's anything we can improve, we'd love to hear your feedback. Just reply to this email.
 
 Best,
-The LLM Gateway Team`,
+The betarouter Team`,
 			};
 	}
 }
@@ -196,7 +196,7 @@ export async function processNoPurchaseEmails(): Promise<void> {
 				eq(organization.devPlan, "none"),
 				eq(organization.status, "active"),
 				// Only nudge normal pay-as-you-go team orgs. Personal orgs back the
-				// DevPass coding product and chat orgs back chat.llmgateway.io — both
+				// DevPass coding product and chat orgs back chat.betarouter.com — both
 				// have their own billing and are hidden from the dashboard, so they
 				// should never receive the "add credits" email.
 				eq(organization.kind, "default"),
@@ -453,24 +453,24 @@ export async function sendLowBalanceEmail(opts: {
 	const thresholdLabel = opts.threshold === "20" ? "20%" : "5%";
 	const subject =
 		opts.threshold === "5"
-			? "Urgent: Your LLM Gateway credits are almost gone"
-			: "Your LLM Gateway credits are running low";
+			? "Urgent: Your betarouter credits are almost gone"
+			: "Your betarouter credits are running low";
 
 	const text = `Hi there,
 
-Your LLM Gateway credit balance has dropped below ${thresholdLabel} of your last top-up.
+Your betarouter credit balance has dropped below ${thresholdLabel} of your last top-up.
 
 Current balance: $${opts.currentBalance.toFixed(2)}
 
 To keep your API access uninterrupted:
 
-1. Top up now: https://llmgateway.io/dashboard
-2. Enable auto-reload: https://llmgateway.io/dashboard/${opts.organizationId}/org/billing (scroll to Auto Top-Up)
+1. Top up now: https://betarouter.com/dashboard
+2. Enable auto-reload: https://betarouter.com/dashboard/${opts.organizationId}/org/billing (scroll to Auto Top-Up)
 
 Auto-reload ensures you never run out — your card is charged automatically when credits get low.
 
 Best,
-The LLM Gateway Team`;
+The betarouter Team`;
 
 	await sendFollowUpEmail({ to: opts.to, subject, text });
 }

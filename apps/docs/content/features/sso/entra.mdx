@@ -9,7 +9,7 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 # Microsoft Entra ID
 
-This guide walks an organization admin through connecting **Microsoft Entra ID** (formerly Azure Active Directory) to LLM Gateway for SAML single sign-on and SCIM provisioning.
+This guide walks an organization admin through connecting **Microsoft Entra ID** (formerly Azure Active Directory) to betarouter for SAML single sign-on and SCIM provisioning.
 
 <Callout type="info">
 	SSO & SCIM require the **Enterprise** plan and an organization **owner** or
@@ -19,7 +19,7 @@ This guide walks an organization admin through connecting **Microsoft Entra ID**
 
 ## Finding "Enterprise applications" in Entra
 
-An **Enterprise application** is a registered instance of an app that your tenant trusts for sign-in. You'll create one to represent LLM Gateway; its **Single sign-on (SAML)** page is where you exchange URLs and download the certificate.
+An **Enterprise application** is a registered instance of an app that your tenant trusts for sign-in. You'll create one to represent betarouter; its **Single sign-on (SAML)** page is where you exchange URLs and download the certificate.
 
 <Callout type="warn">
 	This is **not** the same as **App registrations** (that section is for apps
@@ -53,10 +53,10 @@ You're now on the **All applications** list.
 <Step>
 ### Create the application
 
-Click **+ New application** → **+ Create your own application**. Name it (e.g. `LLM Gateway`), choose **"Integrate any other application you don't find in the gallery (Non-gallery)"**, then **Create**. Wait a few seconds for it to provision.
+Click **+ New application** → **+ Create your own application**. Name it (e.g. `betarouter`), choose **"Integrate any other application you don't find in the gallery (Non-gallery)"**, then **Create**. Wait a few seconds for it to provision.
 
 <Callout type="warn">
-	Don't search the Entra **gallery** for "LLM Gateway" — there is no gallery
+	Don't search the Entra **gallery** for "betarouter" — there is no gallery
 	listing, so always use **Create your own application → Non-gallery**. You
 	configure SAML and SCIM manually with the URLs from your **SSO** page; the
 	steps below cover everything.
@@ -76,18 +76,18 @@ This opens the 5-section **Set up Single Sign-On with SAML** page referenced thr
 
 ## Configure SAML SSO
 
-Because Entra needs LLM Gateway's URLs and LLM Gateway needs Entra's Login URL and certificate, the two systems exchange values. Follow this order.
+Because Entra needs betarouter's URLs and betarouter needs Entra's Login URL and certificate, the two systems exchange values. Follow this order.
 
 <Steps>
 <Step>
 ### Choose a connection slug
 
-In LLM Gateway (**Organization → SSO → Add a connection**), set **Identity provider** to **Microsoft Entra ID**, then pick a **connection slug** (lowercase letters, numbers, hyphens; `^[a-z0-9-]+$`, up to 64 chars). We recommend the format `<your-org-slug>-<provider>`, e.g. `acme-entra` — the form pre-fills this from your organization name and the selected provider, so you can accept it or edit it. It must be unique across all LLM Gateway organizations, and each organization has exactly one SSO connection. Keep it stable: your SP URLs are built from it.
+In betarouter (**Organization → SSO → Add a connection**), set **Identity provider** to **Microsoft Entra ID**, then pick a **connection slug** (lowercase letters, numbers, hyphens; `^[a-z0-9-]+$`, up to 64 chars). We recommend the format `<your-org-slug>-<provider>`, e.g. `acme-entra` — the form pre-fills this from your organization name and the selected provider, so you can accept it or edit it. It must be unique across all betarouter organizations, and each organization has exactly one SSO connection. Keep it stable: your SP URLs are built from it.
 
-As soon as the slug is set, the form shows your two SP URLs (with the hosted default `https://internal.llmgateway.io`) — copy them from there:
+As soon as the slug is set, the form shows your two SP URLs (with the hosted default `https://internal.betarouter.com`) — copy them from there:
 
-- **Identifier (Entity ID):** `https://internal.llmgateway.io/auth/sso/saml2/sp/metadata?providerId=acme-entra`
-- **Reply URL (ACS):** `https://internal.llmgateway.io/auth/sso/saml2/sp/acs/acme-entra`
+- **Identifier (Entity ID):** `https://internal.betarouter.com/auth/sso/saml2/sp/metadata?providerId=acme-entra`
+- **Reply URL (ACS):** `https://internal.betarouter.com/auth/sso/saml2/sp/acs/acme-entra`
 
 You'll paste these into Entra next — no need to create the connection yet.
 
@@ -115,7 +115,7 @@ Click **Save** (the button enables once both required fields are filled), then c
 <Step>
 ### Confirm the claims
 
-**Section 2 – Attributes & Claims**: the Entra defaults are fine. In **Microsoft Entra ID** mode, LLM Gateway reads email/name from the standard claim URIs Entra sends by default (`.../emailaddress`, `.../givenname`, `.../surname`, `.../name`), so you don't need to force the Name ID to be the email — just make sure users have a real `mail`/UPN.
+**Section 2 – Attributes & Claims**: the Entra defaults are fine. In **Microsoft Entra ID** mode, betarouter reads email/name from the standard claim URIs Entra sends by default (`.../emailaddress`, `.../givenname`, `.../surname`, `.../name`), so you don't need to force the Name ID to be the email — just make sure users have a real `mail`/UPN.
 
 </Step>
 
@@ -137,7 +137,7 @@ Keep both values handy for the next step.
 </Step>
 
 <Step>
-### Create the connection in LLM Gateway
+### Create the connection in betarouter
 
 Back on the **SSO → Add a connection** form:
 
@@ -151,9 +151,9 @@ Save. The connection card then shows the exact SP metadata + ACS URLs — confir
 
 <Callout type="warn">
 	The domain list must include **every domain Entra may send as a user's
-	email**. LLM Gateway signs a user in from the `emailaddress` claim, which
-	Entra fills from the **`mail`** attribute — and that domain can differ from
-	the sign-in (userPrincipalName) domain, e.g. UPN `jane@acme.local` with mail
+	email**. betarouter signs a user in from the `emailaddress` claim, which Entra
+	fills from the **`mail`** attribute — and that domain can differ from the
+	sign-in (userPrincipalName) domain, e.g. UPN `jane@acme.local` with mail
 	`jane@acme.com`. If they differ, list **both** (`acme.local, acme.com`);
 	otherwise sign-in bounces back to the login page with an `account_not_linked`
 	error even though Entra authenticated the user.
@@ -182,7 +182,7 @@ SSO only signs people in. SCIM is what actually adds members to the organization
 <Step>
 ### Generate a SCIM token
 
-In LLM Gateway, on **Organization → SSO → Directory sync (SCIM)**, click **Generate SCIM token** and copy it (shown once). The SCIM base URL is shown in the same card — it's `https://internal.llmgateway.io/scim/v2` on the hosted default.
+In betarouter, on **Organization → SSO → Directory sync (SCIM)**, click **Generate SCIM token** and copy it (shown once). The SCIM base URL is shown in the same card — it's `https://internal.betarouter.com/scim/v2` on the hosted default.
 
 </Step>
 
@@ -191,8 +191,8 @@ In LLM Gateway, on **Organization → SSO → Directory sync (SCIM)**, click **G
 
 In Entra, on your Enterprise App → **Provisioning → Automatic → Admin Credentials**:
 
-- **Authentication method:** choose the token option — labelled **"Long-lived bearer token"** (or **"Secret token"**). **Do not** pick "OAuth 2.0 code grant flow": LLM Gateway's SCIM endpoint authenticates a plain static bearer token (`Authorization: Bearer <token>`), not an OAuth code exchange. The presence of a **Tenant URL + Secret token** pair on the form confirms you're on the right method.
-- **Tenant URL:** the SCIM base URL, e.g. `https://internal.llmgateway.io/scim/v2`
+- **Authentication method:** choose the token option — labelled **"Long-lived bearer token"** (or **"Secret token"**). **Do not** pick "OAuth 2.0 code grant flow": betarouter's SCIM endpoint authenticates a plain static bearer token (`Authorization: Bearer <token>`), not an OAuth code exchange. The presence of a **Tenant URL + Secret token** pair on the form confirms you're on the right method.
+- **Tenant URL:** the SCIM base URL, e.g. `https://internal.betarouter.com/scim/v2`
 - **Secret Token:** the token from the previous step
 - Click **Test Connection** (Entra calls `/ServiceProviderConfig` with the bearer token), then **Save**.
 
@@ -220,7 +220,7 @@ Entra then begins syncing assigned users on its provisioning cycle.
 </Step>
 </Steps>
 
-Assigned users are created in LLM Gateway and added to the organization (default role **developer**). Deactivating or unassigning a user in Entra removes their membership.
+Assigned users are created in betarouter and added to the organization (default role **developer**). Deactivating or unassigning a user in Entra removes their membership.
 
 ## Group → role mapping (optional)
 
@@ -238,7 +238,7 @@ Provisioned members join as **developers**, who only see the projects they're gr
 
 ## Test the login
 
-Log out → login page → **Sign in with SSO** → enter a work email (`someone@acme.com`). LLM Gateway resolves the connection by email domain, redirects to Entra, and on return the (SCIM-provisioned) user is signed in and lands in the enterprise organization.
+Log out → login page → **Sign in with SSO** → enter a work email (`someone@acme.com`). betarouter resolves the connection by email domain, redirects to Entra, and on return the (SCIM-provisioned) user is signed in and lands in the enterprise organization.
 
 ## Enforce SSO (optional, do this last)
 
@@ -252,7 +252,7 @@ Flip **Require SSO** on the connection to require SSO for that email domain — 
 
 ## Troubleshooting: login bounces back to the login page
 
-If the Entra sign-in itself succeeds but the user lands back on the LLM Gateway login page (with a 401 in the browser console), the SAML response was received but LLM Gateway refused to attach it to the provisioned user — almost always an `account_not_linked` domain mismatch:
+If the Entra sign-in itself succeeds but the user lands back on the betarouter login page (with a 401 in the browser console), the SAML response was received but betarouter refused to attach it to the provisioned user — almost always an `account_not_linked` domain mismatch:
 
 - **The asserted email's domain isn't in the connection's Email domains list.** Entra sends the user's `mail` attribute as the email; if its domain differs from the one you registered (e.g. you registered the UPN domain), edit the connection's **Email domains** on the SSO page to include both.
 - **Wrong Identity provider type.** If the connection was created as **Other (SAML 2.0)** instead of **Microsoft Entra ID**, the Entra claim mapping isn't applied and the email falls back to the NameID (usually the UPN), which may again be off-list — and creates duplicate users instead of matching the SCIM-provisioned ones.

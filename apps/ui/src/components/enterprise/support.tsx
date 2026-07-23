@@ -42,7 +42,7 @@ const messages = [
 	{
 		initials: "LG",
 		name: "Max",
-		org: "LLM Gateway",
+		org: "betarouter",
 		time: "2:51 AM",
 		avatarClass: "bg-blue-500/20 text-blue-400",
 		badge: "4 min response",
@@ -112,7 +112,7 @@ export function SupportEnterprise() {
 								<div className="flex items-center gap-2">
 									<Hash className="h-4 w-4 text-muted-foreground" />
 									<span className="font-semibold text-sm">
-										acme-x-llmgateway
+										acme-x-betarouter
 									</span>
 								</div>
 								<span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">

@@ -1,5 +1,5 @@
 import type { ImageObject } from "./types.js";
-import type { Provider } from "@llmgateway/models";
+import type { Provider } from "@betarouter/models";
 
 /**
  * Extracts images from streaming data based on provider format.

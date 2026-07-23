@@ -4,7 +4,7 @@ import type {
 	SerializedUser,
 	SerializedApiKey,
 	SerializedApiKeyIamRule,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 // `role` is the authenticated user's role in the org, populated by GET /orgs so
 // the dashboard can gate org-level UI for project-scoped "developer" members.

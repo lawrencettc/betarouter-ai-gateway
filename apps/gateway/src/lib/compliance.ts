@@ -1,12 +1,12 @@
 import { HTTPException } from "hono/http-exception";
 
-import { logViolation } from "@llmgateway/guardrails";
-import { logger, toError } from "@llmgateway/logger";
+import { logViolation } from "@betarouter/guardrails";
+import { logger, toError } from "@betarouter/logger";
 import {
 	getProviderDefinition,
 	isProviderCompliant,
 	type ProviderCompliancePolicy,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 interface OrganizationLike {
 	plan: string;
@@ -47,7 +47,7 @@ export function filterCompliantProviders<T extends { providerId: string }>(
 }
 
 export function complianceBlockMessage(modelId: string): string {
-	return `This request was blocked by your organization's provider compliance policy. No available provider for ${modelId} meets the required certifications. Contact your LLMGateway admin to adjust the policy.`;
+	return `This request was blocked by your organization's provider compliance policy. No available provider for ${modelId} meets the required certifications. Contact your betarouter admin to adjust the policy.`;
 }
 
 /**

@@ -29,7 +29,7 @@ export function PricingPlans() {
 
 		switch (planName) {
 			case "Self-Host":
-				router.push("https://docs.llmgateway.io");
+				router.push("https://docs.betarouter.com");
 				return;
 			case "Enterprise":
 				router.push("/enterprise");
@@ -166,7 +166,7 @@ export function PricingPlans() {
 						<br />
 						Need a custom solution?{" "}
 						<a
-							href="mailto:contact@llmgateway.io"
+							href="mailto:contact@betarouter.com"
 							className="text-primary hover:underline"
 						>
 							Contact our sales team

@@ -39,9 +39,7 @@ export function PricingBreakdown({ discount }: { discount: number }) {
 								<th className="px-4 py-3 text-right font-medium">
 									Google AI Studio
 								</th>
-								<th className="px-4 py-3 text-right font-medium">
-									LLM Gateway
-								</th>
+								<th className="px-4 py-3 text-right font-medium">betarouter</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -63,7 +61,7 @@ export function PricingBreakdown({ discount }: { discount: number }) {
 				</div>
 
 				<p className="text-xs text-muted-foreground text-center mt-4">
-					LLM Gateway prices reflect a {discount}% discount off Google AI Studio
+					betarouter prices reflect a {discount}% discount off Google AI Studio
 					direct pricing.
 				</p>
 			</div>

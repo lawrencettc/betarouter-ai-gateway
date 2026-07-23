@@ -1,6 +1,6 @@
 import { extractReasoningDetailsText } from "./reasoning-details.js";
 
-import type { Provider } from "@llmgateway/models";
+import type { Provider } from "@betarouter/models";
 
 interface AnthropicStreamChunk {
 	type?: string;

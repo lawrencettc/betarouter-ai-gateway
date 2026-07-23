@@ -3,9 +3,9 @@ import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { app } from "@/index.js";
 import { createTestUser, deleteAll } from "@/testing.js";
 
-import { redisClient, SWR_PREFIX, swrWrap } from "@llmgateway/cache";
-import { and, cdb, db, eq, getTableName, tables } from "@llmgateway/db";
-import { getApiKeyFingerprint } from "@llmgateway/shared/api-key-hash";
+import { redisClient, SWR_PREFIX, swrWrap } from "@betarouter/cache";
+import { and, cdb, db, eq, getTableName, tables } from "@betarouter/db";
+import { getApiKeyFingerprint } from "@betarouter/shared/api-key-hash";
 
 // Issue #2674: management mutations on gateway-cached tables must go through the
 // cached client (cdb) so RedisCache.onMutate invalidates the gateway's SWR

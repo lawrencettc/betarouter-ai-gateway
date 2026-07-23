@@ -1,5 +1,5 @@
 {
-	"name": "@llmgateway/catalog",
+	"name": "@betarouter/catalog",
 	"version": "0.0.0",
 	"private": true,
 	"license": "SEE LICENSE IN ../../LICENSE",
@@ -22,10 +22,10 @@
 		"lint": "eslint . && prettier --check ."
 	},
 	"dependencies": {
-		"@llmgateway/cache": "workspace:*",
-		"@llmgateway/db": "workspace:*",
-		"@llmgateway/logger": "workspace:*",
-		"@llmgateway/models": "workspace:*",
+		"@betarouter/cache": "workspace:*",
+		"@betarouter/db": "workspace:*",
+		"@betarouter/logger": "workspace:*",
+		"@betarouter/models": "workspace:*",
 		"decimal.js": "10.5.0",
 		"zod": "3.25.75"
 	},

@@ -8,11 +8,11 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 # API Keys & IAM Rules
 
-API keys are the primary method for authenticating with the LLM Gateway. This guide covers creating API keys, managing them, and configuring IAM rules for fine-grained access control.
+API keys are the primary method for authenticating with the betarouter. This guide covers creating API keys, managing them, and configuring IAM rules for fine-grained access control.
 
 ## Overview
 
-LLM Gateway provides comprehensive API key management with the following features:
+betarouter provides comprehensive API key management with the following features:
 
 - **Basic API Key Management**: Create, list, update, and delete API keys
 - **Usage Limits**: Set lifetime and recurring spending limits on individual API keys
@@ -27,7 +27,7 @@ LLM Gateway provides comprehensive API key management with the following feature
 
 At this time, API keys can only be created via the dashboard.
 
-1. Navigate to your project in the LLM Gateway dashboard
+1. Navigate to your project in the betarouter dashboard
 2. Go to the **API Keys** section
 3. Click **Create API Key**
 4. Provide a description for your key
@@ -46,7 +46,7 @@ At this time, API keys can only be created via the dashboard.
 Once you have an API key, use it in the `Authorization` header of your requests:
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
+curl -X POST "https://api.betarouter.com/v1/chat/completions" \
   -H "Authorization: Bearer llmgtwy_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -87,7 +87,7 @@ future, can be enabled and disabled freely without setting a new expiration.
 ## Usage Limits
 
 Usage is tracked per API key on the API Keys page. Usage includes both costs
-from LLM Gateway credits and usage from your own provider keys when applicable,
+from betarouter credits and usage from your own provider keys when applicable,
 giving you complete visibility into total spending per key.
 
 You can set two independent limits for each key:
@@ -141,7 +141,7 @@ Control access based on model pricing:
 
 <Callout type="info">
 	IP address rules are available on the **Enterprise** plan only. Contact us at
-	contact@llmgateway.io to enable them for your organization.
+	contact@betarouter.com to enable them for your organization.
 </Callout>
 
 Restrict where the API key can be used from by source IP, using CIDR ranges:

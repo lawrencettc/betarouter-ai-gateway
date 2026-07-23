@@ -32,7 +32,7 @@ import {
 	providers,
 	type ModelDefinition,
 	type ProviderModelMapping,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 import {
 	computeRowCost,
@@ -47,7 +47,7 @@ import {
 	parseModelFromSelector,
 } from "./calc-utils";
 
-import type { ProviderDefinition } from "@llmgateway/models";
+import type { ProviderDefinition } from "@betarouter/models";
 
 // The tokenizer chunk ships ~1 MB of BPE ranks; load it lazily so it never
 // blocks the page's LCP. The estimator tab below stays in the light bundle.
@@ -491,7 +491,7 @@ function ModelRowCard({
 					<div className="flex items-center justify-between sm:justify-start gap-4">
 						<div>
 							<p className="text-[11px] font-medium text-green-600 dark:text-green-400 uppercase tracking-wider">
-								LLM Gateway ({getProviderName(cheapestMapping.providerId)})
+								betarouter ({getProviderName(cheapestMapping.providerId)})
 							</p>
 							<p className="text-sm font-mono mt-0.5">
 								<span className="text-green-600 dark:text-green-400">
@@ -577,7 +577,7 @@ function ResultsPanel({
 	const pageUrl =
 		typeof window !== "undefined"
 			? `${window.location.origin}/token-cost-calculator`
-			: "https://llmgateway.io/token-cost-calculator";
+			: "https://betarouter.com/token-cost-calculator";
 
 	const handleCopy = async () => {
 		await navigator.clipboard.writeText(`${shareText}\n${pageUrl}`);
@@ -613,7 +613,7 @@ function ResultsPanel({
 
 				<Card className="p-5 border-2 border-green-500/50 bg-green-500/5 shadow-sm shadow-green-500/10">
 					<p className="text-xs font-medium text-green-600 dark:text-green-400 mb-1">
-						LLM Gateway Pricing
+						betarouter Pricing
 					</p>
 					<p className="text-2xl font-bold text-green-600 dark:text-green-400">
 						{formatUsd(gatewayTotal)}
@@ -702,7 +702,7 @@ function ResultsPanel({
 									Official
 								</th>
 								<th className="text-right py-3 px-4 font-medium text-muted-foreground">
-									LLM Gateway
+									betarouter
 								</th>
 								<th className="text-right py-3 px-4 font-medium text-muted-foreground">
 									Saved
@@ -782,7 +782,7 @@ function ResultsPanel({
 						{formatUsd(savings)}
 					</p>
 					<p className="text-lg text-green-600/80 dark:text-green-400/80 mt-2 font-medium">
-						{savingsPercent}% less with LLM Gateway, same models
+						{savingsPercent}% less with betarouter, same models
 					</p>
 					<p className="text-sm text-muted-foreground mt-4">
 						Based on the token volumes entered above

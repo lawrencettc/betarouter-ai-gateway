@@ -12,7 +12,7 @@ import {
 	DEV_PLAN_PREMIUM_WEEK_LENGTH_MS,
 	getDevPlanPremiumWeeklyLimit,
 	isPremiumWeekExpired,
-} from "@llmgateway/shared";
+} from "@betarouter/shared";
 
 import type { ServerTypes } from "@/vars.js";
 
@@ -85,14 +85,14 @@ key.openapi(getKey, async (c) => {
 	if (!apiKey) {
 		throw new HTTPException(401, {
 			message:
-				"Unauthorized: Invalid LLMGateway API token. The token could not be found. Go to the LLMGateway 'API Keys' page to generate a new token.",
+				"Unauthorized: Invalid betarouter API token. The token could not be found. Go to the betarouter 'API Keys' page to generate a new token.",
 		});
 	}
 
 	if (apiKey.status !== "active") {
 		throw new HTTPException(401, {
 			message:
-				"Unauthorized: This LLMGateway API token is not active (it may be disabled or deleted). Go to the LLMGateway 'API Keys' page to generate a new token.",
+				"Unauthorized: This betarouter API token is not active (it may be disabled or deleted). Go to the betarouter 'API Keys' page to generate a new token.",
 		});
 	}
 

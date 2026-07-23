@@ -1,7 +1,7 @@
 import {
 	publishCatalogRevisionInvalidation,
 	refreshCatalogRevisionFromSource,
-} from "@llmgateway/catalog";
+} from "@betarouter/catalog";
 import {
 	db,
 	provider,
@@ -13,13 +13,13 @@ import {
 	sql,
 	isNotNull,
 	isNull,
-} from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+} from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 import {
 	providers,
 	models,
 	expandAllProviderRegions,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 export async function syncProvidersAndModels() {
 	logger.info("Starting providers and models sync...");

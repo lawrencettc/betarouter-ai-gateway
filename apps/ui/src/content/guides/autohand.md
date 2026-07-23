@@ -6,14 +6,14 @@ description: Use GPT-5, Claude, Gemini, or any model with Autohand Code's autono
 date: 2026-03-19
 ---
 
-Autohand Code is an autonomous AI coding agent that works in your terminal, IDE, and Slack. With LLM Gateway, you can route all Autohand Code requests through a single gateway—use any of 200+ models from 40+ providers, with full cost tracking and smart routing.
+Autohand Code is an autonomous AI coding agent that works in your terminal, IDE, and Slack. With betarouter, you can route all Autohand Code requests through a single gateway—use any of 200+ models from 40+ providers, with full cost tracking and smart routing.
 
 ## Quick Start
 
-Configure Autohand Code to use LLM Gateway by setting the base URL and API key:
+Configure Autohand Code to use betarouter by setting the base URL and API key:
 
 ```bash
-export OPENAI_BASE_URL=https://api.llmgateway.io/v1
+export OPENAI_BASE_URL=https://api.betarouter.com/v1
 export OPENAI_API_KEY=llmgtwy_your_api_key_here
 ```
 
@@ -23,17 +23,17 @@ Then start Autohand Code as usual:
 autohand
 ```
 
-Autohand Code will now route all requests through LLM Gateway.
+Autohand Code will now route all requests through betarouter.
 
 ## Configuration File
 
-You can also configure LLM Gateway in Autohand Code's config file. Add or update the provider settings:
+You can also configure betarouter in Autohand Code's config file. Add or update the provider settings:
 
 ```json
 {
   "provider": {
-    "llmgateway": {
-      "baseUrl": "https://api.llmgateway.io/v1",
+    "betarouter": {
+      "baseUrl": "https://api.betarouter.com/v1",
       "apiKey": "llmgtwy_your_api_key_here"
     }
   },
@@ -41,7 +41,7 @@ You can also configure LLM Gateway in Autohand Code's config file. Add or update
 }
 ```
 
-## Why Use LLM Gateway with Autohand Code
+## Why Use betarouter with Autohand Code
 
 - **200+ models** — GPT-5, Claude Opus, Gemini, Llama, and more from 40+ providers
 - **Smart routing** — Automatically selects the best provider based on uptime, throughput, price, and latency
@@ -52,7 +52,7 @@ You can also configure LLM Gateway in Autohand Code's config file. Add or update
 
 ## Choosing Models
 
-You can use any model from the [models page](https://llmgateway.io/models). Popular options for Autohand Code:
+You can use any model from the [models page](https://betarouter.com/models). Popular options for Autohand Code:
 
 | Model               | Best For                                    |
 | ------------------- | ------------------------------------------- |
@@ -65,23 +65,23 @@ You can use any model from the [models page](https://llmgateway.io/models). Popu
 | `gemini-2.5-flash`  | Fast responses, good for high-volume        |
 | `deepseek-v3.1`     | Open-source with tool support               |
 
-## Autohand Code Features with LLM Gateway
+## Autohand Code Features with betarouter
 
 ### Terminal (CLI)
 
-Autohand Code CLI works seamlessly with LLM Gateway. Set the environment variables and use all Autohand Code commands as normal—multi-file editing, agentic search, and autonomous code generation all work out of the box.
+Autohand Code CLI works seamlessly with betarouter. Set the environment variables and use all Autohand Code commands as normal—multi-file editing, agentic search, and autonomous code generation all work out of the box.
 
 ### IDE Integration
 
-Autohand Code's VS Code and Zed extensions respect the same environment variables. Set them in your shell profile and the IDE integration will automatically route through LLM Gateway.
+Autohand Code's VS Code and Zed extensions respect the same environment variables. Set them in your shell profile and the IDE integration will automatically route through betarouter.
 
 ### Slack Integration
 
-When using Autohand Code through Slack, configure the LLM Gateway base URL in your Autohand Code server settings to route all Slack-triggered coding tasks through the gateway.
+When using Autohand Code through Slack, configure the betarouter base URL in your Autohand Code server settings to route all Slack-triggered coding tasks through the gateway.
 
 ## Monitoring Usage
 
-Once configured, all Autohand Code requests appear in your LLM Gateway dashboard:
+Once configured, all Autohand Code requests appear in your betarouter dashboard:
 
 - **Request logs** — See every prompt and response
 - **Cost breakdown** — Track spending by model and time period
@@ -89,9 +89,9 @@ Once configured, all Autohand Code requests appear in your LLM Gateway dashboard
 
 ## Get Started
 
-1. [Sign up free](https://llmgateway.io/signup) — no credit card required
+1. [Sign up free](https://betarouter.com/signup) — no credit card required
 2. Copy your API key from the dashboard
 3. Set the environment variables above
 4. Run `autohand` and start coding
 
-Questions? Check [our docs](https://docs.llmgateway.io) or [join Discord](https://llmgateway.io/discord).
+Questions? Check [our docs](https://docs.betarouter.com) or [join Discord](https://betarouter.com/discord).

@@ -8,7 +8,7 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 # Anthropic API Compatibility
 
-LLMGateway provides a native Anthropic-compatible endpoint at `/v1/messages` that allows you to use any model in our catalog while maintaining the familiar Anthropic API format
+betarouter provides a native Anthropic-compatible endpoint at `/v1/messages` that allows you to use any model in our catalog while maintaining the familiar Anthropic API format
 This is especially useful for applications designed for Claude that you want to extend to use other models.
 
 <Callout type="info">
@@ -17,21 +17,21 @@ This is especially useful for applications designed for Claude that you want to 
 
 ## Overview
 
-The Anthropic endpoint transforms requests from Anthropic's message format to the OpenAI-compatible format used by LLMGateway, then transforms the responses back to Anthropic's format. This means you can:
+The Anthropic endpoint transforms requests from Anthropic's message format to the OpenAI-compatible format used by betarouter, then transforms the responses back to Anthropic's format. This means you can:
 
-- Use **any model** available in LLMGateway with Anthropic's API format
+- Use **any model** available in betarouter with Anthropic's API format
 - Maintain existing code that uses Anthropic's SDK or API format
 - Access models from OpenAI, Google, Cohere, and other providers through the Anthropic interface
-- Leverage LLMGateway's routing, caching, and cost optimization features
+- Leverage betarouter's routing, caching, and cost optimization features
 
 ## Basic Usage
 
 ## Configuration for Claude Code
 
-This endpoint is perfect for configuring Claude Code to use any model available in LLMGateway:
+This endpoint is perfect for configuring Claude Code to use any model available in betarouter:
 
 ```bash
-export ANTHROPIC_BASE_URL=https://api.llmgateway.io
+export ANTHROPIC_BASE_URL=https://api.betarouter.com
 export ANTHROPIC_AUTH_TOKEN=llmgtwy_your_api_key_here
 # optional: specify a model, otherwise it uses the default Claude model
 export ANTHROPIC_MODEL=gpt-5  # or any model from our catalog
@@ -42,7 +42,7 @@ claude
 
 ### Choosing Models
 
-You can use any model from the [models page](https://llmgateway.io/models). Popular options for Claude Code include:
+You can use any model from the [models page](https://betarouter.com/models). Popular options for Claude Code include:
 
 ```bash
 # Use OpenAI's latest model
@@ -78,7 +78,7 @@ Specifies a smaller, faster model used for background functionality and internal
 
 ```bash
 # Example configuration
-export ANTHROPIC_BASE_URL=https://api.llmgateway.io
+export ANTHROPIC_BASE_URL=https://api.betarouter.com
 export ANTHROPIC_AUTH_TOKEN=llmgtwy_your_api_key_here
 export ANTHROPIC_MODEL=gpt-5
 export ANTHROPIC_SMALL_FAST_MODEL=gpt-5-nano
@@ -89,7 +89,7 @@ export ANTHROPIC_SMALL_FAST_MODEL=gpt-5-nano
 ### Making a manual request
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/messages" \
+curl -X POST "https://api.betarouter.com/v1/messages" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

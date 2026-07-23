@@ -7,16 +7,16 @@ const mocks = vi.hoisted(() => ({
 	auditValues: vi.fn(),
 }));
 
-vi.mock("@llmgateway/catalog", () => ({
+vi.mock("@betarouter/catalog", () => ({
 	applyDueCatalogChangeSets: mocks.applyDue,
 }));
 
-vi.mock("@llmgateway/db", () => ({
+vi.mock("@betarouter/db", () => ({
 	db: { insert: () => ({ values: mocks.auditValues }) },
 	platformAuditLog: {},
 }));
 
-vi.mock("@llmgateway/logger", () => ({
+vi.mock("@betarouter/logger", () => ({
 	logger: { error: vi.fn() },
 }));
 

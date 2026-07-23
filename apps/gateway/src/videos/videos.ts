@@ -50,8 +50,8 @@ import {
 	processImageUrl,
 	type RoutingMetadata,
 	type VideoPricingContext,
-} from "@llmgateway/actions";
-import { redisClient } from "@llmgateway/cache";
+} from "@betarouter/actions";
+import { redisClient } from "@betarouter/cache";
 import {
 	and,
 	db,
@@ -64,8 +64,8 @@ import {
 	UnifiedFinishReason,
 	type InferSelectModel,
 	type ProviderKeyOptions,
-} from "@llmgateway/db";
-import { logger, toError } from "@llmgateway/logger";
+} from "@betarouter/db";
+import { logger, toError } from "@betarouter/logger";
 import {
 	getProviderEnvValue,
 	getProviderEnvVar,
@@ -75,29 +75,29 @@ import {
 	type ProviderModelMapping,
 	resolveVertexTokenType,
 	type VertexTokenType,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 import {
 	getAvalancheApiBaseUrl,
 	getAvalancheFileUploadBaseUrl,
 	getAvalancheJobsApiBaseUrl,
 	getVideoProxyRedisKey,
 	VIDEO_PROXY_REDIS_TTL_SECONDS,
-} from "@llmgateway/shared";
+} from "@betarouter/shared";
 import {
 	buildVertexVideoOutputStorageUri,
 	createSignedGcsReadUrl,
 	getGoogleVertexVideoOutputBucket,
 	getGoogleVertexVideoOutputPrefix,
 	parseGcsUri,
-} from "@llmgateway/shared/gcs";
-import { assertSafeProviderUrl } from "@llmgateway/shared/url-safety-node";
+} from "@betarouter/shared/gcs";
+import { assertSafeProviderUrl } from "@betarouter/shared/url-safety-node";
 import {
 	buildSignedGatewayVideoLogContentUrl,
 	verifyVideoContentAccessToken,
-} from "@llmgateway/shared/video-access";
+} from "@betarouter/shared/video-access";
 
 import type { ServerTypes } from "@/vars.js";
-import type { ResolvedRoutingConfig } from "@llmgateway/shared/routing-config";
+import type { ResolvedRoutingConfig } from "@betarouter/shared/routing-config";
 import type { Context } from "hono";
 
 function createProviderDiscountResolver(organizationId: string) {
@@ -317,12 +317,12 @@ const createVideoRequestSchema = z
 		}),
 		callback_url: z.string().url().optional().openapi({
 			description:
-				"LLMGateway extension. When set, a signed webhook is delivered after the job reaches a terminal state.",
+				"betarouter extension. When set, a signed webhook is delivered after the job reaches a terminal state.",
 			example: "https://example.com/webhooks/video",
 		}),
 		callback_secret: z.string().min(1).optional().openapi({
 			description:
-				"LLMGateway extension. Shared secret used to sign webhook deliveries with HMAC-SHA256.",
+				"betarouter extension. Shared secret used to sign webhook deliveries with HMAC-SHA256.",
 			example: "whsec_test_secret",
 		}),
 		input_reference: z
@@ -772,14 +772,14 @@ async function requireRequestContext(c: Context): Promise<RequestContext> {
 	if (!apiKey) {
 		throw new HTTPException(401, {
 			message:
-				"Unauthorized: Invalid LLMGateway API token. The token could not be found. Go to the LLMGateway 'API Keys' page to generate a new token.",
+				"Unauthorized: Invalid betarouter API token. The token could not be found. Go to the betarouter 'API Keys' page to generate a new token.",
 		});
 	}
 
 	if (apiKey.status !== "active") {
 		throw new HTTPException(401, {
 			message:
-				"Unauthorized: This LLMGateway API token is not active (it may be disabled or deleted). Go to the LLMGateway 'API Keys' page to generate a new token.",
+				"Unauthorized: This betarouter API token is not active (it may be disabled or deleted). Go to the betarouter 'API Keys' page to generate a new token.",
 		});
 	}
 

@@ -1,6 +1,6 @@
 ---
 title: Docker Compose
-description: Run LLM Gateway with Docker Compose — each service in its own container for more control.
+description: Run betarouter with Docker Compose — each service in its own container for more control.
 icon: Layers
 ---
 
@@ -87,7 +87,7 @@ docker compose -f infra/docker-compose.split.yml down
 
 ## Multiple API keys and load balancing
 
-LLM Gateway supports multiple API keys per provider for load balancing and increased availability. Provide comma-separated values:
+betarouter supports multiple API keys per provider for load balancing and increased availability. Provide comma-separated values:
 
 ```bash
 # Multiple OpenAI keys for load balancing

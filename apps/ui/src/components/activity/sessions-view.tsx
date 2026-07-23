@@ -27,7 +27,7 @@ import {
 import { useApi } from "@/lib/fetch-client";
 
 import type { paths } from "@/lib/api/v1";
-import type { Log } from "@llmgateway/db";
+import type { Log } from "@betarouter/db";
 
 type ApiLog =
 	paths["/logs"]["get"]["responses"][200]["content"]["application/json"]["logs"][number];
@@ -173,7 +173,7 @@ function formatSourceLabel(source: string): string {
 			return "SoulForge";
 		case "chatbox":
 			return "Chatbox";
-		case "llmgateway.io/playground":
+		case "betarouter.com/playground":
 			return "Playground";
 		default:
 			return source;

@@ -4,12 +4,12 @@ import { z } from "zod";
 
 import { maskToken } from "@/lib/maskToken.js";
 
-import { logAuditEvent } from "@llmgateway/audit";
-import { db, eq, shortid, tables } from "@llmgateway/db";
+import { logAuditEvent } from "@betarouter/audit";
+import { db, eq, shortid, tables } from "@betarouter/db";
 import {
 	getApiKeyFingerprint,
 	getMasterKeyPrefix,
-} from "@llmgateway/shared/api-key-hash";
+} from "@betarouter/shared/api-key-hash";
 
 import type { ServerTypes } from "@/vars.js";
 
@@ -136,7 +136,7 @@ masterKeys.openapi(create, async (c) => {
 
 	if (existingKeys.length >= MAX_MASTER_KEYS_PER_ORG) {
 		throw new HTTPException(400, {
-			message: `Master key limit reached. Maximum ${MAX_MASTER_KEYS_PER_ORG} master keys per organization. Contact us at contact@llmgateway.io to unlock more.`,
+			message: `Master key limit reached. Maximum ${MAX_MASTER_KEYS_PER_ORG} master keys per organization. Contact us at contact@betarouter.com to unlock more.`,
 		});
 	}
 

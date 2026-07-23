@@ -62,7 +62,7 @@ const nextConfig: NextConfig = {
 			},
 			{
 				source: "/providers",
-				destination: "https://llmgateway.io/providers",
+				destination: "https://betarouter.com/providers",
 				permanent: true,
 			},
 			// Guessed REST-style API reference URLs.

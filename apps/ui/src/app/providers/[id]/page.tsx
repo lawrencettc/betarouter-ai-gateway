@@ -11,8 +11,8 @@ import {
 	providers as providerDefinitions,
 	type ModelDefinition,
 	type ProviderModelMapping,
-} from "@llmgateway/models";
-import { isPremiumModel } from "@llmgateway/shared";
+} from "@betarouter/models";
+import { isPremiumModel } from "@betarouter/shared";
 
 import type {
 	ApiModel,
@@ -37,7 +37,7 @@ export default async function ProviderPage({ params }: ProviderPageProps) {
 
 	const provider = providerDefinitions.find((p) => p.id === id);
 
-	if (!provider || provider.name === "LLM Gateway") {
+	if (!provider || provider.name === "betarouter") {
 		notFound();
 	}
 
@@ -175,7 +175,7 @@ export default async function ProviderPage({ params }: ProviderPageProps) {
 			return bDate - aDate; // Descending (newest first)
 		});
 
-	const providerUrl = `https://llmgateway.io/providers/${provider.id}`;
+	const providerUrl = `https://betarouter.com/providers/${provider.id}`;
 
 	const organizationSchema = {
 		"@context": "https://schema.org",
@@ -192,12 +192,12 @@ export default async function ProviderPage({ params }: ProviderPageProps) {
 	const itemListSchema = {
 		"@context": "https://schema.org",
 		"@type": "ItemList",
-		name: `${provider.name} models on LLM Gateway`,
+		name: `${provider.name} models on betarouter`,
 		numberOfItems: providerModels.length,
 		itemListElement: providerModels.map((model, index) => ({
 			"@type": "ListItem",
 			position: index + 1,
-			url: `https://llmgateway.io/models/${encodeURIComponent(model.id)}`,
+			url: `https://betarouter.com/models/${encodeURIComponent(model.id)}`,
 			name: model.name ?? model.id,
 		})),
 	};
@@ -210,13 +210,13 @@ export default async function ProviderPage({ params }: ProviderPageProps) {
 				"@type": "ListItem",
 				position: 1,
 				name: "Home",
-				item: "https://llmgateway.io",
+				item: "https://betarouter.com",
 			},
 			{
 				"@type": "ListItem",
 				position: 2,
 				name: "Providers",
-				item: "https://llmgateway.io/providers",
+				item: "https://betarouter.com/providers",
 			},
 			{
 				"@type": "ListItem",
@@ -248,7 +248,7 @@ export default async function ProviderPage({ params }: ProviderPageProps) {
 
 export async function generateStaticParams() {
 	return providerDefinitions
-		.filter((provider) => provider.name !== "LLM Gateway")
+		.filter((provider) => provider.name !== "betarouter")
 		.map((provider) => ({
 			id: provider.id,
 		}));
@@ -261,28 +261,28 @@ export async function generateMetadata({
 
 	const provider = providerDefinitions.find((p) => p.id === id);
 
-	if (!provider || provider.name === "LLM Gateway") {
+	if (!provider || provider.name === "betarouter") {
 		return {};
 	}
 
 	const modelCount = modelDefinitions.filter((model) =>
 		model.providers.some((p) => p.providerId === provider.id),
 	).length;
-	const description = `Access ${modelCount} ${provider.name} models through LLM Gateway's OpenAI-compatible API with per-token pricing, automatic fallback, caching, and cost analytics.`;
+	const description = `Access ${modelCount} ${provider.name} models through betarouter's OpenAI-compatible API with per-token pricing, automatic fallback, caching, and cost analytics.`;
 
 	return {
 		title: `${provider.name} API — Models & Pricing`,
 		description,
 		alternates: { canonical: `/providers/${provider.id}` },
 		openGraph: {
-			title: `${provider.name} API — Models & Pricing | LLM Gateway`,
+			title: `${provider.name} API — Models & Pricing | betarouter`,
 			description,
 			type: "website",
-			url: `https://llmgateway.io/providers/${provider.id}`,
+			url: `https://betarouter.com/providers/${provider.id}`,
 		},
 		twitter: {
 			card: "summary_large_image",
-			title: `${provider.name} API — Models & Pricing | LLM Gateway`,
+			title: `${provider.name} API — Models & Pricing | betarouter`,
 			description,
 		},
 	};

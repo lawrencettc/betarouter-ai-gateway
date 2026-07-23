@@ -12,13 +12,13 @@ image:
   height: 1024
 ---
 
-Adding voice to your app used to mean picking one TTS vendor, learning their SDK, and managing yet another API key and invoice. Today that's one decision lighter: **LLM Gateway now supports speech generation** through the OpenAI-compatible **`/v1/audio/speech`** endpoint — with models from **ElevenLabs, OpenAI, and Google Gemini** behind the same key, billing, and logs you already use for chat, images, and video.
+Adding voice to your app used to mean picking one TTS vendor, learning their SDK, and managing yet another API key and invoice. Today that's one decision lighter: **betarouter now supports speech generation** through the OpenAI-compatible **`/v1/audio/speech`** endpoint — with models from **ElevenLabs, OpenAI, and Google Gemini** behind the same key, billing, and logs you already use for chat, images, and video.
 
-And if you'd rather hear the voices before writing a line of code, the new **[Audio Studio](https://chat.llmgateway.io/audio)** in the Playground lets you generate speech from up to three models side by side.
+And if you'd rather hear the voices before writing a line of code, the new **[Audio Studio](https://chat.betarouter.com/audio)** in the Playground lets you generate speech from up to three models side by side.
 
 ## One endpoint, nine models, 60+ voices
 
-The endpoint is a drop-in replacement for OpenAI's audio API. If you've used `openai.audio.speech.create()`, you already know how it works — point the base URL at LLM Gateway and switch models freely:
+The endpoint is a drop-in replacement for OpenAI's audio API. If you've used `openai.audio.speech.create()`, you already know how it works — point the base URL at betarouter and switch models freely:
 
 ```ts
 import OpenAI from "openai";
@@ -26,13 +26,13 @@ import { writeFileSync } from "fs";
 
 const openai = new OpenAI({
   apiKey: process.env.LLM_GATEWAY_API_KEY,
-  baseURL: "https://api.llmgateway.io/v1",
+  baseURL: "https://api.betarouter.com/v1",
 });
 
 const response = await openai.audio.speech.create({
   model: "eleven-multilingual-v2",
   voice: "Sarah",
-  input: "Hello, welcome to LLM Gateway!",
+  input: "Hello, welcome to betarouter!",
 });
 
 writeFileSync("speech.mp3", Buffer.from(await response.arrayBuffer()));
@@ -41,12 +41,12 @@ writeFileSync("speech.mp3", Buffer.from(await response.arrayBuffer()));
 Or with curl:
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/audio/speech" \
+curl -X POST "https://api.betarouter.com/v1/audio/speech" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gemini-2.5-flash-preview-tts",
-    "input": "Hello, welcome to LLM Gateway!",
+    "input": "Hello, welcome to betarouter!",
     "voice": "Kore"
   }' \
   --output speech.wav
@@ -68,7 +68,7 @@ curl -X POST "https://api.llmgateway.io/v1/audio/speech" \
 
 Between them you get **60+ prebuilt voices**: 20 named ElevenLabs voices (`Sarah`, `Roger`, `Charlotte`, `Brian`, …), 30 Gemini voices (`Kore`, `Puck`, `Zephyr`, `Charon`, …), and OpenAI's catalog (`alloy`, `ash`, `coral`, `nova`, `verse`, …).
 
-Browse the full list with live pricing on the [models page](https://llmgateway.io/models?filters=1&audioGeneration=true).
+Browse the full list with live pricing on the [models page](https://betarouter.com/models?filters=1&audioGeneration=true).
 
 ## Control the delivery
 
@@ -78,11 +78,11 @@ Beyond `model`, `input`, and `voice`, the endpoint accepts:
 - **`instructions`** — a style directive like `"Speak like a calm narrator"` (steerable models such as `gpt-4o-mini-tts` and the Gemini TTS models shine here)
 - **`speed`** — playback speed on OpenAI models
 
-Full parameter reference, format support per family, and billing details are in the [speech generation docs](https://docs.llmgateway.io/features/speech-generation).
+Full parameter reference, format support per family, and billing details are in the [speech generation docs](https://docs.betarouter.com/features/speech-generation).
 
 ## Audio Studio: hear it before you ship it
 
-Picking a voice from a table is hopeless — you need to listen. The new **Audio Studio** at [chat.llmgateway.io/audio](https://chat.llmgateway.io/audio) joins the Image and Video studios in the Playground:
+Picking a voice from a table is hopeless — you need to listen. The new **Audio Studio** at [chat.betarouter.com/audio](https://chat.betarouter.com/audio) joins the Image and Video studios in the Playground:
 
 - **Compare mode** — run the same script through up to **3 models in parallel** and listen side by side
 - **Per-model controls** — voice picker, output format, playback speed, and style instructions adapt to whatever each model supports
@@ -104,7 +104,7 @@ One note: streaming speech output isn't supported yet — the endpoint returns t
 
 ## Start talking
 
-- **[Open Audio Studio →](https://chat.llmgateway.io/audio)** — hear the models, no code required
-- **[Read the docs →](https://docs.llmgateway.io/features/speech-generation)** — parameters, formats, and examples
-- **[Browse speech models →](https://llmgateway.io/models?filters=1&audioGeneration=true)** — live pricing and capabilities
-- **[Get your API key →](https://llmgateway.io/dashboard)** — and make your first request in under a minute
+- **[Open Audio Studio →](https://chat.betarouter.com/audio)** — hear the models, no code required
+- **[Read the docs →](https://docs.betarouter.com/features/speech-generation)** — parameters, formats, and examples
+- **[Browse speech models →](https://betarouter.com/models?filters=1&audioGeneration=true)** — live pricing and capabilities
+- **[Get your API key →](https://betarouter.com/dashboard)** — and make your first request in under a minute

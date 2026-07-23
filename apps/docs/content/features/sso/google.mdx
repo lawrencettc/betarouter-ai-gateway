@@ -9,7 +9,7 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 # Google Workspace
 
-Google Workspace works differently from the SAML providers: employees already sign in to LLM Gateway with the standard **Sign in with Google** button using their Workspace-managed Google account. Instead of registering a SAML application, you configure an **auto-join email domain** — anyone who signs in with a Google account on that domain is added to your organization automatically.
+Google Workspace works differently from the SAML providers: employees already sign in to betarouter with the standard **Sign in with Google** button using their Workspace-managed Google account. Instead of registering a SAML application, you configure an **auto-join email domain** — anyone who signs in with a Google account on that domain is added to your organization automatically.
 
 <Callout type="info">
 	Google Workspace auto-join requires the **Enterprise** plan and is configured
@@ -21,10 +21,10 @@ Google Workspace works differently from the SAML providers: employees already si
 
 1. An admin sets the organization's auto-join domain (e.g. `acme.com`) on the **SSO** page.
 2. A user signs in (or signs up) with **Sign in with Google** using their `@acme.com` Workspace account.
-3. LLM Gateway matches the verified email domain and adds them to the organization with the **developer** role.
+3. betarouter matches the verified email domain and adds them to the organization with the **developer** role.
 4. The user receives an email letting them know they've been added.
 
-This applies to **new signups and existing users** alike — an existing LLM Gateway user on your domain joins the organization on their next Google sign-in. Members are never added twice, and members you've already invited are unaffected.
+This applies to **new signups and existing users** alike — an existing betarouter user on your domain joins the organization on their next Google sign-in. Members are never added twice, and members you've already invited are unaffected.
 
 <Callout type="info">
 	Auto-join is **just-in-time provisioning**: users join when they sign in.

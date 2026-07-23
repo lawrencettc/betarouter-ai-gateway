@@ -6,7 +6,7 @@ import { AuthLink } from "@/components/shared/auth-link";
 import { Badge } from "@/lib/components/badge";
 import { Button } from "@/lib/components/button";
 
-import { AWSBedrockIcon } from "@llmgateway/shared/components";
+import { AWSBedrockIcon } from "@betarouter/shared/components";
 
 const comparisonData = [
 	{
@@ -151,13 +151,13 @@ export function ComparisonBedrock() {
 						Every model on Bedrock — plus every model that isn&apos;t
 					</h2>
 					<p className="text-muted-foreground">
-						Compare LLM Gateway and Amazon Bedrock features side by side
+						Compare betarouter and Amazon Bedrock features side by side
 					</p>
 				</div>
 
 				<div className="mb-8 bg-primary/5 dark:bg-primary/10 rounded-lg p-6 border border-primary/20">
 					<h3 className="font-bold text-lg mb-3 text-primary">
-						Why choose LLM Gateway?
+						Why choose betarouter?
 					</h3>
 					<div className="grid md:grid-cols-2 gap-4 text-sm">
 						<div className="flex items-start gap-2">
@@ -197,7 +197,7 @@ export function ComparisonBedrock() {
 						<div className="text-center">
 							<div className="border-2 border-primary rounded-lg p-4 bg-background shadow-sm h-full">
 								<h3 className="font-bold text-lg mb-1 text-foreground">
-									LLM Gateway
+									betarouter
 								</h3>
 								<p className="text-sm text-muted-foreground mb-2">
 									OPEN-SOURCE & CLOUD-NEUTRAL
@@ -265,7 +265,7 @@ export function ComparisonBedrock() {
 						Already on Bedrock? Keep it — and stop depending on it.
 					</h3>
 					<p className="text-sm text-muted-foreground">
-						AWS Bedrock is a built-in LLM Gateway provider. Bring your AWS
+						AWS Bedrock is a built-in betarouter provider. Bring your AWS
 						credentials and your Bedrock traffic keeps flowing with 0% markup —
 						while every request gains automatic failover to other providers,
 						response caching, guardrails, and per-request cost analytics. When
@@ -281,7 +281,7 @@ export function ComparisonBedrock() {
 							size="lg"
 							className="bg-primary hover:bg-primary/90"
 						>
-							<AuthLink href="/signup">Start Free with LLM Gateway</AuthLink>
+							<AuthLink href="/signup">Start Free with betarouter</AuthLink>
 						</Button>
 						<Button asChild size="lg" variant="outline">
 							<Link href="/pricing">View Pricing Details</Link>

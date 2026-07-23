@@ -1,6 +1,6 @@
 import { logger as honoLogger } from "hono/logger";
 
-import { logger } from "@llmgateway/logger";
+import { logger } from "@betarouter/logger";
 
 export interface HonoRequestLoggerOptions {
 	service: string;

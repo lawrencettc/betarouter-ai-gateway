@@ -38,11 +38,11 @@ import {
 	providers,
 	type ModelDefinition,
 	type ProviderModelMapping,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
-import type { ProviderDefinition } from "@llmgateway/models";
+import type { ProviderDefinition } from "@betarouter/models";
 
-// ─── Derived model lists from @llmgateway/models ─────────────────────────────
+// ─── Derived model lists from @betarouter/models ─────────────────────────────
 
 const now = new Date();
 
@@ -522,7 +522,7 @@ function TextSimulator() {
 
 						<Card className="p-5 border-2 border-green-500/50 bg-green-500/5 shadow-sm shadow-green-500/10">
 							<p className="text-xs font-medium text-green-600 dark:text-green-400 mb-1">
-								LLM Gateway
+								betarouter
 							</p>
 							<p className="text-2xl font-bold text-green-600 dark:text-green-400">
 								{formatCurrency(costs.gatewayMonthly)}
@@ -779,7 +779,7 @@ function ImageSimulator() {
 
 						<Card className="p-5 border-2 border-green-500/50 bg-green-500/5 shadow-sm shadow-green-500/10">
 							<p className="text-xs font-medium text-green-600 dark:text-green-400 mb-1">
-								LLM Gateway
+								betarouter
 							</p>
 							<p className="text-2xl font-bold text-green-600 dark:text-green-400">
 								{formatCurrency(costs.monthlyCost)}

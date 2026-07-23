@@ -28,7 +28,7 @@ import {
 	DEV_PLAN_RESET_PASS_PURCHASE_MAX_CYCLE_USAGE,
 	DEV_PLAN_RESET_PASS_REDEEM_MAX_CYCLE_USAGE,
 	getDevPlanCycleUsageFraction,
-} from "@llmgateway/shared";
+} from "@betarouter/shared";
 
 interface ResetPassCardProps {
 	tier: string;
@@ -339,7 +339,7 @@ export default function ResetPassCard({
 										target="_blank"
 										rel="noopener noreferrer"
 									>
-										Get PAYG credits on llmgateway.io
+										Get PAYG credits on betarouter.com
 										<ArrowUpRight className="ml-1.5 h-4 w-4" />
 									</a>
 								</Button>
@@ -356,7 +356,7 @@ export default function ResetPassCard({
 								</>
 							) : (
 								<>
-									Pay-as-you-go credits on LLM Gateway work with the same coding
+									Pay-as-you-go credits on betarouter work with the same coding
 									agents — just swap your API key.
 								</>
 							)}
@@ -386,7 +386,7 @@ export default function ResetPassCard({
 				aria-hidden="true"
 				className="select-none overflow-hidden whitespace-nowrap border-t border-dashed border-stone-300/80 px-4 pb-1.5 pt-1 font-mono text-[9px] tracking-[0.3em] text-stone-400/80 dark:border-stone-700/80 dark:text-stone-600"
 			>
-				RP{`<`}LLMGATEWAY{`<<`}PREMIUM{`<`}RESET{`<`}
+				RP{`<`}BETAROUTER{`<<`}PREMIUM{`<`}RESET{`<`}
 				{tier.toUpperCase()}
 				{`<<`}
 				{serial}

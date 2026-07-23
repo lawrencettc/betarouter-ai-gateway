@@ -16,7 +16,7 @@ import { useUser } from "@/hooks/useUser";
 import { mapModels } from "@/lib/mapmodels";
 import { shouldDisableFallback } from "@/lib/no-fallback";
 
-import { getProviderIcon } from "@llmgateway/shared/components";
+import { getProviderIcon } from "@betarouter/shared/components";
 
 import type { ApiModel, ApiProvider } from "@/lib/fetch-models";
 import type { ComboboxModel, Organization, Project } from "@/lib/types";

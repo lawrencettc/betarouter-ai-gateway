@@ -23,13 +23,13 @@ import {
 } from "@/lib/components/tooltip";
 import { formatContextSize } from "@/lib/utils";
 
-import { getProviderIcon } from "@llmgateway/shared/components";
+import { getProviderIcon } from "@betarouter/shared/components";
 
 import type {
 	ProviderModelMapping,
 	ProviderDefinition,
 	StabilityLevel,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 interface ProviderWithInfo extends ProviderModelMapping {
 	discount?: string | null;

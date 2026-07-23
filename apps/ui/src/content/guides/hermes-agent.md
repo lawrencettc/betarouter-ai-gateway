@@ -2,18 +2,18 @@
 id: hermes-agent
 slug: hermes-agent
 title: Hermes Agent Integration
-description: Use any model with Hermes Agent through LLM Gateway. One config change, full cost tracking, 200+ models.
+description: Use any model with Hermes Agent through betarouter. One config change, full cost tracking, 200+ models.
 date: 2026-05-11
 ---
 
-[Hermes Agent](https://github.com/nousresearch/hermes-agent) is an open-source AI coding agent for your terminal built by Nous Research. It supports tool use, browser automation, multi-provider routing, skills, and MCP servers. By pointing it at LLM Gateway you get access to 200+ models from 40+ providers, all tracked in one dashboard.
+[Hermes Agent](https://github.com/nousresearch/hermes-agent) is an open-source AI coding agent for your terminal built by Nous Research. It supports tool use, browser automation, multi-provider routing, skills, and MCP servers. By pointing it at betarouter you get access to 200+ models from 40+ providers, all tracked in one dashboard.
 
 One config change. No code changes. Full cost tracking.
 
 ## Prerequisites
 
 - Hermes Agent installed — see installation below or visit the [Hermes Agent repo](https://github.com/nousresearch/hermes-agent)
-- An LLM Gateway API key — [sign up free](https://llmgateway.io/signup) (no credit card required)
+- A betarouter API key — [sign up free](https://betarouter.com/signup) (no credit card required)
 
 ## Installation
 
@@ -48,13 +48,13 @@ In this guide we use Quick setup, but Full setup works the same way — it just 
 
 ### Step 2: Configure Inference Provider
 
-The wizard will ask you to configure your inference provider. Select **Custom OpenAI-compatible endpoint** and enter the LLM Gateway base URL:
+The wizard will ask you to configure your inference provider. Select **Custom OpenAI-compatible endpoint** and enter the betarouter base URL:
 
 ```
-API base URL: https://api.llmgateway.io/v1
+API base URL: https://api.betarouter.com/v1
 ```
 
-Then paste your LLM Gateway API key (starts with `llmgtwy_`):
+Then paste your betarouter API key (starts with `llmgtwy_`):
 
 ![Inference Provider Configuration](/images/guides/hermes-agent/1-inference-provider.png)
 
@@ -94,21 +94,21 @@ Your configuration files:
 - **API Keys:** `~/.hermes/.env`
 - **Data:** `~/.hermes/cron/`, `sessions/`, `logs/`
 
-Once you press `Y`, Hermes launches a full agent session connected to LLM Gateway. You can start chatting right away.
+Once you press `Y`, Hermes launches a full agent session connected to betarouter. You can start chatting right away.
 
-## Using Hermes with LLM Gateway
+## Using Hermes with betarouter
 
-Once configured, all requests route through LLM Gateway. You'll see the provider name (e.g., "LLMGATEWAY") in the Hermes status bar.
+Once configured, all requests route through betarouter. You'll see the provider name (e.g., "LLMGATEWAY") in the Hermes status bar.
 
 ### Switching Models at Runtime
 
 You can switch models mid-session using the `/model` slash command (similar to how Claude Code uses slash commands). Just type `/model` followed by the model name:
 
-![Switching to Claude Haiku via LLM Gateway](/images/guides/hermes-agent/7-chat-claude.png)
+![Switching to Claude Haiku via betarouter](/images/guides/hermes-agent/7-chat-claude.png)
 
-Switch to any model available through LLM Gateway — from Claude to GPT to open-source models — without leaving your session:
+Switch to any model available through betarouter — from Claude to GPT to open-source models — without leaving your session:
 
-![Switching to GPT-5.4-nano via LLM Gateway](/images/guides/hermes-agent/8-chat-gpt.png)
+![Switching to GPT-5.4-nano via betarouter](/images/guides/hermes-agent/8-chat-gpt.png)
 
 Add `--global` to persist the model change across sessions.
 
@@ -124,14 +124,14 @@ hermes chat --model gpt-5.5
 hermes chat --model claude-opus-4-6
 ```
 
-## Why Use LLM Gateway with Hermes Agent
+## Why Use betarouter with Hermes Agent
 
 - **200+ models** — Claude, GPT, Gemini, Llama, DeepSeek, and more
 - **One API key** — Stop managing separate keys for each provider
 - **Cost tracking** — See exactly what each session costs in your dashboard
 - **Response caching** — Repeated requests hit cache automatically
 - **Automatic fallback** — If a provider is down, requests route to an alternative
-- **Volume discounts** — Check [discounted models](https://llmgateway.io/models?discounted=true) for savings up to 90%
+- **Volume discounts** — Check [discounted models](https://betarouter.com/models?discounted=true) for savings up to 90%
 
 ## One-Shot Mode
 
@@ -164,19 +164,19 @@ hermes chat -z "Generate a README for this project"
 
 ## Locking to a Specific Provider
 
-By default, LLM Gateway automatically fails over to alternative providers if your chosen provider is experiencing downtime. To disable fallback and always route to one provider, add the header via Hermes's request configuration.
+By default, betarouter automatically fails over to alternative providers if your chosen provider is experiencing downtime. To disable fallback and always route to one provider, add the header via Hermes's request configuration.
 
-> Disabling fallback means requests will fail if the chosen provider is down. See the [routing docs](https://docs.llmgateway.io/features/routing) for details.
+> Disabling fallback means requests will fail if the chosen provider is down. See the [routing docs](https://docs.betarouter.com/features/routing) for details.
 
 ## Troubleshooting
 
 ### Model not found
 
-If you get a "model not supported" error, check that your model ID matches exactly what's listed on the [models page](https://llmgateway.io/models). Model IDs are case-sensitive.
+If you get a "model not supported" error, check that your model ID matches exactly what's listed on the [models page](https://betarouter.com/models). Model IDs are case-sensitive.
 
 ### Connection timeout
 
-Verify your `base_url` is set to `https://api.llmgateway.io/v1` (note the `/v1` at the end). You can also check the `HERMES_API_TIMEOUT` environment variable if you're hitting timeouts on long-running requests.
+Verify your `base_url` is set to `https://api.betarouter.com/v1` (note the `/v1` at the end). You can also check the `HERMES_API_TIMEOUT` environment variable if you're hitting timeouts on long-running requests.
 
 ### Authentication errors
 
@@ -192,10 +192,10 @@ hermes doctor
 
 ### Old config overrides
 
-If you previously used a different provider (e.g., OpenRouter), make sure to update both `provider` and `base_url` fields. The `provider` must be set to `"custom"` for LLM Gateway. Also check `~/.hermes/.env` for any leftover `OPENROUTER_API_KEY` or other provider keys that might take precedence.
+If you previously used a different provider (e.g., OpenRouter), make sure to update both `provider` and `base_url` fields. The `provider` must be set to `"custom"` for betarouter. Also check `~/.hermes/.env` for any leftover `OPENROUTER_API_KEY` or other provider keys that might take precedence.
 
 ## Get Started
 
-Ready to run Hermes Agent on any model? [Sign up for LLM Gateway](https://llmgateway.io/signup) and grab your API key.
+Ready to run Hermes Agent on any model? [Sign up for betarouter](https://betarouter.com/signup) and grab your API key.
 
-Questions? Check [our docs](https://docs.llmgateway.io) or [join Discord](https://llmgateway.io/discord).
+Questions? Check [our docs](https://docs.betarouter.com) or [join Discord](https://betarouter.com/discord).

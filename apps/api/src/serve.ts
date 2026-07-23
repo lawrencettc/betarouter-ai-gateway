@@ -1,11 +1,11 @@
 import { serve, type ServerType } from "@hono/node-server";
 
-import { closeDatabase, runMigrations, setQueryTags } from "@llmgateway/db";
+import { closeDatabase, runMigrations, setQueryTags } from "@betarouter/db";
 import {
 	initializeInstrumentation,
 	shutdownInstrumentation,
-} from "@llmgateway/instrumentation";
-import { logger } from "@llmgateway/logger";
+} from "@betarouter/instrumentation";
+import { logger } from "@betarouter/logger";
 
 import { redisClient } from "./auth/config.js";
 import { app } from "./index.js";

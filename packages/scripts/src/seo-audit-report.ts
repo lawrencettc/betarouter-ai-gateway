@@ -70,33 +70,33 @@ interface Evidence {
 }
 
 const PAGES: ReadonlyArray<PageTarget> = [
-	{ url: "https://llmgateway.io/", label: "Home" },
-	{ url: "https://llmgateway.io/models", label: "Models" },
-	{ url: "https://llmgateway.io/pricing", label: "Pricing" },
-	{ url: "https://llmgateway.io/blog", label: "Blog index" },
-	{ url: "https://llmgateway.io/timeline", label: "Timeline" },
-	{ url: "https://docs.llmgateway.io/", label: "Docs home" },
-	{ url: "https://devpass.llmgateway.io/", label: "DevPass landing" },
-	{ url: "https://chat.llmgateway.io/", label: "Chat landing" },
+	{ url: "https://betarouter.com/", label: "Home" },
+	{ url: "https://betarouter.com/models", label: "Models" },
+	{ url: "https://betarouter.com/pricing", label: "Pricing" },
+	{ url: "https://betarouter.com/blog", label: "Blog index" },
+	{ url: "https://betarouter.com/timeline", label: "Timeline" },
+	{ url: "https://docs.betarouter.com/", label: "Docs home" },
+	{ url: "https://devpass.betarouter.com/", label: "DevPass landing" },
+	{ url: "https://chat.betarouter.com/", label: "Chat landing" },
 ];
 
 const ROBOTS_HOSTS: ReadonlyArray<string> = [
-	"llmgateway.io",
-	"docs.llmgateway.io",
-	"devpass.llmgateway.io",
-	"chat.llmgateway.io",
+	"betarouter.com",
+	"docs.betarouter.com",
+	"devpass.betarouter.com",
+	"chat.betarouter.com",
 ];
 
 const SITEMAP_URLS: ReadonlyArray<string> = [
-	"https://llmgateway.io/sitemap.xml",
-	"https://docs.llmgateway.io/sitemap.xml",
+	"https://betarouter.com/sitemap.xml",
+	"https://docs.betarouter.com/sitemap.xml",
 ];
 
 const MACHINE_READABLE_URLS: ReadonlyArray<string> = [
-	"https://llmgateway.io/llms.txt",
-	"https://llmgateway.io/llms-full.txt",
-	"https://llmgateway.io/pricing.md",
-	"https://docs.llmgateway.io/llms.txt",
+	"https://betarouter.com/llms.txt",
+	"https://betarouter.com/llms-full.txt",
+	"https://betarouter.com/pricing.md",
+	"https://docs.betarouter.com/llms.txt",
 ];
 
 const AI_BOTS: ReadonlyArray<string> = [
@@ -118,7 +118,7 @@ function nonEmpty(value: string | undefined): string | undefined {
 }
 
 const LLMGATEWAY_API_URL =
-	nonEmpty(process.env.LLMGATEWAY_API_URL) ?? "https://api.llmgateway.io";
+	nonEmpty(process.env.LLMGATEWAY_API_URL) ?? "https://api.betarouter.com";
 const LLMGATEWAY_API_KEY = nonEmpty(process.env.LLMGATEWAY_API_KEY);
 const AUDIT_MODEL = nonEmpty(process.env.SEO_AUDIT_MODEL) ?? "gpt-5.6-sol";
 const DISCORD_TRAFFIC_NOTIFICATION_URL = nonEmpty(
@@ -127,7 +127,7 @@ const DISCORD_TRAFFIC_NOTIFICATION_URL = nonEmpty(
 
 const FETCH_TIMEOUT_MS = 30_000;
 const LLM_TIMEOUT_MS = 600_000;
-const USER_AGENT = "llmgateway-seo-audit/1.0 (+https://llmgateway.io)";
+const USER_AGENT = "betarouter-seo-audit/1.0 (+https://betarouter.com)";
 
 async function fetchPage(
 	url: string,
@@ -557,7 +557,7 @@ const RESPONSE_JSON_SCHEMA = {
 	},
 } as const;
 
-const SHARED_CONTEXT = `You are auditing the public web presence of LLM Gateway (llmgateway.io), an open-source LLM API gateway SaaS that routes OpenAI-compatible requests across 40+ providers. Products on separate hosts: llmgateway.io (marketing site + dashboard), docs.llmgateway.io (documentation), devpass.llmgateway.io (DevPass developer subscription), chat.llmgateway.io (Chat product).
+const SHARED_CONTEXT = `You are auditing the public web presence of betarouter (betarouter.com), an open-source LLM API gateway SaaS that routes OpenAI-compatible requests across 40+ providers. Products on separate hosts: betarouter.com (marketing site + dashboard), docs.betarouter.com (documentation), devpass.betarouter.com (DevPass developer subscription), chat.betarouter.com (Chat product).
 
 Evidence provenance: all page evidence was extracted from raw server-rendered HTML WITHOUT executing JavaScript. JSON-LD types listed were found in the server HTML. If something could plausibly be injected client-side, phrase the finding cautiously instead of asserting absence.
 
@@ -704,7 +704,7 @@ function buildEmbed(
 		title: `${icon} Monthly ${kind} Audit · ${monthLabel}`,
 		description: truncateAtLine(sections.join("\n"), 2700),
 		color,
-		footer: { text: `LLM Gateway · ${AUDIT_MODEL} audit` },
+		footer: { text: `betarouter · ${AUDIT_MODEL} audit` },
 		timestamp: new Date().toISOString(),
 	};
 }

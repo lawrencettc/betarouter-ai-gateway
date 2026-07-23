@@ -4,8 +4,8 @@ import { z } from "zod";
 
 import { platformSecretAuth } from "@/lib/platform-secret-auth.js";
 
-import { db, eq, shortid, sql, tables } from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+import { db, eq, shortid, sql, tables } from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 
 import type { AuthenticatedPlatformKey } from "@/lib/platform-secret-auth.js";
 import type { ServerTypes } from "@/vars.js";

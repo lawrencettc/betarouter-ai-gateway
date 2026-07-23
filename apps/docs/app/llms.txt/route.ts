@@ -5,8 +5,8 @@ import type { InferPageType } from "fumadocs-core/source";
 // cached forever
 export const revalidate = false;
 
-const SITE_URL = "https://llmgateway.io";
-const DOCS_URL = "https://docs.llmgateway.io";
+const SITE_URL = "https://betarouter.com";
+const DOCS_URL = "https://docs.betarouter.com";
 
 type Page = InferPageType<typeof source>;
 
@@ -51,17 +51,17 @@ export async function GET() {
 		.map((s) => `## ${s.title}\n\n${grouped.get(s.key)!.join("\n")}`)
 		.join("\n\n");
 
-	const content = `# LLM Gateway
+	const content = `# betarouter
 
-> LLM Gateway is an open-source, OpenAI-compatible API gateway that routes, manages, and analyzes LLM requests across 40+ providers (OpenAI, Anthropic, Google, and more) through a single unified API. Switch providers without changing code, manage API keys centrally, track usage and cost, add caching and guardrails, and self-host or use the managed cloud.
+> betarouter is an open-source, OpenAI-compatible API gateway that routes, manages, and analyzes LLM requests across 40+ providers (OpenAI, Anthropic, Google, and more) through a single unified API. Switch providers without changing code, manage API keys centrally, track usage and cost, add caching and guardrails, and self-host or use the managed cloud.
 
 ## Key facts
 
 - One OpenAI-compatible API for 40+ providers and 200+ models.
-- Migrate by changing only the base URL (\`https://api.llmgateway.io/v1\`) and your API key — no code rewrites.
+- Migrate by changing only the base URL (\`https://api.betarouter.com/v1\`) and your API key — no code rewrites.
 - Open source (AGPLv3 core) with a managed cloud option; self-hosting supported via Docker.
 - Built-in usage analytics, per-model/provider cost breakdowns, automatic routing, fallbacks, caching, and guardrails.
-- API base URL: \`https://api.llmgateway.io/v1\` · Docs: ${DOCS_URL} · Site: ${SITE_URL}
+- API base URL: \`https://api.betarouter.com/v1\` · Docs: ${DOCS_URL} · Site: ${SITE_URL}
 
 ## Product pages
 
@@ -71,9 +71,9 @@ export async function GET() {
 - [Pricing](${SITE_URL}/pricing): Plans and pricing.
 - [Enterprise](${SITE_URL}/enterprise): Self-hosting, SSO, and team features.
 - [Token Cost Calculator](${SITE_URL}/token-cost-calculator): Estimate and compare LLM costs across models.
-- [LLM Gateway vs LiteLLM](${SITE_URL}/compare/litellm)
-- [LLM Gateway vs OpenRouter](${SITE_URL}/compare/open-router)
-- [LLM Gateway vs Portkey](${SITE_URL}/compare/portkey)
+- [betarouter vs LiteLLM](${SITE_URL}/compare/litellm)
+- [betarouter vs OpenRouter](${SITE_URL}/compare/open-router)
+- [betarouter vs Portkey](${SITE_URL}/compare/portkey)
 
 ${docSections}`;
 

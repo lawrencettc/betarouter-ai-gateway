@@ -1,6 +1,6 @@
 import { RequestError } from "./request-error.js";
 
-import type { ToolCall } from "@llmgateway/models";
+import type { ToolCall } from "@betarouter/models";
 
 /**
  * Parse the client-supplied `tool_calls[].function.arguments` string into the

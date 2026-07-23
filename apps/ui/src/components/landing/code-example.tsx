@@ -18,7 +18,7 @@ const codeExamples = {
 	curl: {
 		label: "cURL",
 		language: "bash",
-		code: `curl -X POST https://api.llmgateway.io/v1/chat/completions \\
+		code: `curl -X POST https://api.betarouter.com/v1/chat/completions \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \\
   -d '{
@@ -35,7 +35,7 @@ const codeExamples = {
 
 const client = new OpenAI({
   apiKey: process.env.LLM_GATEWAY_API_KEY, // or your API key string
-  baseURL: "https://api.llmgateway.io/v1/"
+  baseURL: "https://api.betarouter.com/v1/"
 });
 
 const response = await client.chat.completions.create({
@@ -67,7 +67,7 @@ const { text } = await generateText({
 
 client = openai.OpenAI(
     api_key="YOUR_LLM_GATEWAY_API_KEY",
-    base_url="https://api.llmgateway.io/v1"
+    base_url="https://api.betarouter.com/v1"
 )
 
 response = client.chat.completions.create(
@@ -90,7 +90,7 @@ public class Main {
     public static void main(String[] args) {
         String apiKey = System.getenv("LLM_GATEWAY_API_KEY");
         OpenAiService service = new OpenAiService(apiKey, 60);
-        service.setOpenAiApiUrl("https://api.llmgateway.io/v1/");
+        service.setOpenAiApiUrl("https://api.betarouter.com/v1/");
 
         ChatMessage message = new ChatMessage("user", "Hello, how are you?");
         ChatCompletionRequest request = ChatCompletionRequest.builder()
@@ -114,7 +114,7 @@ use std::env;
 #[tokio::main]
 async fn main() {
     let api_key = env::var("LLM_GATEWAY_API_KEY").unwrap();
-    let openai = OpenAI::new(&api_key).with_base_url("https://api.llmgateway.io/v1");
+    let openai = OpenAI::new(&api_key).with_base_url("https://api.betarouter.com/v1");
 
     let request = ChatCompletionRequest::new(
         "gpt-4o",
@@ -140,7 +140,7 @@ import (
 )
 
 func main() {
-    client := openai.NewClientWithConfig(openai.DefaultConfig(os.Getenv("LLM_GATEWAY_API_KEY"), "https://api.llmgateway.io/v1"))
+    client := openai.NewClientWithConfig(openai.DefaultConfig(os.Getenv("LLM_GATEWAY_API_KEY"), "https://api.betarouter.com/v1"))
     resp, err := client.CreateChatCompletion(
         context.Background(),
         openai.ChatCompletionRequest{
@@ -164,7 +164,7 @@ func main() {
 require 'vendor/autoload.php';
 
 $client = OpenAI::client('YOUR_LLM_GATEWAY_API_KEY', [
-    'base_uri' => 'https://api.llmgateway.io/v1',
+    'base_uri' => 'https://api.betarouter.com/v1',
 ]);
 
 $response = $client->chat()->create([
@@ -184,7 +184,7 @@ echo $response['choices'][0]['message']['content'];
 
 client = OpenAI::Client.new(
   access_token: ENV["LLM_GATEWAY_API_KEY"],
-  uri_base: "https://api.llmgateway.io/v1"
+  uri_base: "https://api.betarouter.com/v1"
 )
 
 response = client.chat(

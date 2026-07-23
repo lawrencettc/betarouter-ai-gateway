@@ -75,7 +75,7 @@ LLM Gateways come in two flavors:
 
 **Self-hosted gateways** run in your own infrastructure. Prompts containing sensitive data never leave your network. You control data retention, security policies, and compliance documentation. This matters for enterprises handling customer PII, financial data, or regulated industries.
 
-[LLM Gateway](https://llmgateway.io) supports both approaches. Start with the managed service to move fast, then self-host when compliance or data residency requirements demand it.
+[betarouter](https://betarouter.com) supports both approaches. Start with the managed service to move fast, then self-host when compliance or data residency requirements demand it.
 
 ## The Cost of Not Having a Gateway
 
@@ -100,4 +100,4 @@ Most teams find that adopting an existing gateway pays for itself within weeks t
 
 _An LLM Gateway isn't just infrastructure—it's the foundation for scaling AI across your organization safely and efficiently._
 
-**Ready to simplify your LLM infrastructure?** [Get started with LLM Gateway](https://llmgateway.io)
+**Ready to simplify your LLM infrastructure?** [Get started with betarouter](https://betarouter.com)

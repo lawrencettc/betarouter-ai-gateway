@@ -1,4 +1,4 @@
-import type { CustomRegexRuleConfig, GuardrailAction } from "@llmgateway/db";
+import type { CustomRegexRuleConfig, GuardrailAction } from "@betarouter/db";
 
 export interface RegexResult {
 	passed: boolean;

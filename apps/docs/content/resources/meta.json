@@ -1,6 +1,6 @@
 {
 	"title": "Resources",
-	"description": "Reference material for working with the LLM Gateway API",
+	"description": "Reference material for working with the betarouter API",
 	"icon": "BookOpen",
 	"pages": ["error-handling", "rate-limits"]
 }

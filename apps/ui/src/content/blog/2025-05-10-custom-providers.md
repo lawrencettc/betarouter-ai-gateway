@@ -3,16 +3,16 @@ id: blog-custom-providers
 slug: custom-openai-compatible-providers
 date: 2025-05-10
 title: Custom OpenAI-Compatible Providers Are Now Supported
-summary: Connect your internal LLM deployments or any OpenAI-compatible API to LLM Gateway—and get the same analytics, caching, and routing.
+summary: Connect your internal LLM deployments or any OpenAI-compatible API to betarouter—and get the same analytics, caching, and routing.
 categories: ["Announcements"]
 image:
   src: "/blog/custom-openai-compatible-providers.png"
-  alt: "LLM Gateway"
+  alt: "betarouter"
   width: 2282
   height: 1198
 ---
 
-Running your own LLM? Have a specialized third-party API? You can now add any OpenAI-compatible endpoint to LLM Gateway and route traffic through it—with full analytics, caching, and cost tracking.
+Running your own LLM? Have a specialized third-party API? You can now add any OpenAI-compatible endpoint to betarouter and route traffic through it—with full analytics, caching, and cost tracking.
 
 ## Why This Matters
 
@@ -32,7 +32,7 @@ Many teams run internal LLM deployments (vLLM, TGI, Ollama) or use specialized p
 Then call your models using the `{providerName}/{modelName}` format:
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
+curl -X POST "https://api.betarouter.com/v1/chat/completions" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -43,4 +43,4 @@ curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
 
 Your custom provider appears in your analytics dashboard alongside OpenAI, Anthropic, and others—giving you a unified view of all your LLM usage.
 
-For setup details and troubleshooting, see the [Custom Providers documentation](https://docs.llmgateway.io/features/custom-providers).
+For setup details and troubleshooting, see the [Custom Providers documentation](https://docs.betarouter.com/features/custom-providers).

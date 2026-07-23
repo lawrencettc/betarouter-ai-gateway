@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import { logger, createLogger, toError } from "@/index.js";
 
-describe("LLMGateway Logger", () => {
+describe("betarouter Logger", () => {
 	beforeEach(() => {
 		// Mock console methods to avoid actual output during tests
 		vi.spyOn(console, "log").mockImplementation(() => {});

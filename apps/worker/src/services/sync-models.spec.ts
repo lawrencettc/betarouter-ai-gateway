@@ -11,7 +11,7 @@ import {
 	platformModelPolicy,
 	platformProviderPolicy,
 	provider,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 import { syncProvidersAndModels } from "./sync-models.js";
 
@@ -36,7 +36,7 @@ describe("sync-models", () => {
 		await db.delete(provider);
 	});
 
-	it("should sync providers from @llmgateway/models package", async () => {
+	it("should sync providers from @betarouter/models package", async () => {
 		await syncProvidersAndModels();
 
 		const providers = await db.select().from(provider);
@@ -59,7 +59,7 @@ describe("sync-models", () => {
 		expect(openaiProvider?.status).toBe("active");
 	});
 
-	it("should sync models from @llmgateway/models package", async () => {
+	it("should sync models from @betarouter/models package", async () => {
 		await syncProvidersAndModels();
 
 		const models = await db.select().from(model);

@@ -8,7 +8,7 @@ import {
 	test,
 } from "vitest";
 
-import { db, tables } from "@llmgateway/db";
+import { db, tables } from "@betarouter/db";
 
 import { app } from "./app.js";
 import {

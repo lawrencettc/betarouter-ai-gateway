@@ -1,10 +1,10 @@
-import { isOrgOwnerEmailVerified } from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+import { isOrgOwnerEmailVerified } from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 import {
 	fromEmail,
 	getResendClient,
 	replyToEmail,
-} from "@llmgateway/shared/email";
+} from "@betarouter/shared/email";
 
 /**
  * Escapes HTML special characters to prevent XSS attacks
@@ -190,7 +190,7 @@ export function generatePaymentFailureEmailHtml(
 	<head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>Payment Failed - LLMGateway</title>
+		<title>Payment Failed - betarouter</title>
 	</head>
 	<body
 		style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #ffffff;"
@@ -245,7 +245,7 @@ export function generatePaymentFailureEmailHtml(
 									<tr>
 										<td align="center" style="padding: 10px 0;">
 											<a
-												href="https://llmgateway.io/dashboard/settings/org/billing"
+												href="https://betarouter.com/dashboard/settings/org/billing"
 												style="display: inline-block; background-color: #000000; color: #ffffff; padding: 14px 40px; text-decoration: none; border-radius: 6px; font-weight: 500; font-size: 16px;"
 											>Update Payment Method</a>
 										</td>
@@ -266,11 +266,11 @@ export function generatePaymentFailureEmailHtml(
 							>
 								<p style="margin: 0 0 12px; color: #666666; font-size: 14px; line-height: 1.6;">
 									Need help? Check out our <a
-									href="https://docs.llmgateway.io" style="color: #000000; text-decoration: none;"
+									href="https://docs.betarouter.com" style="color: #000000; text-decoration: none;"
 								>documentation</a> or reply to this email for any questions.
 								</p>
 								<p style="margin: 0; color: #999999; font-size: 12px;">
-									© 2025 LLM Gateway. All rights reserved. This is a transactional email and it can't be unsubscribed from.
+									© 2025 betarouter. All rights reserved. This is a transactional email and it can't be unsubscribed from.
 								</p>
 							</td>
 						</tr>
@@ -290,7 +290,7 @@ export function generateAutoJoinEmailHtml(
 ): string {
 	const escapedOrgName = escapeHtml(organizationName);
 	const greetingName = userName.trim() ? escapeHtml(userName.trim()) : "there";
-	const uiUrl = process.env.UI_URL ?? "https://llmgateway.io";
+	const uiUrl = process.env.UI_URL ?? "https://betarouter.com";
 	const dashboardUrl = `${uiUrl}/dashboard/${encodeURIComponent(organizationId)}`;
 
 	return `
@@ -299,7 +299,7 @@ export function generateAutoJoinEmailHtml(
 	<head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>You've been added to ${escapedOrgName} - LLMGateway</title>
+		<title>You've been added to ${escapedOrgName} - betarouter</title>
 	</head>
 	<body
 		style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #ffffff;"
@@ -325,7 +325,7 @@ export function generateAutoJoinEmailHtml(
 								</p>
 
 								<p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: #333333;">
-									You've been added to <strong>${escapedOrgName}</strong> on LLM Gateway because your
+									You've been added to <strong>${escapedOrgName}</strong> on betarouter because your
 									email domain matches the organization's single sign-on settings. You now have access
 									to its projects and shared resources.
 								</p>
@@ -356,11 +356,11 @@ export function generateAutoJoinEmailHtml(
 							>
 								<p style="margin: 0 0 12px; color: #666666; font-size: 14px; line-height: 1.6;">
 									Need help? Check out our <a
-									href="https://docs.llmgateway.io" style="color: #000000; text-decoration: none;"
+									href="https://docs.betarouter.com" style="color: #000000; text-decoration: none;"
 								>documentation</a> or reply to this email for any questions.
 								</p>
 								<p style="margin: 0; color: #999999; font-size: 12px;">
-									© 2025 LLM Gateway. All rights reserved. This is a transactional email and it can't be unsubscribed from.
+									© 2025 betarouter. All rights reserved. This is a transactional email and it can't be unsubscribed from.
 								</p>
 							</td>
 						</tr>
@@ -377,7 +377,7 @@ export function generateDevPlanDuplicateCardEmailHtml(
 	organizationName: string,
 ): string {
 	const escapedOrgName = escapeHtml(organizationName);
-	const codeUrl = process.env.CODE_URL ?? "https://code.llmgateway.io";
+	const codeUrl = process.env.CODE_URL ?? "https://code.betarouter.com";
 	const dashboardUrl = `${codeUrl}/dashboard`;
 
 	return `
@@ -386,7 +386,7 @@ export function generateDevPlanDuplicateCardEmailHtml(
 	<head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>DevPass activation failed - LLMGateway</title>
+		<title>DevPass activation failed - betarouter</title>
 	</head>
 	<body
 		style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #ffffff;"
@@ -440,11 +440,11 @@ export function generateDevPlanDuplicateCardEmailHtml(
 							>
 								<p style="margin: 0 0 12px; color: #666666; font-size: 14px; line-height: 1.6;">
 									Need help? Check out our <a
-									href="https://docs.llmgateway.io" style="color: #000000; text-decoration: none;"
+									href="https://docs.betarouter.com" style="color: #000000; text-decoration: none;"
 								>documentation</a> or reply to this email for any questions.
 								</p>
 								<p style="margin: 0; color: #999999; font-size: 12px;">
-									© 2025 LLM Gateway. All rights reserved. This is a transactional email and it can't be unsubscribed from.
+									© 2025 betarouter. All rights reserved. This is a transactional email and it can't be unsubscribed from.
 								</p>
 							</td>
 						</tr>
@@ -458,7 +458,7 @@ export function generateDevPlanDuplicateCardEmailHtml(
 }
 
 export function generateDevPlanCancellationFeedbackEmailHtml(): string {
-	const codeUrl = process.env.CODE_URL ?? "https://code.llmgateway.io";
+	const codeUrl = process.env.CODE_URL ?? "https://code.betarouter.com";
 	const feedbackUrl = `${codeUrl}/dashboard/feedback/dev-plan-cancellation`;
 
 	return `
@@ -467,7 +467,7 @@ export function generateDevPlanCancellationFeedbackEmailHtml(): string {
 	<head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>We'd love your feedback - LLMGateway Dev Plan</title>
+		<title>We'd love your feedback - betarouter Dev Plan</title>
 	</head>
 	<body
 		style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #ffffff;"
@@ -486,7 +486,7 @@ export function generateDevPlanCancellationFeedbackEmailHtml(): string {
 									</p>
 
 									<p style="font-size: 16px; margin-bottom: 20px; color: #333; line-height: 1.5;">
-										We noticed you just cancelled the LLMGateway Dev Plan. You'll keep access until the end of your current billing period &mdash; nothing changes today.
+										We noticed you just cancelled the betarouter Dev Plan. You'll keep access until the end of your current billing period &mdash; nothing changes today.
 									</p>
 
 									<p style="font-size: 16px; margin-bottom: 20px; color: #333; line-height: 1.5;">
@@ -516,11 +516,11 @@ export function generateDevPlanCancellationFeedbackEmailHtml(): string {
 							>
 								<p style="margin: 0 0 12px; color: #666666; font-size: 14px; line-height: 1.6;">
 									Need help? Check out our <a
-									href="https://docs.llmgateway.io" style="color: #000000; text-decoration: none;"
+									href="https://docs.betarouter.com" style="color: #000000; text-decoration: none;"
 								>documentation</a> or reply to this email for any questions.
 								</p>
 								<p style="margin: 0; color: #999999; font-size: 12px;">
-									© 2025 LLM Gateway. All rights reserved. This is a transactional email and it can't be unsubscribed from.
+									© 2025 betarouter. All rights reserved. This is a transactional email and it can't be unsubscribed from.
 								</p>
 							</td>
 						</tr>
@@ -542,7 +542,7 @@ export function generateSubscriptionCancelledEmailHtml(
 	<head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>Subscription Cancelled - LLMGateway</title>
+		<title>Subscription Cancelled - betarouter</title>
 	</head>
 	<body
 		style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #ffffff;"
@@ -570,14 +570,14 @@ export function generateSubscriptionCancelledEmailHtml(
 									</p>
 
 									<p style="font-size: 16px; margin-bottom: 20px; color: #333; line-height: 1.5;">
-										You can continue using LLMGateway with our free plan features, or you can resubscribe to Pro at any
+										You can continue using betarouter with our free plan features, or you can resubscribe to Pro at any
 										time from your dashboard.
 									</p>
 
 									<!-- CTA Button -->
 									<div style="text-align: center; margin: 30px 0;">
 										<a
-											href="https://llmgateway.io/dashboard/settings/org/billing"
+											href="https://betarouter.com/dashboard/settings/org/billing"
 											style="display: inline-block; background-color: #000000; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 500; font-size: 16px;"
 										>Manage Subscription</a>
 									</div>
@@ -595,11 +595,11 @@ export function generateSubscriptionCancelledEmailHtml(
 									>
 										<p style="margin: 0 0 12px; color: #666666; font-size: 14px; line-height: 1.6;">
 											Need help getting started? Check out our <a
-											href="https://docs.llmgateway.io" style="color: #000000; text-decoration: none;"
+											href="https://docs.betarouter.com" style="color: #000000; text-decoration: none;"
 										>documentation</a> or reply to this email for any questions.
 										</p>
 										<p style="margin: 0; color: #999999; font-size: 12px;">
-											© 2025 LLM Gateway. All rights reserved. This is a transactional email and it can't be unsubscribed from.
+											© 2025 betarouter. All rights reserved. This is a transactional email and it can't be unsubscribed from.
 										</p>
 									</td>
 								</tr>

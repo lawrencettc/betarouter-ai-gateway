@@ -45,4 +45,4 @@ If you're reaching for a Reset Pass every week, upgrading a tier is usually the 
 
 ---
 
-**[Model categories & fair use →](https://docs.llmgateway.io/learn/model-categories)** | **[DevPass pricing →](https://devpass.llmgateway.io/pricing)**
+**[Model categories & fair use →](https://docs.betarouter.com/learn/model-categories)** | **[DevPass pricing →](https://devpass.betarouter.com/pricing)**

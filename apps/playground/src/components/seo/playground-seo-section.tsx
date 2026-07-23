@@ -23,7 +23,7 @@ const variants: Record<SeoVariant, VariantContent> = {
 		bullets: [
 			"Supports 200+ models across OpenAI, Anthropic, Google, xAI, DeepSeek, Meta, Mistral, and other providers.",
 			"Stream responses, fork past conversations, and share read-only chat snapshots via public links.",
-			"One credit balance covers every provider — top up once, route requests anywhere, get unified usage and cost analytics through LLM Gateway.",
+			"One credit balance covers every provider — top up once, route requests anywhere, get unified usage and cost analytics through betarouter.",
 		],
 		related: [
 			{ href: "/image", label: "AI image generation" },
@@ -31,7 +31,7 @@ const variants: Record<SeoVariant, VariantContent> = {
 			{ href: "/audio", label: "AI audio generation" },
 			{ href: "/group", label: "Compare models side by side" },
 			{ href: "/canvas", label: "Canvas — UI from JSON" },
-			{ href: "/compare", label: "LLM Gateway Chat vs ChatGPT, Claude & more" },
+			{ href: "/compare", label: "betarouter Chat vs ChatGPT, Claude & more" },
 		],
 	},
 	image: {
@@ -41,7 +41,7 @@ const variants: Record<SeoVariant, VariantContent> = {
 		bullets: [
 			"Models include DALL·E 3, Flux Pro, Flux Schnell, Stable Diffusion 3, Seedream, and more.",
 			"Request 1, 2, or 4 images per prompt and compare them in a grid.",
-			"All requests route through LLM Gateway for unified billing and usage tracking.",
+			"All requests route through betarouter for unified billing and usage tracking.",
 		],
 		related: [
 			{ href: "/", label: "AI chat playground" },
@@ -58,7 +58,7 @@ const variants: Record<SeoVariant, VariantContent> = {
 		bullets: [
 			"Models include Google Veo, Alibaba Wan, and other text-to-video providers.",
 			"Preview generated videos in the browser without leaving the playground.",
-			"Routes through LLM Gateway for cost tracking across providers.",
+			"Routes through betarouter for cost tracking across providers.",
 		],
 		related: [
 			{ href: "/", label: "AI chat playground" },
@@ -75,7 +75,7 @@ const variants: Record<SeoVariant, VariantContent> = {
 		bullets: [
 			"Models include ElevenLabs Multilingual v2, Eleven v3, OpenAI TTS and GPT-4o Mini TTS, and Gemini TTS.",
 			"Choose from dozens of prebuilt voices and control format and speed.",
-			"All requests route through LLM Gateway for unified billing and usage tracking.",
+			"All requests route through betarouter for unified billing and usage tracking.",
 		],
 		related: [
 			{ href: "/", label: "AI chat playground" },
@@ -104,7 +104,7 @@ const variants: Record<SeoVariant, VariantContent> = {
 	canvas: {
 		h1: "Canvas — build UIs from JSON specs with live preview",
 		intro:
-			"Generate, edit, and export interactive UI specs as JSON with live preview. Export the result as a PDF or image. Powered by LLM Gateway.",
+			"Generate, edit, and export interactive UI specs as JSON with live preview. Export the result as a PDF or image. Powered by betarouter.",
 		bullets: [
 			"Iterate on UI layouts by editing a JSON spec with live preview.",
 			"Use any of 200+ supported models to generate or modify canvas specs.",

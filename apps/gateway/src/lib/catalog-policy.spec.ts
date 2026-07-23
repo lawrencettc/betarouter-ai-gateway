@@ -9,8 +9,8 @@ import {
 import type {
 	CatalogRequestDecision,
 	EffectiveMapping,
-} from "@llmgateway/catalog";
-import type { ProviderModelMapping } from "@llmgateway/models";
+} from "@betarouter/catalog";
+import type { ProviderModelMapping } from "@betarouter/models";
 
 describe("filterProviderMappingsByCatalog", () => {
 	it("keeps unvalidated non-chat operations on legacy routing at launch", () => {

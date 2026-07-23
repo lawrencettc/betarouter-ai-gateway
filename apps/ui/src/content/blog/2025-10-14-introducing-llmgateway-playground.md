@@ -1,20 +1,20 @@
 ---
-id: blog-introducing-llmgateway-playground
-slug: introducing-llmgateway-playground
+id: blog-introducing-betarouter-playground
+slug: introducing-betarouter-playground
 date: 2025-10-14
-title: Introducing LLM Gateway Chat — Test 280+ Models in One Interface
+title: Introducing betarouter Chat — Test 280+ Models in One Interface
 summary: Compare GPT-5, Claude, Gemini, and 280+ other models side by side. Generate images, test prompts, and find the best model for your use case.
 categories: ["Announcements"]
 image:
-  src: "/blog/introducing-chat-llmgateway.png"
-  alt: "LLM Gateway Playground"
+  src: "/blog/introducing-chat-betarouter.png"
+  alt: "betarouter Playground"
   width: 2282
   height: 1198
 ---
 
 Choosing the right LLM used to mean signing up for multiple accounts, managing different API keys, and switching between interfaces. Not anymore.
 
-[**LLM Gateway Chat**](https://chat.llmgateway.io) lets you test any model in our catalog—GPT-5, Claude, Gemini, Llama, and 180+ others—from one interface. Compare outputs, test prompts, and find the best model for your use case before writing a single line of code.
+[**betarouter Chat**](https://chat.betarouter.com) lets you test any model in our catalog—GPT-5, Claude, Gemini, Llama, and 180+ others—from one interface. Compare outputs, test prompts, and find the best model for your use case before writing a single line of code.
 
 ## Built for Speed
 
@@ -22,7 +22,7 @@ The playground runs on:
 
 - **Vercel AI SDK v5** — Real-time streaming with zero lag
 - **AI Elements** — Clean, accessible UI designed for AI workflows
-- **LLM Gateway's unified API** — Switch models with one click, no re-authentication
+- **betarouter's unified API** — Switch models with one click, no re-authentication
 
 The result: a fast, responsive interface whether you're chatting with GPT-5 or generating images with Gemini.
 
@@ -61,11 +61,11 @@ Drag and drop images or documents into any conversation. Vision models analyze t
 
 ## Try It Now
 
-1. Go to [chat.llmgateway.io](https://chat.llmgateway.io)
-2. Sign in with your LLM Gateway account
+1. Go to [chat.betarouter.com](https://chat.betarouter.com)
+2. Sign in with your betarouter account
 3. Pick a model and start chatting
 
-New here? [Sign up free](https://llmgateway.io/signup) — no credit card, instant access.
+New here? [Sign up free](https://betarouter.com/signup) — no credit card, instant access.
 
 ## More Than a Chat Interface
 
@@ -80,6 +80,6 @@ Every request in the playground appears in your analytics dashboard—same track
 
 ---
 
-**[Try the Playground →](https://chat.llmgateway.io)**
+**[Try the Playground →](https://chat.betarouter.com)**
 
-Questions or feedback? Find us on [GitHub](https://github.com/theopenco/llmgateway) or [Discord](https://llmgateway.io/discord).
+Questions or feedback? Find us on [GitHub](https://github.com/theopenco/llmgateway) or [Discord](https://betarouter.com/discord).

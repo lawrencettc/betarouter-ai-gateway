@@ -8,13 +8,13 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
 	title: "Ship an AI App in 10 Minutes",
 	description:
-		"Clone a production-ready AI template, connect to 200+ models, and deploy. Ship your AI app in minutes with LLM Gateway.",
+		"Clone a production-ready AI template, connect to 200+ models, and deploy. Ship your AI app in minutes with betarouter.",
 	alternates: { canonical: "/ship" },
 	openGraph: {
-		title: "Ship an AI App in 10 Minutes | LLM Gateway",
+		title: "Ship an AI App in 10 Minutes | betarouter",
 		description:
-			"Clone a production-ready AI template, connect to 200+ models, and deploy. Ship your AI app in minutes with LLM Gateway.",
-		url: "https://llmgateway.io/ship",
+			"Clone a production-ready AI template, connect to 200+ models, and deploy. Ship your AI app in minutes with betarouter.",
+		url: "https://betarouter.com/ship",
 		type: "website",
 	},
 };
@@ -72,7 +72,7 @@ const templates = [
 	{
 		name: "Showcase",
 		description:
-			"A static, deployable gallery of apps built with LLM Gateway templates, with filtering and submissions.",
+			"A static, deployable gallery of apps built with betarouter templates, with filtering and submissions.",
 		command: "npx @llmgateway/cli init --template showcase",
 		tags: ["Next.js", "Tailwind CSS", "Static"],
 	},
@@ -82,7 +82,7 @@ const steps = [
 	{
 		number: "1",
 		title: "Install the CLI",
-		description: "One command to get the LLM Gateway CLI.",
+		description: "One command to get the betarouter CLI.",
 		code: "npm i -g @llmgateway/cli",
 	},
 	{
@@ -94,7 +94,7 @@ const steps = [
 	{
 		number: "3",
 		title: "Add Your API Key & Deploy",
-		description: "Set your LLM Gateway API key and ship it.",
+		description: "Set your betarouter API key and ship it.",
 		code: 'echo "LLMGATEWAY_API_KEY=your_key" > .env.local && npm run dev',
 	},
 ];
@@ -112,7 +112,7 @@ export default function ShipPage() {
 							Ship an AI App in 10 Minutes
 						</h1>
 						<p className="text-lg text-muted-foreground leading-relaxed">
-							Production-ready templates powered by LLM Gateway. Clone,
+							Production-ready templates powered by betarouter. Clone,
 							configure, and deploy — with access to 200+ models from every
 							major provider.
 						</p>
@@ -212,7 +212,7 @@ export default function ShipPage() {
 							Ready to Ship?
 						</h2>
 						<p className="text-lg text-muted-foreground">
-							Create a free LLM Gateway account, grab an API key, and start
+							Create a free betarouter account, grab an API key, and start
 							building with any of our 200+ supported models.
 						</p>
 						<div className="flex flex-col sm:flex-row gap-4 justify-center">

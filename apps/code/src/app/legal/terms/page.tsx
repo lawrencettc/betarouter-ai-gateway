@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
 	title: "Terms of Use — DevPass",
 	description:
-		"Supplemental DevPass Terms of Use. These build on the LLM Gateway Terms of Use and cover the DevPass flat-rate subscription: fair-use limits, one account per developer, approved coding tools, and AI provider policies.",
+		"Supplemental DevPass Terms of Use. These build on the betarouter Terms of Use and cover the DevPass flat-rate subscription: fair-use limits, one account per developer, approved coding tools, and AI provider policies.",
 	alternates: { canonical: "/legal/terms" },
 };
 
@@ -20,11 +20,11 @@ export default function TermsPage() {
 			</p>
 			<p>
 				<strong>DevPass</strong> is a service operated by{" "}
-				<strong>LLM Gateway</strong> (&ldquo;we&rdquo;, &ldquo;our&rdquo;, or
+				<strong>betarouter</strong> (&ldquo;we&rdquo;, &ldquo;our&rdquo;, or
 				&ldquo;us&rdquo;). These DevPass Supplemental Terms of Use
 				(&ldquo;DevPass Terms&rdquo;) govern your access to and use of DevPass,
 				including the website at{" "}
-				<a href="https://devpass.llmgateway.io">devpass.llmgateway.io</a>, the
+				<a href="https://devpass.betarouter.com">devpass.betarouter.com</a>, the
 				DevPass dashboard, related APIs, SDKs, and any DevPass-branded products
 				or services (collectively, the &ldquo;Service&rdquo;).
 			</p>
@@ -32,7 +32,7 @@ export default function TermsPage() {
 				<strong>
 					These DevPass Terms are an addendum to, and incorporate by reference,
 					the main{" "}
-					<a href="https://llmgateway.io/terms">LLM Gateway Terms of Use</a>{" "}
+					<a href="https://betarouter.com/terms">betarouter Terms of Use</a>{" "}
 					(the &ldquo;Base Terms&rdquo;), which form the base agreement between
 					you and us.
 				</strong>{" "}
@@ -60,7 +60,7 @@ export default function TermsPage() {
 			<p>
 				DevPass is a flat-rate subscription that gives developers access to 200+
 				AI coding models through a single OpenAI-compatible API endpoint and the
-				LLM Gateway. The Service allows you to:
+				betarouter. The Service allows you to:
 			</p>
 			<ul>
 				<li>
@@ -85,8 +85,8 @@ export default function TermsPage() {
 				Embeddings, image generation, and video generation are not included in
 				DevPass and are blocked at the gateway. If you need API access for an
 				application or for non-inference workloads (such as embeddings, image
-				generation, or video generation), use a standard LLM Gateway credits
-				plan under the Base Terms instead.
+				generation, or video generation), use a standard betarouter credits plan
+				under the Base Terms instead.
 			</p>
 			<hr />
 			<h2>2. Plans, Billing, and Fair Use</h2>
@@ -201,9 +201,9 @@ export default function TermsPage() {
 			<p>
 				If you genuinely need DevPass for multiple developers (for example, a
 				team or company), contact{" "}
-				<a href="mailto:contact@llmgateway.io">contact@llmgateway.io</a> before
-				signing up. We offer team plans that let multiple developers share
-				DevPass legitimately.
+				<a href="mailto:contact@betarouter.com">contact@betarouter.com</a>{" "}
+				before signing up. We offer team plans that let multiple developers
+				share DevPass legitimately.
 			</p>
 			<hr />
 			<h2>4. DevPass Acceptable Use</h2>
@@ -229,7 +229,7 @@ export default function TermsPage() {
 				<li>
 					Use DevPass for non-inference workloads — embeddings, image
 					generation, and video generation are not included and are blocked at
-					the gateway. Use a standard LLM Gateway credits plan for those use
+					the gateway. Use a standard betarouter credits plan for those use
 					cases
 				</li>
 				<li>
@@ -256,7 +256,7 @@ export default function TermsPage() {
 				Your DevPass data is handled according to the{" "}
 				<Link href="/legal/privacy">DevPass Privacy Policy</Link>, which builds
 				on the main{" "}
-				<a href="https://llmgateway.io/privacy">LLM Gateway Privacy Policy</a>.
+				<a href="https://betarouter.com/privacy">betarouter Privacy Policy</a>.
 				Request payloads, responses, and per-agent metadata are stored to power
 				your dashboard, usage reporting, and per-tool insights, subject to the
 				retention options available in your account settings.
@@ -265,9 +265,9 @@ export default function TermsPage() {
 			<h2>6. Contact</h2>
 			<p>
 				Questions about these DevPass Terms or the Base Terms? Email{" "}
-				<a href="mailto:contact@llmgateway.io">contact@llmgateway.io</a>.
+				<a href="mailto:contact@betarouter.com">contact@betarouter.com</a>.
 			</p>
-			<p>© 2026 LLM Gateway. All rights reserved.</p>
+			<p>© 2026 betarouter. All rights reserved.</p>
 		</>
 	);
 }

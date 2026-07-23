@@ -107,19 +107,19 @@ export default async function EnterpriseFeaturePage({ params }: PageProps) {
 				"@type": "ListItem",
 				position: 1,
 				name: "Home",
-				item: "https://llmgateway.io",
+				item: "https://betarouter.com",
 			},
 			{
 				"@type": "ListItem",
 				position: 2,
 				name: "Enterprise",
-				item: "https://llmgateway.io/enterprise",
+				item: "https://betarouter.com/enterprise",
 			},
 			{
 				"@type": "ListItem",
 				position: 3,
 				name: feature.title,
-				item: `https://llmgateway.io/enterprise/${slug}`,
+				item: `https://betarouter.com/enterprise/${slug}`,
 			},
 		],
 	};
@@ -140,14 +140,14 @@ export default async function EnterpriseFeaturePage({ params }: PageProps) {
 	const productSchema = {
 		"@context": "https://schema.org",
 		"@type": "Service",
-		name: `LLM Gateway Enterprise – ${feature.title}`,
+		name: `betarouter Enterprise – ${feature.title}`,
 		description: feature.longDescription,
 		brand: {
 			"@type": "Brand",
-			name: "LLM Gateway",
+			name: "betarouter",
 		},
 		category: "Enterprise AI Infrastructure",
-		url: `https://llmgateway.io/enterprise/${slug}`,
+		url: `https://betarouter.com/enterprise/${slug}`,
 	};
 
 	const otherFeatures = enterpriseFeatures.filter((f) => f.slug !== slug);
@@ -224,7 +224,7 @@ export default async function EnterpriseFeaturePage({ params }: PageProps) {
 										</Link>
 									</Button>
 									<Button asChild size="lg" variant="outline">
-										<Link href="/signup">Try LLM Gateway free</Link>
+										<Link href="/signup">Try betarouter free</Link>
 									</Button>
 								</div>
 							</div>
@@ -510,9 +510,9 @@ export async function generateMetadata({
 		return {};
 	}
 
-	const title = `${feature.title} – Enterprise LLM Gateway`;
+	const title = `${feature.title} – Enterprise betarouter`;
 	const description = feature.description;
-	const url = `https://llmgateway.io/enterprise/${slug}`;
+	const url = `https://betarouter.com/enterprise/${slug}`;
 
 	return {
 		title,

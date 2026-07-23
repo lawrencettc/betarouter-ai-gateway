@@ -2,7 +2,7 @@ import { getCookie } from "hono/cookie";
 
 import { getOrCreateChatOrg } from "@/utils/personal-org.js";
 
-import { db, tables, shortid } from "@llmgateway/db";
+import { db, tables, shortid } from "@betarouter/db";
 
 import type { ServerTypes } from "@/vars.js";
 import type { Context } from "hono";
@@ -14,7 +14,7 @@ export function getGatewayUrl() {
 		process.env.GATEWAY_URL ??
 		(process.env.NODE_ENV === "development"
 			? "http://localhost:4001/v1"
-			: "https://api.llmgateway.io/v1")
+			: "https://api.betarouter.com/v1")
 	);
 }
 

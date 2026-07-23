@@ -1,5 +1,5 @@
 {
-	"name": "@llmgateway/shared",
+	"name": "@betarouter/shared",
 	"version": "0.0.0",
 	"private": true,
 	"license": "SEE LICENSE IN ../../LICENSE",
@@ -50,8 +50,8 @@
 		"lint": "eslint . && prettier --check ."
 	},
 	"dependencies": {
+		"@betarouter/models": "workspace:*",
 		"@google-cloud/storage": "7.19.0",
-		"@llmgateway/models": "workspace:*",
 		"@opentelemetry/api": "1.9.0",
 		"@radix-ui/react-avatar": "1.1.11",
 		"@radix-ui/react-checkbox": "^1.3.3",

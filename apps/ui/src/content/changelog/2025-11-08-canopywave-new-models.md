@@ -3,7 +3,7 @@ id: "29"
 slug: "canopywave-new-models"
 date: "2025-11-08"
 title: "CanopyWave: 3 New Models with 75% Off"
-summary: "CanopyWave brings Qwen3 Coder, MiniMax M2, and GLM-4.6 to LLM Gateway with an exclusive 75% discount on all three models."
+summary: "CanopyWave brings Qwen3 Coder, MiniMax M2, and GLM-4.6 to betarouter with an exclusive 75% discount on all three models."
 image:
   src: "/changelog/canopywave75-off.png"
   alt: "CanopyWave: 3 New Models with 75% Off"
@@ -56,7 +56,7 @@ Powerful conversational AI with large context support
 All models support streaming, tool calling, and JSON output mode:
 
 ```bash
-curl -X POST https://api.llmgateway.io/v1/chat/completions \
+curl -X POST https://api.betarouter.com/v1/chat/completions \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

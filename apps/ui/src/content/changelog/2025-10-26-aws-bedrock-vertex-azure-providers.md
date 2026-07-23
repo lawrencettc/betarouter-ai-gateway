@@ -6,12 +6,12 @@ title: "AWS Bedrock, Google Vertex AI and Microsoft Azure"
 summary: "Added native support for AWS Bedrock, Google Vertex AI, and Microsoft Azure."
 image:
   src: "/changelog/aws-vertex-azure.png"
-  alt: "AWS Bedrock, Google Vertex AI and Microsoft Azure providers available in LLM Gateway"
+  alt: "AWS Bedrock, Google Vertex AI and Microsoft Azure providers available in betarouter"
   width: 1768
   height: 677
 ---
 
-We're excited to announce native support for AWS Bedrock, Google Vertex AI and Microsoft Azure in LLM Gateway:
+We're excited to announce native support for AWS Bedrock, Google Vertex AI and Microsoft Azure in betarouter:
 
 - **[AWS Bedrock](/providers/aws-bedrock)**
 - **[Google Vertex AI](/providers/google-ai-studio)**

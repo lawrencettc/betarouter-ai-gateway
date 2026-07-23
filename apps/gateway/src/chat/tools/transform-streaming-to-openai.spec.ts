@@ -6,14 +6,14 @@ const { warn } = vi.hoisted(() => ({
 	warn: vi.fn(),
 }));
 
-vi.mock("@llmgateway/cache", () => ({
+vi.mock("@betarouter/cache", () => ({
 	redisClient: {
 		get: vi.fn(),
 		setex: vi.fn(),
 	},
 }));
 
-vi.mock("@llmgateway/logger", () => ({
+vi.mock("@betarouter/logger", () => ({
 	logger: {
 		warn,
 		error: vi.fn(),

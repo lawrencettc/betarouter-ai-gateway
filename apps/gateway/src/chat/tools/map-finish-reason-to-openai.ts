@@ -1,4 +1,4 @@
-import type { Provider } from "@llmgateway/models";
+import type { Provider } from "@betarouter/models";
 
 /**
  * Map a provider-specific finish reason to an OpenAI-canonical value

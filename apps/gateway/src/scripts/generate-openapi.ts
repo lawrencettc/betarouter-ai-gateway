@@ -2,7 +2,7 @@ import { writeFileSync } from "fs";
 
 import { app, config } from "@/app.js";
 
-import { logger } from "@llmgateway/logger";
+import { logger } from "@betarouter/logger";
 
 async function generateOpenAPI() {
 	const spec = app.getOpenAPIDocument(config);

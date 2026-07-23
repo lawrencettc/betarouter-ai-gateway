@@ -48,7 +48,7 @@ export function MasterKeysClient() {
 							Manage master keys to create projects and gateway API keys
 							programmatically via the /v1/master/* API.{" "}
 							<a
-								href="https://docs.llmgateway.io/features/master-keys"
+								href="https://docs.betarouter.com/features/master-keys"
 								target="_blank"
 								rel="noopener noreferrer"
 								className="text-primary inline-flex items-center gap-1 underline-offset-4 hover:underline"

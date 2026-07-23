@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { models } from "@llmgateway/models";
+import { models } from "@betarouter/models";
 
 import {
 	getValidationModel,

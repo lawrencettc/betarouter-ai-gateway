@@ -67,7 +67,7 @@ const CHAT_PLAN_ESTIMATE_TOKENS = { input: 1500, output: 750 } as const;
  * class (Claude Sonnet for frontier, Claude Haiku for fast) so the estimate is
  * a conservative floor — cheaper frontier models (GPT-5, Gemini Pro) and fast
  * models (GPT-5-mini, Gemini Flash) yield more messages, not fewer. Kept
- * deliberately separate from the live catalogue in @llmgateway/models: these
+ * deliberately separate from the live catalogue in @betarouter/models: these
  * are illustrative copy inputs, not pricing.
  */
 const CHAT_PLAN_ESTIMATE_RATES = {

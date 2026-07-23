@@ -6,14 +6,14 @@ icon: Link
 
 # Source Attribution
 
-The `X-Source` header allows you to identify your domain when making requests to LLM Gateway. This information is used to generate public usage statistics showing how LLM Gateway is being used across different websites and applications.
+The `X-Source` header allows you to identify your domain when making requests to betarouter. This information is used to generate public usage statistics showing how betarouter is being used across different websites and applications.
 
 ## X-Source Header
 
 Include the `X-Source` header with your domain name in your requests:
 
 ```bash
-curl -X POST https://api.llmgateway.io/v1/chat/completions \
+curl -X POST https://api.betarouter.com/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "X-Source: example.com" \
@@ -41,14 +41,14 @@ All variations will be stripped down to the base domain (`example.com`) for aggr
 
 ## Public Statistics
 
-Data from the `X-Source` header is used to generate public statistics about LLM Gateway usage, including:
+Data from the `X-Source` header is used to generate public statistics about betarouter usage, including:
 
-- **Popular Domains**: Which websites and applications are using LLM Gateway most frequently
+- **Popular Domains**: Which websites and applications are using betarouter most frequently
 - **Model Usage**: What models are being used by different domains
 - **Geographic Distribution**: Where requests are coming from across different sources
 - **Growth Trends**: How usage is growing over time for different domains
 
-These statistics help demonstrate the adoption and impact of LLM Gateway across the ecosystem.
+These statistics help demonstrate the adoption and impact of betarouter across the ecosystem.
 
 ## Privacy Considerations
 
@@ -73,7 +73,7 @@ Including the `X-Source` header provides several benefits:
 
 - **Recognition**: Your domain will appear in public usage statistics
 - **Credibility**: Demonstrates real-world usage of your application
-- **Community**: Contributes to the broader LLM Gateway ecosystem
+- **Community**: Contributes to the broader betarouter ecosystem
 
 ### For the Community
 
@@ -85,7 +85,7 @@ Including the `X-Source` header provides several benefits:
 
 While the `X-Source` header is optional, we strongly encourage its use to:
 
-- Support transparency in the LLM Gateway ecosystem
+- Support transparency in the betarouter ecosystem
 - Help showcase successful integrations
 - Contribute to understanding of LLM usage patterns
 - Demonstrate the real-world impact of your application

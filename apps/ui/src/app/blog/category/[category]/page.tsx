@@ -60,7 +60,7 @@ export default async function BlogCategoryPage({ params }: CategoryPageProps) {
 				entries={filtered}
 				selectedCategory={slug}
 				heading="Blog"
-				subheading="Latest news and updates from LLM Gateway"
+				subheading="Latest news and updates from betarouter"
 			/>
 		</>
 	);
@@ -86,7 +86,7 @@ export async function generateMetadata({
 	}
 
 	const title = `Blog: ${label}`;
-	const description = `Articles in the ${label} category at LLM Gateway — news, tutorials, and product updates.`;
+	const description = `Articles in the ${label} category at betarouter — news, tutorials, and product updates.`;
 
 	return {
 		title,
@@ -95,9 +95,9 @@ export async function generateMetadata({
 			canonical: `/blog/category/${slug}`,
 		},
 		openGraph: {
-			title: `${title} | LLM Gateway`,
+			title: `${title} | betarouter`,
 			description,
-			url: `https://llmgateway.io/blog/category/${slug}`,
+			url: `https://betarouter.com/blog/category/${slug}`,
 			type: "website",
 			images: ["/opengraph.png?v=2"],
 		},

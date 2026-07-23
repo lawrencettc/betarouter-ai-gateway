@@ -22,7 +22,7 @@ The short version: most plans give you one company's models inside one company's
 
 **Best overall. Flat rate. Every model. No token math.**
 
-[DevPass](https://devpass.llmgateway.io) by LLM Gateway isn't an editor and it isn't a single-vendor plan — it's the **model layer** underneath whatever coding tool you already use. One API key unlocks **200+ models** — Claude Opus 4.7, GPT-5.5, Gemini 3.1 Pro, plus the open-weight coders like GLM-4.7, Qwen3 and Kimi K2 — for a flat monthly price.
+[DevPass](https://devpass.betarouter.com) by betarouter isn't an editor and it isn't a single-vendor plan — it's the **model layer** underneath whatever coding tool you already use. One API key unlocks **200+ models** — Claude Opus 4.7, GPT-5.5, Gemini 3.1 Pro, plus the open-weight coders like GLM-4.7, Qwen3 and Kimi K2 — for a flat monthly price.
 
 **What sets it apart:**
 
@@ -43,7 +43,7 @@ The short version: most plans give you one company's models inside one company's
 
 ```bash
 # Point any OpenAI- or Anthropic-compatible coding tool at your DevPass key
-export ANTHROPIC_BASE_URL="https://api.llmgateway.io/v1"
+export ANTHROPIC_BASE_URL="https://api.betarouter.com/v1"
 export ANTHROPIC_API_KEY="$LLM_GATEWAY_API_KEY"
 
 # Then run Claude Code, OpenCode, Cline, or Cursor as usual —
@@ -74,7 +74,7 @@ Anthropic's Claude Code is a terminal-native agent that many developers consider
 
 **Pricing:** Claude Pro around $20/mo (limited); Max tiers roughly $100–$200/mo.
 
-**Best for:** Developers who are happy living entirely inside Claude. (You can also run Claude Code on DevPass to keep Claude _and_ add every other model — see [our Claude Code setup guide](/blog/how-configure-claude-code-with-llmgateway).)
+**Best for:** Developers who are happy living entirely inside Claude. (You can also run Claude Code on DevPass to keep Claude _and_ add every other model — see [our Claude Code setup guide](/blog/how-configure-claude-code-with-betarouter).)
 
 ---
 
@@ -98,7 +98,7 @@ Cursor is the most popular AI-first code editor, with tab completion and a Compo
 
 **Pricing:** Pro $20/mo, Ultra $200/mo.
 
-**Best for:** Developers who live inside the editor for tab completion. DevPass doesn't replace Cursor's editor — but if your workflow is Claude Code, Zed or Cline, it replaces the reason you'd pay for Cursor's models. ([Full comparison](https://devpass.llmgateway.io/compare/cursor).)
+**Best for:** Developers who live inside the editor for tab completion. DevPass doesn't replace Cursor's editor — but if your workflow is Claude Code, Zed or Cline, it replaces the reason you'd pay for Cursor's models. ([Full comparison](https://devpass.betarouter.com/compare/cursor).)
 
 ---
 
@@ -242,7 +242,7 @@ Zhipu's GLM Coding Plan offers GLM models at a low flat price. It's a strong dea
 
 **Pricing:** Low flat monthly rate for GLM models only.
 
-**Best for:** Developers who are happy on GLM and want the lowest possible bill. ([How it compares to DevPass](https://devpass.llmgateway.io/compare/z-ai-glm-coding-plan).)
+**Best for:** Developers who are happy on GLM and want the lowest possible bill. ([How it compares to DevPass](https://devpass.betarouter.com/compare/z-ai-glm-coding-plan).)
 
 ---
 
@@ -313,7 +313,7 @@ For daily, agent-heavy work, almost always. DevPass turns every $1 into roughly 
 
 ### How many models do I get with DevPass?
 
-Every plan includes all 200+ models on LLM Gateway, from frontier flagships to open-weight coders like GLM-4.7, Qwen3 and Kimi K2. There's no per-model gating between tiers — the tiers differ only in monthly usage allowance.
+Every plan includes all 200+ models on betarouter, from frontier flagships to open-weight coders like GLM-4.7, Qwen3 and Kimi K2. There's no per-model gating between tiers — the tiers differ only in monthly usage allowance.
 
 ---
 
@@ -321,12 +321,12 @@ Every plan includes all 200+ models on LLM Gateway, from frontier flagships to o
 
 Switch to one flat rate for every model in under two minutes:
 
-1. **[Pick a DevPass plan](https://devpass.llmgateway.io/pricing)** — Lite, Pro, or Max
-2. Copy your key and point Claude Code, Cursor, Cline or OpenCode at `https://api.llmgateway.io/v1`
+1. **[Pick a DevPass plan](https://devpass.betarouter.com/pricing)** — Lite, Pro, or Max
+2. Copy your key and point Claude Code, Cursor, Cline or OpenCode at `https://api.betarouter.com/v1`
 3. Switch models freely — every request shows its real cost in your dashboard
 
 No per-token math. No vendor lock-in. Just every model under one key.
 
 <BlogCta variant="devpass" location="bottom" />
 
-**[Compare DevPass vs Cursor](https://devpass.llmgateway.io/compare/cursor)** | **[Read the 7 best AI gateways](/blog/best-ai-gateways)**
+**[Compare DevPass vs Cursor](https://devpass.betarouter.com/compare/cursor)** | **[Read the 7 best AI gateways](/blog/best-ai-gateways)**

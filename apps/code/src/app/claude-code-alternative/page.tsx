@@ -14,11 +14,11 @@ import {
 	DEV_PLAN_PRICES,
 	getDevPlanCreditsLimit,
 	MARKETING_STATS,
-} from "@llmgateway/shared";
+} from "@betarouter/shared";
 
 import type { Metadata } from "next";
 
-const BASE_URL = "https://devpass.llmgateway.io";
+const BASE_URL = "https://devpass.betarouter.com";
 const PAGE_PATH = "/claude-code-alternative";
 
 const TITLE = "Claude Code Alternative (2026): Keep the CLI, Skip the Caps";

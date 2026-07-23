@@ -3,7 +3,7 @@ id: use-case-coding-agents
 slug: coding-agents
 date: 2026-06-02
 title: Coding agents & AI assistants
-metaTitle: "LLM Gateway for Coding Agents & AI Assistants"
+metaTitle: "betarouter for Coding Agents & AI Assistants"
 description: "Power coding agents and AI assistants with one OpenAI-compatible API. Route across Claude, GPT-5.5, Gemini and 200+ models with automatic fallback, prompt caching, and per-request cost analytics."
 headline: "One API key behind Claude Code, Cursor, Cline and your own agents — with model fallback and a real cost ledger."
 summary: "Give your coding agent every model through one OpenAI-compatible endpoint, with automatic failover and per-request cost tracking."
@@ -17,8 +17,8 @@ benefits:
   - title: Prompt caching
     description: "Cache the system prompt and repository context that agents resend on every step, and stop paying full price for the same tokens."
 faqs:
-  - question: Does LLM Gateway work with Claude Code, Cursor and Cline?
-    answer: "Yes. LLM Gateway exposes an OpenAI- and Anthropic-compatible API, so any tool that speaks those formats — Claude Code, Cursor, Cline, Aider, Continue, or your own agent — works by pointing it at the gateway base URL and an API key. No SDK changes required."
+  - question: Does betarouter work with Claude Code, Cursor and Cline?
+    answer: "Yes. betarouter exposes an OpenAI- and Anthropic-compatible API, so any tool that speaks those formats — Claude Code, Cursor, Cline, Aider, Continue, or your own agent — works by pointing it at the gateway base URL and an API key. No SDK changes required."
   - question: How does model fallback work?
     answer: "You can define a primary model and one or more fallbacks. If the primary provider returns an error or rate-limits, the gateway automatically routes the request to the next model in the chain, so your agent keeps running instead of failing the task."
   - question: Can I track cost per agent or per project?
@@ -31,7 +31,7 @@ faqs:
 
 Modern coding agents — Claude Code, Cursor, Cline, or the bespoke one you're building — call a model dozens of times to finish a single task: plan, read files, edit, run, repeat. That puts three demands on whatever sits behind the agent: **access to the right model for each step, reliability across long runs, and visibility into what it all costs.**
 
-LLM Gateway is that layer. One OpenAI-compatible endpoint, 200+ models, automatic fallback, caching, and a cost ledger for every request.
+betarouter is that layer. One OpenAI-compatible endpoint, 200+ models, automatic fallback, caching, and a cost ledger for every request.
 
 ## Use the best model for each step — without rewriting anything
 
@@ -41,7 +41,7 @@ A planning step might want Claude Opus 4.7's reasoning; a quick edit is fine on 
 import OpenAI from "openai";
 
 const client = new OpenAI({
-  baseURL: "https://api.llmgateway.io/v1",
+  baseURL: "https://api.betarouter.com/v1",
   apiKey: process.env.LLM_GATEWAY_API_KEY,
 });
 

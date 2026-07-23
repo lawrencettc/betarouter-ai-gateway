@@ -20,19 +20,19 @@ import {
 
 import type { Metadata } from "next";
 
-const BASE_URL = "https://llmgateway.io";
+const BASE_URL = "https://betarouter.com";
 
 export const metadata: Metadata = {
 	title: "LLM Release Timeline — Model Release Dates",
 	description:
-		"Release dates for every major LLM — see when GPT, Claude, Gemini, Llama, Mistral, and DeepSeek models shipped and when each was added to LLM Gateway.",
+		"Release dates for every major LLM — see when GPT, Claude, Gemini, Llama, Mistral, and DeepSeek models shipped and when each was added to betarouter.",
 	alternates: {
 		canonical: "/timeline",
 	},
 	openGraph: {
 		title: "LLM Release Timeline — Model Release Dates",
 		description:
-			"Release dates for every major LLM — GPT, Claude, Gemini, Llama, Mistral and DeepSeek — with the date each model was added to LLM Gateway.",
+			"Release dates for every major LLM — GPT, Claude, Gemini, Llama, Mistral and DeepSeek — with the date each model was added to betarouter.",
 		type: "website",
 		url: `${BASE_URL}/timeline`,
 	},
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
 		card: "summary_large_image",
 		title: "LLM Release Timeline — Model Release Dates",
 		description:
-			"Release dates for every major LLM — GPT, Claude, Gemini, Llama, Mistral and DeepSeek — and when each was added to LLM Gateway.",
+			"Release dates for every major LLM — GPT, Claude, Gemini, Llama, Mistral and DeepSeek — and when each was added to betarouter.",
 	},
 };
 
@@ -58,7 +58,7 @@ export default async function TimelinePage() {
 		"@type": "Dataset",
 		name: "LLM Model Release Timeline",
 		description:
-			"A continuously updated dataset of large language model releases: the provider release date and the date each model was added to LLM Gateway.",
+			"A continuously updated dataset of large language model releases: the provider release date and the date each model was added to betarouter.",
 		url: `${BASE_URL}/timeline`,
 		keywords: [
 			"LLM release dates",
@@ -70,7 +70,7 @@ export default async function TimelinePage() {
 		],
 		creator: {
 			"@type": "Organization",
-			name: "LLM Gateway",
+			name: "betarouter",
 			url: BASE_URL,
 		},
 		isAccessibleForFree: true,
@@ -84,7 +84,7 @@ export default async function TimelinePage() {
 		...(stats.latestReleasedAt
 			? { dateModified: stats.latestReleasedAt.slice(0, 10) }
 			: {}),
-		variableMeasured: ["Provider release date", "Date added to LLM Gateway"],
+		variableMeasured: ["Provider release date", "Date added to betarouter"],
 	};
 
 	const itemListSchema = {
@@ -171,7 +171,7 @@ export default async function TimelinePage() {
 							<p className="mx-auto max-w-2xl text-balance text-sm text-muted-foreground md:text-base">
 								A continuously updated timeline of large language model releases
 								— when each model shipped from its provider and when it landed
-								on LLM Gateway. Track GPT, Claude, Gemini, Llama, Mistral,
+								on betarouter. Track GPT, Claude, Gemini, Llama, Mistral,
 								DeepSeek and more. Browse the full history by year.
 							</p>
 

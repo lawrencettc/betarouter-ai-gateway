@@ -32,7 +32,7 @@ import {
 	type ModelDefinition,
 	type ProviderModelMapping,
 	type StabilityLevel,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 import type { Route } from "next";
 
@@ -1020,7 +1020,7 @@ export function ModelComparison() {
 					<div className="bg-background/90 backdrop-blur border rounded-full px-6 py-3 text-base md:text-lg flex items-center gap-3 md:gap-4 shadow-md">
 						<span className="text-muted-foreground">Powered by</span>
 						<Logo className="h-6 w-6 md:h-7 md:w-7" />
-						<span className="font-semibold tracking-tight">LLMGateway</span>
+						<span className="font-semibold tracking-tight">betarouter</span>
 					</div>
 				</div>
 			) : null}

@@ -1,4 +1,4 @@
-import { Inter, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
+import { Inter, JetBrains_Mono, Bricolage_Grotesque } from "next/font/google";
 
 import { Providers } from "@/components/providers";
 import { getConfig } from "@/lib/config-server";
@@ -14,7 +14,7 @@ const inter = Inter({
 	display: "swap",
 });
 
-const geistMono = Geist_Mono({
+const geistMono = JetBrains_Mono({
 	// globals.css maps the Tailwind token: --font-mono: var(--font-geist-mono).
 	// Registering the font under --font-mono directly would leave that theme
 	// mapping dangling and every `font-mono` element falls back to sans.
@@ -23,26 +23,26 @@ const geistMono = Geist_Mono({
 	display: "swap",
 });
 
-const plusJakarta = Plus_Jakarta_Sans({
+const plusJakarta = Bricolage_Grotesque({
 	variable: "--font-display",
 	subsets: ["latin"],
-	weight: ["500", "600", "700", "800"],
+	weight: ["300", "400", "500", "600", "700", "800"],
 	display: "swap",
 });
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-	metadataBase: new URL("https://llmgateway.io"),
+	metadataBase: new URL("https://betarouter.com"),
 	title: {
-		default: "LLM Gateway - Unified API for Multiple LLM Providers",
-		template: "%s | LLM Gateway",
+		default: "betarouter - Unified API for Multiple LLM Providers",
+		template: "%s | betarouter",
 	},
 	description:
 		"Route, manage, and analyze LLM requests across OpenAI, Anthropic, Google, and 40+ providers through one unified API.",
-	authors: [{ name: "LLM Gateway" }],
-	creator: "LLM Gateway",
-	publisher: "LLM Gateway",
+	authors: [{ name: "betarouter" }],
+	creator: "betarouter",
+	publisher: "betarouter",
 	icons: {
 		icon: [
 			{ url: "/favicon/favicon.ico?v=1", sizes: "any" },
@@ -64,18 +64,18 @@ export const metadata: Metadata = {
 		canonical: "./",
 	},
 	openGraph: {
-		title: "LLM Gateway - Unified API for Multiple LLM Providers",
+		title: "betarouter - Unified API for Multiple LLM Providers",
 		description:
 			"Route, manage, and analyze LLM requests across OpenAI, Anthropic, Google, and 40+ providers through one unified API.",
 		images: ["/opengraph.png?v=2"],
 		type: "website",
-		url: "https://llmgateway.io",
-		siteName: "LLM Gateway",
+		url: "https://betarouter.com",
+		siteName: "betarouter",
 		locale: "en_US",
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "LLM Gateway - Unified API for Multiple LLM Providers",
+		title: "betarouter - Unified API for Multiple LLM Providers",
 		description:
 			"Route, manage, and analyze LLM requests across 40+ providers through one unified API.",
 		images: ["/opengraph.png?v=2"],
@@ -97,11 +97,11 @@ export const metadata: Metadata = {
 const organizationSchema = {
 	"@context": "https://schema.org",
 	"@type": "Organization",
-	name: "LLM Gateway",
-	url: "https://llmgateway.io",
+	name: "betarouter",
+	url: "https://betarouter.com",
 	logo: {
 		"@type": "ImageObject",
-		url: "https://llmgateway.io/favicon/android-chrome-512x512.png",
+		url: "https://betarouter.com/favicon/android-chrome-512x512.png",
 		width: 512,
 		height: 512,
 	},
@@ -113,7 +113,7 @@ const organizationSchema = {
 	],
 	contactPoint: {
 		"@type": "ContactPoint",
-		email: "contact@llmgateway.io",
+		email: "contact@betarouter.com",
 		contactType: "customer support",
 	},
 };
@@ -121,13 +121,13 @@ const organizationSchema = {
 const websiteSchema = {
 	"@context": "https://schema.org",
 	"@type": "WebSite",
-	name: "LLM Gateway",
-	url: "https://llmgateway.io",
+	name: "betarouter",
+	url: "https://betarouter.com",
 	potentialAction: {
 		"@type": "SearchAction",
 		target: {
 			"@type": "EntryPoint",
-			urlTemplate: "https://llmgateway.io/models?search={search_term_string}",
+			urlTemplate: "https://betarouter.com/models?search={search_term_string}",
 		},
 		"query-input": "required name=search_term_string",
 	},
@@ -143,8 +143,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 			suppressHydrationWarning
 		>
 			<head>
-				<link rel="preconnect" href="https://internal.llmgateway.io" />
-				<link rel="preconnect" href="https://docs.llmgateway.io" />
+				<link rel="preconnect" href="https://internal.betarouter.com" />
+				<link rel="preconnect" href="https://docs.betarouter.com" />
 				<script
 					type="application/ld+json"
 					// eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml

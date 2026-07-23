@@ -4,7 +4,7 @@ import { selectNextProvider } from "@/chat/tools/retry-with-fallback.js";
 
 import { validateModelAccess, throwIamException, type IamRule } from "./iam.js";
 
-import type { ModelDefinition } from "@llmgateway/models";
+import type { ModelDefinition } from "@betarouter/models";
 
 // Mock the cached-queries module so we can control IAM rules per test
 vi.mock("@/lib/cached-queries.js", () => ({
@@ -1087,7 +1087,7 @@ describe("validateModelAccess — error messages", () => {
 
 		expect(result.allowed).toBe(false);
 		expect(result.reason).toContain(
-			"Adapt your LLMGateway API key IAM permissions",
+			"Adapt your betarouter API key IAM permissions",
 		);
 	});
 });

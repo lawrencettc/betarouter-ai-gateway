@@ -33,7 +33,7 @@ export default function Loading() {
 					<CardHeader>
 						<CardTitle>Your API Keys</CardTitle>
 						<CardDescription>
-							Manage your API keys for accessing LLM Gateway
+							Manage your API keys for accessing betarouter
 						</CardDescription>
 					</CardHeader>
 					<CardContent>

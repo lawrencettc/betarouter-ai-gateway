@@ -3,7 +3,7 @@
 ## Script
 
 - Script: `packages/scripts/src/analyze-content-filter.ts`
-- Package command: `pnpm --filter @llmgateway/scripts analyze-content-filter --file /abs/path/to/file.csv`
+- Package command: `pnpm --filter @betarouter/scripts analyze-content-filter --file /abs/path/to/file.csv`
 
 ## CSV Format
 

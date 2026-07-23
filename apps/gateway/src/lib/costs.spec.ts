@@ -10,7 +10,7 @@ const { mockGetEffectiveDiscount } = vi.hoisted(() => ({
 	mockGetEffectiveDiscount: vi.fn(),
 }));
 
-vi.mock("@llmgateway/db", () => ({
+vi.mock("@betarouter/db", () => ({
 	getEffectiveDiscount: mockGetEffectiveDiscount,
 }));
 

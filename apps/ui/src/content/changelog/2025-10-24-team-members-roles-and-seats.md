@@ -11,7 +11,7 @@ image:
   height: 677
 ---
 
-We're excited to release **Team Members** — a complete, seat-based way to collaborate with your organization inside LLM Gateway.
+We're excited to release **Team Members** — a complete, seat-based way to collaborate with your organization inside betarouter.
 
 ## 👥 Invite Teammates with Roles
 

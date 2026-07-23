@@ -1,13 +1,13 @@
 import { isCancellationError, isTimeoutError } from "@/lib/timeout-config.js";
 
-import { getProviderHeaders } from "@llmgateway/actions";
-import { logger } from "@llmgateway/logger";
+import { getProviderHeaders } from "@betarouter/actions";
+import { logger } from "@betarouter/logger";
 
 import { extractErrorCause } from "./extract-error-cause.js";
 import { getProviderEnv } from "./get-provider-env.js";
 
-import type { ModerationApiPayload } from "@llmgateway/db";
-import type { BaseMessage, MessageContent } from "@llmgateway/models";
+import type { ModerationApiPayload } from "@betarouter/db";
+import type { BaseMessage, MessageContent } from "@betarouter/models";
 
 interface GatewayContentFilterContext {
 	requestId: string;

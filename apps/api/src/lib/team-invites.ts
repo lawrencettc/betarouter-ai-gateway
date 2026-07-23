@@ -1,8 +1,8 @@
 import { resolveSeatLimit } from "@/lib/seat-limit.js";
 
-import { logAuditEvent } from "@llmgateway/audit";
-import { db, eq, tables } from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+import { logAuditEvent } from "@betarouter/audit";
+import { db, eq, tables } from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 
 /**
  * Accept every pending, non-expired organization invite matching the user's

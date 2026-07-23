@@ -2,25 +2,25 @@
 id: blog-llm-gateway-vs-portkey
 slug: llm-gateway-vs-portkey
 date: 2026-05-26
-title: "LLM Gateway vs Portkey: An Honest Comparison"
-summary: "Looking for a Portkey alternative? A straightforward comparison of LLM Gateway and Portkey — features, pricing, deployment, and trade-offs — so you can pick the right AI gateway for your stack."
+title: "betarouter vs Portkey: An Honest Comparison"
+summary: "Looking for a Portkey alternative? A straightforward comparison of betarouter and Portkey — features, pricing, deployment, and trade-offs — so you can pick the right AI gateway for your stack."
 categories: ["Guides"]
 image:
   src: "/blog/llm-gateway-vs-portkey.png"
-  alt: "LLM Gateway vs Portkey: An Honest Comparison"
+  alt: "betarouter vs Portkey: An Honest Comparison"
   width: 1024
   height: 1024
 ---
 
-If you're shopping for an AI gateway, Portkey shows up fast — and for good reason. It's a mature platform with a unified API, deep observability, and one of the better prompt-management stories on the market. If you've landed here looking for a **Portkey alternative**, this post lays out where LLM Gateway and Portkey overlap, where they differ, and which one fits which team.
+If you're shopping for an AI gateway, Portkey shows up fast — and for good reason. It's a mature platform with a unified API, deep observability, and one of the better prompt-management stories on the market. If you've landed here looking for a **Portkey alternative**, this post lays out where betarouter and Portkey overlap, where they differ, and which one fits which team.
 
-We built LLM Gateway, so we're biased. We'll still tell you where Portkey is the better call.
+We built betarouter, so we're biased. We'll still tell you where Portkey is the better call.
 
 One thing worth knowing up front: Portkey was acquired by Palo Alto Networks in May 2026 and now sits inside its Prisma AIRS security platform. If staying with an independent, single-purpose vendor matters to your team, factor that in.
 
 ## The Quick Version
 
-| Feature                  | LLM Gateway                                           | Portkey                                                                           |
+| Feature                  | betarouter                                            | Portkey                                                                           |
 | ------------------------ | ----------------------------------------------------- | --------------------------------------------------------------------------------- |
 | Core model               | Unified gateway + dashboard, all-in-one               | AI gateway + LLMOps platform (observability/prompts)                              |
 | Models                   | 200+ models, 40+ providers                            | 1,600+ models (vendor claim)                                                      |
@@ -38,19 +38,19 @@ One thing worth knowing up front: Portkey was acquired by Palo Alto Networks in 
 | AI SDK provider          | Yes (`@llmgateway/ai-sdk-provider`)                   | Via OpenAI-compatible client                                                      |
 | Pricing model            | Free (self-host) or 5% platform fee / BYOK (0% fee)   | Free → $49/mo Production (usage-based) → Enterprise                               |
 
-## Where LLM Gateway Wins
+## Where betarouter Wins
 
 ### One Platform Instead of a Gateway Plus a Suite
 
 Portkey is two things bolted together well: an **AI gateway** (routing, caching, fallbacks) and an **LLMOps platform** (observability, prompt management, analytics). That's powerful, but it also means more surface area — more concepts, more configuration, more to learn before you ship your first request.
 
-LLM Gateway is a single platform. The proxy, dashboard, caching, routing, guardrails, audit logs, and billing are one product with one mental model. You point the OpenAI SDK at it and the observability is already there:
+betarouter is a single platform. The proxy, dashboard, caching, routing, guardrails, audit logs, and billing are one product with one mental model. You point the OpenAI SDK at it and the observability is already there:
 
 ```typescript
 import OpenAI from "openai";
 
 const client = new OpenAI({
-  baseURL: "https://api.llmgateway.io/v1",
+  baseURL: "https://api.betarouter.com/v1",
   apiKey: process.env.LLM_GATEWAY_API_KEY,
 });
 ```
@@ -59,11 +59,11 @@ const client = new OpenAI({
 
 Portkey open-sourced far more of its gateway in 2026 (MIT, "Gateway 2.0") — routing, governance, observability, and cost controls now run self-hosted. What stays in the managed cloud is the persistent observability storage, semantic caching, and compliance layer. So a fully self-hosted stack — with history and attestations — is still an enterprise arrangement.
 
-LLM Gateway is open source under AGPLv3 in its entirety — gateway, dashboard, worker, and all. One Docker command gets you the complete platform on your own infrastructure:
+betarouter is open source under AGPLv3 in its entirety — gateway, dashboard, worker, and all. One Docker command gets you the complete platform on your own infrastructure:
 
 ```bash
 docker run -d \
-  --name llmgateway \
+  --name betarouter \
   -p 3002:3002 -p 4001:4001 -p 4002:4002 \
   -e AUTH_SECRET="your-secret" \
   -e GATEWAY_API_KEY_HASH_SECRET="your-hash-secret" \
@@ -76,7 +76,7 @@ If "run the whole platform ourselves, no proprietary control plane" is a hard re
 
 Portkey's routing is config-driven: you define conditional routes, fallback chains, and load-balancing weights. It's flexible, but the weights are yours to set and maintain.
 
-LLM Gateway's router scores every available provider for a model using the last 5 minutes of real metrics, then picks the winner automatically:
+betarouter's router scores every available provider for a model using the last 5 minutes of real metrics, then picks the winner automatically:
 
 - **Uptime (50%)** — exponential penalty below 95%
 - **Throughput (20%)** — tokens per second
@@ -87,25 +87,25 @@ Epsilon-greedy exploration (1% of requests) keeps the scores honest as condition
 
 ### Image and Video Generation in the Same API
 
-Portkey is focused on text and, increasingly, agents. If your roadmap includes generative media, LLM Gateway routes image and video models (gpt-image, Gemini, Veo, Seedream, Qwen) through the same key, billing, and dashboard as your chat traffic — no second integration.
+Portkey is focused on text and, increasingly, agents. If your roadmap includes generative media, betarouter routes image and video models (gpt-image, Gemini, Veo, Seedream, Qwen) through the same key, billing, and dashboard as your chat traffic — no second integration.
 
 ### Transparent, Predictable Pricing
 
-LLM Gateway is free to self-host. On the managed tier it's a flat 5% platform fee, or **bring your own provider keys and pay 0%**. No per-seat math, no log-retention tiers to reason about.
+betarouter is free to self-host. On the managed tier it's a flat 5% platform fee, or **bring your own provider keys and pay 0%**. No per-seat math, no log-retention tiers to reason about.
 
 ## Where Portkey Wins
 
 ### Prompt Management Is Genuinely Strong
 
-This is Portkey's standout. Versioned prompt templates, a prompt registry, deployments, and a playground that ties into production — if your team treats prompts as first-class, versioned artifacts and wants non-engineers iterating on them, Portkey's prompt management is more mature than ours today. We expose a [Playground](https://chat.llmgateway.io) for testing, but not a full versioned prompt registry.
+This is Portkey's standout. Versioned prompt templates, a prompt registry, deployments, and a playground that ties into production — if your team treats prompts as first-class, versioned artifacts and wants non-engineers iterating on them, Portkey's prompt management is more mature than ours today. We expose a [Playground](https://chat.betarouter.com) for testing, but not a full versioned prompt registry.
 
 ### Deep, Enterprise-Grade Observability
 
-Portkey has invested heavily in observability: dozens of metrics, distributed traces, OpenTelemetry export, and integrations into the broader LLMOps ecosystem. LLM Gateway gives you per-request logs, cost, latency, and cache-hit analytics out of the box — which covers most teams — but if you need OTel pipelines and tracing that plugs into an existing observability stack, Portkey goes deeper.
+Portkey has invested heavily in observability: dozens of metrics, distributed traces, OpenTelemetry export, and integrations into the broader LLMOps ecosystem. betarouter gives you per-request logs, cost, latency, and cache-hit analytics out of the box — which covers most teams — but if you need OTel pipelines and tracing that plugs into an existing observability stack, Portkey goes deeper.
 
 ### The Largest Model Catalog Claim
 
-Portkey markets access to 1,600+ models across 250+ providers. LLM Gateway supports 200+ models across 40+ providers — curated and tested rather than maximal. If sheer breadth of long-tail providers is the deciding factor, Portkey advertises more.
+Portkey markets access to 1,600+ models across 250+ providers. betarouter supports 200+ models across 40+ providers — curated and tested rather than maximal. If sheer breadth of long-tail providers is the deciding factor, Portkey advertises more.
 
 ### A Bigger Enterprise Governance Surface
 
@@ -118,15 +118,15 @@ Both gateways are OpenAI-compatible, so moving is mostly a configuration change:
 ```diff
 - const baseURL = "https://api.portkey.ai/v1";  // Portkey
 - // plus x-portkey-api-key / virtual-key headers
-+ const baseURL = "https://api.llmgateway.io/v1";
++ const baseURL = "https://api.betarouter.com/v1";
 + const apiKey = process.env.LLM_GATEWAY_API_KEY;  // standard Bearer auth
 ```
 
-LLM Gateway accepts both bare model IDs (routed automatically) and provider-prefixed ones (`openai/gpt-5.2`, `anthropic/claude-opus-4-5-20251101`), so most model names carry over directly. The main difference: you drop Portkey's virtual keys and `x-portkey-*` headers in favor of standard Bearer auth. Our [step-by-step Portkey migration guide](/migration/portkey) walks through Python, TypeScript, and cURL. Before you migrate, it's worth running your real workload through the [Token Cost Calculator](/token-cost-calculator) to see what the same traffic costs across providers.
+betarouter accepts both bare model IDs (routed automatically) and provider-prefixed ones (`openai/gpt-5.2`, `anthropic/claude-opus-4-5-20251101`), so most model names carry over directly. The main difference: you drop Portkey's virtual keys and `x-portkey-*` headers in favor of standard Bearer auth. Our [step-by-step Portkey migration guide](/migration/portkey) walks through Python, TypeScript, and cURL. Before you migrate, it's worth running your real workload through the [Token Cost Calculator](/token-cost-calculator) to see what the same traffic costs across providers.
 
 ## Who Should Use What
 
-**Choose LLM Gateway if:**
+**Choose betarouter if:**
 
 - You want one all-in-one platform, not a gateway plus a separate LLMOps suite
 - You need to self-host the _entire_ platform under an open-source license
@@ -143,8 +143,8 @@ LLM Gateway accepts both bare model IDs (routed automatically) and provider-pref
 
 ## The Bottom Line
 
-Portkey is an excellent AI gateway with a strong LLMOps layer on top — especially if prompt management and deep observability are central to your workflow. LLM Gateway takes a different shape: one open-source platform where routing, caching, guardrails, analytics, and generative media are already wired together, self-hostable end to end, with pricing you can predict.
+Portkey is an excellent AI gateway with a strong LLMOps layer on top — especially if prompt management and deep observability are central to your workflow. betarouter takes a different shape: one open-source platform where routing, caching, guardrails, analytics, and generative media are already wired together, self-hostable end to end, with pricing you can predict.
 
-If you're evaluating a **Portkey alternative** because you'd rather have a single, fully open platform than a gateway-plus-suite, LLM Gateway is built for exactly that.
+If you're evaluating a **Portkey alternative** because you'd rather have a single, fully open platform than a gateway-plus-suite, betarouter is built for exactly that.
 
-**[Try LLM Gateway free](/signup)** | **[Compare all features](/compare/portkey)** | **[See how we compare to LiteLLM](/blog/llm-gateway-vs-litellm)** | **[The 8 best AI gateways in 2026](/blog/best-ai-gateways)**
+**[Try betarouter free](/signup)** | **[Compare all features](/compare/portkey)** | **[See how we compare to LiteLLM](/blog/llm-gateway-vs-litellm)** | **[The 8 best AI gateways in 2026](/blog/best-ai-gateways)**

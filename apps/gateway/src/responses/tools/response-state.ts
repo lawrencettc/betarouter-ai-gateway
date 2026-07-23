@@ -1,6 +1,6 @@
-import { redisClient } from "@llmgateway/cache";
-import { and, db, desc, eq, gte, log, sql } from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+import { redisClient } from "@betarouter/cache";
+import { and, db, desc, eq, gte, log, sql } from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 
 export interface StoredResponseData {
 	id: string;

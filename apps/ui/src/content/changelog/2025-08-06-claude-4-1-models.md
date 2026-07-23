@@ -64,4 +64,4 @@ Balanced model optimized for speed and intelligence:
 
 Perfect for most applications requiring fast, intelligent responses.
 
-Read [Anthropic's official announcement](https://www.anthropic.com/news/claude-opus-4-1?utm_source=llmgateway.io) to learn more about these models.
+Read [Anthropic's official announcement](https://www.anthropic.com/news/claude-opus-4-1?utm_source=betarouter.com) to learn more about these models.

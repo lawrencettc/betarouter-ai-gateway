@@ -3,11 +3,11 @@ id: "blog-enterprise-llm-analytics"
 slug: "enterprise-llm-analytics"
 date: "2026-06-26"
 title: "Enterprise LLM Analytics: See Where Every Dollar Goes"
-summary: "Most dashboards show what you spent, not where it went. LLM Gateway's enterprise LLM analytics break cost, requests, and tokens down by model, project, API key, and team member — no data warehouse to build. Member and organization-wide analytics are available on the Enterprise plan."
+summary: "Most dashboards show what you spent, not where it went. betarouter's enterprise LLM analytics break cost, requests, and tokens down by model, project, API key, and team member — no data warehouse to build. Member and organization-wide analytics are available on the Enterprise plan."
 categories: ["Announcements", "Product"]
 image:
   src: "/blog/enterprise-llm-analytics.png"
-  alt: "Enterprise LLM analytics on LLM Gateway: cost, requests, and tokens broken down by model, project, API key, and team member"
+  alt: "Enterprise LLM analytics on betarouter: cost, requests, and tokens broken down by model, project, API key, and team member"
   width: 1536
   height: 1024
 ---
@@ -16,7 +16,7 @@ Your monthly LLM bill went up 40%. Now answer three questions: which model drove
 
 Most LLM dashboards are good at one number — total spend — and bad at the only question that matters when costs climb: where did it go? The usual workaround is a homegrown pipeline: ship request logs to a warehouse, write the aggregations, build the dashboards, keep them running. That's a quarter of platform work to answer a question your gateway should already know.
 
-**LLM Gateway** answers it out of the box. Its enterprise LLM analytics break cost, requests, and tokens down by model, by project, by API key, and by person — over any date range, with no export pipeline to maintain.
+**betarouter** answers it out of the box. Its enterprise LLM analytics break cost, requests, and tokens down by model, by project, by API key, and by person — over any date range, with no export pipeline to maintain.
 
 ## Cost by model, on every project
 
@@ -106,7 +106,7 @@ For teams with compliance requirements, the same platform is [SOC 2 Type II](/bl
 
 ### What is enterprise LLM analytics?
 
-Enterprise LLM analytics is the cost-and-usage reporting layer for AI traffic running through a gateway — breaking spend, requests, and tokens down by model, project, API key, and team member so an organization can attribute and govern its LLM costs. In LLM Gateway it's built in, with member and organization-wide views on the Enterprise plan.
+Enterprise LLM analytics is the cost-and-usage reporting layer for AI traffic running through a gateway — breaking spend, requests, and tokens down by model, project, API key, and team member so an organization can attribute and govern its LLM costs. In betarouter it's built in, with member and organization-wide views on the Enterprise plan.
 
 ### How do I attribute LLM costs to teams or people?
 
@@ -114,7 +114,7 @@ Group your projects by team and use **Organization → Analytics** with the **Pr
 
 ### Do I need a data warehouse to analyze LLM usage?
 
-No. LLM Gateway computes analytics from pre-aggregated hourly rollups, so cost, request, and token breakdowns are available in the dashboard without an export pipeline, a warehouse, or a separate BI tool.
+No. betarouter computes analytics from pre-aggregated hourly rollups, so cost, request, and token breakdowns are available in the dashboard without an export pipeline, a warehouse, or a separate BI tool.
 
 ### Which analytics require the Enterprise plan?
 
@@ -122,6 +122,6 @@ Per-project cost-by-model analytics and per-API-key statistics are available on 
 
 ## Start measuring where your spend goes
 
-- **[Try LLM Gateway free](https://llmgateway.io/signup)** — route your traffic and watch the cost-by-model charts populate.
-- **[Talk to us about Enterprise](https://llmgateway.io/enterprise)** — turn on member and organization-wide analytics for your team.
+- **[Try betarouter free](https://betarouter.com/signup)** — route your traffic and watch the cost-by-model charts populate.
+- **[Talk to us about Enterprise](https://betarouter.com/enterprise)** — turn on member and organization-wide analytics for your team.
 - **[Read how we handle SOC 2 Type II](/blog/soc2-type-ii)** — the compliance story behind the data.

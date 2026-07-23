@@ -6,7 +6,7 @@ icon: ShieldCheck
 
 # Moderations
 
-LLMGateway supports the OpenAI-compatible `/v1/moderations` endpoint for text
+betarouter supports the OpenAI-compatible `/v1/moderations` endpoint for text
 and multimodal safety classification.
 
 Use it when you want to:
@@ -20,9 +20,9 @@ For the full request and response schema, see the
 
 ## Endpoint
 
-`POST https://api.llmgateway.io/v1/moderations`
+`POST https://api.betarouter.com/v1/moderations`
 
-Authenticate with your LLMGateway API key:
+Authenticate with your betarouter API key:
 
 ```bash
 -H "Authorization: Bearer $LLM_GATEWAY_API_KEY"
@@ -43,7 +43,7 @@ The default model is `omni-moderation-latest`.
 ### Single text input
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/moderations" \
+curl -X POST "https://api.betarouter.com/v1/moderations" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -54,7 +54,7 @@ curl -X POST "https://api.llmgateway.io/v1/moderations" \
 ### Multiple text inputs
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/moderations" \
+curl -X POST "https://api.betarouter.com/v1/moderations" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -69,7 +69,7 @@ curl -X POST "https://api.llmgateway.io/v1/moderations" \
 ### Multimodal input
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/moderations" \
+curl -X POST "https://api.betarouter.com/v1/moderations" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -94,7 +94,7 @@ curl -X POST "https://api.llmgateway.io/v1/moderations" \
 import OpenAI from "openai";
 
 const client = new OpenAI({
-	baseURL: "https://api.llmgateway.io/v1",
+	baseURL: "https://api.betarouter.com/v1",
 	apiKey: process.env.LLM_GATEWAY_API_KEY,
 });
 
@@ -136,4 +136,4 @@ Use `/v1/moderations` when you want an explicit moderation decision in your own
 application flow.
 
 If you want moderation to happen automatically as part of model requests, use
-LLMGateway content filtering on `/v1/chat/completions` instead.
+betarouter content filtering on `/v1/chat/completions` instead.

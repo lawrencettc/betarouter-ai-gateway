@@ -1,4 +1,4 @@
-import { db, eq, tables } from "@llmgateway/db";
+import { db, eq, tables } from "@betarouter/db";
 
 export type OrgRole = "owner" | "admin" | "developer";
 

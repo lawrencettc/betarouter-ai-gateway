@@ -1,4 +1,4 @@
-import { models, type ModelDefinition } from "@llmgateway/models";
+import { models, type ModelDefinition } from "@betarouter/models";
 
 const CHARS_PER_TOKEN = 4;
 

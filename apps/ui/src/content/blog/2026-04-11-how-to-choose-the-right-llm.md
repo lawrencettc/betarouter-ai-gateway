@@ -227,10 +227,10 @@ This takes an afternoon. Chasing benchmarks takes weeks and leads to worse decis
 
 ## Let the Gateway Choose
 
-If you don't want to think about model selection at all, LLM Gateway's auto routing can handle it:
+If you don't want to think about model selection at all, betarouter's auto routing can handle it:
 
 ```bash
-curl https://api.llmgateway.io/v1/chat/completions \
+curl https://api.betarouter.com/v1/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -251,4 +251,4 @@ New models launch every week. Prices drop. Capabilities shift. The model that's 
 
 This is the strongest argument for using a gateway rather than integrating directly with a single provider. When the landscape shifts, you change a model name in your configuration instead of rewriting your integration.
 
-**[Browse 200+ models on LLM Gateway](/models)** | **[Try the Playground](/playground)** | **[Create a free account](/signup)**
+**[Browse 200+ models on betarouter](/models)** | **[Try the Playground](/playground)** | **[Create a free account](/signup)**

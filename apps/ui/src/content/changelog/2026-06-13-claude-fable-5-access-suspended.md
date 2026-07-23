@@ -6,12 +6,12 @@ title: "Claude Fable 5 Access Suspended"
 summary: "We've temporarily suspended access to Claude Fable 5 across all providers while we work through a usage-policy matter with Anthropic. Requests to the model now return a clear error, and routing automatically skips it."
 image:
   src: "/changelog/claude-fable-5-reve-and-new-models.png"
-  alt: "Claude Fable 5 access temporarily suspended on LLM Gateway"
+  alt: "Claude Fable 5 access temporarily suspended on betarouter"
   width: 1024
   height: 1024
 ---
 
-We've temporarily suspended access to **Claude Fable 5** on LLM Gateway, effective immediately, across every provider that served it.
+We've temporarily suspended access to **Claude Fable 5** on betarouter, effective immediately, across every provider that served it.
 
 ## What changed
 
@@ -45,4 +45,4 @@ We're working to restore access as quickly as we can and will post an update her
 
 ---
 
-**[Browse all models →](https://llmgateway.io/models)** | **[Open your dashboard →](https://llmgateway.io/dashboard)**
+**[Browse all models →](https://betarouter.com/models)** | **[Open your dashboard →](https://betarouter.com/dashboard)**

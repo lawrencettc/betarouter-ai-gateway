@@ -1,7 +1,7 @@
 import { Cache, type MutationOption } from "drizzle-orm/cache/core";
 
-import { invalidateSwrByTables } from "@llmgateway/cache";
-import { logger } from "@llmgateway/logger";
+import { invalidateSwrByTables } from "@betarouter/cache";
+import { logger } from "@betarouter/logger";
 
 import type { Redis } from "ioredis";
 

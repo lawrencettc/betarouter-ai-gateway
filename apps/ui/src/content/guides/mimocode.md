@@ -8,11 +8,11 @@ date: 2026-06-08
 
 [MiMo Code](https://mimo.xiaomi.com/mimocode) is an AI-powered coding agent command-line tool developed by Xiaomi. It can understand your code repository, plan changes, safely execute shell commands, edit files, and autonomously manage complex software development tasks in your terminal.
 
-By configuring MiMo Code to route through LLM Gateway, you can point it at any model—GPT-5.5, Gemini, Llama, Claude, or 210+ others—while keeping the same API format MiMo Code expects, with full cost tracking in your dashboard.
+By configuring MiMo Code to route through betarouter, you can point it at any model—GPT-5.5, Gemini, Llama, Claude, or 210+ others—while keeping the same API format MiMo Code expects, with full cost tracking in your dashboard.
 
 ## Prerequisites
 
-- An LLM Gateway API key — [sign up free](/signup) (no credit card required)
+- A betarouter API key — [sign up free](/signup) (no credit card required)
 
 ## Setup
 
@@ -34,7 +34,7 @@ mimo --help
 
 Create or edit your MiMo Code configuration file at `~/.config/mimocode/mimocode.json` (on Linux/macOS) or `~/.mimocode/mimocode.json`.
 
-Specify the default models you want to use and route the `anthropic` provider to your LLM Gateway endpoint. Here is an example configuration that sets up **Claude Opus 4.8**, **GPT-5.5**, **DeepSeek V4 Pro**, **MiniMax M3**, and **Qwen3.7 Max**:
+Specify the default models you want to use and route the `anthropic` provider to your betarouter endpoint. Here is an example configuration that sets up **Claude Opus 4.8**, **GPT-5.5**, **DeepSeek V4 Pro**, **MiniMax M3**, and **Qwen3.7 Max**:
 
 ```json
 {
@@ -44,7 +44,7 @@ Specify the default models you want to use and route the `anthropic` provider to
     "anthropic": {
       "options": {
         "apiKey": "llmgtwy_your_api_key_here",
-        "baseURL": "https://api.llmgateway.io/v1"
+        "baseURL": "https://api.betarouter.com/v1"
       },
       "models": {
         "gpt-5.5": {
@@ -68,9 +68,9 @@ Specify the default models you want to use and route the `anthropic` provider to
 }
 ```
 
-![Configuring mimocode.json](https://docs.llmgateway.io/guides/mimocode/0-config.png)
+![Configuring mimocode.json](https://docs.betarouter.com/guides/mimocode/0-config.png)
 
-_Replace `llmgtwy_your_api_key_here` with your actual LLM Gateway API key from the dashboard._
+_Replace `llmgtwy_your_api_key_here` with your actual betarouter API key from the dashboard._
 
 ### Step 3: Run MiMo Code
 
@@ -86,22 +86,22 @@ Or run it with a message:
 mimo run "Your coding prompt here"
 ```
 
-All requests will now be routed through LLM Gateway, allowing you to use advanced models for local autonomous coding while showing real-time usage and cost statistics on your LLM Gateway dashboard.
+All requests will now be routed through betarouter, allowing you to use advanced models for local autonomous coding while showing real-time usage and cost statistics on your betarouter dashboard.
 
-![Running MiMo Code with LLM Gateway](https://docs.llmgateway.io/guides/mimocode/1-chat.png)
+![Running MiMo Code with betarouter](https://docs.betarouter.com/guides/mimocode/1-chat.png)
 
 ## Configuration Details
 
 ### The Provider Options
 
-To point MiMo Code to LLM Gateway, you define the `baseURL` and `apiKey` inside the `options` of the `anthropic` provider block.
+To point MiMo Code to betarouter, you define the `baseURL` and `apiKey` inside the `options` of the `anthropic` provider block.
 
 ```json
 "provider": {
 	"anthropic": {
 		"options": {
 			"apiKey": "llmgtwy_your_api_key_here",
-			"baseURL": "https://api.llmgateway.io/v1"
+			"baseURL": "https://api.betarouter.com/v1"
 		}
 	}
 }
@@ -121,7 +121,7 @@ Because MiMo Code CLI restricts requests to built-in models by default, any cust
 
 Once registered, you can set them as your default model or small model using the `anthropic/` prefix (e.g. `"model": "anthropic/gpt-5.5"`).
 
-## Why Use LLM Gateway with MiMo Code?
+## Why Use betarouter with MiMo Code?
 
 - **200+ models** — Access GPT-5.5, Gemini, Llama, DeepSeek, and more in a single CLI configuration.
 - **Unified cost tracking** — Get a detailed breakdown of costs per prompt and session in your dashboard.

@@ -51,7 +51,7 @@ export async function generateMetadata({
 			url: canonicalUrl,
 			images: image,
 			type: "article",
-			siteName: "LLM Gateway Docs",
+			siteName: "betarouter Docs",
 		},
 		twitter: {
 			card: "summary_large_image",
@@ -94,13 +94,13 @@ export default async function Page(props: {
 		...(time ? { dateModified: new Date(time).toISOString() } : {}),
 		author: {
 			"@type": "Organization",
-			name: "LLM Gateway",
-			url: "https://llmgateway.io",
+			name: "betarouter",
+			url: "https://betarouter.com",
 		},
 		publisher: {
 			"@type": "Organization",
-			name: "LLM Gateway",
-			url: "https://llmgateway.io",
+			name: "betarouter",
+			url: "https://betarouter.com",
 		},
 	};
 

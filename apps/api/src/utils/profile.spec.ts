@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createTestUser, deleteAll } from "@/testing.js";
 import { computeProfileData } from "@/utils/profile.js";
 
-import { db, projectHourlyModelStats, tables } from "@llmgateway/db";
+import { db, projectHourlyModelStats, tables } from "@betarouter/db";
 
 const ORG_ID = "test-profile-org";
 const PROJECT_ID = "test-profile-project";

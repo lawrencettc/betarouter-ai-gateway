@@ -14,7 +14,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 	// sitemap as freshly changed on each deploy, which trains crawlers to
 	// ignore the field. Omitting it is the truthful option until real
 	// per-page modification dates are available.
-	// Guides that canonicalize cross-domain to llmgateway.io are excluded:
+	// Guides that canonicalize cross-domain to betarouter.com are excluded:
 	// a sitemap must only list canonical URLs, and listing an alternate here
 	// contradicts its canonical tag.
 	return source

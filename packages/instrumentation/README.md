@@ -1,6 +1,6 @@
-# LLMGateway Instrumentation Package
+# betarouter Instrumentation Package
 
-This package provides OpenTelemetry instrumentation and tracing middleware for LLMGateway services.
+This package provides OpenTelemetry instrumentation and tracing middleware for betarouter services.
 
 ## Features
 
@@ -15,7 +15,7 @@ This package provides OpenTelemetry instrumentation and tracing middleware for L
 ### Initialization
 
 ```typescript
-import { initializeInstrumentation } from "@llmgateway/instrumentation";
+import { initializeInstrumentation } from "@betarouter/instrumentation";
 
 initializeInstrumentation({
   serviceName: "my-service",
@@ -27,7 +27,7 @@ initializeInstrumentation({
 
 ```typescript
 import { Hono } from "hono";
-import { createTracingMiddleware } from "@llmgateway/instrumentation";
+import { createTracingMiddleware } from "@betarouter/instrumentation";
 
 const app = new Hono();
 app.use("*", createTracingMiddleware({ serviceName: "my-service" }));

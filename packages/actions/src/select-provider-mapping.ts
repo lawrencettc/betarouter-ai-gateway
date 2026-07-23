@@ -1,4 +1,4 @@
-import type { ProviderModelMapping } from "@llmgateway/models";
+import type { ProviderModelMapping } from "@betarouter/models";
 
 /**
  * Resolve the provider mapping whose capability flags (reasoning, etc.) describe

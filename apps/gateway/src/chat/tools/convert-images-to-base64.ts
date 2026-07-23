@@ -1,4 +1,4 @@
-import { logger } from "@llmgateway/logger";
+import { logger } from "@betarouter/logger";
 
 import type { ImageObject } from "./types.js";
 

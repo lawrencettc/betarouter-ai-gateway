@@ -1,4 +1,4 @@
-import type { ModelDefinition } from "@llmgateway/models";
+import type { ModelDefinition } from "@betarouter/models";
 
 /**
  * Checks if a model is truly free (has free flag AND no per-request or per-second pricing)

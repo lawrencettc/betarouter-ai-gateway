@@ -3,7 +3,7 @@ id: blog-how-we-handle-llm-provider-failover
 slug: how-we-handle-llm-provider-failover
 date: 2026-04-11
 title: "How We Handle LLM Provider Failover at Scale"
-summary: "A deep dive into the routing, retry, and failover systems that keep LLM Gateway reliable when upstream providers go down."
+summary: "A deep dive into the routing, retry, and failover systems that keep betarouter reliable when upstream providers go down."
 categories: ["Engineering"]
 image:
   src: "/blog/how-we-handle-llm-provider-failover.png"
@@ -14,7 +14,7 @@ image:
 
 LLM providers go down more than you'd expect. OpenAI has had multiple major outages. Anthropic has rate limit spikes. Google Vertex has regional availability issues. When you're routing millions of requests, every provider will fail eventually.
 
-This post is a deep dive into how LLM Gateway handles these failures transparently — so your application stays up even when providers don't.
+This post is a deep dive into how betarouter handles these failures transparently — so your application stays up even when providers don't.
 
 ## The Problem
 
@@ -34,7 +34,7 @@ That's the gateway's job.
 
 ## Architecture Overview
 
-Every request to LLM Gateway goes through a multi-stage pipeline:
+Every request to betarouter goes through a multi-stage pipeline:
 
 ```
 Request
@@ -148,7 +148,7 @@ This protects your application even when you've hardcoded a provider. If no alte
 Sometimes you need to test a specific provider or debug an issue, and automatic failover gets in the way. The `X-No-Fallback` header disables this protection:
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
+curl -X POST "https://api.betarouter.com/v1/chat/completions" \
   -H "Authorization: Bearer $API_KEY" \
   -H "X-No-Fallback: true" \
   -d '{"model": "openai/gpt-4o", "messages": [...]}'
@@ -232,7 +232,7 @@ No manual intervention. No alerts to wake up to. No config changes. The system a
 
 ## What This Means for Your Application
 
-When you use LLM Gateway, you get a single integration point that:
+When you use betarouter, you get a single integration point that:
 
 - Automatically picks the best provider based on real-time performance
 - Retries failed requests on alternative providers within the same API call
@@ -252,4 +252,4 @@ const response = await client.chat.completions.create({
 
 Everything else happens at the gateway layer.
 
-**[Try LLM Gateway free](/signup)** | **[Read the routing docs](https://docs.llmgateway.io/features/routing)** | **[Self-host with Docker](https://docs.llmgateway.io/self-host)**
+**[Try betarouter free](/signup)** | **[Read the routing docs](https://docs.betarouter.com/features/routing)** | **[Self-host with Docker](https://docs.betarouter.com/self-host)**

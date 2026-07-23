@@ -32,12 +32,12 @@ export const CALCULATOR_FAQ: CalculatorFaqItem[] = [
 	{
 		question: "Why do the same model's prices differ between providers?",
 		answer:
-			"Popular models are often served by several providers at different rates, and prices change as providers compete. LLM Gateway routes each request to the cheapest available provider for that model, so you pay the lowest live rate without changing any code.",
+			"Popular models are often served by several providers at different rates, and prices change as providers compete. betarouter routes each request to the cheapest available provider for that model, so you pay the lowest live rate without changing any code.",
 	},
 	{
-		question: "Does LLM Gateway add a markup or platform fee?",
+		question: "Does betarouter add a markup or platform fee?",
 		answer:
-			"No. LLM Gateway passes through provider pricing with zero platform markup, so you pay exactly what the provider charges (and less when a cheaper provider or volume discount is available). You only add a payment method once you start sending real traffic.",
+			"No. betarouter passes through provider pricing with zero platform markup, so you pay exactly what the provider charges (and less when a cheaper provider or volume discount is available). You only add a payment method once you start sending real traffic.",
 	},
 	{
 		question: "How accurate are these cost estimates?",
@@ -53,11 +53,11 @@ export const CALCULATOR_FAQ: CalculatorFaqItem[] = [
 		question:
 			"What is the cheapest way to call LLMs like GPT-4o, Claude, and Gemini?",
 		answer:
-			"Route through a gateway that compares providers and picks the lowest price per request. Because LLM Gateway supports 200+ models behind one OpenAI-compatible API, you can switch models or providers based on cost without rewriting your integration.",
+			"Route through a gateway that compares providers and picks the lowest price per request. Because betarouter supports 200+ models behind one OpenAI-compatible API, you can switch models or providers based on cost without rewriting your integration.",
 	},
 	{
 		question: "Is the token cost calculator free to use?",
 		answer:
-			"Yes, the calculator is completely free and requires no signup. You can compare as many models and token volumes as you like, then create a free LLM Gateway account when you are ready to start sending requests.",
+			"Yes, the calculator is completely free and requires no signup. You can compare as many models and token volumes as you like, then create a free betarouter account when you are ready to start sending requests.",
 	},
 ];

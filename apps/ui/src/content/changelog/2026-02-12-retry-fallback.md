@@ -3,7 +3,7 @@ id: "40"
 slug: "retry-fallback"
 date: "2026-02-12"
 title: "Automatic Retry & Fallback with Full Routing Transparency"
-summary: "When a provider fails, LLMGateway now automatically retries your request on another provider. Every attempt is logged with full routing visibility, so you always know what happened."
+summary: "When a provider fails, betarouter now automatically retries your request on another provider. Every attempt is logged with full routing visibility, so you always know what happened."
 image:
   src: "/changelog/retry-fallback.jpg"
   alt: "Automatic retry and fallback routing"
@@ -13,7 +13,7 @@ image:
 
 ## Automatic Retry & Fallback
 
-LLMGateway now automatically retries failed requests on alternate providers. If your request hits a 500 error, timeout, or connection failure on the first provider, the gateway seamlessly retries on the next best provider — all within the same API call.
+betarouter now automatically retries failed requests on alternate providers. If your request hits a 500 error, timeout, or connection failure on the first provider, the gateway seamlessly retries on the next best provider — all within the same API call.
 
 ### How It Works
 
@@ -77,7 +77,7 @@ Failed attempts still count against the provider's uptime score. If a provider k
 Use the `X-No-Fallback: true` header to disable automatic retries:
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
+curl -X POST "https://api.betarouter.com/v1/chat/completions" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -H "X-No-Fallback: true" \
@@ -95,4 +95,4 @@ Retries are automatically disabled when:
 - You request a specific provider (e.g., `openai/gpt-4o`)
 - The error is a client error (4xx) rather than a server error
 
-**[Read the routing docs](https://docs.llmgateway.io/features/routing)** for the full details on how routing and fallback work together.
+**[Read the routing docs](https://docs.betarouter.com/features/routing)** for the full details on how routing and fallback work together.

@@ -103,7 +103,7 @@ export async function embedTexts(
 			headers: {
 				authorization: `Bearer ${token}`,
 				"content-type": "application/json",
-				"x-source": "chat.llmgateway.io",
+				"x-source": "chat.betarouter.com",
 			},
 			body: JSON.stringify({ model: EMBEDDING_MODEL, input: batch }),
 			signal: AbortSignal.timeout(EMBEDDING_TIMEOUT_MS),

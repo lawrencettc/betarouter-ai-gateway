@@ -82,7 +82,7 @@ export function ApiKeysClient({ initialData }: { initialData: ApiKey[] }) {
 					<div>
 						<h2 className="text-3xl font-bold tracking-tight">API Keys</h2>
 						<p className="text-muted-foreground">
-							Create and manage API keys to authenticate requests to LLM Gateway
+							Create and manage API keys to authenticate requests to betarouter
 						</p>
 					</div>
 					{selectedProject && (

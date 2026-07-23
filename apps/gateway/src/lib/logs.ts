@@ -1,23 +1,23 @@
-import { publishToQueue, LOG_QUEUE } from "@llmgateway/cache";
+import { publishToQueue, LOG_QUEUE } from "@betarouter/cache";
 import {
 	readCatalogFeatureFlags,
 	recordCatalogBreakerOutcome,
-} from "@llmgateway/catalog";
+} from "@betarouter/catalog";
 import {
 	db,
 	log,
 	UnifiedFinishReason,
 	type LogInsertData,
-} from "@llmgateway/db";
-import { recordChatCompletionMetrics } from "@llmgateway/instrumentation";
-import { logger } from "@llmgateway/logger";
+} from "@betarouter/db";
+import { recordChatCompletionMetrics } from "@betarouter/instrumentation";
+import { logger } from "@betarouter/logger";
 
 import {
 	redactErrorDetails,
 	shouldRedactProviderError,
 } from "./stealth-provider-errors.js";
 
-import type { InferInsertModel } from "@llmgateway/db";
+import type { InferInsertModel } from "@betarouter/db";
 
 /**
  * Check if a finish reason is expected to map to UNKNOWN

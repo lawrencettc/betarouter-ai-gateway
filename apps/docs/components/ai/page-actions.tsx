@@ -141,13 +141,13 @@ export function ViewOptions({
 				),
 			},
 			{
-				title: "Open in LLM Gateway",
+				title: "Open in betarouter",
 				href:
 					process.env.NODE_ENV === "development"
 						? `http://localhost:3003?${new URLSearchParams({
 								q,
 							})}&hints=search&model=google-ai-studio/gemini-3-flash-preview`
-						: `https://chat.llmgateway.io?${new URLSearchParams({
+						: `https://chat.betarouter.com?${new URLSearchParams({
 								q,
 							})}&hints=search&model=google-ai-studio/gemini-3-flash-preview`,
 				icon: <Logo />,

@@ -15,7 +15,7 @@ export function ReliabilityCTA() {
 							Stop babysitting provider dashboards.
 						</h2>
 						<p className="mx-auto mb-8 max-w-2xl text-base leading-relaxed text-muted-foreground text-balance sm:text-lg">
-							Switch your base URL to LLM Gateway and get automatic failover,
+							Switch your base URL to betarouter and get automatic failover,
 							real-time health monitoring, and uptime reporting across 25+
 							providers — in one line of code.
 						</p>

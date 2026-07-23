@@ -8,7 +8,7 @@ import platformProviders, {
 
 import type { Variables } from "@/auth/config.js";
 import type { ServerTypes } from "@/vars.js";
-import type { platformProviderCredential } from "@llmgateway/db";
+import type { platformProviderCredential } from "@betarouter/db";
 
 const cacheMocks = vi.hoisted(() => ({
 	counts: new Map<string, number>(),
@@ -20,7 +20,7 @@ const cacheMocks = vi.hoisted(() => ({
 	expire: vi.fn(async () => true),
 }));
 
-vi.mock("@llmgateway/cache", () => ({
+vi.mock("@betarouter/cache", () => ({
 	redisClient: {
 		incr: cacheMocks.incr,
 		expire: cacheMocks.expire,

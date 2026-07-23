@@ -7,7 +7,7 @@ import {
 	aggregateLogsForTesting,
 } from "@/testing.js";
 
-import { db, tables } from "@llmgateway/db";
+import { db, tables } from "@betarouter/db";
 
 describe("activity endpoint", () => {
 	let token: string;

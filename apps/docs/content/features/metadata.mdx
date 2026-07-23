@@ -1,12 +1,12 @@
 ---
 title: Metadata
-description: Send additional context and metadata to LLM Gateway using custom headers.
+description: Send additional context and metadata to betarouter using custom headers.
 icon: Braces
 ---
 
 # Metadata
 
-LLM Gateway supports sending additional metadata with your requests using custom headers. This allows you to include information like user sessions, application versions, tenant IDs, or other contextual data that can be useful for analytics and monitoring.
+betarouter supports sending additional metadata with your requests using custom headers. This allows you to include information like user sessions, application versions, tenant IDs, or other contextual data that can be useful for analytics and monitoring.
 
 Later, you can filter by specific values to return, such as for a specific user or session. Additionally, in the future, you will be able to segment your analytics and monitoring based on this metadata. For example, you could show cost and latency breakdowns per user, application, country, feature, or any other dimension you want to track.
 
@@ -15,7 +15,7 @@ Later, you can filter by specific values to return, such as for a specific user 
 You can include custom headers with the `X-LLMGateway-` prefix to send metadata alongside your LLM requests:
 
 ```bash
-curl -X POST https://api.llmgateway.io/v1/chat/completions \
+curl -X POST https://api.betarouter.com/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "X-LLMGateway-Country: US" \
@@ -56,7 +56,7 @@ curl -X POST https://api.llmgateway.io/v1/chat/completions \
 For a multi-tenant application, you might use metadata headers like this:
 
 ```bash
-curl -X POST https://api.llmgateway.io/v1/chat/completions \
+curl -X POST https://api.betarouter.com/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "X-LLMGateway-Tenant-ID: acme-corp" \

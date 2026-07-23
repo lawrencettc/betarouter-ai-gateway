@@ -5,7 +5,7 @@ import { z } from "zod";
 import { apiAuth as auth, updateResendContact } from "@/auth/config.js";
 import { computeProfileData, profileSchema } from "@/utils/profile.js";
 
-import { and, db, eq, tables } from "@llmgateway/db";
+import { and, db, eq, tables } from "@betarouter/db";
 
 import type { ServerTypes } from "@/vars.js";
 

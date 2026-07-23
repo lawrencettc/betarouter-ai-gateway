@@ -44,4 +44,4 @@ jobs:
         env:
           LLMGATEWAY_API_KEY: ${{ secrets.PR_MESSAGE_LLM_GATEWAY_API_KEY }}
           DISCORD_TRAFFIC_NOTIFICATION_URL: ${{ secrets.DISCORD_TRAFFIC_NOTIFICATION_URL }}
-        run: pnpm --filter @llmgateway/scripts seo-audit-report ${{ inputs.dry_run == true && '--dry-run' || '' }}
+        run: pnpm --filter @betarouter/scripts seo-audit-report ${{ inputs.dry_run == true && '--dry-run' || '' }}

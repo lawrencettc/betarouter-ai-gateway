@@ -19,7 +19,7 @@ import {
 	sql,
 	user,
 	userOrganization,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 import type { ServerTypes } from "@/vars.js";
 

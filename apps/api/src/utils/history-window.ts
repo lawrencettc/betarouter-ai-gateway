@@ -3,7 +3,7 @@ import {
 	modelHistoryHourly,
 	modelProviderMappingHistory,
 	modelProviderMappingHistoryHourly,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 // Windows longer than 24h read the hourly rollup tables instead of the minute
 // tables, so a 7d/30d/90d range scans hours rather than millions of minute rows.

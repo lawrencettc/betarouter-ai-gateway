@@ -23,7 +23,7 @@ import {
 	DEV_PLAN_PRICES,
 	getDevPlanCreditsLimit,
 	MARKETING_STATS,
-} from "@llmgateway/shared";
+} from "@betarouter/shared";
 import {
 	AnthropicIcon,
 	AutohandIcon,
@@ -32,7 +32,7 @@ import {
 	EmpryoIcon,
 	OpenCodeIcon,
 	SoulForgeIcon,
-} from "@llmgateway/shared/components";
+} from "@betarouter/shared/components";
 
 import type { Metadata } from "next";
 
@@ -61,15 +61,15 @@ const featuredTools = [
 		name: "Claude Code",
 		icon: AnthropicIcon,
 		description:
-			"Two env vars and Claude Code routes through LLM Gateway. Use any model — Claude, GPT-5, Gemini, GLM — with a single ANTHROPIC_MODEL flip.",
+			"Two env vars and Claude Code routes through betarouter. Use any model — Claude, GPT-5, Gemini, GLM — with a single ANTHROPIC_MODEL flip.",
 		setup: "ANTHROPIC_BASE_URL + AUTH_TOKEN",
 	},
 	{
 		name: "OpenCode",
 		icon: OpenCodeIcon,
 		description:
-			"LLM Gateway is built into OpenCode. Run `opencode`, type `/connect`, paste your DevPass key. No env vars, no config files.",
-		setup: "/connect → LLM Gateway",
+			"betarouter is built into OpenCode. Run `opencode`, type `/connect`, paste your DevPass key. No env vars, no config files.",
+		setup: "/connect → betarouter",
 	},
 	{
 		name: "Empryo",
@@ -118,7 +118,7 @@ export default function LandingPage() {
 	const usageRatio = Math.round(credits.lite / DEV_PLAN_PRICES.lite);
 
 	return (
-		<div className="min-h-screen bg-background">
+		<div className="min-h-screen bg-[#131313]">
 			<LandingPageTracker />
 			<Header />
 
@@ -136,8 +136,8 @@ export default function LandingPage() {
 					<div className="container relative mx-auto px-4 pt-16 pb-20 sm:pt-24 sm:pb-24">
 						<div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
 							<div>
-								<div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1.5 font-mono text-xs text-emerald-700 dark:text-emerald-400">
-									<span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+								<div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#08A84E]/30 bg-[#08A84E]/10 px-3.5 py-1.5 font-mono text-xs text-[#08A84E]">
+									<span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#08A84E]" />
 									$1 in → $3 of model usage, at provider rates
 								</div>
 								<h1 className="font-display mb-6 text-5xl font-bold tracking-tight text-balance sm:text-6xl lg:text-7xl">
@@ -167,7 +167,7 @@ export default function LandingPage() {
 										cta="start_coding"
 										location="hero"
 										showArrow
-										className="gap-2 bg-emerald-600 px-8 text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-500 dark:bg-emerald-500 dark:text-emerald-950 dark:hover:bg-emerald-400"
+										className="gap-2 bg-[#004d2c] px-8 text-white shadow-lg shadow-[#004d2c]/25 hover:bg-[#006b3c]"
 									/>
 									<CodeCTATracker cta="view_plans" location="hero">
 										<Button size="lg" variant="outline" asChild>
@@ -209,13 +209,13 @@ export default function LandingPage() {
 									{"icon" in tool && tool.icon ? (
 										<tool.icon className="h-4.5 w-4.5" />
 									) : (
-										<span className="h-1 w-1 rounded-full bg-emerald-500/70" />
+										<span className="h-1 w-1 rounded-full bg-[#08A84E]/70" />
 									)}
 									{tool.name}
 								</span>
 							))}
 							<span className="flex items-center gap-2.5 font-mono text-sm text-muted-foreground">
-								<span className="h-1 w-1 rounded-full bg-emerald-500/70" />
+								<span className="h-1 w-1 rounded-full bg-[#08A84E]/70" />
 								any OpenAI-compatible tool
 							</span>
 						</Marquee>
@@ -249,7 +249,7 @@ export default function LandingPage() {
 							</div>
 						</div>
 						<p className="mt-8 text-center font-mono text-xs text-muted-foreground">
-							Runs on the open-source LLM Gateway —{" "}
+							Runs on the open-source betarouter —{" "}
 							{MARKETING_STATS.tokensRouted} tokens routed ·{" "}
 							<a
 								href="https://github.com/theopenco/llmgateway"
@@ -311,7 +311,7 @@ export default function LandingPage() {
 									<dt className="font-semibold">DevPass Lite</dt>
 									<dd className="text-right font-semibold tabular-nums">
 										$29/mo{" "}
-										<span className="font-normal text-emerald-600 dark:text-emerald-400">
+										<span className="font-normal text-[#08A84E]">
 											→ {`$${credits.lite}`} at provider rates
 										</span>
 									</dd>
@@ -366,7 +366,7 @@ export default function LandingPage() {
 								return (
 									<div
 										key={tool.name}
-										className="flex flex-col rounded-2xl border bg-card p-6 transition-all hover:border-emerald-500/30 hover:shadow-md"
+										className="flex flex-col rounded-2xl border bg-card p-6 transition-all hover:border-[#08A84E]/30 hover:shadow-md"
 									>
 										<div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-foreground text-background">
 											<Icon className="h-5 w-5" />
@@ -411,7 +411,7 @@ export default function LandingPage() {
 									key={item.step}
 									className="relative border-t border-dashed pt-6"
 								>
-									<span className="font-display absolute -top-5 left-0 bg-background pr-3 text-3xl font-bold tabular-nums text-emerald-600/80 dark:text-emerald-400/80">
+									<span className="font-display absolute -top-5 left-0 bg-[#131313] pr-3 text-3xl font-bold tabular-nums text-[#08A84E]/80">
 										{item.step}
 									</span>
 									<h3 className="mb-2 font-semibold">{item.title}</h3>
@@ -452,7 +452,7 @@ export default function LandingPage() {
 						className="absolute inset-0 [mask-image:radial-gradient(560px_circle_at_center,white,transparent)]"
 						squareSize={4}
 						gridGap={6}
-						color="#10b981"
+						color="#08A84E"
 						maxOpacity={0.18}
 						flickerChance={0.1}
 					/>
@@ -468,7 +468,7 @@ export default function LandingPage() {
 								cta="get_started"
 								location="bottom_cta"
 								showArrow
-								className="gap-2 bg-emerald-600 px-8 text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-500 dark:bg-emerald-500 dark:text-emerald-950 dark:hover:bg-emerald-400"
+								className="gap-2 bg-[#004d2c] px-8 text-white shadow-lg shadow-[#004d2c]/25 hover:bg-[#006b3c]"
 							/>
 							<CodeCTATracker cta="browse_models" location="bottom_cta">
 								<Button size="lg" variant="ghost" asChild>

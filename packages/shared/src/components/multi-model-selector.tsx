@@ -5,7 +5,7 @@ import { useState, useMemo, useCallback } from "react";
 
 import { cn } from "@/lib/utils";
 
-import { getProviderIcon } from "@llmgateway/shared/components";
+import { getProviderIcon } from "@betarouter/shared/components";
 
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
@@ -22,7 +22,7 @@ import type {
 	ModelDefinition,
 	ProviderDefinition,
 	StabilityLevel,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 interface ApiModel {
 	id: string;

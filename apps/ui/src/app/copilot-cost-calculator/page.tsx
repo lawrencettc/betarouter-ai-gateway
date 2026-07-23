@@ -6,7 +6,7 @@ import { HeroRSC } from "@/components/landing/hero-rsc";
 
 import type { Metadata } from "next";
 
-const PAGE_URL = "https://llmgateway.io/copilot-cost-calculator";
+const PAGE_URL = "https://betarouter.com/copilot-cost-calculator";
 
 export const metadata: Metadata = {
 	title: "GitHub Copilot Cost Calculator (2026 AI Credits)",
@@ -29,14 +29,14 @@ export const metadata: Metadata = {
 	openGraph: {
 		type: "website",
 		url: PAGE_URL,
-		title: "GitHub Copilot Cost Calculator (2026 AI Credits) | LLM Gateway",
+		title: "GitHub Copilot Cost Calculator (2026 AI Credits) | betarouter",
 		description:
-			"Model your team's Copilot AI Credits bill after the June 2026 change and compare the same workload routed through LLM Gateway.",
+			"Model your team's Copilot AI Credits bill after the June 2026 change and compare the same workload routed through betarouter.",
 		images: [{ url: "/opengraph.png?v=1" }],
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "GitHub Copilot Cost Calculator (2026 AI Credits) | LLM Gateway",
+		title: "GitHub Copilot Cost Calculator (2026 AI Credits) | betarouter",
 		description:
 			"Estimate your team's Copilot AI Credits bill and see what the same usage costs at pass-through token prices with caching.",
 		images: ["/opengraph.png?v=1"],
@@ -51,7 +51,7 @@ const breadcrumbSchema = {
 			"@type": "ListItem",
 			position: 1,
 			name: "Home",
-			item: "https://llmgateway.io",
+			item: "https://betarouter.com",
 		},
 		{
 			"@type": "ListItem",
@@ -70,7 +70,7 @@ const appSchema = {
 	operatingSystem: "Web",
 	url: PAGE_URL,
 	description:
-		"Free tool to estimate a team's monthly GitHub Copilot bill under the June 2026 AI Credits billing model — seats, included credits, chat, and agent usage — and compare the same workload routed through LLM Gateway at pass-through token prices with prompt caching and hard budget caps.",
+		"Free tool to estimate a team's monthly GitHub Copilot bill under the June 2026 AI Credits billing model — seats, included credits, chat, and agent usage — and compare the same workload routed through betarouter at pass-through token prices with prompt caching and hard budget caps.",
 	offers: {
 		"@type": "Offer",
 		price: "0",
@@ -78,8 +78,8 @@ const appSchema = {
 	},
 	publisher: {
 		"@type": "Organization",
-		name: "LLM Gateway",
-		url: "https://llmgateway.io",
+		name: "betarouter",
+		url: "https://betarouter.com",
 	},
 };
 

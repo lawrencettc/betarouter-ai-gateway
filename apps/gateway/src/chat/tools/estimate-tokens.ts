@@ -1,7 +1,7 @@
 import { estimateTokensFromContent } from "./estimate-tokens-from-content.js";
 import { encodeChatMessages } from "./tokenizer.js";
 
-import type { Provider } from "@llmgateway/models";
+import type { Provider } from "@betarouter/models";
 
 /**
  * Estimates token counts when not provided by the API. Uses a cheap

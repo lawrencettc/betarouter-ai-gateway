@@ -8,13 +8,13 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 # Speech Generation
 
-LLMGateway supports text-to-speech (TTS) through the OpenAI-compatible
+betarouter supports text-to-speech (TTS) through the OpenAI-compatible
 **`/v1/audio/speech`** endpoint, powered by ElevenLabs, Google Gemini, and
 OpenAI speech models.
 
 <Callout type="info">
 	Want to hear the voices before writing code? The [Audio
-	Studio](https://chat.llmgateway.io/audio) in the Playground generates speech
+	Studio](https://chat.betarouter.com/audio) in the Playground generates speech
 	from up to three models side by side, with per-model voice, format, and speed
 	controls.
 </Callout>
@@ -22,14 +22,14 @@ OpenAI speech models.
 ## Available Models
 
 Browse all speech generation models, with up-to-date pricing, on the
-[models page](https://llmgateway.io/models?filters=1&audioGeneration=true).
+[models page](https://betarouter.com/models?filters=1&audioGeneration=true).
 
 <Callout type="info">
 	Billing varies by model family. Some models are billed on token usage reported
 	by the provider (input text tokens and output audio tokens), while others are
 	billed on input character count (those return audio bytes without usage data).
 	See the [models
-	page](https://llmgateway.io/models?filters=1&audioGeneration=true) for each
+	page](https://betarouter.com/models?filters=1&audioGeneration=true) for each
 	model's exact pricing.
 </Callout>
 
@@ -45,7 +45,7 @@ Browse all speech generation models, with up-to-date pricing, on the
 | `speed`           | number | —        | Accepted for OpenAI compatibility, but not applied by Gemini speech models                                                                                    |
 
 <Callout type="info">
-	Gemini speech models return raw PCM audio. LLMGateway wraps it in a WAV
+	Gemini speech models return raw PCM audio. betarouter wraps it in a WAV
 	container by default (`response_format: "wav"`), or returns the raw 16-bit
 	little-endian PCM at 24&nbsp;kHz when `response_format: "pcm"` is requested.
 	Other formats such as `mp3` are only available on the OpenAI models, which
@@ -55,12 +55,12 @@ Browse all speech generation models, with up-to-date pricing, on the
 ## curl
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/audio/speech" \
+curl -X POST "https://api.betarouter.com/v1/audio/speech" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gemini-2.5-flash-preview-tts",
-    "input": "Hello, welcome to LLM Gateway!",
+    "input": "Hello, welcome to betarouter!",
     "voice": "Kore"
   }' \
   --output speech.wav
@@ -69,7 +69,7 @@ curl -X POST "https://api.llmgateway.io/v1/audio/speech" \
 ## OpenAI SDK
 
 Works with the standard OpenAI client library — just point the base URL to
-LLMGateway.
+betarouter.
 
 ```ts
 import OpenAI from "openai";
@@ -77,13 +77,13 @@ import { writeFileSync } from "fs";
 
 const openai = new OpenAI({
 	apiKey: process.env.LLM_GATEWAY_API_KEY,
-	baseURL: "https://api.llmgateway.io/v1",
+	baseURL: "https://api.betarouter.com/v1",
 });
 
 const response = await openai.audio.speech.create({
 	model: "gemini-2.5-flash-preview-tts",
 	voice: "Kore",
-	input: "Hello, welcome to LLM Gateway!",
+	input: "Hello, welcome to betarouter!",
 });
 
 const buffer = Buffer.from(await response.arrayBuffer());
@@ -116,7 +116,7 @@ voice id is also accepted directly.
 ## ElevenLabs
 
 The four ElevenLabs models are billed per **input character** (see the [models
-page](https://llmgateway.io/models?filters=1&audioGeneration=true) for rates):
+page](https://betarouter.com/models?filters=1&audioGeneration=true) for rates):
 
 - `eleven-multilingual-v2` — most lifelike, rich emotional expression, 29 languages
 - `eleven-v3` — most expressive and human-like, 70+ languages
@@ -124,12 +124,12 @@ page](https://llmgateway.io/models?filters=1&audioGeneration=true) for rates):
 - `eleven-turbo-v2-5` — fast and balanced, 32 languages
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/audio/speech" \
+curl -X POST "https://api.betarouter.com/v1/audio/speech" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "eleven-multilingual-v2",
-    "input": "Hello, welcome to LLM Gateway!",
+    "input": "Hello, welcome to betarouter!",
     "voice": "Sarah"
   }' \
   --output speech.mp3

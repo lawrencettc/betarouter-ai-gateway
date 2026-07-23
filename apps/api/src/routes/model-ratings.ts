@@ -2,8 +2,8 @@ import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 
-import { and, db, eq, inArray, sql, tables } from "@llmgateway/db";
-import { models as modelDefinitions } from "@llmgateway/models";
+import { and, db, eq, inArray, sql, tables } from "@betarouter/db";
+import { models as modelDefinitions } from "@betarouter/models";
 
 import type { ServerTypes } from "@/vars.js";
 

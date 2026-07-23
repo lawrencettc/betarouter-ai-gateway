@@ -1,11 +1,11 @@
-import { redisClient } from "@llmgateway/cache";
-import { logger } from "@llmgateway/logger";
+import { redisClient } from "@betarouter/cache";
+import { logger } from "@betarouter/logger";
 import {
 	DEFAULT_ROUTING_STICKY,
 	type RoutingStickyConfig,
-} from "@llmgateway/shared/routing-config";
+} from "@betarouter/shared/routing-config";
 
-import type { SessionProviderStore } from "@llmgateway/actions";
+import type { SessionProviderStore } from "@betarouter/actions";
 
 type StickyCfg = Required<RoutingStickyConfig>;
 
@@ -143,7 +143,7 @@ async function setSessionProvider(
 
 /**
  * Build a session-scoped provider store for sticky routing. The selection logic
- * in @llmgateway/actions reads/writes the pinned provider through this so the
+ * in @betarouter/actions reads/writes the pinned provider through this so the
  * same session reuses its provider across requests (keeping upstream prompt
  * caches warm), re-scoring only when the pin is no longer viable.
  */

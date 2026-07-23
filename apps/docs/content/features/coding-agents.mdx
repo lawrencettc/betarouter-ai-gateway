@@ -57,7 +57,7 @@ The following agents are automatically detected and allowed on DevPass plans:
 The most reliable way to identify your tool is to include the `x-source` header in every request:
 
 ```bash
-curl -X POST https://api.llmgateway.io/v1/chat/completions \
+curl -X POST https://api.betarouter.com/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "x-source: your-tool-name" \
@@ -71,7 +71,7 @@ The `x-source` value must match one of the recognized source IDs listed above. F
 If you cannot set custom headers, ensure your tool sends a recognizable `User-Agent`:
 
 ```bash
-curl -X POST https://api.llmgateway.io/v1/chat/completions \
+curl -X POST https://api.betarouter.com/v1/chat/completions \
   -H "User-Agent: my-tool/1.0.0" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -d '{ "model": "claude-sonnet-4-5-20250514", "messages": [...] }'

@@ -112,7 +112,7 @@ export function ReplyForm({
 		<div className="rounded-lg border border-border/60 bg-card p-6">
 			<h2 className="mb-4 text-lg font-medium">Reply to {name}</h2>
 			<p className="mb-4 text-sm text-muted-foreground">
-				Send a reply to {email} from contact@llmgateway.io
+				Send a reply to {email} from contact@betarouter.com
 			</p>
 
 			<div className="flex flex-col gap-4">

@@ -43,6 +43,7 @@ import {
 import { useAuth } from "@/lib/auth-client";
 
 import { Logo } from "./ui/logo";
+import { Wordmark } from "./ui/wordmark";
 
 import type { ReactNode } from "react";
 
@@ -69,9 +70,7 @@ function MobileHeader() {
 					<Logo className="h-4 w-4" />
 				</div>
 				<div className="flex flex-col">
-					<span className="text-sm font-semibold leading-tight">
-						BetaRouter
-					</span>
+					<Wordmark className="text-sm leading-tight" />
 					<span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
 						Admin
 					</span>
@@ -128,9 +127,7 @@ export function AdminShell({ children }: AdminShellProps) {
 								<Logo className="h-4 w-4" />
 							</div>
 							<div className="flex flex-col">
-								<span className="text-sm font-semibold leading-tight">
-									BetaRouter
-								</span>
+								<Wordmark className="text-sm leading-tight" />
 								<span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
 									Admin
 								</span>

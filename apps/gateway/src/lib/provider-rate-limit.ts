@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
 
-import { redisClient } from "@llmgateway/cache";
-import { logger } from "@llmgateway/logger";
+import { redisClient } from "@betarouter/cache";
+import { logger } from "@betarouter/logger";
 
 import { findEffectiveRateLimit } from "./cached-queries.js";
 
-import type { RateLimitSource } from "@llmgateway/db";
+import type { RateLimitSource } from "@betarouter/db";
 
 export const providerRateLimitWindows = {
 	rpm: {

@@ -46,19 +46,19 @@ import { throwIamException, validateRequestModelAccess } from "@/lib/iam.js";
 import { calculateDataStorageCost, insertLog } from "@/lib/logs.js";
 import { createCombinedSignal, isTimeoutError } from "@/lib/timeout-config.js";
 
-import { getProviderHeaders } from "@llmgateway/actions";
-import { shortid } from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+import { getProviderHeaders } from "@betarouter/actions";
+import { shortid } from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 import {
 	getProviderEnvValue,
 	models as modelDefinitions,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 import type { RoutingAttempt } from "@/chat/tools/retry-with-fallback.js";
 import type { ServerTypes } from "@/vars.js";
-import type { RoutingMetadata } from "@llmgateway/actions";
-import type { InferSelectModel, tables } from "@llmgateway/db";
-import type { ModelDefinition, ProviderModelMapping } from "@llmgateway/models";
+import type { RoutingMetadata } from "@betarouter/actions";
+import type { InferSelectModel, tables } from "@betarouter/db";
+import type { ModelDefinition, ProviderModelMapping } from "@betarouter/models";
 
 // Mistral accepts either a document URL/PDF or an image. The image_url variant
 // may be a bare string or an object with a `url` field, mirroring the upstream
@@ -480,14 +480,14 @@ ocr.openapi(createOcr, async (c): Promise<any> => {
 	if (!apiKey) {
 		throw new HTTPException(401, {
 			message:
-				"Unauthorized: Invalid LLMGateway API token. The token could not be found. Go to the LLMGateway 'API Keys' page to generate a new token.",
+				"Unauthorized: Invalid betarouter API token. The token could not be found. Go to the betarouter 'API Keys' page to generate a new token.",
 		});
 	}
 
 	if (apiKey.status !== "active") {
 		throw new HTTPException(401, {
 			message:
-				"Unauthorized: This LLMGateway API token is not active (it may be disabled or deleted). Go to the LLMGateway 'API Keys' page to generate a new token.",
+				"Unauthorized: This betarouter API token is not active (it may be disabled or deleted). Go to the betarouter 'API Keys' page to generate a new token.",
 		});
 	}
 

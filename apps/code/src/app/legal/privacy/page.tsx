@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
 	title: "Privacy Policy — DevPass",
 	description:
-		"Supplemental DevPass Privacy Policy. It builds on the LLM Gateway Privacy Policy and covers DevPass-specific request retention, per-agent metadata, AI provider routing, and sub-processors.",
+		"Supplemental DevPass Privacy Policy. It builds on the betarouter Privacy Policy and covers DevPass-specific request retention, per-agent metadata, AI provider routing, and sub-processors.",
 	alternates: { canonical: "/legal/privacy" },
 };
 
@@ -18,17 +18,17 @@ export default function PrivacyPage() {
 			</p>
 			<p>
 				This Supplemental Privacy Policy describes how{" "}
-				<strong>LLM Gateway</strong> (&ldquo;we&rdquo;, &ldquo;our&rdquo;, or
+				<strong>betarouter</strong> (&ldquo;we&rdquo;, &ldquo;our&rdquo;, or
 				&ldquo;us&rdquo;) collects, uses, and protects information when you use{" "}
 				<strong>DevPass</strong>, our flat-rate subscription for AI coding
 				tools, available at{" "}
-				<a href="https://devpass.llmgateway.io">devpass.llmgateway.io</a>.
+				<a href="https://devpass.betarouter.com">devpass.betarouter.com</a>.
 			</p>
 			<p>
 				<strong>
 					This DevPass Privacy Policy is an addendum to, and incorporates by
 					reference, the main{" "}
-					<a href="https://llmgateway.io/privacy">LLM Gateway Privacy Policy</a>{" "}
+					<a href="https://betarouter.com/privacy">betarouter Privacy Policy</a>{" "}
 					(the &ldquo;Base Policy&rdquo;), which forms the base of how we handle
 					your data.
 				</strong>{" "}
@@ -95,8 +95,8 @@ export default function PrivacyPage() {
 				remember your UI preferences, and operate basic product analytics
 				(PostHog). Browser-level Do Not Track signals are not currently a
 				supported opt-out mechanism. To opt out of analytics, contact us at{" "}
-				<a href="mailto:contact@llmgateway.io">contact@llmgateway.io</a>; we are
-				working on a self-serve in-app toggle.
+				<a href="mailto:contact@betarouter.com">contact@betarouter.com</a>; we
+				are working on a self-serve in-app toggle.
 			</p>
 			<hr />
 			<h2>2. How We Use Information</h2>
@@ -186,13 +186,13 @@ export default function PrivacyPage() {
 				objection, and the right to lodge a complaint with a supervisory
 				authority), our security practices, and international transfer
 				safeguards are described in the{" "}
-				<a href="https://llmgateway.io/privacy">LLM Gateway Privacy Policy</a>{" "}
+				<a href="https://betarouter.com/privacy">betarouter Privacy Policy</a>{" "}
 				and apply to DevPass. To exercise any of these rights, or for questions
 				about this Policy, email{" "}
-				<a href="mailto:contact@llmgateway.io">contact@llmgateway.io</a> from
+				<a href="mailto:contact@betarouter.com">contact@betarouter.com</a> from
 				the address associated with your account.
 			</p>
-			<p>© 2026 LLM Gateway. All rights reserved.</p>
+			<p>© 2026 betarouter. All rights reserved.</p>
 		</>
 	);
 }

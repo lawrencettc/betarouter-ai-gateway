@@ -3,18 +3,18 @@ import { cache } from "react";
 import {
 	fetchModelsFromApi,
 	fetchProvidersFromApi,
-} from "@llmgateway/shared/components";
+} from "@betarouter/shared/components";
 
 import { getConfig } from "./config-server";
 
 import type { DiscountData } from "./discount";
-import type { ApiModel, ApiProvider } from "@llmgateway/shared/components";
+import type { ApiModel, ApiProvider } from "@betarouter/shared/components";
 
 export type {
 	ApiModel,
 	ApiModelProviderMapping,
 	ApiProvider,
-} from "@llmgateway/shared/components";
+} from "@betarouter/shared/components";
 
 export const fetchModels = cache(async (): Promise<ApiModel[]> => {
 	const config = getConfig();

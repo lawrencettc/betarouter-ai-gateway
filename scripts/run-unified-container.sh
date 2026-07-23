@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# Run the published unified LLMGateway container with Docker-managed volumes.
+# Run the published unified betarouter container with Docker-managed volumes.
 # This avoids PostgreSQL permission errors from bind-mounting host directories
 # onto /var/lib/postgresql/data.
 

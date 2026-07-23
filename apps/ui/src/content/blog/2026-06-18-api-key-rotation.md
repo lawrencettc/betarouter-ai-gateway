@@ -3,11 +3,11 @@ id: blog-api-key-rotation
 slug: api-key-rotation
 date: 2026-06-18
 title: "API Key Rotation: How We Secure Your API Keys"
-summary: "Rotating API keys shouldn't cause service interruption for production AI. Learn how LLM Gateway enables secure key rotation for both providers and the gateway."
+summary: "Rotating API keys shouldn't cause service interruption for production AI. Learn how betarouter enables secure key rotation for both providers and the gateway."
 categories: ["Guides", "Engineering"]
 image:
   src: "/blog/api-key-rotation.png"
-  alt: "Secure API key rotation with LLM Gateway"
+  alt: "Secure API key rotation with betarouter"
   width: 1536
   height: 1024
 ---
@@ -18,7 +18,7 @@ But in most traditional setups, rotating API keys is a stressful event. It usual
 
 When your application integrates directly with multiple LLM providers (OpenAI, Anthropic, Gemini, etc.), this operational complexity is multiplied by the number of providers you use.
 
-Here is how **LLM Gateway** simplifies API key rotation into a painless, secure process—both for your backend LLM provider credentials and the keys your applications use to call the gateway.
+Here is how **betarouter** simplifies API key rotation into a painless, secure process—both for your backend LLM provider credentials and the keys your applications use to call the gateway.
 
 ---
 
@@ -41,7 +41,7 @@ Furthermore, compliance standards like SOC 2 and ISO 27001 mandate periodic cred
 
 ## Comparing Manual vs. Gateway Rotation
 
-| Rotation Aspect   | Direct Provider SDKs (Manual)                      | LLM Gateway (BYOK)                                |
+| Rotation Aspect   | Direct Provider SDKs (Manual)                      | betarouter (BYOK)                                 |
 | :---------------- | :------------------------------------------------- | :------------------------------------------------ |
 | **Provider Keys** | Requires code redeployments in every microservice. | Single-click dashboard update; zero code changes. |
 | **Gateway Keys**  | Not applicable (no gateway layer).                 | Double-key roll with concurrent active keys.      |
@@ -52,7 +52,7 @@ Furthermore, compliance standards like SOC 2 and ISO 27001 mandate periodic cred
 
 ## 1. Rotating Provider Keys (BYOK) with Zero Code Changes
 
-If you bring your own keys (BYOK) to LLM Gateway, your applications do not authenticate with the provider directly. Instead, your apps call LLM Gateway, and the gateway authenticates with the provider using the keys stored in your organization settings.
+If you bring your own keys (BYOK) to betarouter, your applications do not authenticate with the provider directly. Instead, your apps call betarouter, and the gateway authenticates with the provider using the keys stored in your organization settings.
 
 Normally, rotating an Anthropic or OpenAI key means:
 
@@ -63,14 +63,14 @@ Normally, rotating an Anthropic or OpenAI key means:
 
 If you have 10 microservices calling Anthropic, you have to deploy all 10. If you miss one, that service goes down when the old key is deleted.
 
-**With LLM Gateway, the process is consolidated:**
+**With betarouter, the process is consolidated:**
 
 1. Generate the new key in the provider console.
-2. Go to your LLM Gateway **Provider Keys** dashboard.
+2. Go to your betarouter **Provider Keys** dashboard.
 3. Replace the existing key and click **Save**.
 
 ```text
-[ Your App ] ---> ( Same Gateway Key ) ---> [ LLM Gateway ] ---> ( Rotating Provider Keys ) ---> [ LLM Providers ]
+[ Your App ] ---> ( Same Gateway Key ) ---> [ betarouter ] ---> ( Rotating Provider Keys ) ---> [ LLM Providers ]
                                                                  *Updated once in dashboard*
                                                                  *No app redeployments needed*
 ```
@@ -81,9 +81,9 @@ The gateway immediately begins using the new credential for all subsequent reque
 
 ## 2. Rotating Gateway Keys: The "Double-Key Roll" Pattern
 
-If you need to rotate the API key your application uses to connect to LLM Gateway (e.g. `llmgtwy_...`), you cannot avoid updating your application configuration. However, you _can_ avoid service interruption.
+If you need to rotate the API key your application uses to connect to betarouter (e.g. `llmgtwy_...`), you cannot avoid updating your application configuration. However, you _can_ avoid service interruption.
 
-LLM Gateway supports **multiple concurrent active keys** per project. This enables a seamless transition path known as the "Double-Key Roll" pattern.
+betarouter supports **multiple concurrent active keys** per project. This enables a seamless transition path known as the "Double-Key Roll" pattern.
 
 ```markdown
 1. Generate New Key (Both old and new keys active)
@@ -94,7 +94,7 @@ LLM Gateway supports **multiple concurrent active keys** per project. This enabl
 
 ### Step 1: Create a new API Key
 
-Navigate to the **API Keys** section of your LLM Gateway dashboard. Click **Create API Key** to generate a new key (e.g., `llmgtwy_production_v2`).
+Navigate to the **API Keys** section of your betarouter dashboard. Click **Create API Key** to generate a new key (e.g., `llmgtwy_production_v2`).
 
 At this point, **both the old and the new keys are active and valid**.
 
@@ -111,7 +111,7 @@ Redeploy or restart your services. Because the old key is still active, any requ
 
 ### Step 3: Verify traffic propagation
 
-In your LLM Gateway dashboard, inspect the **API Keys** list. You can monitor the usage and request logs associated with each key.
+In your betarouter dashboard, inspect the **API Keys** list. You can monitor the usage and request logs associated with each key.
 
 Wait until the request logs show that 100% of your production traffic has shifted to the new key.
 
@@ -127,7 +127,7 @@ Monitor your system for a brief window. If any legacy cron job or forgotten serv
 
 Manual rotation is a chore, and chores get forgotten. For non-production workloads, the best way to handle key rotation is to automate it using **Time-to-Live (TTL)**.
 
-When creating an API key in LLM Gateway, you can configure an optional expiration window (minutes, hours, or days). Once that window passes, the gateway automatically disables the key.
+When creating an API key in betarouter, you can configure an optional expiration window (minutes, hours, or days). Once that window passes, the gateway automatically disables the key.
 
 This is highly recommended for:
 
@@ -141,7 +141,7 @@ If an expired key needs to be reactivated, you can do so in the UI by explicitly
 
 To keep your AI infrastructure secure, follow these principles:
 
-1. **Use Project-Specific Keys:** Never use a single API key for both development and production. Create separate projects in LLM Gateway and assign dedicated keys to each environment.
+1. **Use Project-Specific Keys:** Never use a single API key for both development and production. Create separate projects in betarouter and assign dedicated keys to each environment.
 2. **Apply IAM Rules:** Narrow the scope of your keys. If a service only needs to run translation tasks using `gemini-2.5-flash`, configure an IAM rule on that key denying access to all other models. If the key is leaked, the exposure is limited.
 3. **Set Recurring Budgets:** Configure a spend limit (e.g., `$10 / day` or `$500 / month`) directly on the API key. If a developer runs an infinite loop or a key is compromised, the gateway will block requests before you receive a surprise bill.
 4. **Audit Key Activity:** Check the **Audit Logs** to see who created, modified, or deleted keys, and watch the **Security Events** log for key authentication failures or rate limit violations.
@@ -156,20 +156,20 @@ Rotating API keys regularly limits the window of opportunity for attackers if a 
 
 ### Can I rotate provider keys without redeploying my app?
 
-Yes. When using LLM Gateway in Bring Your Own Key (BYOK) mode, you update your OpenAI or Anthropic key once in the LLM Gateway dashboard. Since your applications only talk to the gateway, they require no code changes or redeployments.
+Yes. When using betarouter in Bring Your Own Key (BYOK) mode, you update your OpenAI or Anthropic key once in the betarouter dashboard. Since your applications only talk to the gateway, they require no code changes or redeployments.
 
 ### How do I automate key rotation?
 
-You can use short-lived API keys with a configured Time-to-Live (TTL) expiration. In LLM Gateway, you can set keys to automatically expire after a set number of minutes, hours, or days—ideal for CI/CD runs, staging environments, or external contractors.
+You can use short-lived API keys with a configured Time-to-Live (TTL) expiration. In betarouter, you can set keys to automatically expire after a set number of minutes, hours, or days—ideal for CI/CD runs, staging environments, or external contractors.
 
 ---
 
 ## Start Securing Your AI Pipeline
 
-LLM Gateway sits at the intersection of your application and your model providers, giving you a centralized control plane for auth, billing, and routing.
+betarouter sits at the intersection of your application and your model providers, giving you a centralized control plane for auth, billing, and routing.
 
 If you are currently managing raw provider keys across multiple servers, migration is a two-line change.
 
-- **[Try LLM Gateway free](https://llmgateway.io/signup)** — Create a free account in under 60 seconds
-- **[Read the API Keys & IAM Rules Documentation](https://docs.llmgateway.io/features/api-keys)** — Learn how to secure your endpoints
+- **[Try betarouter free](https://betarouter.com/signup)** — Create a free account in under 60 seconds
+- **[Read the API Keys & IAM Rules Documentation](https://docs.betarouter.com/features/api-keys)** — Learn how to secure your endpoints
 - **[Learn about our SOC 2 Type II compliance](/blog/soc2-type-ii)** — Read the announcement and download the report

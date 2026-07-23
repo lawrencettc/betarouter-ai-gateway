@@ -1,17 +1,17 @@
 ---
 title: AWS Bedrock Integration
-description: Connect AWS Bedrock to LLM Gateway for access to foundation models
+description: Connect AWS Bedrock to betarouter for access to foundation models
 icon: Cloud
 ---
 
 import { Step, Steps } from "fumadocs-ui/components/steps";
 
-AWS Bedrock is Amazon's fully managed service that provides access to foundation models from leading AI companies. This guide shows how to create AWS Bedrock Long-Term API Keys and integrate them with LLM Gateway.
+AWS Bedrock is Amazon's fully managed service that provides access to foundation models from leading AI companies. This guide shows how to create AWS Bedrock Long-Term API Keys and integrate them with betarouter.
 
 ## Prerequisites
 
 - An AWS account with Bedrock access enabled
-- LLM Gateway account or self-hosted instance
+- betarouter account or self-hosted instance
 
 ## Overview
 
@@ -45,13 +45,13 @@ AWS Bedrock supports **Long-Term API Keys** for simplified authentication. These
 
 </Steps>
 
-## Add to LLM Gateway
+## Add to betarouter
 
 <Steps>
 <Step>
 ### Navigate to Provider Keys
 
-1. Log into [LLM Gateway Dashboard](https://llmgateway.io/dashboard)
+1. Log into [betarouter Dashboard](https://betarouter.com/dashboard)
 2. Select your organization and project
 3. Go to **Provider Keys** in the sidebar
 
@@ -78,7 +78,7 @@ The system will validate your key and confirm the connection.
 Test your integration with a simple API call:
 
 ```bash
-curl -X POST https://api.llmgateway.io/v1/chat/completions \
+curl -X POST https://api.betarouter.com/v1/chat/completions \
   -H "Authorization: Bearer YOUR_LLMGATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -92,21 +92,21 @@ curl -X POST https://api.llmgateway.io/v1/chat/completions \
   }'
 ```
 
-Replace `YOUR_LLMGATEWAY_API_KEY` with your LLM Gateway API key.
+Replace `YOUR_LLMGATEWAY_API_KEY` with your betarouter API key.
 
 </Step>
 </Steps>
 
 ## Available Models
 
-Once configured, you can access all AWS Bedrock models through LLM Gateway:
+Once configured, you can access all AWS Bedrock models through betarouter:
 
 - **Anthropic Claude**: `aws-bedrock/claude-3-5-sonnet`, `aws-bedrock/claude-3-5-haiku`
 - **Meta Llama**: `aws-bedrock/llama-3-2-90b`, `aws-bedrock/llama-3-2-11b`
 - **Amazon Titan**: `aws-bedrock/amazon.titan-text-express-v1`
 - **And more...**
 
-Browse all available models at [llmgateway.io/models](https://llmgateway.io/models?provider=aws-bedrock)
+Browse all available models at [betarouter.com/models](https://betarouter.com/models?provider=aws-bedrock)
 
 ## Troubleshooting
 

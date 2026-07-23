@@ -11,7 +11,7 @@ image:
   height: 677
 ---
 
-We're excited to announce the release of v2.0 of our [@llmgateway/ai-sdk-provider](https://www.npmjs.com/package/@llmgateway/ai-sdk-provider) npm package, making it even easier to integrate LLM Gateway with the Vercel AI SDK.
+We're excited to announce the release of v2.0 of our [@llmgateway/ai-sdk-provider](https://www.npmjs.com/package/@llmgateway/ai-sdk-provider) npm package, making it even easier to integrate betarouter with the Vercel AI SDK.
 
 ## 🚀 What's New in v2.0
 
@@ -58,4 +58,4 @@ Access all models:
 - `llama-3.1-70b-versatile`
 - And 40+ more models across 14+ providers
 
-Check out the [full documentation](https://docs.llmgateway.io/quick-start#3--sdk-integrations) and explore the package on [npm](https://www.npmjs.com/package/@llmgateway/ai-sdk-provider?utm_source=llmgateway.io).
+Check out the [full documentation](https://docs.betarouter.com/quick-start#3--sdk-integrations) and explore the package on [npm](https://www.npmjs.com/package/@llmgateway/ai-sdk-provider?utm_source=betarouter.com).

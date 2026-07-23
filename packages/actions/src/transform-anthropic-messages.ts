@@ -1,4 +1,4 @@
-import { logger } from "@llmgateway/logger";
+import { logger } from "@betarouter/logger";
 import {
 	type AnthropicMessage,
 	type BaseMessage,
@@ -8,7 +8,7 @@ import {
 	type TextContent,
 	type ToolResultContent,
 	type ToolUseContent,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 import { parseToolCallArguments } from "./parse-tool-call-arguments.js";
 import { processImageUrl } from "./process-image-url.js";

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 
-import { AllModels as SharedAllModels } from "@llmgateway/shared/components";
+import { AllModels as SharedAllModels } from "@betarouter/shared/components";
 
 import type { ComponentProps } from "react";
 

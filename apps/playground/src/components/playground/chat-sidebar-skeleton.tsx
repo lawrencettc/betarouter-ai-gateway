@@ -13,6 +13,7 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { Wordmark } from "@/components/ui/wordmark";
 
 import type { Organization } from "@/lib/types";
 
@@ -34,13 +35,13 @@ export const ChatSidebarSkeleton = ({
 			<SidebarHeader>
 				<SidebarMenu>
 					<SidebarMenuItem>
-						<SidebarMenuButton size="lg" asChild tooltip="LLM Gateway">
+						<SidebarMenuButton size="lg" asChild tooltip="betarouter">
 							<Link href="/" prefetch={true}>
 								<div className="flex aspect-square size-8 items-center justify-center">
 									<Logo className="size-6" />
 								</div>
 								<span className="text-lg font-bold tracking-tight">
-									LLM Gateway
+									<Wordmark />
 								</span>
 							</Link>
 						</SidebarMenuButton>

@@ -20,20 +20,20 @@ import { fetchServerData } from "@/lib/server-api";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Enterprise LLM Gateway – SSO, Audit Logs & Guardrails",
+	title: "Enterprise betarouter – SSO, Audit Logs & Guardrails",
 	description:
 		"SOC 2 Type II LLM infrastructure with SAML SSO, audit logs, prompt-injection guardrails, per-project routing, and white-label chat for regulated teams.",
 	alternates: { canonical: "/enterprise" },
 	openGraph: {
-		title: "Enterprise LLM Gateway",
+		title: "Enterprise betarouter",
 		description:
 			"SAML SSO, audit logs, guardrails, per-project routing, and white-label chat for regulated teams putting LLMs in production.",
 		type: "website",
-		url: "https://llmgateway.io/enterprise",
+		url: "https://betarouter.com/enterprise",
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "Enterprise LLM Gateway",
+		title: "Enterprise betarouter",
 		description:
 			"SAML SSO, audit logs, guardrails, per-project routing, and white-label chat for regulated teams.",
 	},

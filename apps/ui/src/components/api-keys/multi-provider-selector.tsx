@@ -13,10 +13,10 @@ import {
 } from "@/lib/components/dropdown-menu";
 import { Input } from "@/lib/components/input";
 
-import { providers } from "@llmgateway/models";
-import { providerLogoUrls } from "@llmgateway/shared/components";
+import { providers } from "@betarouter/models";
+import { providerLogoUrls } from "@betarouter/shared/components";
 
-import type { ProviderId } from "@llmgateway/models";
+import type { ProviderId } from "@betarouter/models";
 
 interface MultiProviderSelectorProps {
 	selectedProviders: string[];

@@ -364,7 +364,7 @@ export const MimoCodeIcon: React.FC<React.SVGProps<SVGSVGElement>> = (
 	</svg>
 );
 
-// DevPass Code Icon (LLM Gateway logo mark)
+// DevPass Code Icon (betarouter logo mark)
 export const DevPassCodeIcon: React.FC<React.SVGProps<SVGSVGElement>> = (
 	props,
 ) => (

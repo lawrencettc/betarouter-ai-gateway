@@ -3,7 +3,7 @@
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 
-import { DevPassCodeIcon } from "@llmgateway/shared/components";
+import { DevPassCodeIcon } from "@betarouter/shared/components";
 
 interface StampSpec {
 	name: string;
@@ -216,7 +216,7 @@ export function PassportBook() {
 						{/* Cover front */}
 						<div className="absolute inset-0 flex flex-col items-center justify-between rounded-r-xl border border-emerald-900/60 bg-gradient-to-br from-emerald-950 via-[#06231c] to-zinc-950 px-4 py-6 shadow-2xl [backface-visibility:hidden] sm:py-10">
 							<p className="font-mono text-[8px] uppercase tracking-[0.4em] text-amber-200/70 sm:text-[10px]">
-								LLM Gateway
+								betarouter
 							</p>
 							<div className="flex flex-col items-center gap-3 sm:gap-4">
 								<div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-amber-200/60 text-amber-200/90 sm:h-20 sm:w-20">
@@ -253,7 +253,7 @@ export function PassportBook() {
 							</div>
 							<div className="relative flex h-full flex-col p-3 sm:p-5">
 								<p className="font-mono text-[8px] uppercase tracking-[0.25em] text-stone-500 sm:text-[10px]">
-									LLM Gateway · DevPass
+									betarouter · DevPass
 								</p>
 								<div className="mt-2 flex gap-3 sm:mt-4 sm:gap-4">
 									<div className="flex h-16 w-14 shrink-0 items-center justify-center rounded-md border border-stone-400/70 bg-stone-200/60 text-stone-800 sm:h-24 sm:w-20">
@@ -270,7 +270,7 @@ export function PassportBook() {
 										</div>
 										<div>
 											<dt className="text-stone-400">Issued by</dt>
-											<dd>LLM Gateway</dd>
+											<dd>betarouter</dd>
 										</div>
 										<div>
 											<dt className="text-stone-400">Access</dt>

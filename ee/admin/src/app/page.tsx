@@ -268,7 +268,7 @@ export default async function Page({
 				/>
 				<div className="relative">
 					<p className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
-						BetaRouter{" "}
+						betarouter{" "}
 						<span aria-hidden className="text-foreground/30">
 							/
 						</span>{" "}

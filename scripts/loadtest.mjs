@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-// Simple load test for api.llmgateway.io
+// Simple load test for api.betarouter.com
 // Fires `RATE` requests per second using parallel fetch() calls.
 
 const API_URL =
-	process.env.API_URL || "https://api.llmgateway.io/v1/chat/completions";
+	process.env.API_URL || "https://api.betarouter.com/v1/chat/completions";
 const API_KEY = process.env.LLMGATEWAY_API_KEY;
 const MODEL = process.env.MODEL || "deepseek-v4-flash";
 

@@ -10,8 +10,8 @@ import {
 	and,
 	eq,
 	getTableColumns,
-} from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+} from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 
 import {
 	formatUTCTimestamp,

@@ -1,5 +1,5 @@
 // Single source of truth for marketing claims used across apps/ui and
-// apps/code. Labels must stay floors of the live counts in @llmgateway/models
+// apps/code. Labels must stay floors of the live counts in @betarouter/models
 // (40 active providers, 215 models with an active provider mapping as of
 // 2026-07) — bump them only when the real numbers clear the next threshold.
 export const MARKETING_STATS = {

@@ -73,4 +73,4 @@ Best of both worlds use API keys with credit fallback
 
 ---
 
-**[Upgrade to Pro today](/dashboard/settings/org/billing)** and start saving money while getting the most powerful LLM Gateway experience!
+**[Upgrade to Pro today](/dashboard/settings/org/billing)** and start saving money while getting the most powerful betarouter experience!

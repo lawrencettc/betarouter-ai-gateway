@@ -15,15 +15,15 @@ import {
 	customRuleTypes,
 	defaultSystemRulesConfig,
 	defaultAllowedFileTypes,
-} from "@llmgateway/db";
-import { checkGuardrails } from "@llmgateway/guardrails";
+} from "@betarouter/db";
+import { checkGuardrails } from "@betarouter/guardrails";
 
 import type { ServerTypes } from "@/vars.js";
 import type {
 	SystemRulesConfig,
 	GuardrailAction,
 	CustomRuleConfig,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 export const guardrails = new OpenAPIHono<ServerTypes>();
 

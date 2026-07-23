@@ -2,7 +2,7 @@ import { ogContentType, ogImage, ogSize } from "@/lib/og";
 
 export const size = ogSize;
 export const contentType = ogContentType;
-export const alt = "LLM Gateway — MCP server for 200+ models";
+export const alt = "betarouter — MCP server for 200+ models";
 
 export default function Image() {
 	return ogImage({

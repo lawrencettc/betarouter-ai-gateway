@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { ThemeProvider } from "next-themes";
 
 import DashboardShell from "@/app/dashboard/DashboardShell";
 import { fetchServerData } from "@/lib/server-api";
@@ -21,8 +22,18 @@ export default async function DashboardLayout({
 	}
 
 	return (
-		<DashboardShell initialUser={userData} initialDevPlanStatus={devPlanStatus}>
-			{children}
-		</DashboardShell>
+		<ThemeProvider
+			attribute="class"
+			defaultTheme="system"
+			enableSystem
+			storageKey="theme"
+		>
+			<DashboardShell
+				initialUser={userData}
+				initialDevPlanStatus={devPlanStatus}
+			>
+				{children}
+			</DashboardShell>
+		</ThemeProvider>
 	);
 }

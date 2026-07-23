@@ -5,7 +5,7 @@ import type { ServerTypes } from "@/vars.js";
 
 /**
  * Public, unauthenticated configuration for the embeddable SDK. Lets the browser
- * client/elements fetch LLM Gateway's Stripe publishable key (safe to expose) so
+ * client/elements fetch betarouter's Stripe publishable key (safe to expose) so
  * developers don't have to hardcode it.
  */
 export const publicConfig = new OpenAPIHono<ServerTypes>();

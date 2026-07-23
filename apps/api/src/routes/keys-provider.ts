@@ -5,15 +5,15 @@ import { z } from "zod";
 import { maskToken } from "@/lib/maskToken.js";
 import { getAdminOrganizationIds } from "@/utils/authorization.js";
 
-import { validateProviderKey } from "@llmgateway/actions";
-import { logAuditEvent } from "@llmgateway/audit";
-import { cdb, db, eq, tables } from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
-import { isStealthProvider, providers } from "@llmgateway/models";
-import { assertSafeProviderUrl } from "@llmgateway/shared/url-safety-node";
+import { validateProviderKey } from "@betarouter/actions";
+import { logAuditEvent } from "@betarouter/audit";
+import { cdb, db, eq, tables } from "@betarouter/db";
+import { logger } from "@betarouter/logger";
+import { isStealthProvider, providers } from "@betarouter/models";
+import { assertSafeProviderUrl } from "@betarouter/shared/url-safety-node";
 
 import type { ServerTypes } from "@/vars.js";
-import type { ProviderId } from "@llmgateway/models";
+import type { ProviderId } from "@betarouter/models";
 
 export const keysProvider = new OpenAPIHono<ServerTypes>();
 

@@ -2,7 +2,7 @@
 /**
  * Script to export models to models.dev TOML format
  *
- * This script reads all models from the @llmgateway/models package
+ * This script reads all models from the @betarouter/models package
  * and exports them under the "llmgateway" provider in the TOML format
  * expected by https://github.com/anomalyco/models.dev
  *
@@ -24,7 +24,7 @@ import { mkdirSync, writeFileSync, existsSync, rmSync, readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
-import { models, type ModelDefinition } from "@llmgateway/models";
+import { models, type ModelDefinition } from "@betarouter/models";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -74,11 +74,11 @@ function escapeTomlString(str: string): string {
 
 function generateProviderToml(): string {
 	const lines: string[] = [];
-	lines.push(`name = "LLM Gateway"`);
+	lines.push(`name = "betarouter"`);
 	lines.push(`env = ["LLMGATEWAY_API_KEY"]`);
 	lines.push(`npm = "@ai-sdk/openai-compatible"`);
-	lines.push(`doc = "https://llmgateway.io/docs"`);
-	lines.push(`api = "https://api.llmgateway.io/v1"`);
+	lines.push(`doc = "https://betarouter.com/docs"`);
+	lines.push(`api = "https://api.betarouter.com/v1"`);
 	return lines.join("\n");
 }
 

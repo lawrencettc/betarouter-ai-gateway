@@ -50,7 +50,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useFetchClient } from "@/lib/fetch-client";
 
-import { isStealthProvider, providers } from "@llmgateway/models";
+import { isStealthProvider, providers } from "@betarouter/models";
 
 import type { paths } from "@/lib/api/v1";
 
@@ -465,7 +465,7 @@ export function PlatformProvidersClient({
 								Platform Providers
 							</h1>
 							<p className="text-base text-muted-foreground">
-								Shared upstream credentials used by BetaRouter accounts
+								Shared upstream credentials used by betarouter accounts
 							</p>
 						</div>
 					</div>
@@ -514,7 +514,7 @@ export function PlatformProvidersClient({
 										No platform providers configured
 									</p>
 									<p className="mt-1 text-base text-muted-foreground">
-										Add an upstream API key to serve users through BetaRouter.
+										Add an upstream API key to serve users through betarouter.
 									</p>
 								</TableCell>
 							</TableRow>

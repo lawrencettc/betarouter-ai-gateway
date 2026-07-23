@@ -7,12 +7,12 @@ import Newsletter from "@/components/landing/newsletter";
 import { useAppConfig } from "@/lib/config";
 import { XIcon } from "@/lib/icons/XIcon";
 
-import { providers as providerDefinitions } from "@llmgateway/models";
+import { providers as providerDefinitions } from "@betarouter/models";
 
 export default function Footer() {
 	const config = useAppConfig();
 	const filteredProviders = providerDefinitions.filter(
-		(p) => p.name !== "LLM Gateway",
+		(p) => p.name !== "betarouter",
 	);
 
 	return (
@@ -55,7 +55,7 @@ export default function Footer() {
 							</a>
 						</div>
 						<a
-							href="https://status.llmgateway.io/"
+							href="https://status.betarouter.com/"
 							target="_blank"
 							rel="noopener noreferrer"
 							className="mt-6 inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/40 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
@@ -83,7 +83,7 @@ export default function Footer() {
 								/>
 							</a>
 							<a
-								href="https://security.llmgateway.io/"
+								href="https://security.betarouter.com/"
 								target="_blank"
 								rel="noopener noreferrer"
 								className="text-xs leading-snug text-muted-foreground transition-colors hover:text-foreground"
@@ -157,7 +157,7 @@ export default function Footer() {
 								</li>
 								<li>
 									<a
-										href="https://devpass.llmgateway.io"
+										href="https://devpass.betarouter.com"
 										className="text-sm hover:underline underline-offset-4 hover:text-foreground"
 									>
 										DevPass
@@ -315,7 +315,7 @@ export default function Footer() {
 								</li>
 								<li>
 									<a
-										href="mailto:contact@llmgateway.io"
+										href="mailto:contact@betarouter.com"
 										target="_blank"
 										rel="noreferrer noopener"
 										className="text-sm hover:underline underline-offset-4 hover:text-foreground"
@@ -361,7 +361,7 @@ export default function Footer() {
 							<ul className="space-y-2">
 								<li>
 									<a
-										href="https://security.llmgateway.io/"
+										href="https://security.betarouter.com/"
 										target="_blank"
 										rel="noopener noreferrer"
 										className="text-sm hover:underline underline-offset-4 hover:text-foreground"
@@ -371,7 +371,7 @@ export default function Footer() {
 								</li>
 								<li>
 									<a
-										href="https://security.llmgateway.io/"
+										href="https://security.betarouter.com/"
 										target="_blank"
 										rel="noopener noreferrer"
 										className="text-sm hover:underline underline-offset-4 hover:text-foreground"
@@ -408,7 +408,7 @@ export default function Footer() {
 								</li>
 								<li>
 									<a
-										href="https://security.llmgateway.io/"
+										href="https://security.betarouter.com/"
 										target="_blank"
 										rel="noopener noreferrer"
 										className="text-sm hover:underline underline-offset-4 hover:text-foreground"
@@ -418,7 +418,7 @@ export default function Footer() {
 								</li>
 								<li>
 									<a
-										href="https://status.llmgateway.io/"
+										href="https://status.betarouter.com/"
 										target="_blank"
 										rel="noopener noreferrer"
 										className="text-sm hover:underline underline-offset-4 hover:text-foreground"
@@ -694,7 +694,7 @@ export default function Footer() {
 				{/* Bottom bar */}
 				<div className="border-t border-border/50 pt-8 mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
 					<p className="text-muted-foreground text-sm">
-						&copy; {new Date().getFullYear()} LLM Gateway. All rights reserved.
+						&copy; {new Date().getFullYear()} betarouter. All rights reserved.
 					</p>
 				</div>
 			</div>

@@ -14,8 +14,8 @@ import {
 import Logo from "@/lib/icons/Logo";
 import { cn } from "@/lib/utils";
 
-import { MARKETING_STATS } from "@llmgateway/shared";
-import { ProviderIcons } from "@llmgateway/shared/components";
+import { MARKETING_STATS } from "@betarouter/shared";
+import { ProviderIcons } from "@betarouter/shared/components";
 
 import { AnimatedBeam } from "./animated-beam";
 
@@ -186,7 +186,7 @@ export function Graph() {
 										<TooltipContent>
 											Could be your model?{" "}
 											<a
-												href="mailto:contact@llmgateway.io"
+												href="mailto:contact@betarouter.com"
 												className="text-blue-500 underline"
 												target="_blank"
 												rel="noreferrer noopener"

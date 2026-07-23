@@ -14,7 +14,7 @@ export function SimulatorCta({ discount }: { discount: number }) {
 						Start Saving on Image Generation Today
 					</h2>
 					<p className="text-zinc-600 dark:text-zinc-400 mb-10">
-						Get {discount}% off Gemini 3 Pro image generation with LLM Gateway.
+						Get {discount}% off Gemini 3 Pro image generation with betarouter.
 						No credit card required to start.
 					</p>
 

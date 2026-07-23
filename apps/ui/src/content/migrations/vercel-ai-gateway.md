@@ -17,13 +17,13 @@ Swap your provider imports—your AI SDK code stays the same:
 + import { generateText } from "ai";
 + import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
 
-+ const llmgateway = createLLMGateway({
++ const betarouter = createLLMGateway({
 +   apiKey: process.env.LLM_GATEWAY_API_KEY
 + });
 
 const { text } = await generateText({
 -   model: openai("gpt-5.2"),
-+   model: llmgateway("gpt-5.2"),
++   model: betarouter("gpt-5.2"),
   prompt: "Hello!"
 });
 ```
@@ -32,19 +32,19 @@ The key difference: one provider, one API key, all models—with caching and ana
 
 ## Migration Steps
 
-### 1. Get Your LLM Gateway API Key
+### 1. Get Your betarouter API Key
 
-Sign up at [llmgateway.io/signup](/signup) and create an API key from your dashboard.
+Sign up at [betarouter.com/signup](/signup) and create an API key from your dashboard.
 
-### 2. Install the LLM Gateway AI SDK Provider
+### 2. Install the betarouter AI SDK Provider
 
-Install the native LLM Gateway provider for the Vercel AI SDK:
+Install the native betarouter provider for the Vercel AI SDK:
 
 ```bash
 pnpm add @llmgateway/ai-sdk-provider
 ```
 
-This package provides full compatibility with the Vercel AI SDK and supports all LLM Gateway features.
+This package provides full compatibility with the Vercel AI SDK and supports all betarouter features.
 
 ### 3. Update Your Code
 
@@ -66,21 +66,21 @@ const { text: claudeText } = await generateText({
   prompt: "Hello!",
 });
 
-// After (LLM Gateway - single provider for all models)
+// After (betarouter - single provider for all models)
 import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
 import { generateText } from "ai";
 
-const llmgateway = createLLMGateway({
+const betarouter = createLLMGateway({
   apiKey: process.env.LLM_GATEWAY_API_KEY,
 });
 
 const { text: openaiText } = await generateText({
-  model: llmgateway("gpt-4o"),
+  model: betarouter("gpt-4o"),
   prompt: "Hello!",
 });
 
 const { text: claudeText } = await generateText({
-  model: llmgateway("anthropic/claude-3-5-sonnet-20241022"),
+  model: betarouter("anthropic/claude-3-5-sonnet-20241022"),
   prompt: "Hello!",
 });
 ```
@@ -91,12 +91,12 @@ const { text: claudeText } = await generateText({
 import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
 import { streamText } from "ai";
 
-const llmgateway = createLLMGateway({
+const betarouter = createLLMGateway({
   apiKey: process.env.LLM_GATEWAY_API_KEY,
 });
 
 const { textStream } = await streamText({
-  model: llmgateway("anthropic/claude-3-5-sonnet-20241022"),
+  model: betarouter("anthropic/claude-3-5-sonnet-20241022"),
   prompt: "Write a poem about coding",
 });
 
@@ -112,7 +112,7 @@ for await (const text of textStream) {
 import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
 import { streamText } from "ai";
 
-const llmgateway = createLLMGateway({
+const betarouter = createLLMGateway({
   apiKey: process.env.LLM_GATEWAY_API_KEY,
 });
 
@@ -120,7 +120,7 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
 
   const result = await streamText({
-    model: llmgateway("gpt-4o"),
+    model: betarouter("gpt-4o"),
     messages,
   });
 
@@ -136,13 +136,13 @@ If you prefer not to install a new package, you can use `@ai-sdk/openai` with a 
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText } from "ai";
 
-const llmgateway = createOpenAI({
-  baseURL: "https://api.llmgateway.io/v1",
+const betarouter = createOpenAI({
+  baseURL: "https://api.betarouter.com/v1",
   apiKey: process.env.LLM_GATEWAY_API_KEY,
 });
 
 const { text } = await generateText({
-  model: llmgateway("gpt-4o"),
+  model: betarouter("gpt-4o"),
   prompt: "Hello!",
 });
 ```
@@ -154,13 +154,13 @@ const { text } = await generateText({
 # OPENAI_API_KEY=sk-...
 # ANTHROPIC_API_KEY=sk-ant-...
 
-# Add LLM Gateway key
+# Add betarouter key
 export LLM_GATEWAY_API_KEY=llmgtwy_your_key_here
 ```
 
 ## Model Name Format
 
-LLM Gateway supports two model ID formats:
+betarouter supports two model ID formats:
 
 **Root Model IDs** (without provider prefix) - Uses smart routing to automatically select the best provider based on uptime, throughput, price, and latency:
 
@@ -178,33 +178,33 @@ anthropic/claude-3-5-sonnet-20241022
 google-ai-studio/gemini-1.5-pro
 ```
 
-For more details on routing behavior, see the [routing documentation](https://docs.llmgateway.io/features/routing).
+For more details on routing behavior, see the [routing documentation](https://docs.betarouter.com/features/routing).
 
 ### Model Mapping Examples
 
-| Vercel AI SDK                             | LLM Gateway                                |
+| Vercel AI SDK                             | betarouter                                 |
 | ----------------------------------------- | ------------------------------------------ |
-| `openai("gpt-4o")`                        | `llmgateway("gpt-4o")`                     |
-| `anthropic("claude-3-5-sonnet-20241022")` | `llmgateway("claude-3-5-sonnet-20241022")` |
-| `google("gemini-1.5-pro")`                | `llmgateway("gemini-1.5-pro")`             |
+| `openai("gpt-4o")`                        | `betarouter("gpt-4o")`                     |
+| `anthropic("claude-3-5-sonnet-20241022")` | `betarouter("claude-3-5-sonnet-20241022")` |
+| `google("gemini-1.5-pro")`                | `betarouter("gemini-1.5-pro")`             |
 
 Check the [models page](/models) for the full list of available models.
 
 ## Tool Calling
 
-LLM Gateway supports tool calling through the AI SDK:
+betarouter supports tool calling through the AI SDK:
 
 ```typescript
 import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
 import { generateText, tool } from "ai";
 import { z } from "zod";
 
-const llmgateway = createLLMGateway({
+const betarouter = createLLMGateway({
   apiKey: process.env.LLM_GATEWAY_API_KEY,
 });
 
 const { text, toolResults } = await generateText({
-  model: llmgateway("gpt-4o"),
+  model: betarouter("gpt-4o"),
   tools: {
     weather: tool({
       description: "Get the weather for a location",
@@ -220,13 +220,13 @@ const { text, toolResults } = await generateText({
 });
 ```
 
-## Self-Hosting LLM Gateway
+## Self-Hosting betarouter
 
-If you prefer self-hosting, LLM Gateway is available under AGPLv3:
+If you prefer self-hosting, betarouter is available under AGPLv3:
 
 ```bash
 git clone https://github.com/llmgateway/llmgateway
-cd llmgateway
+cd betarouter
 pnpm install
 pnpm setup
 pnpm dev
@@ -236,6 +236,6 @@ This gives you the same managed experience with full control over your infrastru
 
 ## Need Help?
 
-- Browse available models at [llmgateway.io/models](/models)
-- Read the [API documentation](https://docs.llmgateway.io)
-- Contact support at contact@llmgateway.io
+- Browse available models at [betarouter.com/models](/models)
+- Read the [API documentation](https://docs.betarouter.com)
+- Contact support at contact@betarouter.com

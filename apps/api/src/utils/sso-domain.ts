@@ -1,8 +1,8 @@
 import { resolveDefaultProjectIds } from "@/lib/sso-default-projects.js";
 
-import { logAuditEvent } from "@llmgateway/audit";
-import { db, tables } from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+import { logAuditEvent } from "@betarouter/audit";
+import { db, tables } from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 
 import { generateAutoJoinEmailHtml, sendTransactionalEmail } from "./email.js";
 
@@ -140,7 +140,7 @@ export async function autoJoinByEmailDomain({
 	// but we're emailing the member, not the owner.
 	await sendTransactionalEmail({
 		to: email,
-		subject: `You've been added to ${organization.name} on LLM Gateway`,
+		subject: `You've been added to ${organization.name} on betarouter`,
 		html: generateAutoJoinEmailHtml(
 			name ?? "",
 			organization.name,

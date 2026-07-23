@@ -1,12 +1,12 @@
 ---
 title: Azure Integration
-description: Connect Azure to LLM Gateway for enterprise-grade OpenAI models
+description: Connect Azure to betarouter for enterprise-grade OpenAI models
 icon: Cloud
 ---
 
 import { Step, Steps } from "fumadocs-ui/components/steps";
 
-Azure provides access to OpenAI's powerful language models through Microsoft's enterprise cloud infrastructure. This guide shows how to create an Azure resource, deploy models, and integrate them with LLM Gateway.
+Azure provides access to OpenAI's powerful language models through Microsoft's enterprise cloud infrastructure. This guide shows how to create an Azure resource, deploy models, and integrate them with betarouter.
 
 <Callout type="info">
 	Only OpenAI models are supported via Azure at this time. [Open an
@@ -17,11 +17,11 @@ Azure provides access to OpenAI's powerful language models through Microsoft's e
 ## Prerequisites
 
 - An Azure account with an active subscription
-- LLM Gateway account or self-hosted instance
+- betarouter account or self-hosted instance
 
 ## Overview
 
-Azure provides enterprise-grade access to OpenAI models with enhanced security, compliance, and regional availability. LLM Gateway integrates seamlessly with Azure deployments.
+Azure provides enterprise-grade access to OpenAI models with enhanced security, compliance, and regional availability. betarouter integrates seamlessly with Azure deployments.
 
 ## Create Azure Resource
 
@@ -83,13 +83,13 @@ Azure provides enterprise-grade access to OpenAI models with enhanced security, 
 
 </Steps>
 
-## Add to LLM Gateway
+## Add to betarouter
 
 <Steps>
 <Step>
 ### Navigate to Provider Keys
 
-1. Log into [LLM Gateway Dashboard](https://llmgateway.io/dashboard)
+1. Log into [betarouter Dashboard](https://betarouter.com/dashboard)
 2. Select your organization and project
 3. Go to **Provider Keys** in the sidebar
 
@@ -117,7 +117,7 @@ The system will validate your key and confirm the connection.
 Test your integration with a simple API call:
 
 ```bash
-curl -X POST https://api.llmgateway.io/v1/chat/completions \
+curl -X POST https://api.betarouter.com/v1/chat/completions \
   -H "Authorization: Bearer YOUR_LLMGATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -131,22 +131,22 @@ curl -X POST https://api.llmgateway.io/v1/chat/completions \
   }'
 ```
 
-Replace `YOUR_LLMGATEWAY_API_KEY` with your LLM Gateway API key.
+Replace `YOUR_LLMGATEWAY_API_KEY` with your betarouter API key.
 
 </Step>
 </Steps>
 
 ## Available Models
 
-Once configured, you can access your Azure deployments through LLM Gateway:
+Once configured, you can access your Azure deployments through betarouter:
 
 - **GPT-4o**: `azure/gpt-4o`
 - **GPT-4o Mini**: `azure/gpt-4o-mini`
-- **GPT-3.5 Turbo**: `azure/gpt-3.5-turbo` (note: use gpt-3.5-turbo as llmgateway model name instead of gpt-35-turbo)
+- **GPT-3.5 Turbo**: `azure/gpt-3.5-turbo` (note: use gpt-3.5-turbo as the betarouter model name instead of gpt-35-turbo)
 
 **Note**: Only models you have deployed in Azure Studio will be available. Ensure your deployment names match the expected model identifiers.
 
-Browse all available models at [llmgateway.io/models](https://llmgateway.io/models?provider=azure)
+Browse all available models at [betarouter.com/models](https://betarouter.com/models?provider=azure)
 
 ## Troubleshooting
 

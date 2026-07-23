@@ -1,6 +1,6 @@
-import { getCatalogBreakerStates } from "@llmgateway/catalog";
-import { db, log, platformMappingHealthSummary, sql } from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+import { getCatalogBreakerStates } from "@betarouter/catalog";
+import { db, log, platformMappingHealthSummary, sql } from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 
 interface HealthAggregateRow extends Record<string, unknown> {
 	mapping_id: string;

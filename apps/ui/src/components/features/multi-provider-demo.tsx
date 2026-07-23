@@ -11,7 +11,7 @@ import {
 	CardTitle,
 } from "@/lib/components/card";
 
-import { MARKETING_STATS } from "@llmgateway/shared";
+import { MARKETING_STATS } from "@betarouter/shared";
 
 const providers = [
 	{

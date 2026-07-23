@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { selectProviderMapping } from "./select-provider-mapping.js";
 
-import type { ProviderModelMapping } from "@llmgateway/models";
+import type { ProviderModelMapping } from "@betarouter/models";
 
 describe("selectProviderMapping", () => {
 	it("falls back to the region-agnostic mapping when only the root entry exists (unpinned AWS Bedrock regression)", () => {

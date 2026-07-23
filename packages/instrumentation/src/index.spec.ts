@@ -4,7 +4,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { initializeInstrumentation } from "./index.js";
 
 // Mock the logger and OpenTelemetry modules
-vi.mock("@llmgateway/logger", () => ({
+vi.mock("@betarouter/logger", () => ({
 	createLogger: () => ({
 		info: vi.fn(),
 		warn: vi.fn(),

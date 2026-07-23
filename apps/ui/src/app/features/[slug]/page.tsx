@@ -62,19 +62,19 @@ export default async function FeaturePage({ params }: PageProps) {
 				"@type": "ListItem",
 				position: 1,
 				name: "Home",
-				item: "https://llmgateway.io",
+				item: "https://betarouter.com",
 			},
 			{
 				"@type": "ListItem",
 				position: 2,
 				name: "Features",
-				item: "https://llmgateway.io/features",
+				item: "https://betarouter.com/features",
 			},
 			{
 				"@type": "ListItem",
 				position: 3,
 				name: feature.title,
-				item: `https://llmgateway.io/features/${slug}`,
+				item: `https://betarouter.com/features/${slug}`,
 			},
 		],
 	};
@@ -84,22 +84,22 @@ export default async function FeaturePage({ params }: PageProps) {
 		"@type": "WebPage",
 		name: feature.title,
 		description: feature.longDescription,
-		url: `https://llmgateway.io/features/${slug}`,
-		image: "https://llmgateway.io/opengraph.png?v=1",
+		url: `https://betarouter.com/features/${slug}`,
+		image: "https://betarouter.com/opengraph.png?v=1",
 		isPartOf: {
 			"@type": "WebSite",
-			name: "LLM Gateway",
-			url: "https://llmgateway.io",
+			name: "betarouter",
+			url: "https://betarouter.com",
 		},
 		about: {
 			"@type": "Thing",
-			name: `LLM Gateway - ${feature.title}`,
+			name: `betarouter - ${feature.title}`,
 			description: feature.longDescription,
 		},
 		author: {
 			"@type": "Organization",
-			name: "LLM Gateway",
-			url: "https://llmgateway.io",
+			name: "betarouter",
+			url: "https://betarouter.com",
 		},
 	};
 
@@ -246,7 +246,7 @@ export default async function FeaturePage({ params }: PageProps) {
 									Ready to get started?
 								</h2>
 								<p className="text-lg text-muted-foreground mb-8">
-									Join thousands of developers using LLM Gateway to power their
+									Join thousands of developers using betarouter to power their
 									AI applications.
 								</p>
 								<div className="flex flex-wrap justify-center gap-4">
@@ -301,7 +301,7 @@ export async function generateMetadata({
 			title,
 			description,
 			type: "website",
-			url: `https://llmgateway.io/features/${feature.slug}`,
+			url: `https://betarouter.com/features/${feature.slug}`,
 		},
 		twitter: {
 			card: "summary_large_image",

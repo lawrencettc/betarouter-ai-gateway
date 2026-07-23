@@ -22,7 +22,7 @@ import {
 	OpenCodeIcon,
 	PiIcon,
 	VSCodeIcon,
-} from "@llmgateway/shared/components";
+} from "@betarouter/shared/components";
 
 import type { ComponentType, SVGProps } from "react";
 
@@ -41,7 +41,7 @@ const integrations: Integration[] = [
 	{
 		name: "DevPass Code",
 		description:
-			"Our open-source terminal coding agent built for LLM Gateway. One browser login, every model, no per-provider keys.",
+			"Our open-source terminal coding agent built for betarouter. One browser login, every model, no per-provider keys.",
 		href: "/guides/devpass-code",
 		icon: DevPassCodeIcon,
 		comingSoon: false,
@@ -49,7 +49,7 @@ const integrations: Integration[] = [
 	{
 		name: "Autohand Code",
 		description:
-			"Use LLM Gateway with Autohand Code for autonomous AI-powered coding in your terminal, IDE, and Slack.",
+			"Use betarouter with Autohand Code for autonomous AI-powered coding in your terminal, IDE, and Slack.",
 		href: "/guides/autohand",
 		icon: AutohandIcon,
 		comingSoon: false,
@@ -57,7 +57,7 @@ const integrations: Integration[] = [
 	{
 		name: "Claude Code",
 		description:
-			"Use LLM Gateway with Claude Code for AI-powered terminal assistance and coding.",
+			"Use betarouter with Claude Code for AI-powered terminal assistance and coding.",
 		href: "/guides/claude-code",
 		icon: AnthropicIcon,
 		comingSoon: false,
@@ -65,8 +65,8 @@ const integrations: Integration[] = [
 	{
 		name: "Cursor",
 		description:
-			"Use LLM Gateway with Cursor IDE in plan mode only. Cursor's coding agent does not work with external API endpoints.",
-		href: "https://docs.llmgateway.io/guides/cursor",
+			"Use betarouter with Cursor IDE in plan mode only. Cursor's coding agent does not work with external API endpoints.",
+		href: "https://docs.betarouter.com/guides/cursor",
 		icon: CursorIcon,
 		comingSoon: false,
 		badge: "Plan mode only",
@@ -74,7 +74,7 @@ const integrations: Integration[] = [
 	{
 		name: "Codex CLI",
 		description:
-			"Use LLM Gateway with OpenAI's Codex CLI for AI-powered terminal coding.",
+			"Use betarouter with OpenAI's Codex CLI for AI-powered terminal coding.",
 		href: "/guides/codex-cli",
 		icon: CodexIcon,
 		comingSoon: false,
@@ -82,15 +82,15 @@ const integrations: Integration[] = [
 	{
 		name: "Cline",
 		description:
-			"Use LLM Gateway with Cline for AI-powered coding assistance in VS Code.",
-		href: "https://docs.llmgateway.io/guides/cline",
+			"Use betarouter with Cline for AI-powered coding assistance in VS Code.",
+		href: "https://docs.betarouter.com/guides/cline",
 		icon: ClineIcon,
 		comingSoon: false,
 	},
 	{
 		name: "Continue CLI",
 		description:
-			"Use LLM Gateway with Continue's open-source AI code assistant CLI.",
+			"Use betarouter with Continue's open-source AI code assistant CLI.",
 		href: "/guides/continue",
 		icon: ContinueIcon,
 		comingSoon: false,
@@ -98,7 +98,7 @@ const integrations: Integration[] = [
 	{
 		name: "Hermes Agent",
 		description:
-			"Use LLM Gateway with Nous Research's Hermes Agent for terminal-based AI coding.",
+			"Use betarouter with Nous Research's Hermes Agent for terminal-based AI coding.",
 		href: "/guides/hermes-agent",
 		icon: HermesIcon,
 		comingSoon: false,
@@ -106,7 +106,7 @@ const integrations: Integration[] = [
 	{
 		name: "Kilo Code",
 		description:
-			"Use LLM Gateway with Kilo Code in VS Code for autonomous AI coding with built-in provider support.",
+			"Use betarouter with Kilo Code in VS Code for autonomous AI coding with built-in provider support.",
 		href: "/guides/kilo-code",
 		icon: KiloCodeIcon,
 		comingSoon: false,
@@ -114,7 +114,7 @@ const integrations: Integration[] = [
 	{
 		name: "Kimi Code",
 		description:
-			"Use LLM Gateway with Kimi Code CLI for autonomous terminal-based AI coding.",
+			"Use betarouter with Kimi Code CLI for autonomous terminal-based AI coding.",
 		href: "/guides/kimi-code",
 		icon: KimiIcon,
 		comingSoon: false,
@@ -122,7 +122,7 @@ const integrations: Integration[] = [
 	{
 		name: "MiMo Code",
 		description:
-			"Use LLM Gateway with MiMo Code CLI for autonomous terminal-based AI coding.",
+			"Use betarouter with MiMo Code CLI for autonomous terminal-based AI coding.",
 		href: "/guides/mimocode",
 		icon: MimoCodeIcon,
 		comingSoon: false,
@@ -130,15 +130,15 @@ const integrations: Integration[] = [
 	{
 		name: "n8n",
 		description:
-			"Connect n8n workflow automation to LLM Gateway for AI-powered workflows.",
-		href: "https://docs.llmgateway.io/guides/n8n",
+			"Connect n8n workflow automation to betarouter for AI-powered workflows.",
+		href: "https://docs.betarouter.com/guides/n8n",
 		icon: N8nIcon,
 		comingSoon: false,
 	},
 	{
 		name: "OpenCode",
 		description:
-			"Use LLM Gateway with OpenCode CLI for AI-powered development workflows.",
+			"Use betarouter with OpenCode CLI for AI-powered development workflows.",
 		href: "/guides/opencode",
 		icon: OpenCodeIcon,
 		comingSoon: false,
@@ -146,7 +146,7 @@ const integrations: Integration[] = [
 	{
 		name: "OpenCode Desktop",
 		description:
-			"Use LLM Gateway with OpenCode Desktop app — connect via GUI, no config files needed.",
+			"Use betarouter with OpenCode Desktop app — connect via GUI, no config files needed.",
 		href: "/guides/opencode-desktop",
 		icon: OpenCodeIcon,
 		comingSoon: false,
@@ -154,7 +154,7 @@ const integrations: Integration[] = [
 	{
 		name: "OpenClaw",
 		description:
-			"Use LLM Gateway with OpenClaw for AI-powered chat across Discord, WhatsApp, Telegram, and more.",
+			"Use betarouter with OpenClaw for AI-powered chat across Discord, WhatsApp, Telegram, and more.",
 		href: "/guides/openclaw",
 		icon: OpenClawIcon,
 		comingSoon: false,
@@ -162,7 +162,7 @@ const integrations: Integration[] = [
 	{
 		name: "Pi",
 		description:
-			"Use LLM Gateway with Pi coding agent for AI-powered terminal coding with any model.",
+			"Use betarouter with Pi coding agent for AI-powered terminal coding with any model.",
 		href: "/guides/pi",
 		icon: PiIcon,
 		comingSoon: false,
@@ -180,7 +180,7 @@ const integrations: Integration[] = [
 function DevPlansCta() {
 	return (
 		<a
-			href="https://devpass.llmgateway.io"
+			href="https://devpass.betarouter.com"
 			target="_blank"
 			rel="noopener noreferrer"
 			className="group relative mb-10 block overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-background via-background to-muted/40 transition-all duration-500 hover:border-foreground/20 hover:shadow-[0_0_40px_-12px_rgba(0,0,0,0.15)] dark:hover:shadow-[0_0_40px_-12px_rgba(255,255,255,0.06)]"

@@ -20,7 +20,7 @@ import { ProfileWrapped } from "@/components/profile/ProfileWrapped";
 import { useAppConfig } from "@/lib/config";
 import { resolveCanonicalModel } from "@/lib/model-family";
 
-import { getProviderIcon } from "@llmgateway/shared/components";
+import { getProviderIcon } from "@betarouter/shared/components";
 
 import type { paths } from "@/lib/api/v1";
 

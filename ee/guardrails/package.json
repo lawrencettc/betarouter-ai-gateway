@@ -1,5 +1,5 @@
 {
-	"name": "@llmgateway/guardrails",
+	"name": "@betarouter/guardrails",
 	"version": "0.0.0",
 	"private": true,
 	"license": "SEE LICENSE IN ../LICENSE",
@@ -22,8 +22,8 @@
 		"lint": "eslint . && prettier --check ."
 	},
 	"dependencies": {
-		"@llmgateway/cache": "workspace:*",
-		"@llmgateway/db": "workspace:*",
+		"@betarouter/cache": "workspace:*",
+		"@betarouter/db": "workspace:*",
 		"drizzle-orm": "1.0.0-beta.1"
 	},
 	"devDependencies": {}

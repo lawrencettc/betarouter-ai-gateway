@@ -7,12 +7,12 @@ import Link from "next/link";
 import { AuthLink } from "@/components/shared/auth-link";
 import { ShimmerButton } from "@/lib/components/shimmer-button";
 
-import { MARKETING_STATS } from "@llmgateway/shared";
-import { providerLogoUrls } from "@llmgateway/shared/components";
+import { MARKETING_STATS } from "@betarouter/shared";
+import { providerLogoUrls } from "@betarouter/shared/components";
 
 import { Navbar } from "./navbar";
 
-import type { ProviderId } from "@llmgateway/models";
+import type { ProviderId } from "@betarouter/models";
 
 // Provider logos configuration
 const PROVIDER_LOGOS: { name: string; providerId: ProviderId }[] = [
@@ -94,7 +94,7 @@ export function Hero({
 		<>
 			<Navbar sticky={sticky}>{children}</Navbar>
 			{!navbarOnly && (
-				<main className="overflow-hidden">
+				<main className="overflow-hidden" style={{ background: "#131313" }}>
 					<div
 						aria-hidden
 						className="z-2 absolute inset-0 pointer-events-none isolate opacity-50 contain-strict hidden lg:block"
@@ -118,7 +118,7 @@ export function Hero({
 											className="hover:bg-background dark:hover:border-t-border bg-muted group flex w-fit items-center gap-4 rounded-full border p-1 pl-4 shadow-md shadow-black/5 transition-all duration-300 dark:border-t-white/5 dark:shadow-zinc-950"
 										>
 											<span className="text-foreground text-sm">
-												LLM Gateway Is Now SOC 2 Type II Certified
+												betarouter Is Now SOC 2 Type II Certified
 											</span>
 											<span className="dark:border-background block h-4 w-0.5 border-l bg-white dark:bg-zinc-700" />
 
@@ -139,9 +139,19 @@ export function Hero({
 								{/* Centered hero content - optimized for conversion */}
 								<div className="text-center max-w-4xl mx-auto">
 									<div className="animate-hero-enter">
-										<h1 className="text-balance text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground">
-											LLM Gateway — One API for {MARKETING_STATS.providers}{" "}
-											providers, including OpenAI, Anthropic, and Google
+										<h1 className="font-display text-balance text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground">
+											betarouter — One{" "}
+											<span
+												style={{
+													background: "#08A84E",
+													color: "#04240f",
+													padding: "0 0.18em",
+												}}
+											>
+												API
+											</span>{" "}
+											for {MARKETING_STATS.providers} providers, including
+											OpenAI, Anthropic, and Google
 										</h1>
 										<p className="mt-4 md:mt-6 max-w-2xl mx-auto text-balance text-base md:text-lg text-muted-foreground">
 											Stop juggling API keys and provider dashboards. Route
@@ -255,10 +265,9 @@ export function Hero({
 											))}
 											<Link
 												href="/migration"
-												className="flex items-center gap-1 rounded-full px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+												className="flex items-center gap-1 rounded-full px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-[#08A84E] hover:underline decoration-[#08A84E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 											>
-												<span>View all</span>
-												<ChevronRight className="size-3" aria-hidden="true" />
+												<span>View all →</span>
 											</Link>
 										</div>
 									</div>
@@ -281,7 +290,7 @@ export function Hero({
 										<Image
 											className="bg-background aspect-[3022/1650] relative hidden rounded-2xl dark:block"
 											src="/new-hero.png"
-											alt="LLM Gateway dashboard showing analytics and API usage"
+											alt="betarouter dashboard showing analytics and API usage"
 											width={3022}
 											height={1650}
 											sizes="(max-width: 1280px) 100vw, 1120px"
@@ -289,7 +298,7 @@ export function Hero({
 										<Image
 											className="z-2 border-border/25 aspect-[3022/1650] relative rounded-2xl border dark:hidden"
 											src="/new-hero-light.png"
-											alt="LLM Gateway dashboard showing analytics and API usage"
+											alt="betarouter dashboard showing analytics and API usage"
 											width={3022}
 											height={1650}
 											sizes="(max-width: 1280px) 100vw, 1120px"
@@ -299,16 +308,18 @@ export function Hero({
 							</div>
 						</div>
 					</section>
-					<section className="bg-background pb-16 pt-16 md:pb-32">
+					<section
+						className="pb-16 pt-16 md:pb-32"
+						style={{ background: "#004d2c", color: "#fff" }}
+					>
 						<div className="group relative m-auto max-w-5xl px-6">
 							<div className="absolute inset-0 z-10 flex scale-95 items-center justify-center opacity-0 duration-500 group-hover:scale-100 group-hover:opacity-100">
 								<Link
 									href="/providers"
-									className="block text-sm duration-150 hover:opacity-75"
+									className="block text-sm duration-150 hover:text-[#08A84E] hover:underline decoration-[#08A84E]"
 									prefetch={true}
 								>
-									<span>View All Providers</span>
-									<ChevronRight className="ml-1 inline-block size-3" />
+									<span>View all providers →</span>
 								</Link>
 							</div>
 							<div className="group-hover:blur-xs mx-auto mt-12 grid max-w-3xl grid-cols-5 gap-x-10 gap-y-6 transition-all duration-500 group-hover:opacity-50 sm:grid-cols-6 sm:gap-x-12 sm:gap-y-10 lg:grid-cols-8">

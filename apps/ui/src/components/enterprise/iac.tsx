@@ -42,9 +42,9 @@ export function InfrastructureAsCodeEnterprise() {
 								</h2>
 								<p className="text-lg text-muted-foreground leading-relaxed max-w-xl">
 									Enterprise includes Terraform modules that provision and
-									deploy LLM Gateway on AWS, GCP, or Azure — the cluster,
-									managed database, cache, networking, and secrets — so you get
-									a production deployment without writing the plumbing yourself.
+									deploy betarouter on AWS, GCP, or Azure — the cluster, managed
+									database, cache, networking, and secrets — so you get a
+									production deployment without writing the plumbing yourself.
 								</p>
 							</div>
 
@@ -66,7 +66,7 @@ export function InfrastructureAsCodeEnterprise() {
 									terraform apply
 								</div>
 								<div className="mt-2 text-muted-foreground">
-									# cluster, database, cache, secrets, and LLM Gateway — live
+									# cluster, database, cache, secrets, and betarouter — live
 								</div>
 							</div>
 

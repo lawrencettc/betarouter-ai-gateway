@@ -4,8 +4,8 @@ import {
 	type AuditLogAction,
 	type AuditLogMetadata,
 	type AuditLogResourceType,
-} from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+} from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 
 export interface LogAuditEventParams {
 	organizationId: string;

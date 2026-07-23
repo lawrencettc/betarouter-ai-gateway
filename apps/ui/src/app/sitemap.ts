@@ -6,7 +6,7 @@ import {
 	getProviderCountries,
 	models as modelDefinitions,
 	providers as providerDefinitions,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 import type { MetadataRoute } from "next";
 
@@ -56,7 +56,7 @@ const timelineYears = (() => {
 })();
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-	const baseUrl = "https://llmgateway.io";
+	const baseUrl = "https://betarouter.com";
 
 	const {
 		allBlogs,
@@ -402,7 +402,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
 	// Provider pages
 	const providerPages: MetadataRoute.Sitemap = providerDefinitions
-		.filter((provider) => provider.name !== "LLM Gateway")
+		.filter((provider) => provider.name !== "betarouter")
 		.map((provider) => ({
 			url: `${baseUrl}/providers/${provider.id}`,
 			lastModified: buildDate,

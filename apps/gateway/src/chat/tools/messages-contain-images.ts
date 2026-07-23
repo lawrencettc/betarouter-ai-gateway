@@ -1,4 +1,4 @@
-import type { BaseMessage } from "@llmgateway/models";
+import type { BaseMessage } from "@betarouter/models";
 
 /**
  * Checks if any messages contain images (image_url or image type content)

@@ -16,6 +16,6 @@ export default function robots(): MetadataRoute.Robots {
 				disallow: ["/dashboard", "/dashboard/", "/api", "/api/"],
 			},
 		],
-		sitemap: "https://llmgateway.io/sitemap.xml",
+		sitemap: "https://betarouter.com/sitemap.xml",
 	};
 }

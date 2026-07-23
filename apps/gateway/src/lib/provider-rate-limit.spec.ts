@@ -8,7 +8,7 @@ import {
 	pickNonRateLimitedCandidates,
 } from "./provider-rate-limit.js";
 
-vi.mock("@llmgateway/cache", () => ({
+vi.mock("@betarouter/cache", () => ({
 	redisClient: {
 		zremrangebyscore: vi.fn(),
 		zcard: vi.fn(),
@@ -18,7 +18,7 @@ vi.mock("@llmgateway/cache", () => ({
 	},
 }));
 
-vi.mock("@llmgateway/logger", () => ({
+vi.mock("@betarouter/logger", () => ({
 	logger: {
 		info: vi.fn(),
 		debug: vi.fn(),
@@ -30,7 +30,7 @@ vi.mock("./cached-queries.js", () => ({
 	findEffectiveRateLimit: vi.fn(),
 }));
 
-const mockCache = await import("@llmgateway/cache");
+const mockCache = await import("@betarouter/cache");
 const mockCachedQueries = await import("./cached-queries.js");
 const redis = mockCache.redisClient;
 

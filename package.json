@@ -1,5 +1,6 @@
 {
-	"name": "llmgateway",
+	"name": "betarouter",
+	"description": "betarouter is an open-source API gateway for Large Language Models (LLMs).",
 	"private": true,
 	"license": "SEE LICENSE IN LICENSE",
 	"workspaces": [

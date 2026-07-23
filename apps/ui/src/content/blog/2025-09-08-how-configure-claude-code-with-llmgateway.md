@@ -1,20 +1,20 @@
 ---
-id: blog-claude-code-llmgateway
-slug: how-to-configure-claude-code-with-llmgateway
+id: blog-claude-code-betarouter
+slug: how-to-configure-claude-code-with-betarouter
 date: 2025-09-08
-title: How to Configure Claude Code to Use Any Model via LLM Gateway
+title: How to Configure Claude Code to Use Any Model via betarouter
 summary: Use GPT-5, Gemini, or any model with Claude Code. Three environment variables, zero code changes.
 categories: ["Guides"]
 image:
-  src: "/blog/how-to-configure-claude-code-with-llmgateway.png"
-  alt: "Configure Claude Code with LLM Gateway"
+  src: "/blog/how-to-configure-claude-code-with-betarouter.png"
+  alt: "Configure Claude Code with betarouter"
   width: 2282
   height: 1198
 ---
 
-Claude Code works great with Claude—but what if you want to use GPT-5, Gemini, or a cheaper model for simple tasks? With LLM Gateway, you can point Claude Code at any model in our catalog. Three environment variables. No code changes.
+Claude Code works great with Claude—but what if you want to use GPT-5, Gemini, or a cheaper model for simple tasks? With betarouter, you can point Claude Code at any model in our catalog. Three environment variables. No code changes.
 
-## Why Use LLM Gateway with Claude Code?
+## Why Use betarouter with Claude Code?
 
 - **Use any model** — GPT-5, Gemini, Llama, or 180+ others with tool calling support
 - **Cut costs** — Use GPT-4o Mini for routine tasks, Claude Opus for complex reasoning
@@ -26,10 +26,10 @@ Claude Code works great with Claude—but what if you want to use GPT-5, Gemini,
 Set three environment variables and you're ready to go:
 
 ```bash
-export ANTHROPIC_BASE_URL=https://api.llmgateway.io
-export ANTHROPIC_AUTH_TOKEN=llmgtwy_.... # your llmgateway.io api key here
-# optionally, choose your model, otherwise it will use the default Claude model via LLMGateway
-export ANTHROPIC_MODEL=gpt-5 # choose your model on llmgateway which supports tool calls
+export ANTHROPIC_BASE_URL=https://api.betarouter.com
+export ANTHROPIC_AUTH_TOKEN=llmgtwy_.... # your betarouter.com api key here
+# optionally, choose your model, otherwise it will use the default Claude model via betarouter
+export ANTHROPIC_MODEL=gpt-5 # choose your model on betarouter which supports tool calls
 
 # now run claude!
 claude
@@ -37,13 +37,13 @@ claude
 
 ### Get Your API Key
 
-1. [Sign up free](https://llmgateway.io/signup) — no credit card required
+1. [Sign up free](https://betarouter.com/signup) — no credit card required
 2. Create a project and generate an API key
 3. Start using it immediately (we provide model access, no provider keys needed)
 
 ### Popular Models for Claude Code
 
-Browse [models with tool calling support](https://llmgateway.io/models?filters=1&tools=true). Here are popular choices:
+Browse [models with tool calling support](https://betarouter.com/models?filters=1&tools=true). Here are popular choices:
 
 | Model                                | Best For                                    | Cost |
 | ------------------------------------ | ------------------------------------------- | ---- |
@@ -66,14 +66,14 @@ export ANTHROPIC_MODEL=gpt-4o-mini
 export ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
 ```
 
-To see the full list of models available to you, check out [models with tool calls](https://llmgateway.io/models?filters=1&tools=true)
+To see the full list of models available to you, check out [models with tool calls](https://betarouter.com/models?filters=1&tools=true)
 
 ### Persistent Configuration
 
 Add the environment variables to your shell profile (`.bashrc`, `.zshrc`, or `.profile`) for persistent configuration:
 
 ```bash
-echo 'export ANTHROPIC_BASE_URL=https://api.llmgateway.io' >> ~/.zshrc
+echo 'export ANTHROPIC_BASE_URL=https://api.betarouter.com' >> ~/.zshrc
 echo 'export ANTHROPIC_AUTH_TOKEN=llmgtwy_your_key_here' >> ~/.zshrc
 echo 'export ANTHROPIC_MODEL=openai/gpt-4o' >> ~/.zshrc
 source ~/.zshrc
@@ -87,7 +87,7 @@ Every Claude Code session is tracked in your dashboard. See exactly how many tok
 
 ### Automatic Failover
 
-If OpenAI goes down, LLM Gateway routes to a backup provider. Your coding session continues uninterrupted.
+If OpenAI goes down, betarouter routes to a backup provider. Your coding session continues uninterrupted.
 
 ### One Bill for Everything
 
@@ -95,9 +95,9 @@ Instead of managing credits across Anthropic, OpenAI, and Google, you get one ac
 
 ## Get Started
 
-1. [Sign up free](https://llmgateway.io/signup) — takes 30 seconds
+1. [Sign up free](https://betarouter.com/signup) — takes 30 seconds
 2. Grab your API key from the dashboard
 3. Set the three environment variables above
 4. Run `claude` and start coding with any model
 
-Questions? Check out our [documentation](https://docs.llmgateway.io) or [join our Discord](https://llmgateway.io/discord).
+Questions? Check out our [documentation](https://docs.betarouter.com) or [join our Discord](https://betarouter.com/discord).

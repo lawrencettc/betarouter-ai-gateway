@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import { writeFileSync, appendFileSync, existsSync, unlinkSync } from "fs";
 
-import { models } from "@llmgateway/models";
+import { models } from "@betarouter/models";
 
 const GATEWAY_URL = "http://localhost:4001/v1/chat/completions";
 const AUTH_TOKEN = "test-token";

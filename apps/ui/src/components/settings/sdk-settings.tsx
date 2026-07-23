@@ -264,15 +264,15 @@ export function SdkSettings({
 					<p className="mt-1 text-sm text-blue-900/80 dark:text-blue-200/80">
 						The Payments SDK lets you embed end-user payments and sessions into
 						your own site — your users get their own wallet, buy credits, and
-						pay per request through LLM Gateway. It is a payments feature, not
-						an AI client SDK like the OpenAI SDK. This feature is currently in
+						pay per request through betarouter. It is a payments feature, not an
+						AI client SDK like the OpenAI SDK. This feature is currently in
 						preview and enabled on an opt-in basis. The settings below are
 						read-only until it is enabled for your project — contact us at{" "}
 						<a
-							href="mailto:contact@llmgateway.io"
+							href="mailto:contact@betarouter.com"
 							className="font-medium underline underline-offset-2"
 						>
-							contact@llmgateway.io
+							contact@betarouter.com
 						</a>{" "}
 						to get access.
 					</p>

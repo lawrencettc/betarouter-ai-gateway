@@ -8,7 +8,7 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 # Image Generation
 
-LLMGateway supports image generation through two APIs:
+betarouter supports image generation through two APIs:
 
 1. **`/v1/images/generations`** — OpenAI-compatible images endpoint (recommended for simple image generation)
 2. **`/v1/images/edits`** — OpenAI-compatible image editing endpoint
@@ -18,7 +18,7 @@ For asynchronous video generation, see [Video Generation](/features/video-genera
 
 ## Available Models
 
-You can find all available image generation models on our [models page](https://llmgateway.io/models?filters=1&imageGeneration=true).
+You can find all available image generation models on our [models page](https://betarouter.com/models?filters=1&imageGeneration=true).
 
 ## OpenAI Images API
 
@@ -39,7 +39,7 @@ The `/v1/images/generations` endpoint provides a drop-in replacement for OpenAI'
 ### curl
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/images/generations" \
+curl -X POST "https://api.betarouter.com/v1/images/generations" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -52,14 +52,14 @@ curl -X POST "https://api.llmgateway.io/v1/images/generations" \
 
 ### OpenAI SDK
 
-Works with the standard OpenAI client library — just point the base URL to LLMGateway.
+Works with the standard OpenAI client library — just point the base URL to betarouter.
 
 ```ts
 import OpenAI from "openai";
 import { writeFileSync } from "fs";
 
 const client = new OpenAI({
-	baseURL: "https://api.llmgateway.io/v1",
+	baseURL: "https://api.betarouter.com/v1",
 	apiKey: process.env.LLM_GATEWAY_API_KEY,
 });
 
@@ -141,7 +141,7 @@ The `/v1/images/edits` endpoint is OpenAI-compatible and supports a focused subs
 ### curl (HTTPS image URL)
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/images/edits" \
+curl -X POST "https://api.betarouter.com/v1/images/edits" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -161,7 +161,7 @@ curl -X POST "https://api.llmgateway.io/v1/images/edits" \
 ### curl (base64 data URL)
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/images/edits" \
+curl -X POST "https://api.betarouter.com/v1/images/edits" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -183,7 +183,7 @@ Image generation also works through the `/v1/chat/completions` endpoint, which i
 Simply use an image generation model and provide a text prompt describing the image you want to create.
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
+curl -X POST "https://api.betarouter.com/v1/chat/completions" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -252,7 +252,7 @@ The `content` field may contain descriptive text about the generated image, depe
 
 ### AI SDK (Chat Completions)
 
-You can use the AI SDK to generate images with your existing generateText or streamText calls using the LLMGateway provider.
+You can use the AI SDK to generate images with your existing generateText or streamText calls using the betarouter provider.
 
 #### Example
 
@@ -270,8 +270,8 @@ export async function POST(req: Request) {
 	const { messages }: ChatRequestBody = body;
 
 	const llmgateway = createLLMGateway({
-		apiKey: "llmgateway_api_key",
-		baseUrl: "https://api.llmgateway.io/v1",
+		apiKey: "llmgtwy_your_api_key_here",
+		baseUrl: "https://api.betarouter.com/v1",
 	});
 
 	try {
@@ -283,7 +283,7 @@ export async function POST(req: Request) {
 		return result.toUIMessageStreamResponse();
 	} catch {
 		return new Response(
-			JSON.stringify({ error: "LLM Gateway Chat request failed" }),
+			JSON.stringify({ error: "betarouter Chat request failed" }),
 			{
 				status: 500,
 			},
@@ -585,7 +585,7 @@ Available Google models:
 #### gemini-3-pro-image-preview
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
+curl -X POST "https://api.betarouter.com/v1/chat/completions" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -611,7 +611,7 @@ curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
 #### gemini-3.1-flash-image-preview
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
+curl -X POST "https://api.betarouter.com/v1/chat/completions" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -641,7 +641,7 @@ curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
 ### Alibaba Models
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
+curl -X POST "https://api.betarouter.com/v1/chat/completions" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -683,7 +683,7 @@ Available Alibaba models:
 ### Z.AI Models
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
+curl -X POST "https://api.betarouter.com/v1/chat/completions" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -720,7 +720,7 @@ Available Z.AI models:
 ### OpenAI Models
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
+curl -X POST "https://api.betarouter.com/v1/chat/completions" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -760,7 +760,7 @@ Available OpenAI image models:
 ### ByteDance Models
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
+curl -X POST "https://api.betarouter.com/v1/chat/completions" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

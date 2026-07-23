@@ -1,1 +1,1 @@
-export { getApiKeyFingerprint } from "@llmgateway/shared/api-key-hash";
+export { getApiKeyFingerprint } from "@betarouter/shared/api-key-hash";

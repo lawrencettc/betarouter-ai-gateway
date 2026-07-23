@@ -6,7 +6,7 @@ import { revokeMemberApiKeys } from "@/lib/revoke-member-api-keys.js";
 import { resolveSeatLimit } from "@/lib/seat-limit.js";
 import { sendTransactionalEmail } from "@/utils/email.js";
 
-import { logAuditEvent } from "@llmgateway/audit";
+import { logAuditEvent } from "@betarouter/audit";
 import {
 	addApiKeyPeriodDuration,
 	and,
@@ -20,7 +20,7 @@ import {
 	sum,
 	tables,
 	type OrgDefaultDeveloperBudget,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 import type { ServerTypes } from "@/vars.js";
 
@@ -714,7 +714,7 @@ team.openapi(addMember, async (c) => {
 
 	if (currentMembers.length + pendingInvites.length >= memberLimit) {
 		throw new HTTPException(403, {
-			message: `Your organization has reached the maximum of ${memberLimit} team members. Contact us at contact@llmgateway.io to unlock more seats.`,
+			message: `Your organization has reached the maximum of ${memberLimit} team members. Contact us at contact@betarouter.com to unlock more seats.`,
 		});
 	}
 
@@ -769,7 +769,7 @@ team.openapi(addMember, async (c) => {
 
 		const text = `Hey!
 
-${inviterName} invited you to join the "${orgName}" organization on LLM Gateway as ${role === "admin" ? "an" : "a"} ${role}.
+${inviterName} invited you to join the "${orgName}" organization on betarouter as ${role === "admin" ? "an" : "a"} ${role}.
 
 Create an account using this email address (${normalizedEmail}) and you'll be added to the organization automatically:
 
@@ -779,11 +779,11 @@ If your organization uses SSO, signing in with SSO using this email works too.
 
 This invitation expires in ${INVITE_EXPIRY_DAYS} days. If you weren't expecting it, you can safely ignore this email.
 
-— The LLM Gateway Team`.trim();
+— The betarouter Team`.trim();
 
 		await sendTransactionalEmail({
 			to: normalizedEmail,
-			subject: `You've been invited to ${orgName} on LLM Gateway`,
+			subject: `You've been invited to ${orgName} on betarouter`,
 			text,
 			organizationId,
 		});

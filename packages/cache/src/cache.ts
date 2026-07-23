@@ -1,6 +1,6 @@
 import crypto from "crypto";
 
-import { logger } from "@llmgateway/logger";
+import { logger } from "@betarouter/logger";
 
 import { redisClient } from "./redis.js";
 

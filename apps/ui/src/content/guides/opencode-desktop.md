@@ -2,16 +2,16 @@
 id: opencode-desktop
 slug: opencode-desktop
 title: OpenCode Desktop Integration
-description: Connect OpenCode Desktop to 200+ models through LLM Gateway. No config files — just open Settings, connect, and start building.
+description: Connect OpenCode Desktop to 200+ models through betarouter. No config files — just open Settings, connect, and start building.
 date: 2026-05-11
 ---
 
-[OpenCode Desktop](https://opencode.ai/download) is the GUI desktop app version of OpenCode — an open-source AI coding agent with a full visual interface for managing providers, models, and sessions. LLM Gateway is a built-in provider, so setup takes under a minute with no config files required.
+[OpenCode Desktop](https://opencode.ai/download) is the GUI desktop app version of OpenCode — an open-source AI coding agent with a full visual interface for managing providers, models, and sessions. betarouter is a built-in provider, so setup takes under a minute with no config files required.
 
 ## Prerequisites
 
 - OpenCode Desktop installed — [download for Windows or macOS](https://opencode.ai/download)
-- An LLM Gateway API key — [sign up free](/signup) (no credit card required)
+- A betarouter API key — [sign up free](/signup) (no credit card required)
 
 ## Installation
 
@@ -35,35 +35,35 @@ Launch OpenCode Desktop. Click the **Providers** section in the left sidebar und
 
 ![OpenCode Desktop Providers screen](/images/guides/opencode-desktop/0-providers.png)
 
-### Step 2: Find LLM Gateway
+### Step 2: Find betarouter
 
-Click **Show more providers** at the bottom of the list, or click **+ Connect** on any entry to open the provider search. Type `LLM` in the search box — **LLM Gateway** will appear under "Other":
+Click **Show more providers** at the bottom of the list, or click **+ Connect** on any entry to open the provider search. Type `LLM` in the search box — **betarouter** will appear under "Other":
 
-![Searching for LLM Gateway](/images/guides/opencode-desktop/1-search-llm.png)
+![Searching for betarouter](/images/guides/opencode-desktop/1-search-llm.png)
 
-Select **LLM Gateway** from the list.
+Select **betarouter** from the list.
 
 ### Step 3: Enter Your API Key
 
-OpenCode will show the **Connect LLM Gateway** dialog. Paste your LLM Gateway API key (starts with `llmgtwy_`) and click **Continue**:
+OpenCode will show the **Connect betarouter** dialog. Paste your betarouter API key (starts with `llmgtwy_`) and click **Continue**:
 
-![Connect LLM Gateway — enter API key](/images/guides/opencode-desktop/2-connect-api-key.png)
+![Connect betarouter — enter API key](/images/guides/opencode-desktop/2-connect-api-key.png)
 
-[Sign up](/signup) or log in to your LLM Gateway dashboard and navigate to **API Keys** to get your key.
+[Sign up](/signup) or log in to your betarouter dashboard and navigate to **API Keys** to get your key.
 
 ### Step 4: Select a Model
 
-Once connected, open the model picker from the chat input bar. Type `llm` to filter LLM Gateway models — you'll see all available models including Claude Opus 4.7, Claude Sonnet 4.6, DeepSeek, Gemini, and more:
+Once connected, open the model picker from the chat input bar. Type `llm` to filter betarouter models — you'll see all available models including Claude Opus 4.7, Claude Sonnet 4.6, DeepSeek, Gemini, and more:
 
-![LLM Gateway model selection](/images/guides/opencode-desktop/3-model-selection.png)
+![betarouter model selection](/images/guides/opencode-desktop/3-model-selection.png)
 
 ### Step 5: Start Building
 
-Select a model and start chatting. All requests route through LLM Gateway — you'll see usage, costs, and logs in your [dashboard](/dashboard):
+Select a model and start chatting. All requests route through betarouter — you'll see usage, costs, and logs in your [dashboard](/dashboard):
 
-![OpenCode Desktop chat active with LLM Gateway](/images/guides/opencode-desktop/4-chat-active.png)
+![OpenCode Desktop chat active with betarouter](/images/guides/opencode-desktop/4-chat-active.png)
 
-## Why Use LLM Gateway with OpenCode Desktop?
+## Why Use betarouter with OpenCode Desktop?
 
 - **200+ models** — Claude, GPT, Gemini, Llama, DeepSeek, and more from 40+ providers
 - **One API key** — Stop managing separate keys for each provider
@@ -74,11 +74,11 @@ Select a model and start chatting. All requests route through LLM Gateway — yo
 
 ## Switching Models
 
-You can switch models at any time from the model picker in the chat input bar. Click the current model name, type `llm` to filter to LLM Gateway models, and select a new one. The switch takes effect immediately for the next message.
+You can switch models at any time from the model picker in the chat input bar. Click the current model name, type `llm` to filter to betarouter models, and select a new one. The switch takes effect immediately for the next message.
 
 ## Troubleshooting
 
-### LLM Gateway doesn't appear in provider list
+### betarouter doesn't appear in provider list
 
 Click **Show more providers** at the bottom of the Providers page to expand the full list, then search for "LLM".
 

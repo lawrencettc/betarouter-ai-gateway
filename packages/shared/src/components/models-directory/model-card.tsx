@@ -42,7 +42,7 @@ import type {
 	ApiModelProviderMapping,
 	ApiProvider,
 } from "./api-types";
-import type { StabilityLevel } from "@llmgateway/models";
+import type { StabilityLevel } from "@betarouter/models";
 
 interface ModelWithProviders extends ApiModel {
 	providerDetails: Array<{
@@ -449,8 +449,8 @@ function ShareDropdown({
 	providerId: string;
 }) {
 	const [urlCopied, setUrlCopied] = useState(false);
-	const shareUrl = `https://llmgateway.io/models/${encodeURIComponent(modelId)}/${encodeURIComponent(providerId)}`;
-	const shareTitle = `${providerId} - ${modelId} on LLM Gateway`;
+	const shareUrl = `https://betarouter.com/models/${encodeURIComponent(modelId)}/${encodeURIComponent(providerId)}`;
+	const shareTitle = `${providerId} - ${modelId} on betarouter`;
 
 	return (
 		<DropdownMenu>

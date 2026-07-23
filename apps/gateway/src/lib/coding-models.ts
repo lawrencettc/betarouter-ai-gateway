@@ -1,4 +1,4 @@
-import type { ModelDefinition, ProviderModelMapping } from "@llmgateway/models";
+import type { ModelDefinition, ProviderModelMapping } from "@betarouter/models";
 
 export function providerSupportsCachedInput(
 	p: Pick<ProviderModelMapping, "cachedInputPrice">,

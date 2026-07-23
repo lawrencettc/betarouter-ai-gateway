@@ -30,7 +30,7 @@ const CATEGORY_LINKS: ReadonlyArray<{ href: string; label: string }> = [
 
 export const metadata = {
 	alternates: {
-		canonical: "https://llmgateway.io/models",
+		canonical: "https://betarouter.com/models",
 	},
 	title: "AI Models Directory — Compare 200+ LLM Models",
 	description:
@@ -40,7 +40,7 @@ export const metadata = {
 		description:
 			"Browse and compare 200+ AI models from OpenAI, Anthropic, Google, and more. Filter by capabilities, pricing, and context size.",
 		type: "website",
-		url: "https://llmgateway.io/models",
+		url: "https://betarouter.com/models",
 	},
 	twitter: {
 		card: "summary_large_image",
@@ -62,14 +62,14 @@ export default async function ModelsPage() {
 		name: "AI Models Directory",
 		description:
 			"Browse and compare 200+ AI models from leading providers like OpenAI, Anthropic, and Google. Filter by capabilities, pricing, and context size.",
-		url: "https://llmgateway.io/models",
+		url: "https://betarouter.com/models",
 		mainEntity: {
 			"@type": "ItemList",
 			numberOfItems: models.length,
 			itemListElement: models.map((model, index) => ({
 				"@type": "ListItem",
 				position: index + 1,
-				url: `https://llmgateway.io/models/${encodeURIComponent(model.id)}`,
+				url: `https://betarouter.com/models/${encodeURIComponent(model.id)}`,
 				name: model.name ?? model.id,
 			})),
 		},
@@ -83,13 +83,13 @@ export default async function ModelsPage() {
 				"@type": "ListItem",
 				position: 1,
 				name: "Home",
-				item: "https://llmgateway.io",
+				item: "https://betarouter.com",
 			},
 			{
 				"@type": "ListItem",
 				position: 2,
 				name: "Models",
-				item: "https://llmgateway.io/models",
+				item: "https://betarouter.com/models",
 			},
 		],
 	};

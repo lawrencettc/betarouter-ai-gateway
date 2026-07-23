@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// Ramped load test for api.llmgateway.io
+// Ramped load test for api.betarouter.com
 // Linearly warms up from 1 r/s to `RATE` r/s over `WARMUP_SEC`, then holds
 // `RATE` r/s for `DURATION_SEC`. Useful for testing cold-start / autoscaling
 // behaviour where a sudden flat spike would behave differently than a ramp.
 
 const API_URL =
-	process.env.API_URL || "https://api.llmgateway.io/v1/chat/completions";
+	process.env.API_URL || "https://api.betarouter.com/v1/chat/completions";
 const API_KEY = process.env.LLMGATEWAY_API_KEY;
 const MODEL = process.env.MODEL || "deepseek-v4-flash";
 

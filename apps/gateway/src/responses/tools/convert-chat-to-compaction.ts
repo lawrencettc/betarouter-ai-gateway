@@ -1,4 +1,4 @@
-import { shortid } from "@llmgateway/db";
+import { shortid } from "@betarouter/db";
 
 interface ChatCompletionUsage {
 	prompt_tokens?: number;

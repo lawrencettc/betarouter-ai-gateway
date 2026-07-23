@@ -79,18 +79,18 @@ export async function generateMetadata({
 
 	return {
 		title: entry.title,
-		description: entry.description ?? "LLM Gateway legal post",
+		description: entry.description ?? "betarouter legal post",
 		alternates: { canonical: `/legal/${entry.slug}` },
 		openGraph: {
-			title: `${entry.title} | LLM Gateway`,
-			description: entry.description ?? "LLM Gateway legal post",
+			title: `${entry.title} | betarouter`,
+			description: entry.description ?? "betarouter legal post",
 			type: "website",
-			url: `https://llmgateway.io/legal/${entry.slug}`,
+			url: `https://betarouter.com/legal/${entry.slug}`,
 		},
 		twitter: {
 			card: "summary_large_image",
-			title: `${entry.title} | LLM Gateway`,
-			description: entry.description ?? "LLM Gateway legal post",
+			title: `${entry.title} | betarouter`,
+			description: entry.description ?? "betarouter legal post",
 		},
 	};
 }

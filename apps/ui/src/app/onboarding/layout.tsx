@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
 	title: "Onboarding",
-	description: "Set up your LLM Gateway account.",
+	description: "Set up your betarouter account.",
 	robots: { index: false, follow: false },
 };
 

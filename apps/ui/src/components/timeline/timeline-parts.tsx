@@ -6,7 +6,7 @@ import { Button } from "@/lib/components/button";
 import { Card, CardContent, CardHeader } from "@/lib/components/card";
 import { formatDate, isoDate, type TimelineModel } from "@/lib/timeline-data";
 
-import { getModelFamilyIcon } from "@llmgateway/shared/components";
+import { getModelFamilyIcon } from "@betarouter/shared/components";
 
 export const GUTTER = "w-10 md:w-14";
 
@@ -39,7 +39,7 @@ export function ModelFact({ model }: { model: TimelineModel }) {
 			) : null}
 			{model.addedAt ? (
 				<>
-					{model.releasedAt ? " and added" : ""} to LLM Gateway on{" "}
+					{model.releasedAt ? " and added" : ""} to betarouter on{" "}
 					<time
 						dateTime={isoDate(model.addedAt)}
 						className="font-medium text-foreground"

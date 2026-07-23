@@ -2,7 +2,7 @@ import type {
 	GuardrailAction,
 	SystemRuleConfig,
 	SystemRulesConfig,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 export type SystemRuleId =
 	| "system:prompt_injection"

@@ -4,8 +4,8 @@ import { z } from "zod";
 
 import { platformAdminMiddleware } from "@/middleware/admin.js";
 
-import { validateProviderKey } from "@llmgateway/actions";
-import { redisClient } from "@llmgateway/cache";
+import { validateProviderKey } from "@betarouter/actions";
+import { redisClient } from "@betarouter/cache";
 import {
 	and,
 	cdb,
@@ -19,16 +19,16 @@ import {
 	platformAuditLog,
 	platformProviderCredential,
 	shortid,
-} from "@llmgateway/db";
-import { isStealthProvider, providers } from "@llmgateway/models";
-import { assertSafeProviderUrl } from "@llmgateway/shared/url-safety-node";
+} from "@betarouter/db";
+import { isStealthProvider, providers } from "@betarouter/models";
+import { assertSafeProviderUrl } from "@betarouter/shared/url-safety-node";
 
 import type { ServerTypes } from "@/vars.js";
 import type {
 	PlatformAuditLogAction,
 	ProviderKeyOptions,
-} from "@llmgateway/db";
-import type { ProviderId } from "@llmgateway/models";
+} from "@betarouter/db";
+import type { ProviderId } from "@betarouter/models";
 
 const platformProviders = new OpenAPIHono<ServerTypes>();
 platformProviders.use("/*", platformAdminMiddleware);

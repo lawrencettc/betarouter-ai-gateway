@@ -1,4 +1,4 @@
-import { defaultAllowedFileTypes } from "@llmgateway/db";
+import { defaultAllowedFileTypes } from "@betarouter/db";
 
 import type { SystemRule } from "@/types.js";
 

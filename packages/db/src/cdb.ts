@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 
-import { redisClient } from "@llmgateway/cache";
+import { redisClient } from "@betarouter/cache";
 
 import { pool } from "./db.js";
 import { RedisCache } from "./redis-cache.js";

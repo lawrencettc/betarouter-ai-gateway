@@ -9,14 +9,14 @@ import {
 import {
 	getEffectiveCatalogSnapshot,
 	readCatalogFeatureFlags,
-} from "@llmgateway/catalog";
-import { logger, toError } from "@llmgateway/logger";
+} from "@betarouter/catalog";
+import { logger, toError } from "@betarouter/logger";
 import {
 	models as modelsList,
 	providers,
 	type ProviderModelMapping,
 	type ModelDefinition,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 import type { ServerTypes } from "@/vars.js";
 

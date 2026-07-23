@@ -6,12 +6,12 @@ title: "Custom Model Catalog for Custom Providers"
 summary: "Bring any OpenAI-compatible model under full cost tracking. Define pricing, context limits, and capabilities per custom provider key — so requests through custom providers get billed, enforced, and reported just like a built-in model. Available on Enterprise."
 image:
   src: "/changelog/custom-model-catalog.png"
-  alt: "Custom Model Catalog on LLM Gateway: pricing, context limits, and capabilities defined for an OpenAI-compatible custom provider"
+  alt: "Custom Model Catalog on betarouter: pricing, context limits, and capabilities defined for an OpenAI-compatible custom provider"
   width: 1536
   height: 1024
 ---
 
-Custom providers let you route to any OpenAI-compatible endpoint — a self-hosted model, an internal service, or a provider we don't support natively — using `mycompany/my-model`. Until now those requests had a blind spot: LLM Gateway held no catalog entry for the model, so it couldn't know the price, context window, or capabilities. That meant **no cost attribution and no enforced limits**. The **Custom Model Catalog** closes that gap.
+Custom providers let you route to any OpenAI-compatible endpoint — a self-hosted model, an internal service, or a provider we don't support natively — using `mycompany/my-model`. Until now those requests had a blind spot: betarouter held no catalog entry for the model, so it couldn't know the price, context window, or capabilities. That meant **no cost attribution and no enforced limits**. The **Custom Model Catalog** closes that gap.
 
 ## Define a model
 
@@ -51,4 +51,4 @@ The Custom Model Catalog is available on the **Enterprise plan** for organizatio
 
 ---
 
-**[Custom providers docs →](https://docs.llmgateway.io/features/custom-providers#custom-model-catalog)** | **[Contact us about Enterprise →](https://llmgateway.io/enterprise)**
+**[Custom providers docs →](https://docs.betarouter.com/features/custom-providers#custom-model-catalog)** | **[Contact us about Enterprise →](https://betarouter.com/enterprise)**

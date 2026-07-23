@@ -4,8 +4,8 @@ import { z } from "zod";
 
 import { getAdminOrganizationIds } from "@/utils/authorization.js";
 
-import { logAuditEvent } from "@llmgateway/audit";
-import { cdb, db, eq, tables } from "@llmgateway/db";
+import { logAuditEvent } from "@betarouter/audit";
+import { cdb, db, eq, tables } from "@betarouter/db";
 
 import type { ServerTypes } from "@/vars.js";
 

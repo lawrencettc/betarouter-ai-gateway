@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
 import {
 	getProviderIcon,
 	providerLogoUrls,
-} from "@llmgateway/shared/components";
+} from "@betarouter/shared/components";
 
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
@@ -52,7 +52,7 @@ import type {
 	ProviderDefinition,
 	ProviderId,
 	ProviderModelMapping,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 import type { LucideProps } from "lucide-react";
 
 interface ModelSelectorProps {
@@ -404,7 +404,7 @@ export function ModelSelector({
 		}[] = [];
 		const now = new Date();
 
-		// Sort models by createdAt (when added to LLM Gateway), newest first
+		// Sort models by createdAt (when added to betarouter), newest first
 		// Falls back to releasedAt if createdAt is not available
 		// Note: createdAt comes from API response, releasedAt is in the models package
 		const sortedModels = [...models].sort((a, b) => {

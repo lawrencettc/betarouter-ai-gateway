@@ -31,7 +31,7 @@ export function Changelog({ entries }: ChangelogProps = {}) {
 					</div>
 					<p className="text-muted-foreground">
 						Stay up to date with the latest features, improvements, and fixes in
-						LLM Gateway.
+						betarouter.
 					</p>
 				</div>
 

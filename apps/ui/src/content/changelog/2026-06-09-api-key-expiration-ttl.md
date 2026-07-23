@@ -6,7 +6,7 @@ title: "API Key Expiration (TTL)"
 summary: "Give any API key a time-to-live when you create it — minutes, hours, or days. Expired keys are disabled automatically, and you can bring them back online anytime with a fresh expiration."
 image:
   src: "/changelog/api-key-expiration-ttl.png"
-  alt: "API key expiration with TTL on LLM Gateway"
+  alt: "API key expiration with TTL on betarouter"
   width: 1536
   height: 1024
 ---
@@ -36,4 +36,4 @@ Keys with no TTL, or whose TTL is still in the future, can be enabled and disabl
 
 ---
 
-**[Open your dashboard →](https://llmgateway.io/dashboard)** | **[Read the API Keys docs →](https://docs.llmgateway.io/features/api-keys)**
+**[Open your dashboard →](https://betarouter.com/dashboard)** | **[Read the API Keys docs →](https://docs.betarouter.com/features/api-keys)**

@@ -13,9 +13,10 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
+import { Wordmark } from "@/components/ui/wordmark";
 import { cn } from "@/lib/utils";
 
-import { getProviderIcon } from "@llmgateway/shared/components";
+import { getProviderIcon } from "@betarouter/shared/components";
 
 import type { LucideIcon } from "lucide-react";
 
@@ -108,7 +109,9 @@ export function AuthDialog({
 				<div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-8">
 					<div className="flex items-center gap-2">
 						<Logo className="size-6" />
-						<span className="text-base font-semibold">LLM Gateway</span>
+						<span className="text-base font-semibold">
+							<Wordmark />
+						</span>
 						<Badge>Chat</Badge>
 					</div>
 

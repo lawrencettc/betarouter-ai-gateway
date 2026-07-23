@@ -1,5 +1,5 @@
-import { redisClient } from "@llmgateway/cache";
-import { logger } from "@llmgateway/logger";
+import { redisClient } from "@betarouter/cache";
+import { logger } from "@betarouter/logger";
 
 import { estimateTokens } from "./estimate-tokens.js";
 import {
@@ -13,7 +13,7 @@ import {
 } from "./reasoning-details.js";
 
 import type { Annotation, ImageObject } from "./types.js";
-import type { Provider } from "@llmgateway/models";
+import type { Provider } from "@betarouter/models";
 
 /**
  * Parses response content and metadata from different providers

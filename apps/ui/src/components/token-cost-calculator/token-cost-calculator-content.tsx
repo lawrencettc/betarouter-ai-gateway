@@ -20,7 +20,7 @@ const STEPS = [
 		icon: Route,
 		title: "Compare every model and save",
 		description:
-			"See your prompt ranked across GPT-5, Claude, Gemini, and 200+ models at each provider's cheapest live rate — then route through LLM Gateway to pay it automatically with zero markup.",
+			"See your prompt ranked across GPT-5, Claude, Gemini, and 200+ models at each provider's cheapest live rate — then route through betarouter to pay it automatically with zero markup.",
 	},
 ];
 
@@ -110,7 +110,7 @@ export function TokenCostCalculatorContent() {
 								Prices also vary by provider. A single popular model is often
 								hosted by several providers at different rates, and those rates
 								change as providers compete on price. Instead of locking
-								yourself into one provider, LLM Gateway routes each request to
+								yourself into one provider, betarouter routes each request to
 								the cheapest available provider for that model through one
 								OpenAI-compatible API, with no platform markup. That is the gap
 								the calculator shows: the official list price versus the lowest

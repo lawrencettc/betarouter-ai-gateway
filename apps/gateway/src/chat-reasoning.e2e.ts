@@ -16,7 +16,7 @@ import {
 	validateResponse,
 } from "@/chat-helpers.e2e.js";
 
-import type { ProviderModelMapping } from "@llmgateway/models";
+import type { ProviderModelMapping } from "@betarouter/models";
 
 describe("e2e", getConcurrentTestOptions(), () => {
 	beforeAll(beforeAllHook);

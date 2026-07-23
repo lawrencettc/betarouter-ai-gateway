@@ -1,6 +1,6 @@
 {
 	"title": "Self Host",
-	"description": "Deploy LLM Gateway on your own infrastructure",
+	"description": "Deploy betarouter on your own infrastructure",
 	"icon": "Server",
 	"pages": [
 		"index",

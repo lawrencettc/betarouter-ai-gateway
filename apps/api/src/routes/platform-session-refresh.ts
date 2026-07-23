@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { endUserSessionAuth } from "@/lib/end-user-session-auth.js";
 
-import { db, eq, shortid, tables } from "@llmgateway/db";
+import { db, eq, shortid, tables } from "@betarouter/db";
 
 import type { ServerTypes } from "@/vars.js";
 

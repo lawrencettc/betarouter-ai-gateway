@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { computeProfileData, profileSchema } from "@/utils/profile.js";
 
-import { db } from "@llmgateway/db";
+import { db } from "@betarouter/db";
 
 import type { ServerTypes } from "@/vars.js";
 

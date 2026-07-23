@@ -6,7 +6,7 @@ title: "Organization-Wide Analytics"
 summary: "Roll cost, requests, and tokens up across every project in your organization, then break the spend down by model, project, or API key over any date range. Read from pre-aggregated rollups, so it stays fast on any window. Available to owners and admins on the Enterprise plan."
 image:
   src: "/changelog/organization-analytics.png"
-  alt: "Organization-wide analytics on LLM Gateway: total spend, requests, and tokens across every project, broken down by model, project, and API key"
+  alt: "Organization-wide analytics on betarouter: total spend, requests, and tokens across every project, broken down by model, project, and API key"
   width: 1536
   height: 1024
 ---
@@ -37,4 +37,4 @@ It's restricted to organization **owners and admins on the Enterprise plan**: no
 
 ---
 
-**[Organization analytics docs →](https://docs.llmgateway.io/learn/org-analytics)** | **[Open your dashboard →](https://llmgateway.io/dashboard)**
+**[Organization analytics docs →](https://docs.betarouter.com/learn/org-analytics)** | **[Open your dashboard →](https://betarouter.com/dashboard)**

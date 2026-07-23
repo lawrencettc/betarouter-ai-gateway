@@ -10,7 +10,7 @@ import {
 	OpenClawIcon,
 	OpenCodeIcon,
 	SoulForgeIcon,
-} from "@llmgateway/shared/components";
+} from "@betarouter/shared/components";
 
 import type { paths } from "@/lib/api/v1";
 import type { ComponentType, SVGProps } from "react";

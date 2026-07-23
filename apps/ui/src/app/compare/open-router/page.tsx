@@ -7,12 +7,12 @@ import type { CompareFaqItem } from "@/components/compare/compare-faq";
 
 const openRouterFaqs: CompareFaqItem[] = [
 	{
-		question: "How is LLM Gateway different from OpenRouter?",
+		question: "How is betarouter different from OpenRouter?",
 		answer:
-			"LLM Gateway adds full self-hosting under an AGPLv3 license, deeper real-time cost and latency analytics for every request, free Bring Your Own Keys, and flexible enterprise add-ons. OpenRouter is a hosted proxy only and cannot be run on your own infrastructure.",
+			"betarouter adds full self-hosting under an AGPLv3 license, deeper real-time cost and latency analytics for every request, free Bring Your Own Keys, and flexible enterprise add-ons. OpenRouter is a hosted proxy only and cannot be run on your own infrastructure.",
 	},
 	{
-		question: "Is LLM Gateway open source and self-hostable?",
+		question: "Is betarouter open source and self-hostable?",
 		answer:
 			"Yes. The gateway is AGPLv3 licensed and can run entirely on your own infrastructure, free forever — or you can use the managed hosted version.",
 	},
@@ -29,7 +29,7 @@ const openRouterFaqs: CompareFaqItem[] = [
 	{
 		question: "Can I switch from OpenRouter easily?",
 		answer:
-			"Yes. LLM Gateway is OpenAI-compatible, so you migrate by swapping the base URL and API key — no code rewrite required.",
+			"Yes. betarouter is OpenAI-compatible, so you migrate by swapping the base URL and API key — no code rewrite required.",
 	},
 ];
 
@@ -40,8 +40,8 @@ export default function CompareOpenRouterPage() {
 				<HeroCompare />
 				<Comparison />
 				<CompareFaq
-					heading="LLM Gateway vs OpenRouter"
-					description="Common questions about switching from OpenRouter to LLM Gateway."
+					heading="betarouter vs OpenRouter"
+					description="Common questions about switching from OpenRouter to betarouter."
 					faqs={openRouterFaqs}
 				/>
 			</main>
@@ -52,20 +52,20 @@ export default function CompareOpenRouterPage() {
 
 export async function generateMetadata() {
 	return {
-		title: "LLM Gateway vs OpenRouter — Feature Comparison",
+		title: "betarouter vs OpenRouter — Feature Comparison",
 		description:
 			"Compare routing, analytics, and cost optimization vs OpenRouter. See why teams choose a unified API gateway for production LLMs.",
 		alternates: { canonical: "/compare/open-router" },
 		openGraph: {
-			title: "LLM Gateway vs OpenRouter — Feature Comparison",
+			title: "betarouter vs OpenRouter — Feature Comparison",
 			description:
 				"Compare routing, analytics, and cost optimization vs OpenRouter. See why teams choose a unified API gateway for production LLMs.",
 			type: "website",
-			url: "https://llmgateway.io/compare/open-router",
+			url: "https://betarouter.com/compare/open-router",
 		},
 		twitter: {
 			card: "summary_large_image",
-			title: "LLM Gateway vs OpenRouter — Feature Comparison",
+			title: "betarouter vs OpenRouter — Feature Comparison",
 			description:
 				"Compare routing, analytics, and cost optimization vs OpenRouter for production LLMs.",
 		},

@@ -6,7 +6,7 @@ title: "Routing Strategies: Cheapest, Fastest & Defaults"
 summary: "Steer multi-provider routing with a new routing field — auto, price, throughput, or latency — per request or as a per-project default. Each strategy still falls back when the top pick has bad uptime."
 image:
   src: "/changelog/smart-routing-strategies.png"
-  alt: "Routing strategies on LLM Gateway: auto, price, throughput and latency"
+  alt: "Routing strategies on betarouter: auto, price, throughput and latency"
   width: 1024
   height: 1024
 ---
@@ -18,7 +18,7 @@ When a model is served by more than one provider, the gateway scores them on pri
 Add `routing` to any chat completions request to choose the strategy:
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
+curl -X POST "https://api.betarouter.com/v1/chat/completions" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -51,4 +51,4 @@ Strategies only affect multi-provider routing. Combining `routing` with a pinned
 
 ---
 
-**[Routing docs →](https://docs.llmgateway.io/features/routing#routing-strategy)** | **[Open your dashboard →](https://llmgateway.io/dashboard)**
+**[Routing docs →](https://docs.betarouter.com/features/routing#routing-strategy)** | **[Open your dashboard →](https://betarouter.com/dashboard)**

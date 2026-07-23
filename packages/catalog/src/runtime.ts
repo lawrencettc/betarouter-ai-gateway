@@ -1,9 +1,9 @@
 import { z } from "zod";
 
-import { redisClient } from "@llmgateway/cache";
-import { db } from "@llmgateway/db/db";
-import { desc } from "@llmgateway/db/orm";
-import { platformCatalogRevision } from "@llmgateway/db/schema";
+import { redisClient } from "@betarouter/cache";
+import { db } from "@betarouter/db/db";
+import { desc } from "@betarouter/db/orm";
+import { platformCatalogRevision } from "@betarouter/db/schema";
 
 import { getCatalogBreakerStates } from "./breaker-store.js";
 import { calculateCatalogChecksum } from "./catalog.js";

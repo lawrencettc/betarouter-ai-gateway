@@ -281,7 +281,7 @@ export function MemberDetailClient() {
 								over any time period.
 							</p>
 							<Button asChild>
-								<a href="mailto:contact@llmgateway.io">
+								<a href="mailto:contact@betarouter.com">
 									<Mail className="mr-2 h-4 w-4" />
 									Contact Sales
 								</a>

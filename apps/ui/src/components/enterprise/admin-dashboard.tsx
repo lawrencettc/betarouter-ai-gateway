@@ -64,9 +64,9 @@ export function AdminDashboardEnterprise() {
 						A full admin dashboard, on your infrastructure
 					</h2>
 					<p className="text-lg text-muted-foreground text-balance leading-relaxed">
-						When you self-host LLM Gateway, you get a complete admin dashboard
-						to monitor, manage, and optimize your entire LLM operation. No
-						external dependencies, no data leaving your network.
+						When you self-host betarouter, you get a complete admin dashboard to
+						monitor, manage, and optimize your entire LLM operation. No external
+						dependencies, no data leaving your network.
 					</p>
 				</div>
 

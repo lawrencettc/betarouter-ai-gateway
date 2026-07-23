@@ -10,9 +10,9 @@
  * idempotent. Regular credit top-up refunds are intentionally skipped.
  *
  * Usage:
- *   pnpm --filter @llmgateway/scripts backfill-stripe-refunds                       # dry run
- *   pnpm --filter @llmgateway/scripts backfill-stripe-refunds --commit              # apply
- *   pnpm --filter @llmgateway/scripts backfill-stripe-refunds --payment-intent=pi_x # scope to one PI
+ *   pnpm --filter @betarouter/scripts backfill-stripe-refunds                       # dry run
+ *   pnpm --filter @betarouter/scripts backfill-stripe-refunds --commit              # apply
+ *   pnpm --filter @betarouter/scripts backfill-stripe-refunds --payment-intent=pi_x # scope to one PI
  *
  * Environment:
  *   STRIPE_SECRET_KEY - required
@@ -21,7 +21,7 @@
 
 import Stripe from "stripe";
 
-import { and, db, eq, inArray, isNull, tables } from "@llmgateway/db";
+import { and, db, eq, inArray, isNull, tables } from "@betarouter/db";
 
 const STRIPE_API_VERSION = "2025-04-30.basil" as const;
 const DEV_PLAN_TX_TYPES = [

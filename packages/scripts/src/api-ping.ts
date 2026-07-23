@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync, existsSync } from "fs";
 import initSqlJs, { type Database } from "sql.js";
 
 const DB_PATH = "api-responses.db";
-const API_URL = "https://api.llmgateway.io";
+const API_URL = "https://api.betarouter.com";
 const INTERVAL_MS = 1000;
 
 let db: Database;

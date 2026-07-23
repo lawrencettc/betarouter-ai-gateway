@@ -4,8 +4,8 @@ import { z } from "zod";
 
 import { userHasOrganizationAccess } from "@/utils/authorization.js";
 
-import { db } from "@llmgateway/db";
-import { buildSignedGatewayVideoLogContentUrl } from "@llmgateway/shared/video-access";
+import { db } from "@betarouter/db";
+import { buildSignedGatewayVideoLogContentUrl } from "@betarouter/shared/video-access";
 
 import type { ServerTypes } from "@/vars.js";
 

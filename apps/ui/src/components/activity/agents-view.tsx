@@ -22,7 +22,7 @@ import {
 import { useDashboardNavigation } from "@/hooks/useDashboardNavigation";
 import { useApi } from "@/lib/fetch-client";
 
-import { CODING_AGENTS } from "@llmgateway/shared";
+import { CODING_AGENTS } from "@betarouter/shared";
 import {
 	AnthropicIcon,
 	AutohandIcon,
@@ -35,11 +35,11 @@ import {
 	OpenClawIcon,
 	OpenCodeIcon,
 	SoulForgeIcon,
-} from "@llmgateway/shared/components";
+} from "@betarouter/shared/components";
 
 import type { paths } from "@/lib/api/v1";
 import type { SourceActivityData, SourceUsage } from "@/types/activity";
-import type { Log } from "@llmgateway/db";
+import type { Log } from "@betarouter/db";
 import type { ComponentType, SVGProps } from "react";
 
 type ApiLog =

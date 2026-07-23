@@ -12,7 +12,7 @@ export function SimulatorHero({ discount }: { discount: number }) {
 						Nano Banana Pro Cost Simulator
 					</h1>
 					<p className="text-xl text-muted-foreground">
-						Calculate your savings on Gemini 3 Pro image generation. LLM Gateway
+						Calculate your savings on Gemini 3 Pro image generation. betarouter
 						offers {discount}% off Google AI Studio direct pricing.
 					</p>
 				</div>

@@ -5,7 +5,7 @@ import { app } from "@/index.js";
 import { handleChargeRefunded, handleEndUserTopUpSucceeded } from "@/stripe.js";
 import { createTestUser, deleteAll } from "@/testing.js";
 
-import { db, tables } from "@llmgateway/db";
+import { db, tables } from "@betarouter/db";
 
 // Real Stripe test-mode round trip: create + confirm a PaymentIntent and issue a
 // refund through Stripe, driving the actual webhook handlers and the admin

@@ -1,6 +1,6 @@
 import { Redis } from "ioredis";
 
-import { logger } from "@llmgateway/logger";
+import { logger } from "@betarouter/logger";
 
 export const redisClient = new Redis({
 	host: process.env.REDIS_HOST ?? "localhost",

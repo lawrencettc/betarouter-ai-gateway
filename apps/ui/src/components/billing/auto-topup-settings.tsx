@@ -19,7 +19,7 @@ import { useDashboardState } from "@/lib/dashboard-state";
 import { useApi } from "@/lib/fetch-client";
 import Spinner from "@/lib/icons/Spinner";
 
-import { CREDIT_TOP_UP_MAX_AMOUNT } from "@llmgateway/shared";
+import { CREDIT_TOP_UP_MAX_AMOUNT } from "@betarouter/shared";
 
 function AutoTopUpSettings() {
 	const { toast } = useToast();

@@ -3,15 +3,15 @@ id: "46"
 slug: "devpass-product-hunt-launch"
 date: "2026-05-07"
 title: "DevPass is live on Product Hunt"
-summary: "DevPass by LLM Gateway is live on Product Hunt today. One subscription, every coding model, three flat prices."
+summary: "DevPass by betarouter is live on Product Hunt today. One subscription, every coding model, three flat prices."
 image:
   src: "/changelog/devpass-product-hunt-launch.png"
-  alt: "DevPass by LLM Gateway — $1 in, $3 out — live on Product Hunt"
+  alt: "DevPass by betarouter — $1 in, $3 out — live on Product Hunt"
   width: 1200
   height: 675
 ---
 
-After months of building, **DevPass by LLM Gateway** is live on Product Hunt today 🚀
+After months of building, **DevPass by betarouter** is live on Product Hunt today 🚀
 
 One subscription. Every coding model. Three flat prices.
 

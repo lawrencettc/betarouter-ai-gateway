@@ -79,7 +79,7 @@ Orchestration tools fall into two broad layers:
 
 **Application / workflow frameworks** — LangChain, LlamaIndex, and similar libraries orchestrate _within your process_: chains, agents, memory, tool calls, and RAG pipelines. They're excellent at structuring multi-step logic.
 
-**Gateway / infrastructure orchestrators** — LLM Gateway, and platforms like LiteLLM, OpenRouter, and Portkey, orchestrate _across providers_: routing, failover, caching, guardrails, and analytics behind one API. They're excellent at making model calls reliable and cheap. (We compare several of these in [7 best AI gateways in 2026](/blog/best-ai-gateways).)
+**Gateway / infrastructure orchestrators** — betarouter, and platforms like LiteLLM, OpenRouter, and Portkey, orchestrate _across providers_: routing, failover, caching, guardrails, and analytics behind one API. They're excellent at making model calls reliable and cheap. (We compare several of these in [7 best AI gateways in 2026](/blog/best-ai-gateways).)
 
 Most production stacks use both: a framework for workflow logic, a gateway for the provider-level orchestration underneath it. They're not competitors — they're different floors of the same building.
 
@@ -102,9 +102,9 @@ You **do** need one once any of these become true:
 
 The tipping point is usually the second provider or the first production incident — whichever comes first.
 
-## How LLM Gateway Handles It
+## How betarouter Handles It
 
-LLM Gateway is an orchestration layer you don't have to build. Behind one OpenAI-compatible endpoint it provides:
+betarouter is an orchestration layer you don't have to build. Behind one OpenAI-compatible endpoint it provides:
 
 - **Smart routing** — every provider scored on uptime (50%), throughput (20%), price (20%), and latency (10%), with 1% exploration to keep scores honest
 - **Automatic failover** — transparent retries on a healthy provider when one fails
@@ -117,7 +117,7 @@ LLM Gateway is an orchestration layer you don't have to build. Behind one OpenAI
 import OpenAI from "openai";
 
 const client = new OpenAI({
-  baseURL: "https://api.llmgateway.io/v1",
+  baseURL: "https://api.betarouter.com/v1",
   apiKey: process.env.LLM_GATEWAY_API_KEY,
 });
 
@@ -151,4 +151,4 @@ Mainly through routing (send each task to the cheapest model that meets quality)
 - Application frameworks orchestrate _workflow_; gateways orchestrate _providers_ — most stacks use both.
 - You need an orchestrator once you add a second provider, hit your first incident, or watch costs climb.
 
-**[Try LLM Gateway free](/signup)** | **[What is an LLM gateway?](/blog/what-is-an-llm-gateway)** | **[Estimate your costs](/token-cost-calculator)**
+**[Try betarouter free](/signup)** | **[What is an LLM gateway?](/blog/what-is-an-llm-gateway)** | **[Estimate your costs](/token-cost-calculator)**

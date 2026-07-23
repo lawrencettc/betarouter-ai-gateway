@@ -38,7 +38,7 @@ export function ReferralsClient({
 }: ReferralsClientProps) {
 	const { selectedOrganization } = useDashboardContext();
 	const [copiedKey, setCopiedKey] = useState<string | null>(null);
-	const [origin, setOrigin] = useState("https://llmgateway.io");
+	const [origin, setOrigin] = useState("https://betarouter.com");
 
 	useEffect(() => {
 		setOrigin(window.location.origin);
@@ -202,10 +202,10 @@ export function ReferralsClient({
 												<p className="text-muted-foreground">
 													Contact us at{" "}
 													<a
-														href="mailto:contact@llmgateway.io"
+														href="mailto:contact@betarouter.com"
 														className="font-medium text-primary underline-offset-4 hover:underline"
 													>
-														contact@llmgateway.io
+														contact@betarouter.com
 													</a>{" "}
 													to enable a bonus on your invitation page, so referred
 													users get up to 50% bonus credits on their first

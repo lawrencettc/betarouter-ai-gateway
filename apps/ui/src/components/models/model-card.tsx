@@ -2,11 +2,11 @@
 
 import { ModelCtaButton } from "@/components/models/model-cta-button";
 
-import { ModelCard as SharedModelCard } from "@llmgateway/shared/components";
+import { ModelCard as SharedModelCard } from "@betarouter/shared/components";
 
 import type { ComponentProps } from "react";
 
-export { ProviderSection } from "@llmgateway/shared/components";
+export { ProviderSection } from "@betarouter/shared/components";
 
 type SharedModelCardProps = ComponentProps<typeof SharedModelCard>;
 

@@ -1,4 +1,4 @@
-import { logger } from "@llmgateway/logger";
+import { logger } from "@betarouter/logger";
 import {
 	models,
 	type ProviderModelMapping,
@@ -7,14 +7,14 @@ import {
 	type BaseMessage,
 	type ProviderValidationResult,
 	providers,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 import { getGcpServiceAccountAccessToken } from "./gcp-access-token.js";
 import { getProviderEndpoint } from "./get-provider-endpoint.js";
 import { getProviderHeaders } from "./get-provider-headers.js";
 import { prepareRequestBody } from "./prepare-request-body.js";
 
-import type { ProviderKeyOptions } from "@llmgateway/db";
+import type { ProviderKeyOptions } from "@betarouter/db";
 
 /**
  * Pick the cheapest candidate among the newer half of the provider's releases,

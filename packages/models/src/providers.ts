@@ -165,9 +165,9 @@ export interface ProviderDefinition {
 export const providers: ProviderDefinition[] = [
 	{
 		id: "llmgateway",
-		name: "LLM Gateway",
+		name: "betarouter",
 		description:
-			"LLMGateway is a framework for building and deploying large language models.",
+			"betarouter is a framework for building and deploying large language models.",
 		env: {
 			required: {
 				apiKey: "LLM_LLMGATEWAY_API_KEY",
@@ -176,11 +176,11 @@ export const providers: ProviderDefinition[] = [
 		streaming: true,
 		cancellation: true,
 		color: "#6366f1",
-		website: "https://llmgateway.io",
-		statusPageUrl: "https://status.llmgateway.io",
+		website: "https://betarouter.com",
+		statusPageUrl: "https://status.betarouter.com",
 		announcement: null,
-		termsUrl: "https://llmgateway.io/terms",
-		privacyPolicyUrl: "https://llmgateway.io/privacy",
+		termsUrl: "https://betarouter.com/terms",
+		privacyPolicyUrl: "https://betarouter.com/privacy",
 		headquarters: "US",
 		dataPolicy: {
 			apiTraining: false,
@@ -788,7 +788,7 @@ export const providers: ProviderDefinition[] = [
 		announcement: null,
 		apiKeyInstructions:
 			"Use AWS Bedrock Long-Term API Keys (not IAM service account or private keys)",
-		learnMore: "https://docs.llmgateway.io/integrations/aws-bedrock",
+		learnMore: "https://docs.betarouter.com/integrations/aws-bedrock",
 		regionConfig: {
 			optionsKey: "aws_bedrock_region",
 			defaultRegion: "global",
@@ -895,7 +895,7 @@ export const providers: ProviderDefinition[] = [
 		announcement: null,
 		apiKeyInstructions:
 			"The resource name can be found in your Azure base URL: https://<resource-name>.openai.azure.com",
-		learnMore: "https://docs.llmgateway.io/integrations/azure",
+		learnMore: "https://docs.betarouter.com/integrations/azure",
 		priority: 2,
 		termsUrl: "https://www.microsoft.com/licensing/terms",
 		privacyPolicyUrl: "https://privacy.microsoft.com/privacystatement",
@@ -932,7 +932,7 @@ export const providers: ProviderDefinition[] = [
 		announcement: null,
 		apiKeyInstructions:
 			"The resource name can be found in your Azure AI Foundry base URL: https://<resource-name>.services.ai.azure.com",
-		learnMore: "https://docs.llmgateway.io/integrations/azure",
+		learnMore: "https://docs.betarouter.com/integrations/azure",
 		priority: 1.5,
 		termsUrl: "https://www.microsoft.com/licensing/terms",
 		privacyPolicyUrl: "https://privacy.microsoft.com/privacystatement",

@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for helping us grow the model catalog! Please check the [models page](https://llmgateway.io/models) first to make sure the model isn't already supported.
+        Thanks for helping us grow the model catalog! Please check the [models page](https://betarouter.com/models) first to make sure the model isn't already supported.
   - type: input
     id: model-name
     attributes:

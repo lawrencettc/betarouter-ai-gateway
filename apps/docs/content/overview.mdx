@@ -1,10 +1,10 @@
 ---
 title: Overview
-description: Introduction to LLM Gateway, an open-source API gateway for LLMs.
+description: Introduction to betarouter, an open-source API gateway for LLMs.
 icon: Notebook
 ---
 
-LLM Gateway is an open-source API gateway for Large Language Models (LLMs). It acts as a middleware between your applications and various LLM providers, allowing you to:
+betarouter is an open-source API gateway for Large Language Models (LLMs). It acts as a middleware between your applications and various LLM providers, allowing you to:
 
 - Route requests to multiple LLM providers (OpenAI, Anthropic, Google AI Studio, and others)
 - Manage API keys for different providers in one place
@@ -13,7 +13,7 @@ LLM Gateway is an open-source API gateway for Large Language Models (LLMs). It a
 
 ## Analyzing Your LLM Requests
 
-LLM Gateway provides detailed insights into your LLM usage:
+betarouter provides detailed insights into your LLM usage:
 
 - **Usage Metrics**: Track the number of requests, tokens used, and response times
 - **Cost Analysis**: Monitor spending across different models and providers
@@ -24,10 +24,10 @@ All this data is automatically collected and presented in an intuitive dashboard
 
 ## Getting Started
 
-Using LLM Gateway is simple. Just swap out your current LLM provider URL with the LLM Gateway API endpoint:
+Using betarouter is simple. Just swap out your current LLM provider URL with the betarouter API endpoint:
 
 ```bash
-curl -X POST https://api.llmgateway.io/v1/chat/completions \
+curl -X POST https://api.betarouter.com/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -d '{
@@ -38,13 +38,13 @@ curl -X POST https://api.llmgateway.io/v1/chat/completions \
 }'
 ```
 
-LLM Gateway maintains compatibility with the OpenAI API format, making migration seamless.
+betarouter maintains compatibility with the OpenAI API format, making migration seamless.
 
 ## Hosted vs. Self-Hosted
 
-You can use LLM Gateway in two ways:
+You can use betarouter in two ways:
 
-- **Hosted Version**: For immediate use without setup, visit [llmgateway.io](https://llmgateway.io) to create an account and get an API key.
-- **Self-Hosted**: Deploy LLM Gateway on your own infrastructure for complete control over your data and configuration.
+- **Hosted Version**: For immediate use without setup, visit [betarouter.com](https://betarouter.com) to create an account and get an API key.
+- **Self-Hosted**: Deploy betarouter on your own infrastructure for complete control over your data and configuration.
 
 The self-hosted version offers additional customization options and ensures your LLM traffic never leaves your infrastructure if desired.

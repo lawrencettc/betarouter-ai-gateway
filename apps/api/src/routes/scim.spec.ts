@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { app } from "@/index.js";
 import { createTestUser, deleteAll } from "@/testing.js";
 
-import { db, tables } from "@llmgateway/db";
-import { getApiKeyFingerprint } from "@llmgateway/shared/api-key-hash";
+import { db, tables } from "@betarouter/db";
+import { getApiKeyFingerprint } from "@betarouter/shared/api-key-hash";
 
 const SCIM_TOKEN = "scim_test_token_abcdef0123456789";
 const ORG_ID = "scim-test-org";

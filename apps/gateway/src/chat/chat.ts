@@ -123,7 +123,7 @@ import {
 	UnsupportedAudioFormatError,
 	UnsupportedDocumentFormatError,
 	type RoutingMetadata,
-} from "@llmgateway/actions";
+} from "@betarouter/actions";
 import {
 	generateCacheKey,
 	generateStreamingCacheKey,
@@ -131,7 +131,7 @@ import {
 	getStreamingCache,
 	setCache,
 	setStreamingCache,
-} from "@llmgateway/cache";
+} from "@betarouter/cache";
 import {
 	type InferSelectModel,
 	isCachingEnabled,
@@ -141,13 +141,13 @@ import {
 	shortid,
 	type tables,
 	type ProviderMetrics,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 import {
 	applyRedactions,
 	checkGuardrails,
 	logViolation,
-} from "@llmgateway/guardrails";
-import { logger, toError } from "@llmgateway/logger";
+} from "@betarouter/guardrails";
+import { logger, toError } from "@betarouter/logger";
 import {
 	type BaseMessage,
 	getModelStreamingSupport,
@@ -168,7 +168,7 @@ import {
 	getProviderDefinition,
 	getRegionSpecificEnvVarName,
 	getProviderEnvValue,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 import {
 	detectCodingAgentFromReferer,
 	detectCodingAgentFromTitle,
@@ -176,11 +176,11 @@ import {
 	isChatPlanModelAllowed,
 	isRecognizedCodingAgent,
 	normalizeSourceToAgentId,
-} from "@llmgateway/shared";
+} from "@betarouter/shared";
 import {
 	applyRoutingPreference,
 	type ResolvedRoutingConfig,
-} from "@llmgateway/shared/routing-config";
+} from "@betarouter/shared/routing-config";
 
 import { completionsRequestSchema } from "./schemas/completions.js";
 import { anthropicRequestNeedsEffortBeta } from "./tools/anthropic-effort-beta.js";
@@ -1816,14 +1816,14 @@ chat.openapi(completions, async (c) => {
 	if (!apiKey) {
 		throw new HTTPException(401, {
 			message:
-				"Unauthorized: Invalid LLMGateway API token. The token could not be found. Go to the LLMGateway 'API Keys' page to generate a new token.",
+				"Unauthorized: Invalid betarouter API token. The token could not be found. Go to the betarouter 'API Keys' page to generate a new token.",
 		});
 	}
 
 	if (apiKey.status !== "active") {
 		throw new HTTPException(401, {
 			message:
-				"Unauthorized: This LLMGateway API token is not active (it may be disabled or deleted). Go to the LLMGateway 'API Keys' page to generate a new token.",
+				"Unauthorized: This betarouter API token is not active (it may be disabled or deleted). Go to the betarouter 'API Keys' page to generate a new token.",
 		});
 	}
 
@@ -1863,7 +1863,7 @@ chat.openapi(completions, async (c) => {
 	await assertMemberWithinBudget(apiKey.createdBy, project.organizationId);
 	assertApiKeyWithinUsageLimits(apiKey);
 
-	// End-user sessions always bill via wallet credits through llmgateway's own
+	// End-user sessions always bill via wallet credits through betarouter's own
 	// provider keys — never the developer's BYO keys.
 	if (endUserWallet) {
 		assertOriginAllowed(c, project);
@@ -2504,7 +2504,7 @@ chat.openapi(completions, async (c) => {
 	);
 	if (isStarterChatPlan && !isChatPlanModelAllowed("starter", modelInfo.id)) {
 		throw new HTTPException(403, {
-			message: `Model ${modelInfo.id} is not available on the Starter chat plan. Upgrade to Plus or Pro at chat.llmgateway.io/pricing to access frontier models.`,
+			message: `Model ${modelInfo.id} is not available on the Starter chat plan. Upgrade to Plus or Pro at chat.betarouter.com/pricing to access frontier models.`,
 		});
 	}
 
@@ -2637,7 +2637,7 @@ chat.openapi(completions, async (c) => {
 	}
 
 	let usedProvider = requestedProvider;
-	// Canonical LLM Gateway model id (root id). Used for every internal
+	// Canonical betarouter model id (root id). Used for every internal
 	// lookup: pricing, discount, rate-limit, IAM, key selection. Initially
 	// the user's requested model; reset to `modelInfo.id` once the model is
 	// resolved, and re-set on auto-route when the resolved model changes.
@@ -4604,7 +4604,7 @@ chat.openapi(completions, async (c) => {
 		usedInternalModel,
 		customProviderName,
 		usedRegion,
-	); // Store in LLMGateway format
+	); // Store in betarouter format
 
 	// Auto-set reasoning_effort for auto-routing when model supports reasoning
 	// Skip when web_search tool is present since it's incompatible with "minimal" reasoning effort
@@ -6125,7 +6125,7 @@ chat.openapi(completions, async (c) => {
 	// For Google providers, enrich messages with cached thought_signatures
 	// This is needed for multi-turn tool call conversations with Gemini 3+
 	if (isGoogleCompatibleProvider(usedProvider)) {
-		const { redisClient } = await import("@llmgateway/cache");
+		const { redisClient } = await import("@betarouter/cache");
 		for (const message of messages) {
 			if (
 				message.role === "assistant" &&

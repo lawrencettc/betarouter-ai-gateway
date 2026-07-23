@@ -5,7 +5,7 @@ import {
 	models,
 	type Provider,
 	providers,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 export interface ParseModelInputResult {
 	requestedModel: Model;

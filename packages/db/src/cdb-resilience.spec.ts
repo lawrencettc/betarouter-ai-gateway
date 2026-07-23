@@ -3,7 +3,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
-import { redisClient } from "@llmgateway/cache";
+import { redisClient } from "@betarouter/cache";
 
 import { db } from "./db.js";
 import { RedisCache } from "./redis-cache.js";

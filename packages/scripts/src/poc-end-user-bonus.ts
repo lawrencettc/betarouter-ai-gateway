@@ -26,8 +26,8 @@
  *     and set STRIPE_WEBHOOK_SECRET in .env to the secret it prints.
  *
  * Usage:
- *   pnpm --filter @llmgateway/scripts poc-end-user-bonus
- *   pnpm --filter @llmgateway/scripts poc-end-user-bonus --no-refund
+ *   pnpm --filter @betarouter/scripts poc-end-user-bonus
+ *   pnpm --filter @betarouter/scripts poc-end-user-bonus --no-refund
  *
  * Environment:
  *   API_URL          - API base URL (default http://localhost:4002)
@@ -38,7 +38,7 @@
 
 import Stripe from "stripe";
 
-import { db, tables } from "@llmgateway/db";
+import { db, tables } from "@betarouter/db";
 
 const API_URL = process.env.API_URL ?? "http://localhost:4002";
 const PLATFORM_SECRET =

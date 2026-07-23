@@ -6,13 +6,13 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for helping us improve the [documentation](https://docs.llmgateway.io)!
+        Thanks for helping us improve the [documentation](https://docs.betarouter.com)!
   - type: input
     id: page
     attributes:
       label: Page / URL
       description: Which docs page does this relate to?
-      placeholder: https://docs.llmgateway.io/...
+      placeholder: https://docs.betarouter.com/...
     validations:
       required: false
   - type: dropdown

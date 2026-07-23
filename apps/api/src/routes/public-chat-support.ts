@@ -1,3 +1,4 @@
+import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
 import {
 	streamText,
 	convertToModelMessages,
@@ -18,10 +19,9 @@ import {
 import { notifyChatSupportEscalation } from "@/utils/discord.js";
 import { sendTransactionalEmail } from "@/utils/email.js";
 
-import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
-import { and, db, desc, eq, isNull, tables } from "@llmgateway/db";
-import { logger, toError } from "@llmgateway/logger";
-import { replyToEmail } from "@llmgateway/shared/email";
+import { and, db, desc, eq, isNull, tables } from "@betarouter/db";
+import { logger, toError } from "@betarouter/logger";
+import { replyToEmail } from "@betarouter/shared/email";
 
 import type { ServerTypes } from "@/vars.js";
 
@@ -64,9 +64,9 @@ const META_HOURLY_LIMIT_MAX = 300;
 const CONVERSATION_TTL_SECONDS = 60 * 60; // 1 hour
 const MAX_CONTEXT_MESSAGES = 30;
 
-const DOCS_BASE_URL = "https://docs.llmgateway.io";
+const DOCS_BASE_URL = "https://docs.betarouter.com";
 
-const BASE_SYSTEM_PROMPT = `You are the LLM Gateway support assistant. You ONLY answer questions related to LLM Gateway — the unified API gateway for multiple LLM providers — and its products (the dashboard at llmgateway.io, DevPass at devpass.llmgateway.io, the docs at docs.llmgateway.io, and the chat app at chat.llmgateway.io).
+const BASE_SYSTEM_PROMPT = `You are the betarouter support assistant. You ONLY answer questions related to betarouter — the unified API gateway for multiple LLM providers — and its products (the dashboard at betarouter.com, DevPass at devpass.betarouter.com, the docs at docs.betarouter.com, and the chat app at chat.betarouter.com).
 
 Your knowledge covers:
 - Getting started, quick start, and setup
@@ -84,8 +84,8 @@ When answering:
 1. Be concise and helpful.
 2. Link to relevant pages using the real URLs listed in the "Available pages" section below. Never invent URLs.
 3. When you are unsure of an answer or need exact details, use the \`fetchPage\` tool to read the most relevant page before answering. Prefer grounding your answer in fetched content.
-4. If the question is NOT related to LLM Gateway, politely decline and suggest they ask about LLM Gateway features instead.
-5. Do not make up features or capabilities. If unsure after checking the docs, direct them to ${DOCS_BASE_URL} or suggest contacting support at contact@llmgateway.io.
+4. If the question is NOT related to betarouter, politely decline and suggest they ask about betarouter features instead.
+5. Do not make up features or capabilities. If unsure after checking the docs, direct them to ${DOCS_BASE_URL} or suggest contacting support at contact@betarouter.com.
 6. Keep responses short — ideally under 200 words.`;
 
 async function buildSystemPrompt(): Promise<string> {
@@ -96,7 +96,7 @@ async function buildSystemPrompt(): Promise<string> {
 	const urlList = urls.map((u) => `- ${u}`).join("\n");
 	return `${BASE_SYSTEM_PROMPT}
 
-Available pages (sourced from the live sitemaps of llmgateway.io, devpass.llmgateway.io, docs.llmgateway.io and chat.llmgateway.io). Use these for accurate links and as targets for the \`fetchPage\` tool:
+Available pages (sourced from the live sitemaps of betarouter.com, devpass.betarouter.com, docs.betarouter.com and chat.betarouter.com). Use these for accurate links and as targets for the \`fetchPage\` tool:
 ${urlList}`;
 }
 
@@ -186,7 +186,7 @@ async function checkMessageRateLimit(
 			return {
 				ok: false,
 				message:
-					"Daily message limit reached. Please try again tomorrow or email contact@llmgateway.io.",
+					"Daily message limit reached. Please try again tomorrow or email contact@betarouter.com.",
 			};
 		}
 	}
@@ -210,7 +210,7 @@ async function checkMessageRateLimit(
 		return {
 			ok: false,
 			message:
-				"Chat support is experiencing unusually high volume. Please try again later or email contact@llmgateway.io.",
+				"Chat support is experiencing unusually high volume. Please try again later or email contact@betarouter.com.",
 		};
 	}
 
@@ -489,7 +489,7 @@ publicChatSupport.post("/", async (c) => {
 		);
 	}
 
-	const gatewayUrl = process.env.GATEWAY_URL ?? "https://api.llmgateway.io/v1";
+	const gatewayUrl = process.env.GATEWAY_URL ?? "https://api.betarouter.com/v1";
 
 	const supportApiKey = process.env.SUPPORT_CHAT_API_KEY;
 	if (!supportApiKey) {
@@ -516,11 +516,11 @@ publicChatSupport.post("/", async (c) => {
 		tools: {
 			fetchPage: tool({
 				description:
-					"Fetch the readable text content of an LLM Gateway page (llmgateway.io, devpass/docs/chat.llmgateway.io) to ground your answer in accurate, up-to-date information. Pass a full https URL from the available pages list.",
+					"Fetch the readable text content of an betarouter page (betarouter.com, devpass/docs/chat.betarouter.com) to ground your answer in accurate, up-to-date information. Pass a full https URL from the available pages list.",
 				inputSchema: z.object({
 					url: z
 						.string()
-						.describe("Full https URL of the LLM Gateway page to read"),
+						.describe("Full https URL of the betarouter page to read"),
 				}),
 				execute: async ({ url }) => await fetchKnowledgePage(url),
 			}),
@@ -823,7 +823,7 @@ publicChatSupport.post("/escalate", async (c) => {
 	const escapedName = escapeHtml(name ?? "Not provided");
 	const escapedEmail = escapeHtml(email ?? "Not provided");
 	const escapedConversationId = escapeHtml(conversationId);
-	const adminBaseUrl = process.env.ADMIN_URL ?? "https://admin.llmgateway.io";
+	const adminBaseUrl = process.env.ADMIN_URL ?? "https://admin.betarouter.com";
 	const adminConversationUrl = `${adminBaseUrl}/chat-support-logs?chat=${encodeURIComponent(conversationId)}`;
 	const escapedAdminConversationUrl = escapeHtml(adminConversationUrl);
 	const escapedTranscript = (messages ?? [])

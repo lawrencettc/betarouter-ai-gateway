@@ -7,7 +7,7 @@ import { createGatewayApiTestHarness } from "@/test-utils/gateway-api-test-harne
 import { resetFailOnceCounter } from "@/test-utils/mock-openai-server.js";
 import { waitForLogs } from "@/test-utils/test-helpers.js";
 
-import { db, tables } from "@llmgateway/db";
+import { db, tables } from "@betarouter/db";
 
 describe("embeddings", () => {
 	const harness = createGatewayApiTestHarness();

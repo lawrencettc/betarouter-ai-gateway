@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 export const metadata: Metadata = {
 	title: "Connect CLI",
 	description:
-		"Authorize a coding CLI (such as DevPass Code) to access your LLM Gateway account.",
+		"Authorize a coding CLI (such as DevPass Code) to access your betarouter account.",
 	robots: { index: false, follow: false },
 };
 

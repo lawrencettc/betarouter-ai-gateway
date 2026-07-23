@@ -11,12 +11,12 @@ describe("error-response", () => {
 	test("builds OpenAI envelope with status-derived type and code", () => {
 		expect(
 			buildOpenAIErrorBody({
-				message: "Unauthorized: LLMGateway API key reached its usage limit.",
+				message: "Unauthorized: betarouter API key reached its usage limit.",
 				status: 401,
 			}),
 		).toEqual({
 			error: {
-				message: "Unauthorized: LLMGateway API key reached its usage limit.",
+				message: "Unauthorized: betarouter API key reached its usage limit.",
 				type: "invalid_request_error",
 				param: null,
 				code: "invalid_api_key",

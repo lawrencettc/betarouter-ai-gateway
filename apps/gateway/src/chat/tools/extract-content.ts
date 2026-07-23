@@ -1,4 +1,4 @@
-import type { Provider } from "@llmgateway/models";
+import type { Provider } from "@betarouter/models";
 
 /**
  * Extracts content from streaming data based on provider format

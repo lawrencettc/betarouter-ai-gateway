@@ -5,15 +5,15 @@ import {
 	evaluateCatalogRequest,
 	getEffectiveCatalogSnapshot,
 	readCatalogFeatureFlags,
-} from "@llmgateway/catalog";
-import { logger } from "@llmgateway/logger";
+} from "@betarouter/catalog";
+import { logger } from "@betarouter/logger";
 
 import type {
 	CatalogRequestDecision,
 	CatalogRequestInput,
 	EffectiveMapping,
-} from "@llmgateway/catalog";
-import type { ProviderModelMapping } from "@llmgateway/models";
+} from "@betarouter/catalog";
+import type { ProviderModelMapping } from "@betarouter/models";
 
 interface EnforceCatalogRequestOptions {
 	operation: "chat" | "deferred_non_chat";

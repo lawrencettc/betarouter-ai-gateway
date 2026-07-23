@@ -52,14 +52,14 @@ import { cn } from "@/lib/utils";
 import {
 	getProviderIcon,
 	providerLogoUrls,
-} from "@llmgateway/shared/components";
+} from "@betarouter/shared/components";
 
 import type {
 	ApiModel,
 	ApiModelProviderMapping,
 	ApiProvider,
 } from "@/lib/fetch-models";
-import type { ProviderId } from "@llmgateway/models";
+import type { ProviderId } from "@betarouter/models";
 import type { LucideProps } from "lucide-react";
 
 interface ModelSelectorProps {
@@ -918,7 +918,7 @@ export function ModelSelector({
 		const now = new Date();
 
 		// Sort by public release date first so newly released models surface
-		// before older models that were added to LLM Gateway more recently.
+		// before older models that were added to betarouter more recently.
 		const sortedModels = [...models].sort((a, b) => {
 			const dateA = a.releasedAt
 				? new Date(a.releasedAt).getTime()

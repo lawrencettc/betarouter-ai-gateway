@@ -1,10 +1,10 @@
 import { and, gte, getTableName, inArray, sql } from "drizzle-orm";
 
-import { swrWrap } from "@llmgateway/cache";
+import { swrWrap } from "@betarouter/cache";
 import {
 	routingHistoryCacheKey,
 	type RoutingHistoryConfig,
-} from "@llmgateway/shared/routing-config";
+} from "@betarouter/shared/routing-config";
 
 import { cdb } from "./cdb.js";
 import { metricsKey, type ProviderMetrics } from "./provider-metrics.js";

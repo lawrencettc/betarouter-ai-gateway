@@ -25,8 +25,8 @@ import {
 	projectHourlyStats,
 	sql,
 	tables,
-} from "@llmgateway/db";
-import { models, type ModelDefinition } from "@llmgateway/models";
+} from "@betarouter/db";
+import { models, type ModelDefinition } from "@betarouter/models";
 
 import type { ServerTypes } from "@/vars.js";
 

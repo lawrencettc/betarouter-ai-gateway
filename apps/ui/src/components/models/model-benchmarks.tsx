@@ -18,7 +18,7 @@ import { Badge } from "@/lib/components/badge";
 import { useAppConfig } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
-import { getProviderIcon } from "@llmgateway/shared/components";
+import { getProviderIcon } from "@betarouter/shared/components";
 
 interface ProviderBenchmark {
 	providerId: string;
@@ -227,7 +227,7 @@ export function ModelBenchmarks({ modelId }: { modelId: string }) {
 						</h2>
 					</div>
 					<p className="text-sm text-muted-foreground mb-4">
-						Real performance data from LLM Gateway over the last{" "}
+						Real performance data from betarouter over the last{" "}
 						{sorted[0]?.windowHours ?? 24} hours. Higher uptime and throughput
 						are better. Stats are hidden for providers with under{" "}
 						{MIN_SIGNIFICANT_REQUESTS.toLocaleString()} requests, where the

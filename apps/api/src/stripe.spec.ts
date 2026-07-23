@@ -1,8 +1,8 @@
 import Stripe from "stripe";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-import { db, eq, tables } from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+import { db, eq, tables } from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 
 import {
 	handleChargeRefunded,

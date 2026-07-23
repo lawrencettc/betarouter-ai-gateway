@@ -32,13 +32,13 @@ import { StatusBadge } from "@/lib/components/status-badge";
 import { toast } from "@/lib/components/use-toast";
 import { useApi } from "@/lib/fetch-client";
 
-import { isStealthProvider, providers } from "@llmgateway/models";
-import { getProviderIcon } from "@llmgateway/shared/components";
+import { isStealthProvider, providers } from "@betarouter/models";
+import { getProviderIcon } from "@betarouter/shared/components";
 
 import { CreateProviderKeyDialog } from "./create-provider-key-dialog";
 
 import type { Organization } from "@/lib/types";
-import type { ProviderKeyOptions } from "@llmgateway/db";
+import type { ProviderKeyOptions } from "@betarouter/db";
 
 interface ProviderKeysListProps {
 	selectedOrganization: Organization | null;
@@ -97,7 +97,7 @@ export function ProviderKeysList({
 	const deleteMutation = api.useMutation("delete", "/keys/provider/{id}");
 	const toggleMutation = api.useMutation("patch", "/keys/provider/{id}");
 
-	// Filter out LLM Gateway and stealth providers (no default base URL) from the
+	// Filter out betarouter and stealth providers (no default base URL) from the
 	// providers list: users can't configure a stealth provider key because the
 	// platform behind it is undisclosed, so they must not appear as connectable.
 	const availableProviders = useMemo(

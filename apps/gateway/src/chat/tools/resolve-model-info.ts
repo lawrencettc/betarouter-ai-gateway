@@ -6,7 +6,7 @@ import {
 	models,
 	type Provider,
 	type ProviderModelMapping,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 export interface ResolveModelInfoResult {
 	modelInfo: ModelDefinition;

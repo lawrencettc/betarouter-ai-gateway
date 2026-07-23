@@ -76,7 +76,7 @@ A guardrails system typically provides two layers: system rules (built-in protec
 
 ### System Rules
 
-These are pre-built rules that cover the most common threats. LLM Gateway includes six:
+These are pre-built rules that cover the most common threats. betarouter includes six:
 
 | Rule                            | What It Catches                          | Example                                           |
 | ------------------------------- | ---------------------------------------- | ------------------------------------------------- |
@@ -164,7 +164,7 @@ Deploying guardrails isn't a one-time setup. It's an ongoing process:
 
 ## Getting Started
 
-Guardrails are available on LLM Gateway's Enterprise plan. The implementation flow:
+Guardrails are available on betarouter's Enterprise plan. The implementation flow:
 
 1. Enable guardrails globally for your organization
 2. Turn on system rules in **warn** mode
@@ -175,4 +175,4 @@ Guardrails are available on LLM Gateway's Enterprise plan. The implementation fl
 
 No code changes required in your application. Guardrails run at the gateway level, so every API request is automatically protected regardless of which client or SDK you use.
 
-**[Learn more about Enterprise features](/enterprise)** | **[Read the guardrails docs](https://docs.llmgateway.io/features/guardrails)** | **[Contact us](/enterprise)**
+**[Learn more about Enterprise features](/enterprise)** | **[Read the guardrails docs](https://docs.betarouter.com/features/guardrails)** | **[Contact us](/enterprise)**

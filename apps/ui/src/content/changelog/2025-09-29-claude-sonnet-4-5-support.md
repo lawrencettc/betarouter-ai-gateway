@@ -6,12 +6,12 @@ title: "Claude Sonnet 4.5 Model Support"
 summary: "Added support for Anthropic's Claude Sonnet 4.5"
 image:
   src: "/changelog/sonnet-4.5.png"
-  alt: "Claude Sonnet models available via Anthropic provider on LLM Gateway"
+  alt: "Claude Sonnet models available via Anthropic provider on betarouter"
   width: 1768
   height: 677
 ---
 
-We're excited to announce support for **Claude Sonnet 4.5**, the latest balanced model from Anthropic, now available through LLM Gateway.
+We're excited to announce support for **Claude Sonnet 4.5**, the latest balanced model from Anthropic, now available through betarouter.
 
 ## 📊 Model Specifications
 
@@ -47,7 +47,7 @@ const { text } = await generateText({
 ## API
 
 ```bash
-curl -X POST https://api.llmgateway.io/v1/chat/completions \
+curl -X POST https://api.betarouter.com/v1/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -58,4 +58,4 @@ curl -X POST https://api.llmgateway.io/v1/chat/completions \
 
 ---
 
-**[Try it now in the new Chat Playground](https://chat.llmgateway.io/?model=anthropic/claude-sonnet-4-5)** 🚀
+**[Try it now in the new Chat Playground](https://chat.betarouter.com/?model=anthropic/claude-sonnet-4-5)** 🚀

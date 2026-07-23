@@ -3,7 +3,7 @@ id: blog-embeddable-payments-sdk
 slug: embeddable-payments-sdk
 date: 2026-06-07
 title: "Stripe for AI: Embeddable Payments for Your App"
-summary: Our new Payments SDK lets your end-users buy credits inside your app and pay per request for any model — billed through LLM Gateway, with your markup as margin. Here's how it works and how to ship it in ~40 lines.
+summary: Our new Payments SDK lets your end-users buy credits inside your app and pay per request for any model — billed through betarouter, with your markup as margin. Here's how it works and how to ship it in ~40 lines.
 categories: ["Engineering"]
 image:
   src: "/blog/embeddable-ai-credits.png"
@@ -14,9 +14,9 @@ image:
 
 If you're building an AI feature into your product, you hit the same two problems fast: **how do your users pay for the AI they use**, and **how do you not rebuild billing, wallets, and model plumbing from scratch?**
 
-Today we're shipping the **Payments SDK** — think Stripe + Stripe Elements, but for AI. It's a payments product, not a normal AI client SDK like the OpenAI SDK: it embeds end-user **payments and sessions** into your own site. Your end-users get their own wallet, buy credits **inside your app**, and pay per request for any model the gateway supports. LLM Gateway is the merchant of record, you set a markup, and the margin is yours.
+Today we're shipping the **Payments SDK** — think Stripe + Stripe Elements, but for AI. It's a payments product, not a normal AI client SDK like the OpenAI SDK: it embeds end-user **payments and sessions** into your own site. Your end-users get their own wallet, buy credits **inside your app**, and pay per request for any model the gateway supports. betarouter is the merchant of record, you set a markup, and the margin is yours.
 
-<video src="/blog/llmgateway-topup-flow.webm" controls autoplay muted loop playsinline style="width: 100%; border-radius: 12px; margin: 1.5rem 0;">
+<video src="/blog/betarouter-topup-flow.webm" controls autoplay muted loop playsinline style="width: 100%; border-radius: 12px; margin: 1.5rem 0;">
   Your browser does not support the video tag.
 </video>
 
@@ -50,10 +50,10 @@ Your backend ──(sk_)──▶ POST /v1/sessions ──▶ es_ token (~15 min
 **Backend — mint a session with your secret key:**
 
 ```ts
-// app/api/llmgateway/session/route.ts
-import { LLMGateway } from "@llmgateway/server";
+// app/api/betarouter/session/route.ts
+import { llmgateway } from "@llmgateway/server";
 
-const lg = new LLMGateway({ secretKey: process.env.LLMGATEWAY_SECRET_KEY! });
+const lg = new llmgateway({ secretKey: process.env.LLMGATEWAY_SECRET_KEY! });
 
 export async function POST() {
   const session = await lg.sessions.create({
@@ -69,18 +69,18 @@ export async function POST() {
 ```tsx
 "use client";
 import {
-  LLMGatewayProvider,
+  betarouterProvider,
   Chat,
   CreditBalance,
   BuyCredits,
 } from "@llmgateway/elements";
 
 const fetchSession = () =>
-  fetch("/api/llmgateway/session", { method: "POST" }).then((r) => r.json());
+  fetch("/api/betarouter/session", { method: "POST" }).then((r) => r.json());
 
 export default function App({ session }) {
   return (
-    <LLMGatewayProvider
+    <betarouterProvider
       session={session}
       fetchSession={fetchSession}
       mode={process.env.NODE_ENV === "production" ? "prod" : "test"}
@@ -90,12 +90,12 @@ export default function App({ session }) {
       {/* Stripe checkout → credits land in the wallet */}
       <Chat model="openai/gpt-4o-mini" />{" "}
       {/* streams, debits the wallet per request */}
-    </LLMGatewayProvider>
+    </betarouterProvider>
   );
 }
 ```
 
-That's the whole integration. The session token auto-refreshes before it expires, `<BuyCredits>` loads LLM Gateway's bundled Stripe publishable key, confirms the payment, and the balance updates once the webhook credits the wallet. Pass `mode="test"` while developing to use Stripe test mode (`"prod"` is the default); you don't need to ship a Stripe publishable key of your own for LLM Gateway payments.
+That's the whole integration. The session token auto-refreshes before it expires, `<BuyCredits>` loads betarouter's bundled Stripe publishable key, confirms the payment, and the balance updates once the webhook credits the wallet. Pass `mode="test"` while developing to use Stripe test mode (`"prod"` is the default); you don't need to ship a Stripe publishable key of your own for betarouter payments.
 
 ## Safe by default
 
@@ -110,4 +110,4 @@ There's a complete, runnable Next.js example — backend session route, provider
 
 ➡️ **[theopenco/llmgateway-templates → templates/embeddable-credits](https://github.com/theopenco/llmgateway-templates/tree/main/templates/embeddable-credits)**
 
-Full reference is in the [Embeddable Payments docs](https://docs.llmgateway.io/features/embeddable-payments). Embeddable Payments is currently in preview and opt-in only — [contact us](mailto:contact@llmgateway.io) to enable it for your project. Once it's on, open your project's **Settings → Payments SDK** to enable end-user sessions and create a platform secret key — and you can be live in an afternoon.
+Full reference is in the [Embeddable Payments docs](https://docs.betarouter.com/features/embeddable-payments). Embeddable Payments is currently in preview and opt-in only — [contact us](mailto:contact@betarouter.com) to enable it for your project. Once it's on, open your project's **Settings → Payments SDK** to enable end-user sessions and create a platform secret key — and you can be live in an afternoon.

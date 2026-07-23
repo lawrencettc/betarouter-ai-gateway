@@ -10,7 +10,7 @@ import {
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-base";
 
-import { createLogger } from "@llmgateway/logger";
+import { createLogger } from "@betarouter/logger";
 
 import { getSamplerConfig } from "./samplers/config.js";
 

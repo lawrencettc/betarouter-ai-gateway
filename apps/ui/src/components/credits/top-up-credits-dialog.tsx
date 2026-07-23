@@ -38,7 +38,7 @@ import {
 	CREDIT_TOP_UP_MAX_AMOUNT,
 	CREDIT_TOP_UP_MIN_AMOUNT,
 	isCreditTopUpAmountInRange,
-} from "@llmgateway/shared";
+} from "@betarouter/shared";
 
 import type React from "react";
 

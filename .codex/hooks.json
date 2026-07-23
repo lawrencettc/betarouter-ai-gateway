@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/lawrencetan/Desktop/betarouter ai gateway/.codex/hooks/session-start.sh'"
+          }
+        ]
+      }
+    ]
+  }
+}

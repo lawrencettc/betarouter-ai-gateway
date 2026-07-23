@@ -3,11 +3,11 @@ import { describe, expect, test } from "vitest";
 import { app } from "@/app.js";
 import { createGatewayApiTestHarness } from "@/test-utils/gateway-api-test-harness.js";
 
-import { db, tables } from "@llmgateway/db";
+import { db, tables } from "@betarouter/db";
 import {
 	DEV_PLAN_PREMIUM_WEEK_LENGTH_MS,
 	getDevPlanPremiumWeeklyLimit,
-} from "@llmgateway/shared";
+} from "@betarouter/shared";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

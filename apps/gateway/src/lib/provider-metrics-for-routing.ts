@@ -1,11 +1,11 @@
 import {
 	getProviderMetricsFromHistory,
 	type ProviderMetrics,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 import {
 	DEFAULT_ROUTING_HISTORY,
 	type ResolvedRoutingConfig,
-} from "@llmgateway/shared/routing-config";
+} from "@betarouter/shared/routing-config";
 
 /**
  * Returns the metrics map for the candidate (model, provider, region)

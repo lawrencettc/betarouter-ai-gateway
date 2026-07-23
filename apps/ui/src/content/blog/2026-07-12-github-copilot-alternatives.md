@@ -40,7 +40,7 @@ Four questions separate the options fast:
 
 ## Comparison Table
 
-| Feature                | LLM Gateway                    | Cursor             | Windsurf   | Claude Code                 | Cline         | Continue      | Aider          | Codex CLI                |
+| Feature                | betarouter                     | Cursor             | Windsurf   | Claude Code                 | Cline         | Continue      | Aider          | Codex CLI                |
 | ---------------------- | ------------------------------ | ------------------ | ---------- | --------------------------- | ------------- | ------------- | -------------- | ------------------------ |
 | **Type**               | Gateway + any agent            | IDE                | IDE        | Terminal agent              | IDE agent     | IDE + CLI     | Terminal agent | Terminal agent           |
 | **Pricing model**      | Pass-through or flat (DevPass) | Flat + credit pool | Flat       | Flat plans                  | Free + tokens | Free + tokens | Free + tokens  | Free + tokens            |
@@ -49,18 +49,18 @@ Four questions separate the options fast:
 | **Open source**        | Yes (AGPLv3)                   | No                 | No         | No                          | Yes           | Yes           | Yes            | Yes                      |
 | **Inline completions** | Via Continue/Cline             | Yes                | Yes        | No                          | Yes           | Yes           | No             | No                       |
 
-## 1. LLM Gateway (+ the coding agent of your choice)
+## 1. betarouter (+ the coding agent of your choice)
 
 **Best overall replacement for Copilot Chat and agent mode: any agent, any model, and a spending cap that actually caps.**
 
-[LLM Gateway](https://llmgateway.io) isn't an editor — it's the infrastructure move. One OpenAI-compatible endpoint routes any coding agent (DevPass Code, Claude Code, Cline, Continue, Aider, Codex CLI) to 200+ models across 40+ providers, with provider token rates passed through at zero markup and budgets enforced per organization, project, and API key.
+[betarouter](https://betarouter.com) isn't an editor — it's the infrastructure move. One OpenAI-compatible endpoint routes any coding agent (DevPass Code, Claude Code, Cline, Continue, Aider, Codex CLI) to 200+ models across 40+ providers, with provider token rates passed through at zero markup and budgets enforced per organization, project, and API key.
 
 **What sets it apart:**
 
 - **The cap Copilot doesn't have** — hard spend limits per org, project, and key, so an agent can never outrun its budget
 - **Zero token markup** — pay provider rates, with a flat 5% fee on credits or 0% with your own provider keys
 - **Prompt caching built in** — agentic tools resend the same context constantly; caching absorbs it automatically
-- **Flat-fee option** — [DevPass](https://devpass.llmgateway.io) plans (from $29/month) give each developer a predictable monthly allowance across coding agents, with [DevPass Code](/guides/devpass-code) as the zero-config terminal agent
+- **Flat-fee option** — [DevPass](https://devpass.betarouter.com) plans (from $29/month) give each developer a predictable monthly allowance across coding agents, with [DevPass Code](/guides/devpass-code) as the zero-config terminal agent
 - **Per-request analytics** — cost, latency, and cache hits for every request, attributable to the team that spent it
 - **Open source (AGPLv3)** — self-host the whole platform if procurement requires it
 
@@ -132,7 +132,7 @@ Claude Code is Anthropic's terminal-native coding agent. Plans run $17–$100/mo
 
 **Weaknesses:**
 
-- Anthropic models only, out of the box — though [pointed at LLM Gateway](/guides/claude-code), it can run GPT-5, Gemini, or any gateway model
+- Anthropic models only, out of the box — though [pointed at betarouter](/guides/claude-code), it can run GPT-5, Gemini, or any gateway model
 - Plan limits still exist; heavy teams hit session windows
 - No inline completions — pair it with something else
 
@@ -151,7 +151,7 @@ Cline is a free, open-source VS Code extension with agentic editing, browser use
 **Strengths:**
 
 - Free software; total cost equals your token spend
-- Any model via OpenAI-compatible endpoints — works with [LLM Gateway](/guides/cline) for routing and caps
+- Any model via OpenAI-compatible endpoints — works with [betarouter](/guides/cline) for routing and caps
 - Stays inside VS Code; no editor migration
 
 **Weaknesses:**
@@ -240,7 +240,7 @@ Codex CLI is OpenAI's answer to Claude Code: an open-source terminal agent that 
 
 ## How to Choose
 
-**You want Copilot's convenience with a real budget cap:** [LLM Gateway](https://llmgateway.io) plus the agent your team already likes — flat DevPass plans per developer or pass-through billing with hard limits.
+**You want Copilot's convenience with a real budget cap:** [betarouter](https://betarouter.com) plus the agent your team already likes — flat DevPass plans per developer or pass-through billing with hard limits.
 
 **You want the best packaged product and will switch editors:** Cursor, or Windsurf if flat pricing is the priority.
 
@@ -264,11 +264,11 @@ On June 1, 2026, GitHub moved Copilot Chat, agent mode, code review, and CLI fro
 
 ### What is the cheapest GitHub Copilot alternative?
 
-Open-source tools — Cline, Continue, and Aider — are free; you pay only token costs. Routed through LLM Gateway with prompt caching and a cheap default model, a typical developer's chat usage runs a few dollars a month. Flat-fee options start at $17–$29/month.
+Open-source tools — Cline, Continue, and Aider — are free; you pay only token costs. Routed through betarouter with prompt caching and a cheap default model, a typical developer's chat usage runs a few dollars a month. Flat-fee options start at $17–$29/month.
 
 ### Can I cap what my team spends on AI coding tools?
 
-Yes, with a gateway. LLM Gateway enforces hard budget limits per organization, project, and API key, so an agent stops at the cap instead of billing past it. Copilot's spending budgets exist but are off by default; most flat-fee products cap by throttling your own usage.
+Yes, with a gateway. betarouter enforces hard budget limits per organization, project, and API key, so an agent stops at the cap instead of billing past it. Copilot's spending budgets exist but are off by default; most flat-fee products cap by throttling your own usage.
 
 ### Is GitHub Copilot still worth keeping for completions?
 
@@ -280,6 +280,6 @@ Often, yes. Inline completions weren't moved to AI Credits — they're still eff
 
 If you want Copilot's workflows without the open-ended bill:
 
-- **[Try LLM Gateway free](https://llmgateway.io/signup)** — no credit card required, point any coding agent at `https://api.llmgateway.io/v1`
+- **[Try betarouter free](https://betarouter.com/signup)** — no credit card required, point any coding agent at `https://api.betarouter.com/v1`
 - **[Estimate your Copilot costs](/copilot-cost-calculator)** — see what AI Credits pricing means for your team
-- **[LLM Gateway vs GitHub Copilot](/compare/github-copilot)** — the detailed head-to-head if you're still deciding
+- **[betarouter vs GitHub Copilot](/compare/github-copilot)** — the detailed head-to-head if you're still deciding

@@ -3,7 +3,7 @@ id: "1"
 slug: "terms"
 date: "2026-06-11"
 title: "Terms Of Use"
-description: "Review the Terms of Use for LLM Gateway. Learn about account eligibility, billing, credits, AI outputs, acceptable use, warranties, liability, and dispute resolution when using our multi-provider AI gateway platform."
+description: "Review the Terms of Use for betarouter. Learn about account eligibility, billing, credits, AI outputs, acceptable use, warranties, liability, and dispute resolution when using our multi-provider AI gateway platform."
 ---
 
 # Terms of Use
@@ -11,9 +11,9 @@ description: "Review the Terms of Use for LLM Gateway. Learn about account eligi
 **Effective Date:** June 11, 2026  
 **Last Updated:** June 11, 2026
 
-Welcome to **LLM Gateway** (“we”, “our”, or “us”). These Terms of Use (“Terms”) form a binding legal agreement between you (“you” or “Customer”) and LLM Gateway and govern your access to and use of the LLM Gateway platform, including our website **[llmgateway.io](https://llmgateway.io)**, APIs, SDKs, dashboards, and any related products or services (collectively, the “Service”).
+Welcome to **betarouter** (“we”, “our”, or “us”). These Terms of Use (“Terms”) form a binding legal agreement between you (“you” or “Customer”) and betarouter and govern your access to and use of the betarouter platform, including our website **[betarouter.com](https://betarouter.com)**, APIs, SDKs, dashboards, and any related products or services (collectively, the “Service”).
 
-**By clicking “I agree,” creating an account, or accessing or using the Service, you acknowledge that you have read, understood, and agree to be bound by these Terms and by our [Privacy Policy](https://llmgateway.io/privacy), which is incorporated by reference. If you do not agree, do not access or use the Service.**
+**By clicking “I agree,” creating an account, or accessing or using the Service, you acknowledge that you have read, understood, and agree to be bound by these Terms and by our [Privacy Policy](https://betarouter.com/privacy), which is incorporated by reference. If you do not agree, do not access or use the Service.**
 
 If you accept these Terms on behalf of an organization, you represent and warrant that you have the authority to bind that organization, and “you” refers to that organization.
 
@@ -23,13 +23,13 @@ If you accept these Terms on behalf of an organization, you represent and warran
 
 ## 1. Overview
 
-LLM Gateway provides an API gateway and management platform for connecting to multiple third-party AI model providers. The Service allows users to:
+betarouter provides an API gateway and management platform for connecting to multiple third-party AI model providers. The Service allows users to:
 
 - Route and monitor API requests to AI providers
 - Manage API keys, usage data, and billing
 - Analyze performance and model metrics
 
-LLM Gateway acts as a **routing, management, and analytics layer**. We do not create, control, or guarantee the AI models or the outputs they generate.
+betarouter acts as a **routing, management, and analytics layer**. We do not create, control, or guarantee the AI models or the outputs they generate.
 
 ---
 
@@ -59,7 +59,7 @@ You agree to notify us immediately of any unauthorized access to or use of your 
 
 ## 4. Plans, Credits, and Billing
 
-LLM Gateway offers free and paid plans, including pay-as-you-go (“PAYG”) usage:
+betarouter offers free and paid plans, including pay-as-you-go (“PAYG”) usage:
 
 - **Free Plan:** Core features with usage limits, provided strictly on an “as is” basis.
 - **Paid / PAYG Plans:** You purchase credits or pay for usage as you make requests through the platform.
@@ -79,7 +79,7 @@ Any service levels, support commitments, or uptime targets apply **only** if exp
 
 ## 5. Data and Privacy
 
-Your data is processed in accordance with our [Privacy Policy](https://llmgateway.io/privacy). You control how request data is stored under **Settings → Policies**, including whether to:
+Your data is processed in accordance with our [Privacy Policy](https://betarouter.com/privacy). You control how request data is stored under **Settings → Policies**, including whether to:
 
 - **Retain All Data** (request payloads and responses); or
 - **Store Metadata Only** (usage statistics and pricing data).
@@ -108,7 +108,7 @@ You are solely responsible for your use of the Service and any content you submi
 
 ## 7. AI Provider Usage and Outputs
 
-When using AI models through LLM Gateway, you are also subject to the **terms, policies, and usage restrictions** of the respective model providers (e.g., OpenAI, Anthropic, Mistral, Google, and others). It is your responsibility to review and comply with those terms.
+When using AI models through betarouter, you are also subject to the **terms, policies, and usage restrictions** of the respective model providers (e.g., OpenAI, Anthropic, Mistral, Google, and others). It is your responsibility to review and comply with those terms.
 
 **You acknowledge and agree that:**
 
@@ -117,13 +117,13 @@ When using AI models through LLM Gateway, you are also subject to the **terms, p
 - We **do not control, endorse, or assume responsibility** for any AI model, provider, or output, including the accuracy of outputs, the intellectual-property status of outputs, or how providers process your data.
 - You bear all responsibility and risk for your use of AI outputs and for any decisions or actions taken based on them.
 
-**Stealth and undisclosed providers.** To improve availability, performance, and pricing, we may route some requests through **stealth providers** whose identity is not publicly disclosed (for example, providers offering preview or unreleased models under confidentiality). For these providers we **endeavor to obtain the same terms, privacy, and data-handling guarantees** that apply elsewhere on the Service, but because their identity and practices are not disclosed, **we cannot guarantee that they meet those standards**. If you require a known provider with a declared terms, privacy, and compliance posture, you can **pin your requests to specific providers** listed on our [Providers page](https://llmgateway.io/providers).
+**Stealth and undisclosed providers.** To improve availability, performance, and pricing, we may route some requests through **stealth providers** whose identity is not publicly disclosed (for example, providers offering preview or unreleased models under confidentiality). For these providers we **endeavor to obtain the same terms, privacy, and data-handling guarantees** that apply elsewhere on the Service, but because their identity and practices are not disclosed, **we cannot guarantee that they meet those standards**. If you require a known provider with a declared terms, privacy, and compliance posture, you can **pin your requests to specific providers** listed on our [Providers page](https://betarouter.com/providers).
 
 ---
 
 ## 8. Intellectual Property
 
-All rights, title, and interest in and to the Service (including the software, design, branding, and all related intellectual property) are and remain owned by **LLM Gateway** or its licensors. We grant you a limited, non-exclusive, non-transferable, revocable license to access and use the Service in accordance with these Terms. No other rights are granted, whether by implication, estoppel, or otherwise.
+All rights, title, and interest in and to the Service (including the software, design, branding, and all related intellectual property) are and remain owned by **betarouter** or its licensors. We grant you a limited, non-exclusive, non-transferable, revocable license to access and use the Service in accordance with these Terms. No other rights are granted, whether by implication, estoppel, or otherwise.
 
 You retain ownership of your Customer Data and prompts. You grant us a **worldwide, non-exclusive, royalty-free license** to host, copy, process, transmit, and display Customer Data solely as necessary to provide, secure, and improve the Service and as described in our Privacy Policy.
 
@@ -199,7 +199,7 @@ These limitations apply regardless of whether the claim is based in contract, to
 
 ## 14. Indemnification
 
-You agree to **defend, indemnify, and hold harmless** LLM Gateway and its founders, owners, employees, contractors, licensors, and partners (the “Indemnified Parties”) from and against any and all claims, demands, damages, losses, liabilities, penalties, costs, and expenses (including reasonable attorneys' fees) arising out of or relating to:
+You agree to **defend, indemnify, and hold harmless** betarouter and its founders, owners, employees, contractors, licensors, and partners (the “Indemnified Parties”) from and against any and all claims, demands, damages, losses, liabilities, penalties, costs, and expenses (including reasonable attorneys' fees) arising out of or relating to:
 
 - Your access to or use of the Service;
 - Your Customer Data, prompts, or any content you submit or generate;
@@ -214,7 +214,7 @@ We will provide you with reasonable notice of any claim subject to indemnificati
 
 **Please read this section carefully — it affects your legal rights, including a waiver of class actions and jury trials.**
 
-**Informal resolution.** Before initiating any formal proceeding, you agree to first contact us at **contact@llmgateway.io** and attempt to resolve the dispute informally for at least **thirty (30) days** after notice.
+**Informal resolution.** Before initiating any formal proceeding, you agree to first contact us at **contact@betarouter.com** and attempt to resolve the dispute informally for at least **thirty (30) days** after notice.
 
 **Binding arbitration.** Except as set out below, any dispute, claim, or controversy arising out of or relating to these Terms or the Service that is not resolved informally will be settled by **final and binding individual arbitration**, rather than in court. Arbitration will be conducted by a recognized arbitration body under its applicable rules. Judgment on the award may be entered in any court of competent jurisdiction.
 
@@ -234,7 +234,7 @@ If you have entered into a **separate written agreement** with us that is signed
 
 ## 17. Modifications
 
-We may update or modify these Terms at any time. The latest version will always be available on our [Terms of Use page](https://llmgateway.io/terms), with an updated “Last Updated” date. For **material changes**, we will provide reasonable notice (for example, by email or in-product notice). Your continued use of the Service after changes take effect constitutes acceptance of the updated Terms. If you do not agree to the changes, you must stop using the Service.
+We may update or modify these Terms at any time. The latest version will always be available on our [Terms of Use page](https://betarouter.com/terms), with an updated “Last Updated” date. For **material changes**, we will provide reasonable notice (for example, by email or in-product notice). Your continued use of the Service after changes take effect constitutes acceptance of the updated Terms. If you do not agree to the changes, you must stop using the Service.
 
 ---
 
@@ -257,9 +257,9 @@ We may update or modify these Terms at any time. The latest version will always 
 ## 19. Contact Us
 
 If you have questions about these Terms, contact us at:  
-📧 **[contact@llmgateway.io](mailto:contact@llmgateway.io)**  
-🌐 **[llmgateway.io](https://llmgateway.io)**
+📧 **[contact@betarouter.com](mailto:contact@betarouter.com)**  
+🌐 **[betarouter.com](https://betarouter.com)**
 
 ---
 
-© 2026 LLM Gateway. All rights reserved.
+© 2026 betarouter. All rights reserved.

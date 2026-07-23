@@ -2,9 +2,9 @@ import { Resend } from "resend";
 
 const resendApiKey = process.env.RESEND_API_KEY;
 const fromEmail =
-	process.env.RESEND_FROM_EMAIL ?? "LLMGateway <contact@mail.llmgateway.io>";
+	process.env.RESEND_FROM_EMAIL ?? "betarouter <contact@mail.betarouter.com>";
 const replyToEmail =
-	process.env.RESEND_REPLY_TO_EMAIL ?? "contact@llmgateway.io";
+	process.env.RESEND_REPLY_TO_EMAIL ?? "contact@betarouter.com";
 const resendAudienceId = process.env.RESEND_AUDIENCE_ID ?? "";
 
 let resendClient: Resend | null = null;

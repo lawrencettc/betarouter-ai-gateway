@@ -8,20 +8,19 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
 	title: "Brand Assets — Logos & Guidelines",
 	description:
-		"Download official LLM Gateway logos, marks, and brand assets. SVG files in light and dark variants, plus usage guidelines for partners.",
+		"Download official betarouter logos, marks, and brand assets. SVG files in light and dark variants, plus usage guidelines for partners.",
 	openGraph: {
-		title: "Brand Assets — Logos & Guidelines | LLM Gateway",
+		title: "Brand Assets — Logos & Guidelines | betarouter",
 		images: ["/opengraph.png?v=2"],
 		description:
-			"Download official LLM Gateway logos, marks, and brand assets. SVG files in light and dark variants.",
+			"Download official betarouter logos, marks, and brand assets. SVG files in light and dark variants.",
 		type: "website",
-		url: "https://llmgateway.io/brand",
+		url: "https://betarouter.com/brand",
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "Brand Assets — Logos & Guidelines | LLM Gateway",
-		description:
-			"Download official LLM Gateway logos, marks, and brand assets.",
+		title: "Brand Assets — Logos & Guidelines | betarouter",
+		description: "Download official betarouter logos, marks, and brand assets.",
 	},
 };
 
@@ -50,14 +49,14 @@ const brandAssets: BrandAsset[] = [
 	},
 	{
 		name: "Full Logo (Black)",
-		description: "Logo with LLM Gateway text, black version",
+		description: "Logo with betarouter text, black version",
 		svgPath: "/brand/logo-with-name-black.svg",
 		preview: "logo-with-name",
 		variant: "black",
 	},
 	{
 		name: "Full Logo (White)",
-		description: "Logo with LLM Gateway text, white version",
+		description: "Logo with betarouter text, white version",
 		svgPath: "/brand/logo-with-name-white.svg",
 		preview: "logo-with-name",
 		variant: "white",
@@ -81,7 +80,7 @@ function LogoPreview({
 		<div className="flex items-center gap-3">
 			<Logo className="h-12 w-12" style={{ color }} />
 			<span className="text-2xl font-bold tracking-tight" style={{ color }}>
-				LLM Gateway
+				betarouter
 			</span>
 		</div>
 	);
@@ -129,7 +128,7 @@ export default function BrandPage() {
 						Brand Assets
 					</h1>
 					<p className="text-lg text-muted-foreground leading-relaxed">
-						Download official LLM Gateway logos and brand assets for your
+						Download official betarouter logos and brand assets for your
 						projects, presentations, and integrations.
 					</p>
 				</div>
@@ -167,10 +166,10 @@ export default function BrandPage() {
 								<span className="text-primary font-bold">•</span>
 								For questions about brand usage, contact us at{" "}
 								<a
-									href="mailto:contact@llmgateway.io"
+									href="mailto:contact@betarouter.com"
 									className="text-primary hover:underline"
 								>
-									contact@llmgateway.io
+									contact@betarouter.com
 								</a>
 							</li>
 						</ul>

@@ -12,11 +12,11 @@ import {
 	EmpryoIcon,
 	OpenCodeIcon,
 	SoulForgeIcon,
-} from "@llmgateway/shared/components";
+} from "@betarouter/shared/components";
 
 import type { ComponentType, SVGProps } from "react";
 
-const API_BASE = "https://api.llmgateway.io";
+const API_BASE = "https://api.betarouter.com";
 
 interface Step {
 	label: string;
@@ -62,7 +62,7 @@ const TOOLS: ToolGuide[] = [
 		blurb: "Built in. No env vars, no config files.",
 		steps: [
 			{ label: "Launch OpenCode", code: "opencode" },
-			{ label: "Type /connect, pick LLM Gateway, paste your DevPass key" },
+			{ label: "Type /connect, pick betarouter, paste your DevPass key" },
 		],
 	},
 	{

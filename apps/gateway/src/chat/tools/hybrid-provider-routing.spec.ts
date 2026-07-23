@@ -6,7 +6,7 @@ import {
 	preferProvidersWithKeys,
 } from "./hybrid-provider-routing.js";
 
-import type { ProviderModelMapping } from "@llmgateway/models";
+import type { ProviderModelMapping } from "@betarouter/models";
 
 const routingMocks = vi.hoisted(() => ({
 	findPlatformProviderIds: vi.fn(),

@@ -40,22 +40,22 @@ The key difference: one provider, one API key, all models—with caching and ana
 
 <Steps>
 <Step>
-### Get Your LLM Gateway API Key
+### Get Your betarouter API Key
 
-Sign up at [llmgateway.io/signup](https://llmgateway.io/signup) and create an API key from your dashboard.
+Sign up at [betarouter.com/signup](https://betarouter.com/signup) and create an API key from your dashboard.
 
 </Step>
 
 <Step>
-### Install the LLM Gateway AI SDK Provider
+### Install the betarouter AI SDK Provider
 
-Install the native LLM Gateway provider for the Vercel AI SDK:
+Install the native betarouter provider for the Vercel AI SDK:
 
 ```bash
 pnpm add @llmgateway/ai-sdk-provider
 ```
 
-This package provides full compatibility with the Vercel AI SDK and supports all LLM Gateway features.
+This package provides full compatibility with the Vercel AI SDK and supports all betarouter features.
 
 </Step>
 
@@ -80,7 +80,7 @@ const { text: claudeText } = await generateText({
 	prompt: "Hello!",
 });
 
-// After (LLM Gateway - single provider for all models)
+// After (betarouter - single provider for all models)
 import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
 import { generateText } from "ai";
 
@@ -151,7 +151,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { generateText } from "ai";
 
 const llmgateway = createOpenAI({
-	baseURL: "https://api.llmgateway.io/v1",
+	baseURL: "https://api.betarouter.com/v1",
 	apiKey: process.env.LLM_GATEWAY_API_KEY,
 });
 
@@ -171,7 +171,7 @@ const { text } = await generateText({
 # OPENAI_API_KEY=sk-...
 # ANTHROPIC_API_KEY=sk-ant-...
 
-# Add LLM Gateway key
+# Add betarouter key
 export LLM_GATEWAY_API_KEY=llmgtwy_your_key_here
 ```
 
@@ -184,7 +184,7 @@ export LLM_GATEWAY_API_KEY=llmgtwy_your_key_here
 
 ## Model Name Format
 
-LLM Gateway supports two model ID formats:
+betarouter supports two model ID formats:
 
 **Root Model IDs** (without provider prefix) - Uses smart routing to automatically select the best provider based on uptime, throughput, price, and latency:
 
@@ -206,13 +206,13 @@ For more details on routing behavior, see the [routing documentation](/features/
 
 ### Model Mapping Examples
 
-| Vercel AI SDK                             | LLM Gateway                                                                                        |
+| Vercel AI SDK                             | betarouter                                                                                         |
 | ----------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | `openai("gpt-4o")`                        | `llmgateway("gpt-4o")` or `llmgateway("openai/gpt-4o")`                                            |
 | `anthropic("claude-3-5-sonnet-20241022")` | `llmgateway("claude-3-5-sonnet-20241022")` or `llmgateway("anthropic/claude-3-5-sonnet-20241022")` |
 | `google("gemini-1.5-pro")`                | `llmgateway("gemini-1.5-pro")` or `llmgateway("google-ai-studio/gemini-1.5-pro")`                  |
 
-Check the [models page](https://llmgateway.io/models) for the full list of available models.
+Check the [models page](https://betarouter.com/models) for the full list of available models.
 
 </section>
 
@@ -220,7 +220,7 @@ Check the [models page](https://llmgateway.io/models) for the full list of avail
 
 ## Tool Calling
 
-LLM Gateway supports tool calling through the AI SDK:
+betarouter supports tool calling through the AI SDK:
 
 ```typescript
 import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
@@ -252,9 +252,9 @@ const { text, toolResults } = await generateText({
 
 <section>
 
-## Self-Hosting LLM Gateway
+## Self-Hosting betarouter
 
-If you prefer self-hosting, LLM Gateway is available under AGPLv3:
+If you prefer self-hosting, betarouter is available under AGPLv3:
 
 ```bash
 git clone https://github.com/llmgateway/llmgateway
@@ -272,8 +272,8 @@ This gives you the same managed experience with full control over your infrastru
 
 ## Need Help?
 
-- Browse available models at [llmgateway.io/models](https://llmgateway.io/models)
-- Read the [API documentation](https://docs.llmgateway.io)
-- Contact support at contact@llmgateway.io
+- Browse available models at [betarouter.com/models](https://betarouter.com/models)
+- Read the [API documentation](https://docs.betarouter.com)
+- Contact support at contact@betarouter.com
 
 </footer>

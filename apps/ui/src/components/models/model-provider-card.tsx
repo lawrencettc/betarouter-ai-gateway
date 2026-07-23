@@ -39,13 +39,13 @@ import { useAppConfig } from "@/lib/config";
 import { XIcon } from "@/lib/icons/XIcon";
 import { formatContextSize, formatDeprecationDate } from "@/lib/utils";
 
-import { getProviderIcon } from "@llmgateway/shared/components";
+import { getProviderIcon } from "@betarouter/shared/components";
 
 import type {
 	ProviderModelMapping,
 	ProviderDefinition,
 	StabilityLevel,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 interface ProviderWithInfo extends ProviderModelMapping {
 	discount?: string | null;
@@ -73,7 +73,7 @@ export function ModelProviderCard({
 	const providerStability = provider.stability ?? modelStability;
 
 	const shareUrl = `${config.appUrl}/models/${encodeURIComponent(modelName)}/${encodeURIComponent(provider.providerId)}`;
-	const shareTitle = `${provider.providerInfo?.name ?? provider.providerId} - ${modelName} on LLM Gateway`;
+	const shareTitle = `${provider.providerInfo?.name ?? provider.providerId} - ${modelName} on betarouter`;
 
 	const getStabilityBadgeProps = (stability?: StabilityLevel) => {
 		switch (stability) {

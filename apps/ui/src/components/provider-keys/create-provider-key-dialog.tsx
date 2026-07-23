@@ -29,7 +29,7 @@ import {
 	providers,
 	isStealthProvider,
 	type ProviderDefinition,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 import { ProviderSelect } from "./provider-select";
 
@@ -119,7 +119,7 @@ export function CreateProviderKeyDialog({
 		if (selectedProvider === "llmgateway" && !baseUrl) {
 			toast({
 				title: "Error",
-				description: "Base URL is required for LLM Gateway provider",
+				description: "Base URL is required for betarouter provider",
 				variant: "destructive",
 			});
 			return;

@@ -4,42 +4,42 @@ import Image from "next/image";
 const screenshots = [
 	{
 		slug: "dashboard",
-		alt: "LLM Gateway Dashboard",
+		alt: "betarouter Dashboard",
 		title: "Analytics Dashboard",
 		description:
 			"Real-time usage metrics, cost breakdowns, and performance monitoring across all your LLM operations.",
 	},
 	{
 		slug: "playground",
-		alt: "LLM Gateway Chat Playground",
+		alt: "betarouter Chat Playground",
 		title: "Chat Playground",
 		description:
 			"Interactive testing environment with model comparison, prompt engineering, and conversation management.",
 	},
 	{
 		slug: "image-studio",
-		alt: "LLM Gateway Image Studio",
+		alt: "betarouter Image Studio",
 		title: "Image Studio",
 		description:
 			"Generate images with multiple providers and models. Compare outputs side-by-side with adjustable settings.",
 	},
 	{
 		slug: "video-studio",
-		alt: "LLM Gateway Video Studio",
+		alt: "betarouter Video Studio",
 		title: "Video Studio",
 		description:
 			"Create AI-generated videos with Sora, Kling, and more. Set resolution, duration, and audio options from one interface.",
 	},
 	{
 		slug: "admin",
-		alt: "LLM Gateway Admin Dashboard",
+		alt: "betarouter Admin Dashboard",
 		title: "Admin Dashboard",
 		description:
 			"Full visibility into signups, revenue, provider health, and model performance across your deployment.",
 	},
 	{
 		slug: "docs",
-		alt: "LLM Gateway Documentation",
+		alt: "betarouter Documentation",
 		title: "Developer Documentation",
 		description:
 			"Comprehensive API reference, integration guides, and self-hosting documentation for your team.",
@@ -101,7 +101,7 @@ export function ProductShowcase() {
 						<h3 className="text-lg font-semibold">Fully white-labelable</h3>
 					</div>
 					<p className="text-muted-foreground leading-relaxed">
-						Replace the LLM Gateway logo and branding with your own. Every
+						Replace the betarouter logo and branding with your own. Every
 						dashboard, playground, and docs page can be customized to match your
 						company identity.
 					</p>

@@ -1,10 +1,10 @@
-import { redisClient } from "@llmgateway/cache";
-import { db } from "@llmgateway/db/db";
+import { redisClient } from "@betarouter/cache";
+import { db } from "@betarouter/db/db";
 import {
 	platformAuditLog,
 	platformMappingHealthSummary,
-} from "@llmgateway/db/schema";
-import { logger } from "@llmgateway/logger";
+} from "@betarouter/db/schema";
+import { logger } from "@betarouter/logger";
 
 import type { BreakerConfig, BreakerOutcome, BreakerState } from "./breaker.js";
 

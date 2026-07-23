@@ -20,7 +20,7 @@ import {
 } from "@/utils/invoice.js";
 import { isConfigurableDomain, normalizeDomain } from "@/utils/sso-domain.js";
 
-import { logAuditEvent } from "@llmgateway/audit";
+import { logAuditEvent } from "@betarouter/audit";
 import {
 	and,
 	db,
@@ -32,9 +32,9 @@ import {
 	sql,
 	tables,
 	projectHourlyStats,
-} from "@llmgateway/db";
-import { getProviderCountries } from "@llmgateway/models";
-import { CREDIT_TOP_UP_MAX_AMOUNT } from "@llmgateway/shared";
+} from "@betarouter/db";
+import { getProviderCountries } from "@betarouter/models";
+import { CREDIT_TOP_UP_MAX_AMOUNT } from "@betarouter/shared";
 
 import type { ServerTypes } from "@/vars.js";
 
@@ -93,7 +93,7 @@ const organizationSchema = z.object({
 	referralBonusEnabled: z.boolean(),
 	referralBonusPercent: z.string(),
 	// Organization kind: "default" (regular dashboard org), "devpass" (per-user
-	// Dev Plans org), or "chat" (per-user chat.llmgateway.io org).
+	// Dev Plans org), or "chat" (per-user chat.betarouter.com org).
 	kind: z.enum(["default", "chat", "devpass"]),
 	devPlan: z.enum(["none", "lite", "pro", "max"]),
 	devPlanCycle: z.enum(["monthly", "annual"]),
@@ -925,7 +925,7 @@ organization.openapi(deleteOrganization, async (c) => {
 	if (userOrganization.organization?.kind === "devpass") {
 		throw new HTTPException(403, {
 			message:
-				"Personal organizations cannot be deleted. Please cancel your dev plan at devpass.llmgateway.io instead.",
+				"Personal organizations cannot be deleted. Please cancel your dev plan at devpass.betarouter.com instead.",
 		});
 	}
 
@@ -933,7 +933,7 @@ organization.openapi(deleteOrganization, async (c) => {
 	if (userOrganization.organization?.kind === "chat") {
 		throw new HTTPException(403, {
 			message:
-				"The Chat organization cannot be deleted. Please cancel your chat plan from the chat.llmgateway.io pricing page instead.",
+				"The Chat organization cannot be deleted. Please cancel your chat plan from the chat.betarouter.com pricing page instead.",
 		});
 	}
 
