@@ -55,7 +55,7 @@ export const metadata: Metadata = {
 		title: "DevPass by betarouter - All-Access Dev Plans for AI Coding",
 		description:
 			"One subscription, every coding model. Fixed-price dev plans for Claude Code, Cursor, Cline, and any OpenAI-compatible tool.",
-		images: ["/opengraph.png?v=2"],
+		images: ["/opengraph.png?v=3"],
 		type: "website",
 		url: "https://devpass.betarouter.com",
 		siteName: "DevPass by betarouter",
@@ -66,7 +66,7 @@ export const metadata: Metadata = {
 		title: "DevPass by betarouter - All-Access Dev Plans for AI Coding",
 		description:
 			"One subscription, every coding model. Fixed-price dev plans for Claude Code, Cursor, and 200+ models.",
-		images: ["/opengraph.png?v=2"],
+		images: ["/opengraph.png?v=3"],
 		creator: "@betarouterco",
 	},
 };

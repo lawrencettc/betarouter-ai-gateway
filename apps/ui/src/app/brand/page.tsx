@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 		"Download official betarouter logos, marks, and brand assets. SVG files in light and dark variants, plus usage guidelines for partners.",
 	openGraph: {
 		title: "Brand Assets — Logos & Guidelines | betarouter",
-		images: ["/opengraph.png?v=2"],
+		images: ["/opengraph.png?v=3"],
 		description:
 			"Download official betarouter logos, marks, and brand assets. SVG files in light and dark variants.",
 		type: "website",

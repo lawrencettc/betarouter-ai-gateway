@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 			"Browse betarouter blog posts by category — product updates, tutorials, deep-dives, and more.",
 		url: "https://betarouter.com/blog/category",
 		type: "website",
-		images: ["/opengraph.png?v=2"],
+		images: ["/opengraph.png?v=3"],
 	},
 };
 

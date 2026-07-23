@@ -55,7 +55,7 @@ export const metadata: Metadata = {
 		title: "AI Playground — Chat with 200+ Models (GPT, Claude, Gemini)",
 		description:
 			"Test and compare 200+ AI models from one account. Chat, generate images and videos, and run multi-model group chats — pay-as-you-go.",
-		images: ["/opengraph.png?v=2"],
+		images: ["/opengraph.png?v=3"],
 		type: "website",
 		url: "https://chat.betarouter.com",
 		siteName: "betarouter Playground",
@@ -66,7 +66,7 @@ export const metadata: Metadata = {
 		title: "AI Playground — Chat with 200+ Models (GPT, Claude, Gemini)",
 		description:
 			"Test and compare 200+ AI models from one account. Chat, generate images and videos, and run multi-model group chats — pay-as-you-go.",
-		images: ["/opengraph.png?v=2"],
+		images: ["/opengraph.png?v=3"],
 		creator: "@betarouterco",
 	},
 };

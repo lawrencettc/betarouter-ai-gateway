@@ -99,7 +99,7 @@ export async function generateMetadata({
 			description,
 			url: `https://betarouter.com/blog/category/${slug}`,
 			type: "website",
-			images: ["/opengraph.png?v=2"],
+			images: ["/opengraph.png?v=3"],
 		},
 	};
 }
