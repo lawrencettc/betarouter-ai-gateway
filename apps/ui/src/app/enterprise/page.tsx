@@ -22,7 +22,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
 	title: "Enterprise betarouter – SSO, Audit Logs & Guardrails",
 	description:
-		"SOC 2 Type II LLM infrastructure with SAML SSO, audit logs, prompt-injection guardrails, per-project routing, and white-label chat for regulated teams.",
+		"LLM infrastructure with SAML SSO, audit logs, prompt-injection guardrails, per-project routing, and white-label chat for regulated teams.",
 	alternates: { canonical: "/enterprise" },
 	openGraph: {
 		title: "Enterprise betarouter",

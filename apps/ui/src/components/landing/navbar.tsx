@@ -19,7 +19,6 @@ import {
 	Menu,
 	MessagesSquare,
 	Network,
-	Newspaper,
 	ScrollText,
 	Server,
 	Shield,
@@ -217,14 +216,6 @@ export const Navbar = ({
 			icon: Building2,
 			gradient:
 				"hover:from-blue-500/20 hover:to-blue-600/30 hover:shadow-blue-500/10 group-hover/product:text-blue-500 dark:group-hover/product:text-blue-400",
-		},
-		{
-			title: "Blog",
-			href: "/blog",
-			description: "Product updates, tutorials, benchmarks, and announcements.",
-			icon: Newspaper,
-			gradient:
-				"hover:from-amber-500/20 hover:to-orange-600/30 hover:shadow-amber-500/10 group-hover/product:text-amber-500 dark:group-hover/product:text-amber-400",
 		},
 		{
 			title: "Changelog",

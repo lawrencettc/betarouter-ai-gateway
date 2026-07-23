@@ -110,32 +110,6 @@ export function Hero({
 								className="absolute inset-0 -z-10 size-full [background:radial-gradient(125%_125%_at_50%_100%,transparent_0%,var(--background)_75%)]"
 							/>
 							<div className="mx-auto max-w-7xl px-6">
-								{/* Announcement badge - centered */}
-								<div className="mb-10 lg:mb-12 flex justify-center">
-									<div className="animate-hero-enter">
-										<Link
-											href="/blog/soc2-type-ii"
-											className="hover:bg-background dark:hover:border-t-border bg-muted group flex w-fit items-center gap-4 rounded-full border p-1 pl-4 shadow-md shadow-black/5 transition-all duration-300 dark:border-t-white/5 dark:shadow-zinc-950"
-										>
-											<span className="text-foreground text-sm">
-												betarouter Is Now SOC 2 Type II Certified
-											</span>
-											<span className="dark:border-background block h-4 w-0.5 border-l bg-white dark:bg-zinc-700" />
-
-											<div className="bg-background group-hover:bg-muted size-6 overflow-hidden rounded-full duration-500">
-												<div className="flex w-12 -translate-x-1/2 duration-500 ease-in-out group-hover:translate-x-0">
-													<span className="flex size-6">
-														<ArrowRight className="m-auto size-3" />
-													</span>
-													<span className="flex size-6">
-														<ArrowRight className="m-auto size-3" />
-													</span>
-												</div>
-											</div>
-										</Link>
-									</div>
-								</div>
-
 								{/* Centered hero content - optimized for conversion */}
 								<div className="text-center max-w-4xl mx-auto">
 									<div className="animate-hero-enter">

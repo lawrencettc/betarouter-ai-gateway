@@ -55,56 +55,32 @@ export function SecurityEnterprise() {
 					<p className="text-lg text-muted-foreground leading-relaxed lg:pt-14">
 						Prompts, completions, and API keys flow through your gateway — so
 						the layer in the middle has to hold itself to a higher standard than
-						the integrations it replaces. Ours is independently audited, and the
-						evidence is one click away.
+						the integrations it replaces. BetaRouter provides encryption, access
+						controls, and audit logs for day-to-day operations.
 					</p>
 				</div>
 
 				<div className="grid md:grid-cols-2 gap-6">
-					{/* SOC 2 Type II */}
 					<div className="group relative flex flex-col gap-6 rounded-2xl border border-border bg-card/50 p-8 transition-colors hover:border-blue-500/40">
 						<div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 						<div className="relative flex items-start justify-between">
-							{/* Per AICPA guidelines the SOC logo must link to aicpa.org/soc4so */}
-							<a
-								href="https://www.aicpa.org/soc4so"
-								target="_blank"
-								rel="noopener noreferrer"
-								className="shrink-0"
-							>
-								<img
-									src="/badges/aicpa-soc.png"
-									alt="AICPA SOC for Service Organizations badge"
-									width={64}
-									height={64}
-									loading="lazy"
-									className="h-16 w-16"
-								/>
-							</a>
-							<span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-mono uppercase tracking-wider text-emerald-400">
-								Audited
+							<div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-blue-400/50 bg-blue-500/10">
+								<ShieldCheck className="h-7 w-7 text-blue-400" />
+							</div>
+							<span className="rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-mono uppercase tracking-wider text-blue-400">
+								Built in
 							</span>
 						</div>
 						<div className="relative flex flex-col gap-2">
 							<h3 className="text-2xl font-semibold tracking-tight">
-								SOC 2 Type II
+								Operational security
 							</h3>
 							<p className="text-muted-foreground leading-relaxed">
-								Independently audited against the AICPA Trust Services Criteria
-								for security, availability, and confidentiality — controls
-								verified in operation over a sustained period, not just on
-								paper.
+								Encrypted provider credentials, role-based administration, and
+								audit logs help protect gateway operations without exposing
+								upstream secrets to customers.
 							</p>
 						</div>
-						<a
-							href="https://security.betarouter.com/"
-							target="_blank"
-							rel="noopener noreferrer"
-							className="relative mt-auto inline-flex items-center gap-1.5 text-sm font-medium text-foreground transition-colors hover:text-blue-500"
-						>
-							Request the full report
-							<ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-						</a>
 					</div>
 
 					{/* GDPR */}

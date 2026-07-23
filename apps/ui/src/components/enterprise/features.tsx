@@ -77,9 +77,9 @@ const features = [
 	},
 	{
 		icon: ShieldCheck,
-		title: "SOC 2 Type II Compliant",
+		title: "Operational Security",
 		description:
-			"betarouter is SOC 2 Type II compliant, independently audited against the highest standards of security, availability, and confidentiality. Request our report at security.betarouter.com.",
+			"Encrypted provider credentials, role-based administration, and audit logs for gateway operations.",
 	},
 ];
 

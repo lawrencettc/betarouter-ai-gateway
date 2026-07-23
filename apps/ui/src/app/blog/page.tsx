@@ -1,94 +1,67 @@
-import { BlogList } from "@/components/blog/list";
+import Link from "next/link";
+
+import Footer from "@/components/landing/footer";
 import { HeroRSC } from "@/components/landing/hero-rsc";
-import { JsonLd } from "@/components/seo/json-ld";
 
-interface BlogItem {
-	id: string;
-	slug: string;
-	date: string;
-	title: string;
-	summary: string;
-}
-
-export default async function BlogPage() {
-	const { allBlogs } = await import("content-collections");
-
-	const sortedEntries = allBlogs
-		.sort(
-			(a: any, b: any) =>
-				new Date(b.date).getTime() - new Date(a.date).getTime(),
-		)
-		.filter((entry: any) => !entry?.draft)
-		.map(({ ...entry }: any) => entry as BlogItem);
-
-	const collectionSchema = {
-		"@context": "https://schema.org",
-		"@type": "CollectionPage",
-		name: "betarouter Blog",
-		description: "News, tutorials, and deep-dives from the betarouter team.",
-		url: "https://betarouter.com/blog",
-		mainEntity: {
-			"@type": "ItemList",
-			numberOfItems: sortedEntries.length,
-			itemListElement: sortedEntries.map((entry, index) => ({
-				"@type": "ListItem",
-				position: index + 1,
-				url: `https://betarouter.com/blog/${entry.slug}`,
-				name: entry.title,
-			})),
-		},
-	};
-
-	const breadcrumbSchema = {
-		"@context": "https://schema.org",
-		"@type": "BreadcrumbList",
-		itemListElement: [
-			{
-				"@type": "ListItem",
-				position: 1,
-				name: "Home",
-				item: "https://betarouter.com",
-			},
-			{
-				"@type": "ListItem",
-				position: 2,
-				name: "Blog",
-				item: "https://betarouter.com/blog",
-			},
-		],
-	};
-
+export default function BlogPage() {
 	return (
-		<div>
-			<JsonLd data={[collectionSchema, breadcrumbSchema]} />
+		<>
 			<HeroRSC navbarOnly />
-			<BlogList
-				entries={sortedEntries}
-				heading="Blog"
-				subheading="Latest news and updates from betarouter"
-			/>
-		</div>
+			<main className="flex min-h-[70vh] items-center bg-background px-4 pb-20 pt-32 text-foreground sm:px-6 lg:px-8">
+				<div className="mx-auto max-w-2xl text-center">
+					<p className="mb-4 text-sm font-medium uppercase tracking-[0.24em] text-muted-foreground">
+						BetaRouter Blog
+					</p>
+					<h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+						Original stories are coming soon.
+					</h1>
+					<p className="mx-auto mt-6 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">
+						We are preparing practical guides, product updates, and operating
+						notes written specifically for BetaRouter.
+					</p>
+					<div className="mt-8 flex flex-wrap justify-center gap-3">
+						<Link
+							href="/models"
+							className="rounded-md bg-foreground px-5 py-2.5 text-sm font-medium text-background transition-opacity hover:opacity-90"
+						>
+							Explore models
+						</Link>
+						<Link
+							href="/"
+							className="rounded-md border border-border px-5 py-2.5 text-sm font-medium transition-colors hover:bg-muted"
+						>
+							Back to BetaRouter
+						</Link>
+					</div>
+				</div>
+			</main>
+			<Footer />
+		</>
 	);
 }
 
 export async function generateMetadata() {
 	return {
-		title: "Blog — News, Tutorials, and Deep-Dives",
+		title: "Blog — Coming Soon",
 		description:
-			"News, tutorials, and deep-dives from the betarouter team on AI gateways, routing, costs, and building with LLMs.",
+			"Original BetaRouter guides, product updates, and operating notes are coming soon.",
 		alternates: { canonical: "/blog" },
+		robots: {
+			index: false,
+			follow: true,
+		},
 		openGraph: {
-			title: "Blog — News, Tutorials, and Deep-Dives",
+			title: "BetaRouter Blog — Coming Soon",
 			description:
-				"News, tutorials, and deep-dives from the betarouter team on AI gateways, routing, costs, and building with LLMs.",
+				"Original BetaRouter guides, product updates, and operating notes are coming soon.",
 			type: "website",
 			url: "https://betarouter.com/blog",
 		},
 		twitter: {
 			card: "summary_large_image",
-			title: "Blog — News, Tutorials, and Deep-Dives",
+			title: "BetaRouter Blog — Coming Soon",
 			description:
-				"News, tutorials, and deep-dives from the betarouter team on AI gateways, routing, and building with LLMs.",
+				"Original BetaRouter guides, product updates, and operating notes are coming soon.",
 		},
 	};
 }

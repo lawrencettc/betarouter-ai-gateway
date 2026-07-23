@@ -171,7 +171,7 @@ const openai = new OpenAI({
 
 Built with security in mind:
 
-**SOC 2 compliance** Enterprise security standards
+**Role-based administration** Controlled operator access
 
 **TLS encryption** All data encrypted in transit
 

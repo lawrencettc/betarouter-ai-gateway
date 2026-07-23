@@ -24,7 +24,10 @@ const changelog = defineCollection({
 const blog = defineCollection({
 	name: "blog",
 	directory: "src/content/blog",
-	include: "**/*.md",
+	// The root-level articles were imported from the upstream project and are
+	// intentionally not published as BetaRouter content. New, reviewed
+	// BetaRouter articles must be placed under src/content/blog/published/.
+	include: "published/**/*.md",
 	schema: z.object({
 		id: z.string(),
 		slug: z.string(),

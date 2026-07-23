@@ -293,23 +293,6 @@ export function ComparisonGitHubCopilot() {
 						No credit card required • Self-host option available • Enterprise
 						support included
 					</p>
-					<p className="text-sm text-muted-foreground mt-3">
-						Weighing more options? See the{" "}
-						<Link
-							href={"/blog/github-copilot-alternatives" as Route}
-							className="underline underline-offset-4 hover:text-foreground"
-						>
-							best GitHub Copilot alternatives in 2026
-						</Link>{" "}
-						or the{" "}
-						<Link
-							href={"/migration/github-copilot" as Route}
-							className="underline underline-offset-4 hover:text-foreground"
-						>
-							GitHub Copilot migration guide
-						</Link>
-						.
-					</p>
 				</div>
 			</div>
 		</section>
