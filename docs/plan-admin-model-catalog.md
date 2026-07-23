@@ -58,7 +58,7 @@ Phase 3 API   Phase 4 Gateway  Phase 5 Worker/jobs
 
 1. Add architecture decision documentation for source data versus operator
    policy and immutable catalog revisions.
-2. Enumerate all consumers of `@llmgateway/models`, `/internal/models`, and
+2. Enumerate all consumers of `@betarouter/models`, `/internal/models`, and
    model/mapping database queries.
 3. Capture golden fixtures for representative text, reasoning, embedding,
    image, audio, OCR, and video mappings.

@@ -17,7 +17,7 @@ import { allComparisons } from "content-collections";
 import type { Comparison } from "content-collections";
 import type { Metadata } from "next";
 
-const BASE_URL = "https://devpass.llmgateway.io";
+const BASE_URL = "https://devpass.betarouter.com";
 
 interface ComparePageProps {
 	params: Promise<{ slug: string }>;

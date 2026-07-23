@@ -500,7 +500,7 @@ function MessageMetadataPopover({
 								<span className="text-muted-foreground">Activity log</span>
 								<span className="flex items-center justify-end">
 									<a
-										href={`${process.env.NODE_ENV === "development" ? "http://localhost:3002" : "https://llmgateway.io"}/dashboard/${organizationId}/${projectId}/activity/${logId}`}
+										href={`${process.env.NODE_ENV === "development" ? "http://localhost:3002" : "https://betarouter.com"}/dashboard/${organizationId}/${projectId}/activity/${logId}`}
 										target="_blank"
 										rel="noopener noreferrer"
 										className="text-muted-foreground hover:text-foreground"
@@ -2068,7 +2068,7 @@ export const ChatUI = ({
 							Some responses are saved for up to 72 hours before they are
 							deleted, read our{" "}
 							<a
-								href="https://llmgateway.io/legal/terms"
+								href="https://betarouter.com/legal/terms"
 								target="_blank"
 								rel="noopener noreferrer"
 								className="underline underline-offset-2 transition-colors hover:text-foreground"

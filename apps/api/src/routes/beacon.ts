@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { posthog } from "@/posthog.js";
 
-import { logger } from "@llmgateway/logger";
+import { logger } from "@betarouter/logger";
 
 import type { ServerTypes } from "@/vars.js";
 

@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 import { Logo } from "./ui/logo";
 
-import type { ProviderId } from "@llmgateway/models";
+import type { ProviderId } from "@betarouter/models";
 
 // Anthropic Icon
 export const AnthropicIcon: React.FC<React.SVGProps<SVGSVGElement>> = (
@@ -1522,7 +1522,7 @@ export const getProviderIcon = (
 // Maps a model's `family` (e.g. "glm", "google", "meta") to its brand icon so
 // that cards display the model maker's logo rather than whichever provider
 // happens to serve it cheapest. Families without a dedicated logo fall back to
-// the LLM Gateway logo via getModelFamilyIcon.
+// the betarouter logo via getModelFamilyIcon.
 export const ModelFamilyIcons: Record<
 	string,
 	React.FC<React.SVGProps<SVGSVGElement>>

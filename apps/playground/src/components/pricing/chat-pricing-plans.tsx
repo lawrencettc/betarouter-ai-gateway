@@ -16,7 +16,7 @@ import {
 	CHAT_PLAN_PRICES,
 	estimateChatPlanMessages,
 	type ChatPlanTier,
-} from "@llmgateway/shared";
+} from "@betarouter/shared";
 
 interface PlanContent {
 	name: string;

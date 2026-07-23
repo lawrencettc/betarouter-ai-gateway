@@ -2,7 +2,7 @@
 
 # Configuration
 API_KEY="${LLM_GATEWAY_API_KEY:-your-api-key-here}"
-BASE_URL="https://api.llmgateway.io/v1"
+BASE_URL="https://api.betarouter.com/v1"
 #MODELS=(
 #  "deepseek/deepseek-r1-0528"
 #  "nebius/deepseek-r1-0528"

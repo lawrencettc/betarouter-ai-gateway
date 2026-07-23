@@ -4,7 +4,7 @@ import { app } from "@/app.js";
 import { createGatewayApiTestHarness } from "@/test-utils/gateway-api-test-harness.js";
 import { waitForLogs } from "@/test-utils/test-helpers.js";
 
-import { db, eq, tables } from "@llmgateway/db";
+import { db, eq, tables } from "@betarouter/db";
 
 describe("speech", () => {
 	const harness = createGatewayApiTestHarness();
@@ -253,7 +253,7 @@ describe("speech", () => {
 				headers: {
 					"Content-Type": "application/json",
 					Authorization: "Bearer real-token-speech-chat-plan",
-					"x-source": "chat.llmgateway.io",
+					"x-source": "chat.betarouter.com",
 				},
 				body: JSON.stringify({
 					model: "gemini-2.5-flash-preview-tts",

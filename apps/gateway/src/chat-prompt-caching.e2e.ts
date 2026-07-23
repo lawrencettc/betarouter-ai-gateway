@@ -16,11 +16,11 @@ import {
 	validateResponse,
 } from "@/chat-helpers.e2e.js";
 
-import { models } from "@llmgateway/models";
+import { models } from "@betarouter/models";
 
 import { app } from "./app.js";
 
-import type { ProviderModelMapping } from "@llmgateway/models";
+import type { ProviderModelMapping } from "@betarouter/models";
 
 // Filter to only models that support prompt caching (have cachedInputPrice defined)
 const promptCachingModels = filteredModels

@@ -25,7 +25,7 @@ import {
 import { getOrCreatePersonalOrg } from "@/utils/personal-org.js";
 import { resolveDevPassBillingDetails } from "@/utils/plan-billing.js";
 
-import { logAuditEvent } from "@llmgateway/audit";
+import { logAuditEvent } from "@betarouter/audit";
 import {
 	cdb,
 	db,
@@ -38,8 +38,8 @@ import {
 	isNull,
 	shortid,
 	sql,
-} from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+} from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 import {
 	DEV_PLAN_INCLUDED_RESET_PASSES,
 	DEV_PLAN_PREMIUM_WEEK_LENGTH_MS,
@@ -56,7 +56,7 @@ import {
 	isPremiumWeekExpired,
 	type DevPlanCycle,
 	type DevPlanTier,
-} from "@llmgateway/shared";
+} from "@betarouter/shared";
 
 import { getStripe } from "./payments.js";
 
@@ -1960,7 +1960,7 @@ devPlans.openapi(updateSettings, async (c) => {
 });
 
 // Billing details used on DevPass invoices. By default these mirror the owner's
-// default LLM Gateway org; they can be overridden with DevPass-specific values.
+// default betarouter org; they can be overridden with DevPass-specific values.
 const billingFieldsSchema = z.object({
 	billingEmail: z.string(),
 	billingCompany: z.string().nullable(),

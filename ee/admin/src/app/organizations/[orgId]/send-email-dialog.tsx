@@ -111,7 +111,7 @@ export function SendEmailDialog({
 				<DialogHeader>
 					<DialogTitle>Email {userName || userEmail}</DialogTitle>
 					<DialogDescription>
-						Send an email to {userEmail} from contact@llmgateway.io
+						Send an email to {userEmail} from contact@betarouter.com
 					</DialogDescription>
 				</DialogHeader>
 
@@ -145,7 +145,7 @@ export function SendEmailDialog({
 						<Label htmlFor="subject">Subject</Label>
 						<Input
 							id="subject"
-							placeholder="Welcome to BetaRouter"
+							placeholder="Welcome to betarouter"
 							value={subject}
 							onChange={(e) => setSubject(e.target.value)}
 							className="mt-1"

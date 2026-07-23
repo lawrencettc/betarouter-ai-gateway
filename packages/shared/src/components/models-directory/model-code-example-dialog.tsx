@@ -46,7 +46,7 @@ export function ModelCodeExampleDialog({
 		curl: {
 			label: "cURL",
 			language: "bash",
-			code: `curl -X POST https://api.llmgateway.io/v1/chat/completions \\
+			code: `curl -X POST https://api.betarouter.com/v1/chat/completions \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \\
   -d '{
@@ -63,7 +63,7 @@ export function ModelCodeExampleDialog({
 
 const client = new OpenAI({
   apiKey: process.env.LLM_GATEWAY_API_KEY, // or your API key string
-  baseURL: "https://api.llmgateway.io/v1/"
+  baseURL: "https://api.betarouter.com/v1/"
 });
 
 const response = await client.chat.completions.create({
@@ -123,7 +123,7 @@ const { text } = await generateText({
 			</DialogTrigger>
 			<DialogContent className="sm:max-w-2xl">
 				<DialogHeader>
-					<DialogTitle>Use this model with LLM Gateway</DialogTitle>
+					<DialogTitle>Use this model with betarouter</DialogTitle>
 					<DialogDescription>
 						Code examples for{" "}
 						<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">

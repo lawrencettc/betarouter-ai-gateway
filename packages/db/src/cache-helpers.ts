@@ -1,7 +1,7 @@
 import { eq, getTableName } from "drizzle-orm";
 
-import { swrWrap } from "@llmgateway/cache";
-import { logger } from "@llmgateway/logger";
+import { swrWrap } from "@betarouter/cache";
+import { logger } from "@betarouter/logger";
 
 import { cdb } from "./cdb.js";
 import { project as projectTable } from "./schema.js";
@@ -72,4 +72,4 @@ export {
 	getStreamingCache,
 	setCache,
 	setStreamingCache,
-} from "@llmgateway/cache";
+} from "@betarouter/cache";

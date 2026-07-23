@@ -10,7 +10,7 @@ import { useUser } from "@/hooks/useUser";
 
 import type { ProfileData } from "@/components/profile/ProfileView";
 
-export const PROFILE_SITE_URL = "https://devpass.llmgateway.io";
+export const PROFILE_SITE_URL = "https://devpass.betarouter.com";
 
 export function XIcon({ className }: { className?: string }) {
 	return (

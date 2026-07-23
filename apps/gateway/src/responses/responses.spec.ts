@@ -12,7 +12,7 @@ import {
 } from "./tools/convert-streaming-to-responses.js";
 import { resolveItemReferences } from "./tools/response-state.js";
 
-vi.mock("@llmgateway/db", async (importOriginal) => {
+vi.mock("@betarouter/db", async (importOriginal) => {
 	const actual = await importOriginal<Record<string, unknown>>();
 	return {
 		...actual,
@@ -37,14 +37,14 @@ vi.mock("@llmgateway/db", async (importOriginal) => {
 });
 
 const redisGet = vi.fn();
-vi.mock("@llmgateway/cache", () => ({
+vi.mock("@betarouter/cache", () => ({
 	redisClient: {
 		get: (...args: unknown[]) => redisGet(...args),
 		set: vi.fn().mockResolvedValue("OK"),
 	},
 }));
 
-vi.mock("@llmgateway/logger", () => ({
+vi.mock("@betarouter/logger", () => ({
 	logger: {
 		warn: vi.fn(),
 		error: vi.fn(),

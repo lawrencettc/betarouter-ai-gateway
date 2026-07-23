@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-DEFAULT_API_URL="https://api.llmgateway.io/v1/chat/completions"
+DEFAULT_API_URL="https://api.betarouter.com/v1/chat/completions"
 DEFAULT_PAYLOAD_FILE="/Users/steebchen/Downloads/messages.json"
 DEFAULT_OUTPUT_DIR="scripts/request-logs"
 DEFAULT_MAX_REQUESTS="0"

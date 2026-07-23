@@ -14,13 +14,13 @@ import {
 import { findApiKeyByToken, findProjectById } from "@/lib/cached-queries.js";
 import { parseApiToken } from "@/lib/extract-api-token.js";
 
-import { parseDataUrl } from "@llmgateway/actions";
-import { logger, toError } from "@llmgateway/logger";
+import { parseDataUrl } from "@betarouter/actions";
+import { logger, toError } from "@betarouter/logger";
 import {
 	models as modelsList,
 	type ModelDefinition,
 	type ProviderModelMapping,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 import type { ServerTypes } from "@/vars.js";
 import type { OpenAPIHono } from "@hono/zod-openapi";
@@ -137,11 +137,11 @@ type ListImageModelsInput = z.infer<typeof listImageModelsInputSchema>;
 type GenerateNanoBananaInput = z.infer<typeof generateNanoBananaInputSchema>;
 
 /**
- * Creates an MCP server instance with tools for LLM Gateway
+ * Creates an MCP server instance with tools for betarouter
  */
 function createMcpServer(apiKey: string): McpServer {
 	const server = new McpServer({
-		name: "llmgateway",
+		name: "betarouter",
 		version: "1.0.0",
 	});
 
@@ -156,7 +156,7 @@ function createMcpServer(apiKey: string): McpServer {
 				const gatewayUrl =
 					process.env.MCP_GATEWAY_URL ??
 					(process.env.NODE_ENV === "production"
-						? "https://api.llmgateway.io"
+						? "https://api.betarouter.com"
 						: "http://localhost:4001");
 
 				const response = await fetch(`${gatewayUrl}/v1/chat/completions`, {
@@ -422,7 +422,7 @@ function createMcpServer(apiKey: string): McpServer {
 				const gatewayUrl =
 					process.env.MCP_GATEWAY_URL ??
 					(process.env.NODE_ENV === "production"
-						? "https://api.llmgateway.io"
+						? "https://api.betarouter.com"
 						: "http://localhost:4001");
 
 				// Call the chat completions endpoint with image generation model
@@ -562,7 +562,7 @@ function createMcpServer(apiKey: string): McpServer {
 				const gatewayUrl =
 					process.env.MCP_GATEWAY_URL ??
 					(process.env.NODE_ENV === "production"
-						? "https://api.llmgateway.io"
+						? "https://api.betarouter.com"
 						: "http://localhost:4001");
 
 				const body: Record<string, unknown> = {
@@ -985,7 +985,7 @@ async function processMcpRequest(
 							tools: {},
 						},
 						serverInfo: {
-							name: "llmgateway",
+							name: "betarouter",
 							version: "1.0.0",
 						},
 					},
@@ -1152,7 +1152,7 @@ export async function mcpHandler(c: Context): Promise<Response> {
 				error: {
 					code: -32001,
 					message:
-						"Invalid or inactive LLMGateway API key. Generate a new token on the 'API Keys' page.",
+						"Invalid or inactive betarouter API key. Generate a new token on the 'API Keys' page.",
 				},
 				id: null,
 			},
@@ -1185,7 +1185,7 @@ export async function mcpHandler(c: Context): Promise<Response> {
 					message:
 						error instanceof HTTPException
 							? error.message
-							: "LLMGateway API key cannot be used.",
+							: "betarouter API key cannot be used.",
 				},
 				id: null,
 			},
@@ -1205,10 +1205,10 @@ export async function mcpHandler(c: Context): Promise<Response> {
 		if (!wantsSSE) {
 			// Return server information for discovery (non-SSE GET)
 			return c.json({
-				name: "llmgateway",
+				name: "betarouter",
 				version: "1.0.0",
 				description:
-					"LLM Gateway MCP Server - Access multiple LLM providers through a unified API",
+					"betarouter MCP Server - Access multiple LLM providers through a unified API",
 				protocolVersion: "2024-11-05",
 				capabilities: {
 					tools: {},
@@ -1840,7 +1840,7 @@ async function oauthRegisterHandler(c: Context): Promise<Response> {
 				{
 					error: "invalid_request",
 					error_description:
-						"API key required. Provide your LLM Gateway API key in the request body as 'api_key' or in Authorization header.",
+						"API key required. Provide your betarouter API key in the request body as 'api_key' or in Authorization header.",
 				},
 				400,
 			);

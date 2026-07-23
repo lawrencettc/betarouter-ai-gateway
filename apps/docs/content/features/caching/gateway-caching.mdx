@@ -1,6 +1,6 @@
 ---
 title: Gateway Caching
-description: Serve byte-identical requests entirely from LLM Gateway at $0 cost.
+description: Serve byte-identical requests entirely from betarouter at $0 cost.
 icon: Zap
 ---
 
@@ -8,7 +8,7 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 # Gateway Caching
 
-Gateway caching serves a previously-seen, byte-identical request entirely from LLM Gateway without forwarding it to the upstream provider. Repeated identical calls cost **$0** — there is no inference and no provider charge. It is most useful for API workloads with deterministic inputs (classification, batch jobs, FAQ lookups, retries) rather than free-form chat.
+Gateway caching serves a previously-seen, byte-identical request entirely from betarouter without forwarding it to the upstream provider. Repeated identical calls cost **$0** — there is no inference and no provider charge. It is most useful for API workloads with deterministic inputs (classification, batch jobs, FAQ lookups, retries) rather than free-form chat.
 
 <Callout type="info">
 	If you want to reduce the cost of long, partially-shared prompts in chat apps
@@ -23,7 +23,7 @@ Gateway caching serves a previously-seen, byte-identical request entirely from L
 
 When you make an API request:
 
-1. LLM Gateway generates a cache key based on the request parameters
+1. betarouter generates a cache key based on the request parameters
 2. If a matching cached response exists, it's returned immediately
 3. If no cache exists, the request is forwarded to the provider
 4. The response is cached for future identical requests

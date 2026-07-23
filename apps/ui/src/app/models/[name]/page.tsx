@@ -42,7 +42,7 @@ import {
 	expandAllProviderRegions,
 	type StabilityLevel,
 	type ModelDefinition,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 import type { Metadata } from "next";
 
@@ -127,19 +127,19 @@ export default async function ModelPage({ params }: PageProps) {
 				"@type": "ListItem",
 				position: 1,
 				name: "Home",
-				item: "https://llmgateway.io",
+				item: "https://betarouter.com",
 			},
 			{
 				"@type": "ListItem",
 				position: 2,
 				name: "Models",
-				item: "https://llmgateway.io/models",
+				item: "https://betarouter.com/models",
 			},
 			{
 				"@type": "ListItem",
 				position: 3,
 				name: modelDef.name ?? modelDef.id,
-				item: `https://llmgateway.io/models/${encodeURIComponent(decodedName)}`,
+				item: `https://betarouter.com/models/${encodeURIComponent(decodedName)}`,
 			},
 		],
 	};
@@ -157,11 +157,11 @@ export default async function ModelPage({ params }: PageProps) {
 		name: modelDef.name ?? modelDef.id,
 		description:
 			modelDef.description ??
-			`Access ${modelDef.name ?? modelDef.id} through LLM Gateway's unified API.`,
-		image: `https://llmgateway.io/models/${encodeURIComponent(decodedName)}/${encodeURIComponent(primaryProviderId)}/opengraph-image`,
+			`Access ${modelDef.name ?? modelDef.id} through betarouter's unified API.`,
+		image: `https://betarouter.com/models/${encodeURIComponent(decodedName)}/${encodeURIComponent(primaryProviderId)}/opengraph-image`,
 		brand: {
 			"@type": "Brand",
-			name: modelDef.family || "LLM Gateway",
+			name: modelDef.family || "betarouter",
 		},
 		offers: {
 			"@type": "AggregateOffer",
@@ -170,7 +170,7 @@ export default async function ModelPage({ params }: PageProps) {
 			highPrice: isFinite(highestInputPrice) ? highestInputPrice : 0,
 			offerCount: modelProviders.length,
 			availability: "https://schema.org/InStock",
-			url: `https://llmgateway.io/models/${encodeURIComponent(decodedName)}`,
+			url: `https://betarouter.com/models/${encodeURIComponent(decodedName)}`,
 		},
 		category: "AI/ML API Service",
 		...buildRatingSchema(ratingsData),
@@ -558,8 +558,8 @@ export default async function ModelPage({ params }: PageProps) {
 									All Providers for {modelDef.name}
 								</h2>
 								<p className="text-muted-foreground">
-									LLM Gateway routes requests to the best providers that are
-									able to handle your prompt size and parameters.
+									betarouter routes requests to the best providers that are able
+									to handle your prompt size and parameters.
 								</p>
 							</div>
 						</div>
@@ -605,7 +605,7 @@ export async function generateMetadata({
 
 	const primaryProvider = model.providers[0]?.providerId || "default";
 	const ogImageUrl = `/models/${encodeURIComponent(decodedName)}/${encodeURIComponent(primaryProvider)}/opengraph-image`;
-	const canonical = `https://llmgateway.io/models/${encodeURIComponent(decodedName)}`;
+	const canonical = `https://betarouter.com/models/${encodeURIComponent(decodedName)}`;
 
 	return {
 		title,

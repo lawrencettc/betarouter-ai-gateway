@@ -295,8 +295,8 @@ export function ApiKeyManager({
 						<AlertCircle className="h-4 w-4" />
 						<AlertDescription>
 							{hasAnyKey
-								? "Enter your LLM Gateway API key to start chatting with AI models using credits."
-								: "Your API key is stored locally in your browser and is only used to make requests to the LLM Gateway API on your behalf."}
+								? "Enter your betarouter API key to start chatting with AI models using credits."
+								: "Your API key is stored locally in your browser and is only used to make requests to the betarouter API on your behalf."}
 						</AlertDescription>
 					</Alert>
 					<Form {...form}>
@@ -314,7 +314,7 @@ export function ApiKeyManager({
 											<Input
 												{...field}
 												type="password"
-												placeholder="Enter your LLM Gateway API key..."
+												placeholder="Enter your betarouter API key..."
 												className="font-mono"
 											/>
 										</FormControl>
@@ -363,7 +363,7 @@ export function ApiKeyManager({
 					<DialogDescription>
 						{userApiKey && !isEditing
 							? "View, edit, or clear your saved API key."
-							: "To use the playground, you need to provide your own LLM Gateway API key."}
+							: "To use the playground, you need to provide your own betarouter API key."}
 					</DialogDescription>
 				</DialogHeader>
 				{renderContent()}

@@ -7,13 +7,13 @@ import {
 	notifyProviderContact,
 } from "@/utils/discord.js";
 
-import { db, eq, tables } from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+import { db, eq, tables } from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 import {
 	fromEmail,
 	getResendClient,
 	replyToEmail,
-} from "@llmgateway/shared/email";
+} from "@betarouter/shared/email";
 
 import { getStripe } from "./payments.js";
 

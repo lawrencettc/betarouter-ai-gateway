@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { parseReferralBonusPercent } from "@/lib/referral-bonus.js";
 
-import { db } from "@llmgateway/db";
+import { db } from "@betarouter/db";
 
 import type { ServerTypes } from "@/vars.js";
 

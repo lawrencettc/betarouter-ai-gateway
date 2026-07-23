@@ -19,7 +19,7 @@ import { customAlphabet } from "nanoid";
 
 import type { gatewayContentFilterResponseSchema } from "./log-payloads.js";
 import type { errorDetails, tools, toolChoice, toolResults } from "./types.js";
-import type { ProviderCompliancePolicy } from "@llmgateway/models";
+import type { ProviderCompliancePolicy } from "@betarouter/models";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import type z from "zod";
 
@@ -242,7 +242,7 @@ export const organization = pgTable(
 		// Organization kind:
 		// - "default": regular dashboard/team org.
 		// - "devpass": per-user personal org backing the Dev Plans (DevPass) product.
-		// - "chat": dedicated per-user "Chat" org backing chat.llmgateway.io.
+		// - "chat": dedicated per-user "Chat" org backing chat.betarouter.com.
 		// "devpass" and "chat" orgs are hidden from the dashboard org switcher and
 		// cannot be deleted or managed as team orgs.
 		kind: text({
@@ -314,7 +314,7 @@ export const organization = pgTable(
 		// prevent a single card from claiming the DevPass usage allowance from
 		// multiple personal organizations.
 		devPlanCardFingerprint: text(),
-		// Chat Plans fields (for chat.llmgateway.io subscribers)
+		// Chat Plans fields (for chat.betarouter.com subscribers)
 		chatPlan: text({
 			enum: ["none", "starter", "plus", "pro"],
 		})
@@ -1028,7 +1028,7 @@ export const endUserSession = pgTable(
 );
 
 // Append-only ledger for every wallet movement. `topup` rows carry the economic
-// split (grossPaid = what the end-user paid Stripe, platformFee = llmgateway
+// split (grossPaid = what the end-user paid Stripe, platformFee = betarouter
 // cut, developerMargin = markup accrued to the developer org, netCredited = what
 // landed in wallet.balance). `usage_debit` rows link back to the gateway log via
 // gatewayLogId (soft reference — log rows are retention-cleaned).
@@ -1088,7 +1088,7 @@ export const walletLedger = pgTable(
 	],
 );
 
-// LLM SDK: a developer's registered webhook endpoint. LLM Gateway POSTs
+// LLM SDK: a developer's registered webhook endpoint. betarouter POSTs
 // signed events (wallet.credited, wallet.low_balance, …) here so the developer's
 // backend can react. The signing secret is shown once at creation.
 export const webhookEndpoint = pgTable(
@@ -3085,7 +3085,7 @@ export const modelProviderMappingHistory = pgTable(
 			.notNull()
 			.defaultNow()
 			.$onUpdate(() => new Date()),
-		modelId: text().notNull(), // LLMGateway model name (e.g., "gpt-4")
+		modelId: text().notNull(), // betarouter model name (e.g., "gpt-4")
 		providerId: text().notNull(), // Provider ID (e.g., "openai")
 		modelProviderMappingId: text().notNull(), // Reference to the exact model_provider_mapping.id
 		// Unique timestamp key for one-minute intervals (rounded down to the minute)
@@ -3216,7 +3216,7 @@ export const modelProviderMappingHistoryHourly = pgTable(
 			.notNull()
 			.defaultNow()
 			.$onUpdate(() => new Date()),
-		modelId: text().notNull(), // LLMGateway model name (e.g., "gpt-4")
+		modelId: text().notNull(), // betarouter model name (e.g., "gpt-4")
 		providerId: text().notNull(), // Provider ID (e.g., "openai")
 		modelProviderMappingId: text().notNull(), // Reference to the exact model_provider_mapping.id
 		// Unique timestamp key for one-hour intervals (rounded down to the hour)

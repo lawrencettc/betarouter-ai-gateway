@@ -64,7 +64,7 @@ It's a genuinely good deal for one specific developer: someone whose workflow li
 
 ## What is DevPass?
 
-DevPass by LLM Gateway is a flat-rate coding plan that bundles **200+ models behind one API key** — the open-weight coders _and_ the Western flagships (Claude Opus 4.8, GPT-5.5, Gemini 3.1 Pro). Every dollar you pay turns into roughly **$3 of model usage at provider rates**, and every request shows its exact dollar cost in a real-time dashboard. It speaks the OpenAI and Anthropic APIs, so it drops into Claude Code, Cursor, Cline, Aider, Continue — or OpenCode itself.
+DevPass by betarouter is a flat-rate coding plan that bundles **200+ models behind one API key** — the open-weight coders _and_ the Western flagships (Claude Opus 4.8, GPT-5.5, Gemini 3.1 Pro). Every dollar you pay turns into roughly **$3 of model usage at provider rates**, and every request shows its exact dollar cost in a real-time dashboard. It speaks the OpenAI and Anthropic APIs, so it drops into Claude Code, Cursor, Cline, Aider, Continue — or OpenCode itself.
 
 ## Pricing compared
 

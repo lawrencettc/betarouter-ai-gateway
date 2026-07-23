@@ -10,7 +10,7 @@ import {
 	consumeFromQueue,
 	LOG_QUEUE,
 	publishToQueue,
-} from "@llmgateway/cache";
+} from "@betarouter/cache";
 import {
 	addApiKeyPeriodDuration,
 	and,
@@ -30,9 +30,9 @@ import {
 	shortid,
 	sql,
 	tables,
-} from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
-import { hasErrorCode } from "@llmgateway/models";
+} from "@betarouter/db";
+import { logger } from "@betarouter/logger";
+import { hasErrorCode } from "@betarouter/models";
 import {
 	assertSafeWebhookUrl,
 	calculateFees,
@@ -40,7 +40,7 @@ import {
 	isPremiumUsedModel,
 	isPremiumWeekExpired,
 	isPrivateOrReservedIp,
-} from "@llmgateway/shared";
+} from "@betarouter/shared";
 
 import { posthog } from "./posthog.js";
 import { aggregateCatalogHealth } from "./services/catalog-health.js";
@@ -972,7 +972,7 @@ export async function batchProcessLogs(): Promise<number> {
 			// Group logs by organization and api key to calculate total costs.
 			// We split per-org costs into a chat bucket and a default bucket so
 			// the deduction step below can prefer chat-plan credits for requests
-			// originating from chat.llmgateway.io (matching how users mentally
+			// originating from chat.betarouter.com (matching how users mentally
 			// account for their plans), and dev-plan credits everywhere else.
 			// Use Decimal.js to avoid floating point rounding errors.
 			interface OrgCostBuckets {
@@ -993,7 +993,7 @@ export async function batchProcessLogs(): Promise<number> {
 			const walletLogIds = new Map<string, string>();
 
 			const isChatSource = (source: string | null | undefined) =>
-				source === "chat.llmgateway.io";
+				source === "chat.betarouter.com";
 
 			for (const raw of unprocessedLogs.rows) {
 				const row = schema.parse(raw);
@@ -1113,7 +1113,7 @@ export async function batchProcessLogs(): Promise<number> {
 			// Also calculate referral earnings (1% of spent credits).
 			//
 			// Deduction order is source-aware:
-			//   • chat.llmgateway.io requests → chat plan → dev plan → regular
+			//   • chat.betarouter.com requests → chat plan → dev plan → regular
 			//   • everything else → dev plan → chat plan → regular
 			// The non-preferred plan acts as a fallback if the preferred plan's
 			// cycle credits are exhausted, so a single org with both plans gets

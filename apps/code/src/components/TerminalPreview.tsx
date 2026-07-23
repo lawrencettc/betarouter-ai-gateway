@@ -10,7 +10,7 @@ import {
 	EmpryoIcon,
 	OpenCodeIcon,
 	SoulForgeIcon,
-} from "@llmgateway/shared/components";
+} from "@betarouter/shared/components";
 
 type Tool =
 	| "devpass-code"
@@ -67,7 +67,7 @@ const snippets: Record<
 		lines: [
 			{
 				key: "ANTHROPIC_BASE_URL=",
-				value: "https://api.llmgateway.io",
+				value: "https://api.betarouter.com",
 			},
 			{
 				key: "ANTHROPIC_AUTH_TOKEN=",
@@ -94,7 +94,7 @@ const snippets: Record<
 		lines: [
 			{
 				key: "OPENAI_BASE_URL=",
-				value: "https://api.llmgateway.io/v1",
+				value: "https://api.betarouter.com/v1",
 			},
 			{
 				key: "OPENAI_API_KEY=",
@@ -108,13 +108,13 @@ const snippets: Record<
 	opencode: {
 		lines: [],
 		command: "opencode",
-		comment: "# LLM Gateway is built-in — type /connect to link your key",
+		comment: "# betarouter is built-in — type /connect to link your key",
 	},
 	cline: {
 		lines: [
 			{
 				key: "OPENAI_BASE_URL=",
-				value: "https://api.llmgateway.io/v1",
+				value: "https://api.betarouter.com/v1",
 			},
 			{
 				key: "OPENAI_API_KEY=",

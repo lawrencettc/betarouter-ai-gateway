@@ -19,7 +19,7 @@ import {
 	sql,
 	or,
 	ilike,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 import type { ServerTypes } from "@/vars.js";
 

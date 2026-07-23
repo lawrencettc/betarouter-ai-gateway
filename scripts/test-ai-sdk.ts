@@ -1,5 +1,5 @@
 /**
- * Test the LLM Gateway's Responses API with the Vercel AI SDK.
+ * Test the betarouter's Responses API with the Vercel AI SDK.
  *
  * Prerequisites:
  *   pnpm add -Dw ai @ai-sdk/openai

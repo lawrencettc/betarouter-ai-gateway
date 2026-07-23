@@ -24,7 +24,7 @@ const docsOptions: DocsLayoutProps = {
 	sidebar: {
 		footer: (
 			<a
-				href="https://status.llmgateway.io/"
+				href="https://status.betarouter.com/"
 				target="_blank"
 				rel="noopener noreferrer"
 				className="flex items-center justify-center gap-2 py-2 text-xs text-fd-muted-foreground hover:text-fd-foreground transition-colors"

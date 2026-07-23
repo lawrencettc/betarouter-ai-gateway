@@ -121,7 +121,7 @@ const templates: Template[] = [
 	{
 		name: "Showcase",
 		description:
-			'A static, deployable gallery of apps built with LLM Gateway templates. Tag and type filtering, a "Submit your app" flow, and a Powered-By badge baked in — fork it or use the community directory.',
+			'A static, deployable gallery of apps built with betarouter templates. Tag and type filtering, a "Submit your app" flow, and a Powered-By badge baked in — fork it or use the community directory.',
 		href: "https://github.com/theopenco/llmgateway-templates/tree/main/templates/showcase",
 		icon: LayoutGrid,
 		tags: ["TypeScript", "Next.js", "Tailwind CSS"],

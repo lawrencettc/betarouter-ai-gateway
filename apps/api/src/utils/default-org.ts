@@ -1,5 +1,5 @@
-import { db, shortid, tables } from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+import { db, shortid, tables } from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 
 interface DefaultOrganizationUser {
 	id: string;

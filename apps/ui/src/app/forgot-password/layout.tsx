@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 export const metadata: Metadata = {
 	title: "Forgot Password",
 	description:
-		"Reset your LLM Gateway password. We'll email you a secure link to set a new one.",
+		"Reset your betarouter password. We'll email you a secure link to set a new one.",
 	robots: { index: false, follow: false },
 };
 

@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 		description:
 			"How DevPass compares to Cursor, OpenCode, FirePass, z.ai and Alibaba Qwen. Pricing, models, and limits side by side.",
 		type: "website",
-		url: "https://devpass.llmgateway.io/compare",
+		url: "https://devpass.betarouter.com/compare",
 	},
 };
 

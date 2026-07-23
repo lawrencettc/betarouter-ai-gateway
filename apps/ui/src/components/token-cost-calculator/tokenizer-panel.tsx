@@ -27,7 +27,7 @@ import {
 } from "./calc-utils";
 import { countTokens, countWords, TOKENIZER_NAME } from "./tokenizer";
 
-import type { ModelDefinition } from "@llmgateway/models";
+import type { ModelDefinition } from "@betarouter/models";
 
 // ─── Static config ───────────────────────────────────────────────────────────
 
@@ -195,7 +195,7 @@ export function TokenizerPanel() {
 			"",
 			`That's a ${spreadPct}% swing for the exact same ${formatInt(requests)} request${requests === 1 ? "" : "s"}.`,
 			"",
-			"Count yours free with @llmgateway:",
+			"Count yours free with @betarouterco:",
 		];
 		return lines.join("\n");
 	}, [hasInput, cheapest, priciest, inputTokens, requests, spreadPct]);
@@ -203,7 +203,7 @@ export function TokenizerPanel() {
 	const pageUrl =
 		typeof window !== "undefined"
 			? window.location.href
-			: "https://llmgateway.io/token-cost-calculator";
+			: "https://betarouter.com/token-cost-calculator";
 
 	const handleCopy = async () => {
 		await navigator.clipboard.writeText(`${shareText}\n${pageUrl}`);
@@ -443,7 +443,7 @@ export function TokenizerPanel() {
 					</Card>
 
 					<p className="text-[11px] text-muted-foreground px-1">
-						Costs use each model&apos;s cheapest active provider on LLM Gateway
+						Costs use each model&apos;s cheapest active provider on betarouter
 						(no platform markup). Reasoning models also bill hidden thinking
 						tokens, so their real output cost runs higher than shown.
 					</p>
@@ -495,7 +495,7 @@ export function TokenizerPanel() {
 							Pay the cheapest price automatically
 						</h3>
 						<p className="text-sm text-muted-foreground mb-5 text-balance leading-relaxed max-w-xl mx-auto">
-							LLM Gateway routes every request to the lowest-priced provider for
+							betarouter routes every request to the lowest-priced provider for
 							your model through one OpenAI-compatible API — no markup, no code
 							changes.
 						</p>

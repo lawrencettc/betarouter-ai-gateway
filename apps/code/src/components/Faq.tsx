@@ -15,7 +15,7 @@ import {
 	HIGH_COST_INPUT_PRICE,
 	HIGH_COST_OUTPUT_PRICE,
 	MARKETING_STATS,
-} from "@llmgateway/shared";
+} from "@betarouter/shared";
 
 import type { ReactNode } from "react";
 
@@ -87,7 +87,7 @@ const faqData: FaqItem[] = [
 	},
 	{
 		question: "Do I need a subscription, or is there pay-as-you-go?",
-		answer: `Both work. DevPass plans turn every dollar into $3 of model usage. If you'd rather not subscribe, LLM Gateway offers pay-as-you-go: top up credits and pay per token at provider rates with a flat ${MARKETING_STATS.platformFee} platform fee, or bring your own provider keys for free.`,
+		answer: `Both work. DevPass plans turn every dollar into $3 of model usage. If you'd rather not subscribe, betarouter offers pay-as-you-go: top up credits and pay per token at provider rates with a flat ${MARKETING_STATS.platformFee} platform fee, or bring your own provider keys for free.`,
 	},
 	{
 		question: "Which tools and SDKs work with DevPass?",
@@ -125,7 +125,7 @@ const faqData: FaqItem[] = [
 					Every other model draws on your full monthly allowance. The exact
 					numbers are published on the plan cards — no hidden throttling. See{" "}
 					<Link
-						href="https://docs.llmgateway.io/learn/model-categories"
+						href="https://docs.betarouter.com/learn/model-categories"
 						className="underline"
 					>
 						model categories &amp; fair use
@@ -158,7 +158,7 @@ const faqData: FaqItem[] = [
 					nor unused included passes carry into the next cycle. Purchased Reset
 					Passes are separate: they persist until redeemed. See{" "}
 					<Link
-						href="https://docs.llmgateway.io/learn/reset-passes"
+						href="https://docs.betarouter.com/learn/reset-passes"
 						className="underline"
 					>
 						Reset Passes
@@ -171,13 +171,13 @@ const faqData: FaqItem[] = [
 	{
 		question: "Can I get a refund?",
 		answer:
-			"Yes — DevPass comes with a first-month guarantee. Cancel within 7 days of your first purchase and email contact@llmgateway.io: we'll refund your first month minus the usage you consumed at provider rates. There's no cancellation fee.",
+			"Yes — DevPass comes with a first-month guarantee. Cancel within 7 days of your first purchase and email contact@betarouter.com: we'll refund your first month minus the usage you consumed at provider rates. There's no cancellation fee.",
 		content: (
 			<>
 				Yes — DevPass comes with a <strong>first-month guarantee</strong>.
 				Cancel within 7 days of your first purchase and email{" "}
-				<Link href="mailto:contact@llmgateway.io" className="underline">
-					contact@llmgateway.io
+				<Link href="mailto:contact@betarouter.com" className="underline">
+					contact@betarouter.com
 				</Link>
 				: we&apos;ll refund your first month minus the usage you consumed at
 				provider rates. There&apos;s no cancellation fee.
@@ -226,7 +226,7 @@ export function Faq() {
 						<p className="mt-6 text-sm text-muted-foreground">
 							Can&apos;t find an answer?{" "}
 							<Link
-								href="mailto:contact@llmgateway.io"
+								href="mailto:contact@betarouter.com"
 								className="text-foreground underline underline-offset-4"
 							>
 								Contact us

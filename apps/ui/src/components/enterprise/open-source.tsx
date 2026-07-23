@@ -18,7 +18,7 @@ async function fetchGitHubStars(repo: string): Promise<number | null> {
 			next: { revalidate: 600 }, // Revalidate every 10 minutes
 			headers: {
 				Accept: "application/vnd.github.v3+json",
-				"User-Agent": "LLM Gateway",
+				"User-Agent": "betarouter",
 			},
 		});
 
@@ -47,7 +47,7 @@ async function fetchGitHubContributors(
 				next: { revalidate: 600 }, // Revalidate every 10 minutes
 				headers: {
 					Accept: "application/vnd.github.v3+json",
-					"User-Agent": "LLM Gateway",
+					"User-Agent": "betarouter",
 				},
 			},
 		);
@@ -115,7 +115,7 @@ export async function OpenSourceEnterprise() {
 							<div className="flex flex-wrap gap-3">
 								<Button asChild size="lg">
 									<Link
-										href="https://docs.llmgateway.io"
+										href="https://docs.betarouter.com"
 										target="_blank"
 										rel="noopener noreferrer"
 									>

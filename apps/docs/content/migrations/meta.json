@@ -1,6 +1,6 @@
 {
 	"title": "Migrations",
-	"description": "Migrate to LLM Gateway from other providers",
+	"description": "Migrate to betarouter from other providers",
 	"icon": "ArrowRightLeft",
 	"pages": ["litellm", "openrouter", "vercel-ai-gateway"]
 }

@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getMappingDetail, getMappingHistory } from "@/lib/admin-history";
 
-import { getProviderIcon } from "@llmgateway/shared";
+import { getProviderIcon } from "@betarouter/shared";
 
 import type { HistoryWindow } from "@/components/history-chart";
 import type { MappingDetail } from "@/lib/types";

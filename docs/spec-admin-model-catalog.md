@@ -18,7 +18,7 @@ control customer visibility or gateway routing.
 
 The catalog also has two competing sources of truth:
 
-- `@llmgateway/models` defines providers, models, mappings, capabilities,
+- `@betarouter/models` defines providers, models, mappings, capabilities,
   upstream prices, and retirement dates in code.
 - PostgreSQL receives a synchronized copy for analytics and internal UI.
 
@@ -65,7 +65,7 @@ the upstream sync process.
 
 | Term            | Meaning                                                                                |
 | --------------- | -------------------------------------------------------------------------------------- |
-| Source catalog  | Provider/model/mapping metadata synchronized from `@llmgateway/models`.                |
+| Source catalog  | Provider/model/mapping metadata synchronized from `@betarouter/models`.                |
 | Catalog policy  | BetaRouter operator overrides stored separately from source metadata.                  |
 | Visible         | Discoverable on the website, playground, selectors, and model-list APIs.               |
 | Available       | Accepted when a customer requests the model or provider explicitly.                    |
@@ -127,9 +127,9 @@ the upstream sync process.
 | Admin Models             | PostgreSQL analytics tables                        | Read-only                 | Cannot curate, price, or retire.                         |
 | Admin Model Mappings     | PostgreSQL analytics tables                        | Read-only                 | Cannot control routes or external IDs.                   |
 | Admin Platform Providers | Encrypted PostgreSQL credentials                   | Full credential lifecycle | Does not control catalog visibility or mappings.         |
-| Worker catalog sync      | `@llmgateway/models`                               | Automatic upsert          | Would overwrite direct mapping status changes.           |
+| Worker catalog sync      | `@betarouter/models`                               | Automatic upsert          | Would overwrite direct mapping status changes.           |
 | `/internal/models`       | Active PostgreSQL model/mapping rows               | Read-only                 | Does not apply credential, lifecycle, or breaker policy. |
-| `/v1/models`             | `@llmgateway/models`                               | Read-only                 | Ignores PostgreSQL status and Admin policy.              |
+| `/v1/models`             | `@betarouter/models`                               | Read-only                 | Ignores PostgreSQL status and Admin policy.              |
 | Website/playground       | `/internal/models`                                 | Read-only                 | Can disagree with `/v1/models` and routing.              |
 | Gateway routing          | Code model definitions plus credentials and health | Runtime                   | Has no global operator catalog policy.                   |
 | Async video worker       | Persisted provider credential for platform jobs    | Runtime                   | Must also preserve the selected mapping/revision.        |
@@ -156,7 +156,7 @@ the upstream sync process.
 ### 1. Preserve source data and store operator policy separately
 
 The worker continues synchronizing provider, model, and mapping metadata from
-`@llmgateway/models`. It must not overwrite operator policy. New policy tables
+`@betarouter/models`. It must not overwrite operator policy. New policy tables
 hold BetaRouter-specific visibility, availability, pricing, routing, lifecycle,
 and ordering decisions.
 

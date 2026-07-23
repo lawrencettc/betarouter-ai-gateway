@@ -38,7 +38,7 @@ const linkSafety: LinkSafetyConfig = {
 		try {
 			const hostname = new URL(url).hostname;
 			return (
-				hostname === "llmgateway.io" || hostname.endsWith(".llmgateway.io")
+				hostname === "betarouter.com" || hostname.endsWith(".betarouter.com")
 			);
 		} catch {
 			return false;
@@ -58,7 +58,7 @@ const CLIENT_RATE_MAX = 5;
 const CLIENT_RATE_WINDOW_MS = 20_000;
 
 const SUGGESTED_QUESTIONS = [
-	"How do I get started with LLM Gateway?",
+	"How do I get started with betarouter?",
 	"Which models and providers are supported?",
 	"How does pricing and billing work?",
 ];
@@ -610,7 +610,7 @@ export function ChatSupport() {
 									<div className="flex justify-start">
 										<div className="max-w-[85%] rounded-2xl bg-muted px-3.5 py-2.5 text-sm leading-relaxed text-foreground">
 											Hi{effectiveName ? ` ${effectiveName}` : ""}! I&apos;m the
-											LLM Gateway support assistant. How can I help you today?
+											betarouter support assistant. How can I help you today?
 										</div>
 									</div>
 								)}
@@ -901,7 +901,7 @@ export function ChatSupport() {
 									placeholder={
 										escalated
 											? "Message the support team..."
-											: "Ask about LLM Gateway..."
+											: "Ask about betarouter..."
 									}
 									rows={1}
 									className="field-sizing-content max-h-32 min-h-[2.5rem] flex-1 resize-none rounded-lg border border-input bg-background px-3 py-2 text-base outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-1 focus:ring-ring sm:text-sm"

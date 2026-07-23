@@ -12,8 +12,8 @@ import {
 	isNull,
 	eq,
 	inArray,
-} from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+} from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 
 // Configuration for project stats refresh interval (defaults to 60 seconds)
 export const PROJECT_STATS_REFRESH_INTERVAL_SECONDS =

@@ -9,11 +9,11 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 [Kimi Code CLI](https://github.com/MoonshotAI/kimi-code) is an open-source, AI-powered coding agent developed by Moonshot AI designed to automate software development tasks directly within your terminal. It can read and edit code, execute shell commands, search files, and autonomously manage complex coding workflows.
 
-Kimi Code features first-class support for the **models.dev** registry, a community-maintained model catalog. This allows Kimi Code to query and configure LLM Gateway dynamically — fetching all compatible models, capabilities (such as thinking or vision), and pricing without requiring manual TOML editing.
+Kimi Code features first-class support for the **models.dev** registry, a community-maintained model catalog. This allows Kimi Code to query and configure betarouter dynamically — fetching all compatible models, capabilities (such as thinking or vision), and pricing without requiring manual TOML editing.
 
 ## Prerequisites
 
-- An LLM Gateway API key — [sign up free](https://llmgateway.io/signup) (no credit card required)
+- An betarouter API key — [sign up free](https://betarouter.com/signup) (no credit card required)
 
 ## Setup
 
@@ -68,13 +68,13 @@ Once loaded, type the `/provider` command and press Enter. Select **Known third-
 </Step>
 
 <Step>
-### Select LLM Gateway
+### Select betarouter
 
-Type `llm` to filter the providers and select **LLM Gateway** from the list:
+Type `llm` to filter the providers and select **betarouter** from the list:
 
 <img
 	src="/guides/kimi-code/1-select-provider.png"
-	alt="Selecting LLM Gateway in Kimi Code"
+	alt="Selecting betarouter in Kimi Code"
 	style={{ borderRadius: "8px", margin: "1.5rem 0" }}
 />
 
@@ -83,11 +83,11 @@ Type `llm` to filter the providers and select **LLM Gateway** from the list:
 <Step>
 ### Enter Your API Key
 
-When prompted, paste your LLM Gateway API key and press Enter. Kimi Code will save it securely to your local configuration:
+When prompted, paste your betarouter API key and press Enter. Kimi Code will save it securely to your local configuration:
 
 <img
 	src="/guides/kimi-code/2-enter-key.png"
-	alt="Entering LLM Gateway API Key"
+	alt="Entering betarouter API Key"
 	style={{ borderRadius: "8px", margin: "1.5rem 0" }}
 />
 
@@ -100,13 +100,13 @@ When prompted, paste your LLM Gateway API key and press Enter. Kimi Code will sa
 <Step>
 ### Select a Model and Toggle Thinking
 
-The LLM Gateway catalog is now loaded. Use the arrow keys to browse or type to search for your desired model. Select the `llmgateway` tab to view only LLM Gateway models.
+The betarouter catalog is now loaded. Use the arrow keys to browse or type to search for your desired model. Select the `betarouter` tab to view only betarouter models.
 
 You can also toggle the **Thinking** option (On/Off) at the bottom depending on the model's capabilities:
 
 <img
 	src="/guides/kimi-code/3-select-model.png"
-	alt="Browsing LLM Gateway Models"
+	alt="Browsing betarouter Models"
 	style={{ borderRadius: "8px", margin: "1.5rem 0" }}
 />
 
@@ -123,7 +123,7 @@ For example, type `gpt-5.5` to find the latest reasoning model, select it, and p
 <Step>
 ### Start Coding
 
-All set! Kimi Code is now configured. Your requests will be securely routed through LLM Gateway, allowing you to use advanced models for local autonomous coding while showing real-time usage and cost statistics on your LLM Gateway dashboard.
+All set! Kimi Code is now configured. Your requests will be securely routed through betarouter, allowing you to use advanced models for local autonomous coding while showing real-time usage and cost statistics on your betarouter dashboard.
 
 <img
 	src="/guides/kimi-code/5-chat.png"
@@ -143,39 +143,39 @@ If you prefer to configure your environment manually without using the interacti
 Here is an example TOML configuration that registers **GPT-5.5**, **Claude 3.7 Sonnet**, **DeepSeek R1**, and **Qwen3.7 Max** manually:
 
 ```toml
-default_model = "llmgateway/gpt-5.5"
+default_model = "betarouter/gpt-5.5"
 
-[providers.llmgateway]
+[providers.betarouter]
 type = "openai"
 api_key = "llmgtwy_your_api_key_here"
-base_url = "https://api.llmgateway.io/v1"
+base_url = "https://api.betarouter.com/v1"
 
-[models."llmgateway/gpt-5.5"]
-provider = "llmgateway"
+[models."betarouter/gpt-5.5"]
+provider = "betarouter"
 model = "gpt-5.5"
 max_context_size = 1050000
 max_output_size = 128000
 capabilities = [ "thinking", "tool_use" ]
 display_name = "GPT-5.5"
 
-[models."llmgateway/claude-3.7-sonnet"]
-provider = "llmgateway"
+[models."betarouter/claude-3.7-sonnet"]
+provider = "betarouter"
 model = "claude-3.7-sonnet"
 max_context_size = 200000
 max_output_size = 8192
 capabilities = [ "image_in", "thinking", "tool_use" ]
 display_name = "Claude 3.7 Sonnet"
 
-[models."llmgateway/deepseek-r1"]
-provider = "llmgateway"
+[models."betarouter/deepseek-r1"]
+provider = "betarouter"
 model = "deepseek-r1"
 max_context_size = 131072
 max_output_size = 8192
 capabilities = [ "thinking", "tool_use" ]
 display_name = "DeepSeek R1"
 
-[models."llmgateway/qwen3.7-max"]
-provider = "llmgateway"
+[models."betarouter/qwen3.7-max"]
+provider = "betarouter"
 model = "qwen3.7-max"
 max_context_size = 1000000
 max_output_size = 65536
@@ -183,7 +183,7 @@ capabilities = [ "thinking", "tool_use" ]
 display_name = "Qwen3.7 Max"
 ```
 
-## Why Use LLM Gateway with Kimi Code CLI
+## Why Use betarouter with Kimi Code CLI
 
 - **200+ models** — Access GPT-5.5, Gemini, Llama, DeepSeek, and more in a single CLI configuration.
 - **Unified cost tracking** — Get a detailed breakdown of costs per prompt and session in your dashboard.
@@ -192,10 +192,10 @@ display_name = "Qwen3.7 Max"
 - **Volume discounts** — Access selected models with up to 90% savings compared to standard pricing.
 
 <Callout type="info">
-	View all available models on the [models page](https://llmgateway.io/models).
+	View all available models on the [models page](https://betarouter.com/models).
 </Callout>
 
 <Callout type="info">
-	Need help? Join our [Discord community](https://llmgateway.io/discord) for
+	Need help? Join our [Discord community](https://betarouter.com/discord) for
 	support and troubleshooting assistance.
 </Callout>

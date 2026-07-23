@@ -10,14 +10,14 @@ import {
 	providers as providerDefinitions,
 	type ModelDefinition,
 	type ProviderModelMapping,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 import {
 	AWSBedrockIconStatic,
 	getProviderIcon,
 	GoogleStudioAIIconStatic,
 	MinimaxIconStatic,
 	XAIIconStatic,
-} from "@llmgateway/shared/components";
+} from "@betarouter/shared/components";
 
 export const size = {
 	width: 1200,
@@ -624,7 +624,7 @@ export default async function ModelProviderOgImage({ params }: ImageProps) {
 									color: "#E5E7EB",
 								}}
 							>
-								LLM Gateway
+								betarouter
 							</span>
 						</div>
 						<span
@@ -633,7 +633,7 @@ export default async function ModelProviderOgImage({ params }: ImageProps) {
 								color: "#6B7280",
 							}}
 						>
-							llmgateway.io
+							betarouter.com
 						</span>
 					</div>
 				</div>
@@ -659,7 +659,7 @@ export default async function ModelProviderOgImage({ params }: ImageProps) {
 							"system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
 					}}
 				>
-					LLM Gateway Model
+					betarouter Model
 				</div>
 			),
 			size,

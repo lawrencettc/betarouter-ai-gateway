@@ -1,4 +1,4 @@
-import { Bricolage_Grotesque, Inter, Geist_Mono } from "next/font/google";
+import { Bricolage_Grotesque, Inter, JetBrains_Mono } from "next/font/google";
 
 import { GoogleTag } from "@/components/google-tag";
 import { Providers } from "@/components/providers";
@@ -15,7 +15,7 @@ const inter = Inter({
 	display: "swap",
 });
 
-const geistMono = Geist_Mono({
+const geistMono = JetBrains_Mono({
 	variable: "--font-mono",
 	subsets: ["latin"],
 	display: "swap",
@@ -30,10 +30,10 @@ const bricolage = Bricolage_Grotesque({
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-	metadataBase: new URL("https://devpass.llmgateway.io"),
+	metadataBase: new URL("https://devpass.betarouter.com"),
 	title: {
-		default: "DevPass by LLM Gateway - All-Access Dev Plans for AI Coding",
-		template: "%s | DevPass by LLM Gateway",
+		default: "DevPass by betarouter - All-Access Dev Plans for AI Coding",
+		template: "%s | DevPass by betarouter",
 	},
 	description:
 		"One subscription, every coding model. Fixed-price dev plans for Claude Code, Cursor, Cline, and any OpenAI-compatible tool. 200+ models, one API key.",
@@ -52,36 +52,36 @@ export const metadata: Metadata = {
 		},
 	},
 	openGraph: {
-		title: "DevPass by LLM Gateway - All-Access Dev Plans for AI Coding",
+		title: "DevPass by betarouter - All-Access Dev Plans for AI Coding",
 		description:
 			"One subscription, every coding model. Fixed-price dev plans for Claude Code, Cursor, Cline, and any OpenAI-compatible tool.",
-		images: ["/opengraph.png?v=2"],
+		images: ["/opengraph.png?v=4"],
 		type: "website",
-		url: "https://devpass.llmgateway.io",
-		siteName: "DevPass by LLM Gateway",
+		url: "https://devpass.betarouter.com",
+		siteName: "DevPass by betarouter",
 		locale: "en_US",
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "DevPass by LLM Gateway - All-Access Dev Plans for AI Coding",
+		title: "DevPass by betarouter - All-Access Dev Plans for AI Coding",
 		description:
 			"One subscription, every coding model. Fixed-price dev plans for Claude Code, Cursor, and 200+ models.",
-		images: ["/opengraph.png?v=2"],
-		creator: "@llmgateway",
+		images: ["/opengraph.png?v=4"],
+		creator: "@betarouterco",
 	},
 };
 
 const webSiteSchema = {
 	"@context": "https://schema.org",
 	"@type": "WebSite",
-	name: "DevPass by LLM Gateway",
-	url: "https://devpass.llmgateway.io",
+	name: "DevPass by betarouter",
+	url: "https://devpass.betarouter.com",
 	description:
 		"Fixed-price dev plans for AI-powered coding with Claude Code, Cursor, Cline, and any OpenAI-compatible tool. One subscription, every model.",
 	publisher: {
 		"@type": "Organization",
-		name: "LLM Gateway",
-		url: "https://llmgateway.io",
+		name: "betarouter",
+		url: "https://betarouter.com",
 	},
 };
 

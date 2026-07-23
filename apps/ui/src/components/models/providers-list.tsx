@@ -35,7 +35,7 @@ import {
 	TableRow,
 } from "@/lib/components/table";
 
-import { providers as defaultProviders } from "@llmgateway/models";
+import { providers as defaultProviders } from "@betarouter/models";
 
 export function ProvidersList() {
 	const [providersList, _setProvidersList] = useState(() =>

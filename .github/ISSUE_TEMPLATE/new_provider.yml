@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for the suggestion! Please confirm the provider isn't already supported on the [providers page](https://llmgateway.io/providers) before opening this issue.
+        Thanks for the suggestion! Please confirm the provider isn't already supported on the [providers page](https://betarouter.com/providers) before opening this issue.
   - type: input
     id: provider-name
     attributes:

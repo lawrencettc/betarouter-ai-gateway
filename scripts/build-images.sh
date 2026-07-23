@@ -37,7 +37,7 @@ show_help() {
     cat << EOF
 Usage: $0 [OPTIONS]
 
-Build and push Docker images for LLMGateway
+Build and push Docker images for betarouter
 
 OPTIONS:
     --push              Push images to registry (default: false)

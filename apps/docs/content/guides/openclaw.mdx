@@ -7,15 +7,15 @@ icon: OpenClaw
 import { Step, Steps } from "fumadocs-ui/components/steps";
 import { Callout } from "fumadocs-ui/components/callout";
 
-[OpenClaw](https://docs.openclaw.ai/) is a self-hosted gateway that connects your favorite chat apps—WhatsApp, Telegram, Discord, iMessage, and more—to AI coding agents. With LLM Gateway as a custom provider, you can route all your OpenClaw traffic through a single API, use any of 200+ models, and keep full visibility into usage and costs.
+[OpenClaw](https://docs.openclaw.ai/) is a self-hosted gateway that connects your favorite chat apps—WhatsApp, Telegram, Discord, iMessage, and more—to AI coding agents. With betarouter as a custom provider, you can route all your OpenClaw traffic through a single API, use any of 200+ models, and keep full visibility into usage and costs.
 
 ## Setup
 
 <Steps>
 <Step>
-### Sign Up for LLM Gateway
+### Sign Up for betarouter
 
-[Sign up free](https://llmgateway.io/signup) — no credit card required. Copy your API key from the dashboard.
+[Sign up free](https://betarouter.com/signup) — no credit card required. Copy your API key from the dashboard.
 
 </Step>
 
@@ -31,15 +31,15 @@ export LLMGATEWAY_API_KEY=llmgtwy_your_api_key_here
 <Step>
 ### Configure OpenClaw
 
-Add LLM Gateway as a custom provider in your `~/.openclaw/openclaw.json`:
+Add betarouter as a custom provider in your `~/.openclaw/openclaw.json`:
 
 ```json
 {
 	"models": {
 		"mode": "merge",
 		"providers": {
-			"llmgateway": {
-				"baseUrl": "https://api.llmgateway.io/v1",
+			"betarouter": {
+				"baseUrl": "https://api.betarouter.com/v1",
 				"apiKey": "${LLMGATEWAY_API_KEY}",
 				"api": "openai-completions",
 				"models": [
@@ -68,7 +68,7 @@ Add LLM Gateway as a custom provider in your `~/.openclaw/openclaw.json`:
 	"agents": {
 		"defaults": {
 			"model": {
-				"primary": "llmgateway/gpt-5.4"
+				"primary": "betarouter/gpt-5.4"
 			}
 		}
 	}
@@ -80,12 +80,12 @@ Add LLM Gateway as a custom provider in your `~/.openclaw/openclaw.json`:
 <Step>
 ### Start Chatting
 
-Launch OpenClaw and start chatting across your connected channels. All requests will be routed through LLM Gateway.
+Launch OpenClaw and start chatting across your connected channels. All requests will be routed through betarouter.
 
 </Step>
 </Steps>
 
-## Why Use LLM Gateway with OpenClaw
+## Why Use betarouter with OpenClaw
 
 - **Model flexibility** — Switch between GPT-5.4, Claude Opus, Gemini, or any of 200+ models
 - **Cost tracking** — Monitor exactly how much your chat agents cost to run
@@ -101,7 +101,7 @@ Change the primary model in your config to switch between any model:
 {
 	"agents": {
 		"defaults": {
-			"model": { "primary": "llmgateway/claude-opus-4-6" }
+			"model": { "primary": "betarouter/claude-opus-4-6" }
 		}
 	}
 }
@@ -116,8 +116,8 @@ OpenClaw supports fallback models. If the primary model is unavailable, it autom
 	"agents": {
 		"defaults": {
 			"model": {
-				"primary": "llmgateway/gpt-5.4",
-				"fallbacks": ["llmgateway/claude-opus-4-6"]
+				"primary": "betarouter/gpt-5.4",
+				"fallbacks": ["betarouter/claude-opus-4-6"]
 			}
 		}
 	}
@@ -126,7 +126,7 @@ OpenClaw supports fallback models. If the primary model is unavailable, it autom
 
 ## Available Models
 
-LLM Gateway uses root model IDs with smart routing—automatically selecting the best provider based on uptime, throughput, price, and latency. You can use any model from the [models page](https://llmgateway.io/models). Flagship models include:
+betarouter uses root model IDs with smart routing—automatically selecting the best provider based on uptime, throughput, price, and latency. You can use any model from the [models page](https://betarouter.com/models). Flagship models include:
 
 | Model                    | Best For                                    |
 | ------------------------ | ------------------------------------------- |
@@ -144,7 +144,7 @@ LLM Gateway uses root model IDs with smart routing—automatically selecting the
 For more details on routing behavior, see [routing](/features/routing).
 
 <Callout type="info">
-	View all available models on the [models page](https://llmgateway.io/models).
+	View all available models on the [models page](https://betarouter.com/models).
 </Callout>
 
 ## Tips for Chat Agents
@@ -152,16 +152,16 @@ For more details on routing behavior, see [routing](/features/routing).
 ### Optimize Costs
 
 1. **Use smaller models for simple tasks** — Claude Haiku or Gemini Flash handle basic Q&A well
-2. **Enable caching** — LLM Gateway caches identical requests automatically
+2. **Enable caching** — betarouter caches identical requests automatically
 3. **Set token limits** — Configure max tokens to prevent runaway costs
 
 ### Improve Response Quality
 
 1. **Choose the right model** — Claude Opus excels at nuanced conversation, GPT-5.4 at general tasks
 2. **Use system prompts** — Configure your agent's personality and capabilities
-3. **Test multiple models** — LLM Gateway makes it easy to A/B test different providers
+3. **Test multiple models** — betarouter makes it easy to A/B test different providers
 
 <Callout type="info">
-	Need help? Join our [Discord community](https://llmgateway.io/discord) for
+	Need help? Join our [Discord community](https://betarouter.com/discord) for
 	support and troubleshooting assistance.
 </Callout>

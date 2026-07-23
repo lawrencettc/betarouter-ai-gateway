@@ -1,11 +1,11 @@
-# @llmgateway/models
+# @betarouter/models
 
-Model and provider definitions for [LLM Gateway](https://llmgateway.io) - the unified API for all LLM providers.
+Model and provider definitions for [betarouter](https://betarouter.com) - the unified API for all LLM providers.
 
 ## Installation
 
 ```bash
-npm install @llmgateway/models
+npm install @betarouter/models
 ```
 
 ## Usage
@@ -15,7 +15,7 @@ npm install @llmgateway/models
 The `models` array contains all supported LLM models with their pricing and provider mappings:
 
 ```typescript
-import { models } from "@llmgateway/models";
+import { models } from "@betarouter/models";
 
 // Find a specific model
 const gpt4 = models.find((m) => m.id === "gpt-4o");
@@ -57,7 +57,7 @@ console.log(gpt4.providers); // Provider mappings with pricing
 The `providers` array contains all supported LLM providers:
 
 ```typescript
-import { providers } from "@llmgateway/models";
+import { providers } from "@betarouter/models";
 
 // List all providers
 providers.forEach((p) => {
@@ -97,7 +97,7 @@ console.log(openai.website); // "https://openai.com"
 
 ## Full Model List
 
-For the complete list of models with live pricing, visit [llmgateway.io/models](https://llmgateway.io/models).
+For the complete list of models with live pricing, visit [betarouter.com/models](https://betarouter.com/models).
 
 ## License
 

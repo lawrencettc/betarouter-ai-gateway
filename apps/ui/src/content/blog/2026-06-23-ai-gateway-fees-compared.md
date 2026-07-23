@@ -3,7 +3,7 @@ id: "blog-ai-gateway-fees-compared"
 slug: "ai-gateway-fees-compared"
 date: "2026-06-23"
 title: "AI Gateway Fees Compared: Who Marks Up Your Tokens?"
-summary: "AI gateway pricing hides in two places — the platform fee on credits and the markup on tokens. Here's what OpenRouter, Vercel, Cloudflare, Portkey, LiteLLM, and LLM Gateway actually charge, and how to pay the least."
+summary: "AI gateway pricing hides in two places — the platform fee on credits and the markup on tokens. Here's what OpenRouter, Vercel, Cloudflare, Portkey, LiteLLM, and betarouter actually charge, and how to pay the least."
 categories: ["Guides"]
 image:
   src: "/blog/ai-gateway-fees-compared.png"
@@ -14,7 +14,7 @@ image:
 
 Comparing AI gateways on price sounds simple until you read the fine print. The number on the pricing page is rarely the number on your invoice, because gateway fees hide in two separate places: a **platform fee** on the credits you buy, and a **markup** on the tokens you spend. Miss either one and your "cheap" gateway quietly costs more than the provider you were trying to save money on.
 
-This guide breaks down what the major AI gateways actually charge in 2026, using each vendor's published pricing. **LLM Gateway** is one of them, so we're biased — but the table below is the real picture, including where others are cheaper for a given workload.
+This guide breaks down what the major AI gateways actually charge in 2026, using each vendor's published pricing. **betarouter** is one of them, so we're biased — but the table below is the real picture, including where others are cheaper for a given workload.
 
 ## Two fees, not one
 
@@ -29,7 +29,7 @@ The healthiest pricing model is **zero token markup** plus a transparent, predic
 
 | Gateway               | Token markup | Platform / subscription fee                    | Bring your own keys        | Self-host     |
 | --------------------- | ------------ | ---------------------------------------------- | -------------------------- | ------------- |
-| **LLM Gateway**       | None         | 5% on credits (0% with your own keys)          | Free                       | Free (AGPLv3) |
+| **betarouter**        | None         | 5% on credits (0% with your own keys)          | Free                       | Free (AGPLv3) |
 | OpenRouter            | None         | 5.5% on card credits ($0.80 min; 5% crypto)    | Free to 1M req/mo, then 5% | No            |
 | Vercel AI Gateway     | None         | Pay-as-you-go credits + payment fees           | Free (paid tier)           | No            |
 | Cloudflare AI Gateway | None         | Free direct; +5% if you use Unified Billing    | Yes                        | No            |
@@ -51,19 +51,19 @@ A few line items are easy to miss when you're comparing:
 
 Three levers, in order of impact:
 
-1. **Bring your own keys.** If you already have provider accounts or volume discounts, BYOK lets you pay the provider directly. With LLM Gateway that's a 0% platform fee; with OpenRouter it's free up to 1M requests a month, then 5%.
-2. **Self-host.** If data residency or absolute cost control matters, run the gateway yourself. LLM Gateway is AGPLv3 and self-hostable end to end; LiteLLM is a self-hosted proxy. Both drop your platform fee to zero.
+1. **Bring your own keys.** If you already have provider accounts or volume discounts, BYOK lets you pay the provider directly. With betarouter that's a 0% platform fee; with OpenRouter it's free up to 1M requests a month, then 5%.
+2. **Self-host.** If data residency or absolute cost control matters, run the gateway yourself. betarouter is AGPLv3 and self-hostable end to end; LiteLLM is a self-hosted proxy. Both drop your platform fee to zero.
 3. **Cache and route.** The cheapest token is the one you never send. Built-in response caching makes repeat requests free, and routing simple requests to budget models keeps your blended cost down. Run your real traffic through the [Token Cost Calculator](/token-cost-calculator) before you commit.
 
 ## Frequently Asked Questions
 
 ### Do AI gateways mark up your tokens?
 
-In 2026, the major ones don't. LLM Gateway, OpenRouter, Vercel AI Gateway, Cloudflare, Eden AI, Portkey, and LiteLLM all pass provider token rates through without a per-token markup. They make money on a platform/credit fee or a subscription instead — so compare those, not the token rates.
+In 2026, the major ones don't. betarouter, OpenRouter, Vercel AI Gateway, Cloudflare, Eden AI, Portkey, and LiteLLM all pass provider token rates through without a per-token markup. They make money on a platform/credit fee or a subscription instead — so compare those, not the token rates.
 
 ### What is the cheapest AI gateway?
 
-For most teams, the cheapest path is bringing your own provider keys (0% fee on LLM Gateway) or self-hosting an open-source gateway (LLM Gateway or LiteLLM), which removes the platform fee entirely. On the managed tier, LLM Gateway's flat 5% credit fee is among the lowest, and lower than OpenRouter's 5.5%.
+For most teams, the cheapest path is bringing your own provider keys (0% fee on betarouter) or self-hosting an open-source gateway (betarouter or LiteLLM), which removes the platform fee entirely. On the managed tier, betarouter's flat 5% credit fee is among the lowest, and lower than OpenRouter's 5.5%.
 
 ### Is a platform fee or a token markup worse?
 
@@ -71,6 +71,6 @@ A token markup is worse. It scales with every token you ever send, so it compoun
 
 ## Pay provider rates, not gateway rates
 
-The whole point of a gateway is to save you money and effort, not add a tax. LLM Gateway passes provider token rates through with no markup, charges a flat 5% on credits (or 0% with your own keys), and is free to self-host if you'd rather pay nothing at all.
+The whole point of a gateway is to save you money and effort, not add a tax. betarouter passes provider token rates through with no markup, charges a flat 5% on credits (or 0% with your own keys), and is free to self-host if you'd rather pay nothing at all.
 
-**[Try LLM Gateway free](https://llmgateway.io/signup)** | **[Run the Token Cost Calculator](/token-cost-calculator)** | **[See the 8 best AI gateways in 2026](/blog/best-ai-gateways)**
+**[Try betarouter free](https://betarouter.com/signup)** | **[Run the Token Cost Calculator](/token-cost-calculator)** | **[See the 8 best AI gateways in 2026](/blog/best-ai-gateways)**

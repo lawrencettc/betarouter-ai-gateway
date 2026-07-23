@@ -162,7 +162,7 @@ export function ComparisonGitHubCopilot() {
 						Own your AI spend
 					</h2>
 					<p className="text-muted-foreground">
-						Compare LLM Gateway and GitHub Copilot side by side after Copilot's
+						Compare betarouter and GitHub Copilot side by side after Copilot's
 						June 2026 move to usage-based AI Credits
 					</p>
 				</div>
@@ -208,7 +208,7 @@ export function ComparisonGitHubCopilot() {
 						<div className="text-center">
 							<div className="border-2 border-primary rounded-lg p-4 bg-background shadow-sm h-full">
 								<h3 className="font-bold text-lg mb-1 text-foreground">
-									LLM Gateway
+									betarouter
 								</h3>
 								<p className="text-sm text-muted-foreground mb-2">
 									OPEN AI GATEWAY
@@ -258,7 +258,7 @@ export function ComparisonGitHubCopilot() {
 									</div>
 									<div className="flex items-center gap-2 md:justify-center">
 										<span className="text-xs font-medium text-muted-foreground md:hidden">
-											LLM Gateway:
+											betarouter:
 										</span>
 										{renderFeatureValue(feature.llmgateway)}
 									</div>
@@ -281,7 +281,7 @@ export function ComparisonGitHubCopilot() {
 							size="lg"
 							className="bg-primary hover:bg-primary/90"
 						>
-							<AuthLink href="/signup">Start Free with LLM Gateway</AuthLink>
+							<AuthLink href="/signup">Start Free with betarouter</AuthLink>
 						</Button>
 						<Button asChild size="lg" variant="outline">
 							<Link href={"/copilot-cost-calculator" as Route}>

@@ -61,12 +61,7 @@ export function Providers({ children, config }: ProvidersProps) {
 
 	return (
 		<AppConfigProvider config={config}>
-			<ThemeProvider
-				attribute="class"
-				defaultTheme="system"
-				enableSystem
-				storageKey="theme"
-			>
+			<ThemeProvider attribute="class" forcedTheme="dark" storageKey="theme">
 				<QueryClientProvider client={queryClient}>
 					<PostHogProvider client={posthog}>{children}</PostHogProvider>
 					{process.env.NODE_ENV === "development" && (

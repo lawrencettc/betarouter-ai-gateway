@@ -11,7 +11,7 @@ import {
 	isNotNull,
 	ne,
 	tables,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 import type { ServerTypes } from "@/vars.js";
 
@@ -88,7 +88,7 @@ publicModelRatings.openapi(getModelRatings, async (c) => {
 			reviews: reviews.map((r) => ({
 				rating: r.rating,
 				comment: r.comment ?? "",
-				authorName: r.authorName ?? "LLM Gateway user",
+				authorName: r.authorName ?? "betarouter user",
 				createdAt: r.createdAt.toISOString(),
 			})),
 		},

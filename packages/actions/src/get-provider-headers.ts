@@ -2,9 +2,9 @@ import {
 	resolveVertexTokenType,
 	type ProviderId,
 	type VertexTokenType,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
-import type { ProviderKeyOptions } from "@llmgateway/db";
+import type { ProviderKeyOptions } from "@betarouter/db";
 
 export interface ProviderHeaderOptions {
 	/**

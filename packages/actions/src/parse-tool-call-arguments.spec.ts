@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest";
 import { parseToolCallArguments } from "./parse-tool-call-arguments.js";
 import { RequestError } from "./request-error.js";
 
-import type { ToolCall } from "@llmgateway/models";
+import type { ToolCall } from "@betarouter/models";
 
 function makeToolCall(args: string): ToolCall {
 	return {

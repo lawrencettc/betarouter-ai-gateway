@@ -21,7 +21,7 @@ An LLM gateway is the layer between your application and the model providers tha
 An LLM gateway is a unified API layer that sits between your application and LLM providers like OpenAI, Anthropic, and Google. Instead of integrating directly with each provider's SDK, you integrate once with the gateway and access every provider through a single, consistent interface.
 
 ```
-Your App → LLM Gateway → OpenAI
+Your App → betarouter → OpenAI
                        → Anthropic
                        → Google
                        → Meta
@@ -37,11 +37,11 @@ Think of it like a CDN for AI. A CDN abstracts away the complexity of content de
 
 Every LLM provider has a different API format. Different SDKs, different authentication, different request/response shapes. A gateway normalizes this into a single interface.
 
-With LLM Gateway, you use the OpenAI-compatible chat completions format for every provider:
+With betarouter, you use the OpenAI-compatible chat completions format for every provider:
 
 ```bash
 # This works for OpenAI, Anthropic, Google, and every other provider
-curl https://api.llmgateway.io/v1/chat/completions \
+curl https://api.betarouter.com/v1/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -116,14 +116,14 @@ The alternative is building it yourself: a routing layer, a caching layer, provi
 
 ## Getting Started
 
-LLM Gateway gives you all of this with a single API endpoint. Connect your existing OpenAI SDK, change the base URL, and you're running through the gateway.
+betarouter gives you all of this with a single API endpoint. Connect your existing OpenAI SDK, change the base URL, and you're running through the gateway.
 
 ```typescript
 import OpenAI from "openai";
 
 const client = new OpenAI({
   apiKey: "YOUR_GATEWAY_API_KEY",
-  baseURL: "https://api.llmgateway.io/v1",
+  baseURL: "https://api.betarouter.com/v1",
 });
 
 // Use any of 200+ models from 40+ providers
@@ -133,4 +133,4 @@ const response = await client.chat.completions.create({
 });
 ```
 
-**[Create a free account](/signup)** | **[Browse 200+ models](/models)** | **[Read the docs](https://docs.llmgateway.io)**
+**[Create a free account](/signup)** | **[Browse 200+ models](/models)** | **[Read the docs](https://docs.betarouter.com)**

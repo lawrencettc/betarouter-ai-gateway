@@ -1,6 +1,6 @@
-import { googleProviderSupportsAudioFormat } from "@llmgateway/actions";
+import { googleProviderSupportsAudioFormat } from "@betarouter/actions";
 
-import type { ProviderModelMapping, WebSearchTool } from "@llmgateway/models";
+import type { ProviderModelMapping, WebSearchTool } from "@betarouter/models";
 
 export interface ProviderFilterOptions {
 	webSearchTool?: WebSearchTool | boolean;

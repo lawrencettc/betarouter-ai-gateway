@@ -1,4 +1,4 @@
-import { estimateTokensFromText } from "@llmgateway/shared";
+import { estimateTokensFromText } from "@betarouter/shared";
 
 /**
  * Estimates tokens from content length using a chars/4 heuristic. Backed by

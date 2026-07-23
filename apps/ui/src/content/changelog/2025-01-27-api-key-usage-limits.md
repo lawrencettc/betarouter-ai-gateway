@@ -42,7 +42,7 @@ We're excited to introduce **API Key Usage Limits**, giving you granular control
    ![API keys limit dialog](/changelog/api-key-usage-limits-step-3.png)
 5. Click "Save changes" to apply the limit
 
-Usage includes both costs from LLM Gateway credits and usage from your own provider keys when applicable, giving you complete visibility into total spending per key.
+Usage includes both costs from betarouter credits and usage from your own provider keys when applicable, giving you complete visibility into total spending per key.
 
 ---
 

@@ -6,14 +6,14 @@ import { z } from "zod";
 import { computeReferralBonus } from "@/lib/referral-bonus.js";
 import { ensureStripeCustomer } from "@/stripe.js";
 
-import { logAuditEvent } from "@llmgateway/audit";
-import { db, eq, tables } from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+import { logAuditEvent } from "@betarouter/audit";
+import { db, eq, tables } from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 import {
 	calculateFees,
 	CREDIT_TOP_UP_MAX_AMOUNT,
 	CREDIT_TOP_UP_MIN_AMOUNT,
-} from "@llmgateway/shared";
+} from "@betarouter/shared";
 
 import type { ServerTypes } from "@/vars.js";
 import type {
@@ -885,7 +885,7 @@ payments.openapi(createCheckoutSession, async (c) => {
 					currency: "usd",
 					product_data: {
 						name: `Credit Top-Up ($${amount})`,
-						description: `$${amount} in credits for your LLMGateway account`,
+						description: `$${amount} in credits for your betarouter account`,
 					},
 					unit_amount: Math.round(feeBreakdown.totalAmount * 100),
 				},

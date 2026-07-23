@@ -20,7 +20,7 @@ import {
 import { useApi } from "@/lib/fetch-client";
 import { getBrowserTimeZone } from "@/lib/timezone";
 
-import { providers } from "@llmgateway/models";
+import { providers } from "@betarouter/models";
 
 import type { ChartConfig } from "@/lib/components/chart";
 import type { ActivitT } from "@/types/activity";
@@ -152,7 +152,7 @@ export function CostBreakdownChart({
 		if (storageCost > 0) {
 			sorted.push({
 				model: "storage",
-				provider: "LLM Gateway",
+				provider: "betarouter",
 				cost: storageCost,
 			});
 		}

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { reportKeyError, resetKeyHealth } from "@/lib/api-key-health.js";
 import { resetRoundRobinCounters } from "@/lib/round-robin-env.js";
 
-import { catalogCredentialConfigurationProfile } from "@llmgateway/catalog";
+import { catalogCredentialConfigurationProfile } from "@betarouter/catalog";
 
 import {
 	getEnvKeyCount,
@@ -12,7 +12,7 @@ import {
 	hasServiceTierEligibleEnvCredential,
 } from "./get-provider-env.js";
 
-import type * as DbModule from "@llmgateway/db";
+import type * as DbModule from "@betarouter/db";
 
 const platformMocks = vi.hoisted(() => ({
 	findCredentials: vi.fn(),
@@ -23,7 +23,7 @@ vi.mock("@/lib/cached-queries.js", () => ({
 	findActivePlatformProviderCredentials: platformMocks.findCredentials,
 }));
 
-vi.mock("@llmgateway/db", async (importOriginal) => {
+vi.mock("@betarouter/db", async (importOriginal) => {
 	const actual = await importOriginal<typeof DbModule>();
 	return {
 		...actual,

@@ -1,5 +1,5 @@
 {
-	"name": "@llmgateway/actions",
+	"name": "@betarouter/actions",
 	"version": "0.0.1",
 	"private": true,
 	"license": "SEE LICENSE IN ../../LICENSE",
@@ -22,11 +22,11 @@
 		"lint": "eslint . && prettier --check ."
 	},
 	"dependencies": {
-		"@llmgateway/cache": "workspace:*",
-		"@llmgateway/db": "workspace:*",
-		"@llmgateway/logger": "workspace:*",
-		"@llmgateway/models": "workspace:*",
-		"@llmgateway/shared": "workspace:*",
+		"@betarouter/cache": "workspace:*",
+		"@betarouter/db": "workspace:*",
+		"@betarouter/logger": "workspace:*",
+		"@betarouter/models": "workspace:*",
+		"@betarouter/shared": "workspace:*",
 		"decimal.js": "10.5.0"
 	},
 	"devDependencies": {}

@@ -1,4 +1,4 @@
-import type { BaseMessage, MessageContent } from "@llmgateway/models";
+import type { BaseMessage, MessageContent } from "@betarouter/models";
 
 export type ContentFilterMode = "disabled" | "monitor" | "enabled";
 export type ContentFilterMethod = "keywords" | "openai";

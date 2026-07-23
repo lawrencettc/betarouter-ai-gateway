@@ -40,8 +40,8 @@ import {
 	providers as providerDefinitions,
 	type ProviderCompliancePolicy,
 	type ProviderId,
-} from "@llmgateway/models";
-import { providerLogoUrls } from "@llmgateway/shared/components";
+} from "@betarouter/models";
+import { providerLogoUrls } from "@betarouter/shared/components";
 
 type SortKey = "fastest" | "slowest" | "popular" | "name" | "uptime";
 
@@ -71,7 +71,7 @@ const getModelsCountByProvider = (): Record<string, number> => {
 const modelCounts = getModelsCountByProvider();
 
 const baseProviders = providerDefinitions.filter(
-	(p) => p.name !== "LLM Gateway" && p.id !== "custom",
+	(p) => p.name !== "betarouter" && p.id !== "custom",
 );
 
 const PROVIDER_COUNTRIES = getProviderCountries();

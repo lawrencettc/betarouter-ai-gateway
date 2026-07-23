@@ -7,7 +7,7 @@ import { createTestUser, deleteAll } from "@/testing.js";
 app.get("/test-errors/upstream-4xx", () => {
 	throw new APICallError({
 		message: "Organization org-id has insufficient credits",
-		url: "https://api.llmgateway.io/v1/chat/completions",
+		url: "https://api.betarouter.com/v1/chat/completions",
 		requestBodyValues: { messages: [{ role: "user", content: "hi" }] },
 		statusCode: 402,
 		responseHeaders: {},
@@ -27,7 +27,7 @@ app.get("/test-errors/upstream-4xx", () => {
 app.get("/test-errors/upstream-5xx", () => {
 	throw new APICallError({
 		message: "Internal provider failure",
-		url: "https://api.llmgateway.io/v1/chat/completions",
+		url: "https://api.betarouter.com/v1/chat/completions",
 		requestBodyValues: {},
 		statusCode: 500,
 		responseHeaders: {},

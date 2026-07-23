@@ -8,9 +8,9 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 # Embeddings
 
-LLMGateway exposes an OpenAI-compatible `/v1/embeddings` endpoint for generating vector representations of text — useful for semantic search, clustering, recommendations, and RAG.
+betarouter exposes an OpenAI-compatible `/v1/embeddings` endpoint for generating vector representations of text — useful for semantic search, clustering, recommendations, and RAG.
 
-Browse available embedding models on the [models page](https://llmgateway.io/models?filters=1&embedding=true).
+Browse available embedding models on the [models page](https://betarouter.com/models?filters=1&embedding=true).
 
 ## Supported providers
 
@@ -23,7 +23,7 @@ The gateway translates between provider-native request/response shapes (e.g. Goo
 ## cURL
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/embeddings" \
+curl -X POST "https://api.betarouter.com/v1/embeddings" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -39,7 +39,7 @@ import OpenAI from "openai";
 
 const client = new OpenAI({
 	apiKey: process.env.LLM_GATEWAY_API_KEY,
-	baseURL: "https://api.llmgateway.io/v1",
+	baseURL: "https://api.betarouter.com/v1",
 });
 
 const response = await client.embeddings.create({

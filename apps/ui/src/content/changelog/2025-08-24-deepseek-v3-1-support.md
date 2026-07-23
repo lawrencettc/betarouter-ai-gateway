@@ -6,12 +6,12 @@ title: "DeepSeek v3.1 Model Support"
 summary: "Added support for DeepSeek's latest v3.1 model with 128K context window and competitive pricing for advanced reasoning capabilities."
 image:
   src: "/changelog/deepseek-v3-1-support.png"
-  alt: "DeepSeek v3.1 model available in LLM Gateway with 128K context"
+  alt: "DeepSeek v3.1 model available in betarouter with 128K context"
   width: 1768
   height: 677
 ---
 
-We're excited to announce support for **DeepSeek v3.1**, the latest advancement in DeepSeek's reasoning-focused language model family, now available through LLM Gateway.
+We're excited to announce support for **DeepSeek v3.1**, the latest advancement in DeepSeek's reasoning-focused language model family, now available through betarouter.
 
 ## 🧠 DeepSeek v3.1 Overview
 

@@ -1,5 +1,5 @@
-import { redisClient } from "@llmgateway/cache";
-import { logger } from "@llmgateway/logger";
+import { redisClient } from "@betarouter/cache";
+import { logger } from "@betarouter/logger";
 
 import { calculatePromptTokensFromMessages } from "./calculate-prompt-tokens.js";
 import { extractImages } from "./extract-images.js";
@@ -11,7 +11,7 @@ import { mapFinishReasonToOpenai } from "./map-finish-reason-to-openai.js";
 import { transformOpenaiStreaming } from "./transform-openai-streaming.js";
 
 import type { Annotation, StreamingDelta } from "./types.js";
-import type { Provider } from "@llmgateway/models";
+import type { Provider } from "@betarouter/models";
 
 function normalizeAnthropicUsage(usage: any): any {
 	if (!usage || typeof usage !== "object") {

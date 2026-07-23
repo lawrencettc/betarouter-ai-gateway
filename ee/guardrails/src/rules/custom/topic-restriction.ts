@@ -1,7 +1,7 @@
 import type {
 	TopicRestrictionRuleConfig,
 	GuardrailAction,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 export interface TopicResult {
 	passed: boolean;

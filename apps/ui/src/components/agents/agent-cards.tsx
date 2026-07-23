@@ -37,7 +37,7 @@ const agents: Agent[] = [
 	{
 		name: "Weather Agent",
 		description:
-			"An intelligent AI agent that provides real-time weather information using tool calling. Demonstrates function calling patterns with LLM Gateway.",
+			"An intelligent AI agent that provides real-time weather information using tool calling. Demonstrates function calling patterns with betarouter.",
 		href: "https://github.com/theopenco/llmgateway-templates/tree/main/agents/weather-agent",
 		icon: CloudSun,
 		capabilities: ["Tool Calling", "Real-time Data", "Natural Language"],

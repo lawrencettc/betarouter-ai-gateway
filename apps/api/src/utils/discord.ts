@@ -1,4 +1,4 @@
-import { logger } from "@llmgateway/logger";
+import { logger } from "@betarouter/logger";
 
 const discordWebhookUrl = process.env.DISCORD_NOTIFICATION_URL;
 

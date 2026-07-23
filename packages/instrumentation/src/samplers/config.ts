@@ -3,7 +3,7 @@ import {
 	TraceIdRatioBasedSampler,
 } from "@opentelemetry/sdk-trace-base";
 
-import { createLogger } from "@llmgateway/logger";
+import { createLogger } from "@betarouter/logger";
 
 import { ErrorAwareSampler } from "./error-aware.js";
 import { HeaderBasedForceSampler } from "./header-based-force.js";

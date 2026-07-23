@@ -7,14 +7,14 @@ summary: "Route requests to regional providers, protect your apps with built-in 
 draft: false
 image:
   src: "/changelog/multi-region-content-filters.png"
-  alt: "Multi-region routing and content filters on LLM Gateway"
+  alt: "Multi-region routing and content filters on betarouter"
   width: 1768
   height: 677
 ---
 
 ## Multi-Region Provider Routing
 
-LLM Gateway now supports **regional routing** — send requests to geographically specific provider endpoints for lower latency and data residency compliance.
+betarouter now supports **regional routing** — send requests to geographically specific provider endpoints for lower latency and data residency compliance.
 
 - Route to specific regions per provider (e.g. `us-east`, `eu-west`)
 - Region-specific pricing automatically applied
@@ -33,7 +33,7 @@ Built-in **content moderation** gives you control over what passes through your 
 - **Moderation payloads stored** for audit and review
 - Separate image moderation pipeline for multimodal requests
 
-**[Read the moderation docs](https://docs.llmgateway.io/features/moderations)**
+**[Read the moderation docs](https://docs.betarouter.com/features/moderations)**
 
 ---
 

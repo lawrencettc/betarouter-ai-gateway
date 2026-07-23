@@ -6,22 +6,22 @@ description: Use GPT-5, Gemini, or any model with Claude Code. Three environment
 date: 2026-01-02
 ---
 
-Claude Code is locked to Anthropic's API by default. With LLM Gateway, you can point it at any model—GPT-5, Gemini, Llama, or 180+ others—while keeping the same Anthropic API format Claude Code expects.
+Claude Code is locked to Anthropic's API by default. With betarouter, you can point it at any model—GPT-5, Gemini, Llama, or 180+ others—while keeping the same Anthropic API format Claude Code expects.
 
 Three environment variables. No code changes. Full cost tracking in your dashboard.
 
 ## Video Tutorial
 
-Set up Claude Code with LLM Gateway in under 2 minutes:
+Set up Claude Code with betarouter in under 2 minutes:
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/FrNDDSER768" title="Claude Code with LLM Gateway" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/FrNDDSER768" title="Claude Code with betarouter" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 ## Quick Start
 
-Configure Claude Code to use LLM Gateway with these environment variables:
+Configure Claude Code to use betarouter with these environment variables:
 
 ```bash
-export ANTHROPIC_BASE_URL=https://api.llmgateway.io
+export ANTHROPIC_BASE_URL=https://api.betarouter.com
 export ANTHROPIC_AUTH_TOKEN=llmgtwy_your_api_key_here
 # optional: specify a model, otherwise it uses the default Claude model
 export ANTHROPIC_MODEL=gpt-5  # or any model from our catalog
@@ -32,16 +32,16 @@ claude
 
 ## Why This Works
 
-LLM Gateway's `/v1/messages` endpoint speaks Anthropic's API format natively. We handle the translation to each provider behind the scenes. This means:
+betarouter's `/v1/messages` endpoint speaks Anthropic's API format natively. We handle the translation to each provider behind the scenes. This means:
 
 - **Use any model** — GPT-5, Gemini, Llama, or Claude itself
 - **Keep your workflow** — Claude Code doesn't know the difference
-- **Track costs** — Every request appears in your LLM Gateway dashboard
+- **Track costs** — Every request appears in your betarouter dashboard
 - **Automatic caching** — Repeated requests hit cache, saving money
 
 ## Choosing Models
 
-You can use any model from the [models page](https://llmgateway.io/models). Popular options for Claude Code include:
+You can use any model from the [models page](https://betarouter.com/models). Popular options for Claude Code include:
 
 ### Use OpenAI's Latest Models
 
@@ -80,7 +80,7 @@ export ANTHROPIC_MODEL=gpt-5
 ### Complete Configuration Example
 
 ```bash
-export ANTHROPIC_BASE_URL=https://api.llmgateway.io
+export ANTHROPIC_BASE_URL=https://api.betarouter.com
 export ANTHROPIC_AUTH_TOKEN=llmgtwy_your_api_key_here
 export ANTHROPIC_MODEL=gpt-5
 export ANTHROPIC_SMALL_FAST_MODEL=gpt-5-nano
@@ -91,7 +91,7 @@ export ANTHROPIC_SMALL_FAST_MODEL=gpt-5-nano
 If you want to test the endpoint directly, you can make manual requests:
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/messages" \
+curl -X POST "https://api.betarouter.com/v1/messages" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -138,9 +138,9 @@ The endpoint returns responses in Anthropic's message format:
 
 ## Get Started
 
-1. [Sign up free](https://llmgateway.io/signup) — no credit card required
+1. [Sign up free](https://betarouter.com/signup) — no credit card required
 2. Copy your API key from the dashboard
 3. Set the three environment variables above
 4. Run `claude` and start coding
 
-Questions? Check [our docs](https://docs.llmgateway.io) or [join Discord](https://llmgateway.io/discord).
+Questions? Check [our docs](https://docs.betarouter.com) or [join Discord](https://betarouter.com/discord).

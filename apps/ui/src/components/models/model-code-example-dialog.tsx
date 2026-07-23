@@ -1,1 +1,1 @@
-export { ModelCodeExampleDialog } from "@llmgateway/shared/components";
+export { ModelCodeExampleDialog } from "@betarouter/shared/components";

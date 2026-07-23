@@ -12,7 +12,7 @@ import {
 	validateResponse,
 } from "@/chat-helpers.e2e.js";
 
-import type { ProviderModelMapping } from "@llmgateway/models";
+import type { ProviderModelMapping } from "@betarouter/models";
 
 const contextSizeTest = process.env.CONTEXT_SIZE_TEST === "true";
 

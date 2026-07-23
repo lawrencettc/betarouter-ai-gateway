@@ -19,7 +19,7 @@ export function MobileHeader() {
 				prefetch={true}
 			>
 				<Logo className="h-6 w-6 rounded-full text-black dark:text-white" />
-				<span>LLM Gateway</span>
+				<span>betarouter</span>
 			</Link>
 			<div className="flex flex-1 items-center justify-end gap-2">
 				<ModeToggle />

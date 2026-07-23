@@ -1,4 +1,4 @@
-import { providers } from "@llmgateway/models";
+import { providers } from "@betarouter/models";
 
 export interface RoutingWeightsConfig {
 	price?: number;

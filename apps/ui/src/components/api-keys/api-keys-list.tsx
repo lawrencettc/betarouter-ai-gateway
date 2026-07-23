@@ -89,7 +89,7 @@ function PlaygroundKeyNote() {
 			<div className="text-muted-foreground flex max-w-52 items-start gap-2 px-2 py-1.5 text-xs">
 				<InfoIcon className="mt-0.5 h-3.5 w-3.5 shrink-0" />
 				<span>
-					The auto-generated playground key is managed by LLM Gateway and can't
+					The auto-generated playground key is managed by betarouter and can't
 					be edited.
 				</span>
 			</div>
@@ -606,7 +606,7 @@ export function ApiKeysList({
 						</div>
 						{planLimits.currentCount >= planLimits.maxKeys && (
 							<div className="text-xs text-amber-600 font-medium">
-								Limit reached — contact us at contact@llmgateway.io to unlock
+								Limit reached — contact us at contact@betarouter.com to unlock
 								more
 							</div>
 						)}

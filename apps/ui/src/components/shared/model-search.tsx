@@ -23,7 +23,7 @@ import { useAppConfig } from "@/lib/config";
 import {
 	getModelFamilyIcon,
 	getProviderIcon,
-} from "@llmgateway/shared/components";
+} from "@betarouter/shared/components";
 
 import type { ApiModel, ApiProvider } from "@/lib/fetch-models";
 
@@ -137,7 +137,7 @@ export function ModelSearch({
 				continue;
 			}
 
-			// Use createdAt from API (when added to LLM Gateway), fallback to releasedAt
+			// Use createdAt from API (when added to betarouter), fallback to releasedAt
 			const createdAt = model.createdAt
 				? new Date(model.createdAt)
 				: model.releasedAt
@@ -228,7 +228,7 @@ export function ModelSearch({
 			return [];
 		}
 		return providers.filter((p) => {
-			if (p.name === "LLM Gateway") {
+			if (p.name === "betarouter") {
 				return false;
 			}
 			const text = normalizeForSearch(`${p.name ?? p.id} ${p.id}`);

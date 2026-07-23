@@ -27,8 +27,8 @@ export function getConfig(): AppConfig {
 		gatewayUrl: process.env.GATEWAY_URL ?? "http://localhost:4001",
 		githubUrl:
 			process.env.GITHUB_URL ?? "https://github.com/theopenco/llmgateway",
-		discordUrl: process.env.DISCORD_URL ?? "https://llmgateway.io/discord",
-		twitterUrl: process.env.TWITTER_URL ?? "https://x.com/llmgateway",
+		discordUrl: process.env.DISCORD_URL ?? "https://betarouter.com/discord",
+		twitterUrl: process.env.TWITTER_URL ?? "https://x.com/betarouterco",
 		docsUrl: process.env.DOCS_URL ?? "http://localhost:3005",
 		playgroundUrl: process.env.PLAYGROUND_URL ?? "http://localhost:3003",
 		adminUrl: process.env.ADMIN_URL ?? "http://localhost:3006",

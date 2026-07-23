@@ -118,7 +118,7 @@ export default [
 							position: "before",
 						},
 						{
-							pattern: "@llmgateway/**",
+							pattern: "@betarouter/**",
 							group: "internal",
 							position: "before",
 						},

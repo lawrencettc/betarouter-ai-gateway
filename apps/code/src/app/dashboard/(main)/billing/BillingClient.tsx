@@ -365,7 +365,7 @@ export default function BillingClient({
 				<div className="mt-5 flex gap-3 rounded-lg border border-border/60 bg-muted/40 p-3.5">
 					<Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
 					<p className="text-xs leading-relaxed text-muted-foreground">
-						Your DevPass subscription is billed separately from LLM Gateway
+						Your DevPass subscription is billed separately from betarouter
 						pay-as-you-go credits, so it won&apos;t appear in the standard LLM
 						Gateway billing dashboard. Manage the plan and payment method for
 						DevPass right here.

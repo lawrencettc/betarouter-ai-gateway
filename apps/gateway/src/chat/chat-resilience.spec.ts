@@ -3,8 +3,8 @@ import { beforeAll, describe, expect, test, vi, afterEach } from "vitest";
 import { app } from "@/app.js";
 import { createGatewayApiTestHarness } from "@/test-utils/gateway-api-test-harness.js";
 
-import { redisClient } from "@llmgateway/cache";
-import { cdb, db, eq, tables } from "@llmgateway/db";
+import { redisClient } from "@betarouter/cache";
+import { cdb, db, eq, tables } from "@betarouter/db";
 
 describe("chat resilience under DB outage", () => {
 	const harness = createGatewayApiTestHarness();

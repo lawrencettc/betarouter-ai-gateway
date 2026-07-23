@@ -2,14 +2,14 @@ import { HTTPException } from "hono/http-exception";
 
 import { validateModelOutput } from "@/lib/validate-model-output.js";
 
-import { logger } from "@llmgateway/logger";
+import { logger } from "@betarouter/logger";
 
 import type {
 	ModelDefinition,
 	Provider,
 	ProviderModelMapping,
 	WebSearchTool,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 export interface ValidateModelCapabilitiesOptions {
 	response_format?: {
@@ -295,7 +295,7 @@ export function validateModelCapabilities(
 		// If web_search tool is specifically requested, ensure the model supports it
 		if (webSearchTool && !supportsWebSearch) {
 			throw new HTTPException(400, {
-				message: `Model ${requestedModel} does not support native web search. Remove the web_search tool or use a model that supports it. See https://llmgateway.io/models?features=webSearch for supported models.`,
+				message: `Model ${requestedModel} does not support native web search. Remove the web_search tool or use a model that supports it. See https://betarouter.com/models?features=webSearch for supported models.`,
 			});
 		}
 	}

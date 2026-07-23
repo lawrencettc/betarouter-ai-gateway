@@ -19,9 +19,9 @@ import {
 } from "@/lib/components/popover";
 import { cn } from "@/lib/utils";
 
-import { providerLogoUrls } from "@llmgateway/shared/components";
+import { providerLogoUrls } from "@betarouter/shared/components";
 
-import type { ProviderId } from "@llmgateway/models";
+import type { ProviderId } from "@betarouter/models";
 
 interface Provider {
 	id: string;

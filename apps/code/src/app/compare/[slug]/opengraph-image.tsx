@@ -109,7 +109,7 @@ export default async function CompareOgImage({
 								DevPass
 							</span>
 							<span style={{ color: "#71717a", fontSize: 20 }}>
-								by LLM Gateway
+								by betarouter
 							</span>
 						</div>
 					</div>
@@ -202,7 +202,7 @@ export default async function CompareOgImage({
 						</div>
 					</div>
 					<span style={{ color: "#71717a", fontSize: 20 }}>
-						devpass.llmgateway.io
+						devpass.betarouter.com
 					</span>
 				</div>
 			</div>

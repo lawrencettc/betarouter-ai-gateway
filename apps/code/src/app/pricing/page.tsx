@@ -25,7 +25,7 @@ import {
 	getDevPlanCreditsLimit,
 	HIGH_COST_INPUT_PRICE,
 	HIGH_COST_OUTPUT_PRICE,
-} from "@llmgateway/shared";
+} from "@betarouter/shared";
 
 import type { Metadata } from "next";
 
@@ -59,12 +59,12 @@ const premiumOutputPerM = Math.round(HIGH_COST_OUTPUT_PRICE * 1_000_000);
 const productSchema = {
 	"@context": "https://schema.org",
 	"@type": "Product",
-	name: "DevPass by LLM Gateway",
+	name: "DevPass by betarouter",
 	description:
 		"Flat-rate AI coding plans with access to 200+ models — Claude Opus 4.8, GPT-5.5, Gemini 3.1 Pro, GLM-4.7, and more. Works with Claude Code, OpenCode, Empryo, SoulForge, and any OpenAI-compatible tool.",
 	brand: {
 		"@type": "Brand",
-		name: "LLM Gateway",
+		name: "betarouter",
 	},
 	offers: {
 		"@type": "AggregateOffer",
@@ -78,7 +78,7 @@ const productSchema = {
 				name: "DevPass Lite",
 				price: DEV_PLAN_PRICES.lite,
 				priceCurrency: "USD",
-				url: "https://devpass.llmgateway.io/pricing",
+				url: "https://devpass.betarouter.com/pricing",
 				availability: "https://schema.org/InStock",
 				priceSpecification: {
 					"@type": "UnitPriceSpecification",
@@ -97,7 +97,7 @@ const productSchema = {
 				name: "DevPass Pro",
 				price: DEV_PLAN_PRICES.pro,
 				priceCurrency: "USD",
-				url: "https://devpass.llmgateway.io/pricing",
+				url: "https://devpass.betarouter.com/pricing",
 				availability: "https://schema.org/InStock",
 				priceSpecification: {
 					"@type": "UnitPriceSpecification",
@@ -116,7 +116,7 @@ const productSchema = {
 				name: "DevPass Max",
 				price: DEV_PLAN_PRICES.max,
 				priceCurrency: "USD",
-				url: "https://devpass.llmgateway.io/pricing",
+				url: "https://devpass.betarouter.com/pricing",
 				availability: "https://schema.org/InStock",
 				priceSpecification: {
 					"@type": "UnitPriceSpecification",
@@ -458,7 +458,7 @@ export default function PricingPage() {
 								className="gap-2 px-8"
 							/>
 							<Button size="lg" variant="ghost" asChild>
-								<a href="mailto:contact@llmgateway.io">Talk to us</a>
+								<a href="mailto:contact@betarouter.com">Talk to us</a>
 							</Button>
 						</div>
 					</div>

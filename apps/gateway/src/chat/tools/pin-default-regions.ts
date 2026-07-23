@@ -2,7 +2,7 @@ import {
 	type ProviderDefinition,
 	type ProviderModelMapping,
 	providers,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 /**
  * For providers with `regionConfig.pinDefaultRegion: true`, drop all regional

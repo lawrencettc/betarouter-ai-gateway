@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
 
-import { setQueryTags } from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+import { setQueryTags } from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 
 import { startWorker, stopWorker } from "./worker.js";
 

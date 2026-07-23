@@ -5,15 +5,15 @@ import { z } from "zod";
 import { platformSecretAuth } from "@/lib/platform-secret-auth.js";
 import { getStripe } from "@/routes/payments.js";
 
-import { and, db, eq, shortid, sql, tables } from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+import { and, db, eq, shortid, sql, tables } from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 
 import type { ServerTypes } from "@/vars.js";
 
 /**
  * LLM SDK — developer margin payouts via Stripe Connect.
  *
- * End-user top-ups are collected on LLM Gateway's Stripe account; the developer's
+ * End-user top-ups are collected on betarouter's Stripe account; the developer's
  * markup accrues to `organization.endUserMarginBalance`. These endpoints let the
  * developer onboard an Express connected account and transfer their accrued
  * margin out. Authenticated with the platform secret key.

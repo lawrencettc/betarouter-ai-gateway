@@ -154,13 +154,13 @@ export function ComparisonVercel() {
 						The open Vercel AI Gateway alternative
 					</h2>
 					<p className="text-muted-foreground">
-						Compare LLM Gateway and Vercel AI Gateway features side by side
+						Compare betarouter and Vercel AI Gateway features side by side
 					</p>
 				</div>
 
 				<div className="mb-8 bg-primary/5 dark:bg-primary/10 rounded-lg p-6 border border-primary/20">
 					<h3 className="font-bold text-lg mb-3 text-primary">
-						Why choose LLM Gateway?
+						Why choose betarouter?
 					</h3>
 					<div className="grid md:grid-cols-2 gap-4 text-sm">
 						<div className="flex items-start gap-2">
@@ -200,7 +200,7 @@ export function ComparisonVercel() {
 						<div className="text-center">
 							<div className="border-2 border-primary rounded-lg p-4 bg-background shadow-sm h-full">
 								<h3 className="font-bold text-lg mb-1 text-foreground">
-									LLM Gateway
+									betarouter
 								</h3>
 								<p className="text-sm text-muted-foreground mb-2">
 									OPEN-SOURCE & PORTABLE
@@ -263,7 +263,7 @@ export function ComparisonVercel() {
 				<div className="text-center mt-8">
 					<div className="flex flex-col sm:flex-row gap-4 justify-center">
 						<Button size="lg" className="bg-primary hover:bg-primary/90">
-							<AuthLink href="/signup">Start Free with LLM Gateway</AuthLink>
+							<AuthLink href="/signup">Start Free with betarouter</AuthLink>
 						</Button>
 						<Button size="lg" variant="outline">
 							<Link href="/pricing">View Pricing Details</Link>

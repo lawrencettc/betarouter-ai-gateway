@@ -6,7 +6,7 @@ import { TokenCostCalculatorContent } from "@/components/token-cost-calculator/t
 
 import type { Metadata } from "next";
 
-const PAGE_URL = "https://llmgateway.io/token-cost-calculator";
+const PAGE_URL = "https://betarouter.com/token-cost-calculator";
 
 export const metadata: Metadata = {
 	title: "LLM Token Cost Calculator & Tokenizer",
@@ -32,16 +32,16 @@ export const metadata: Metadata = {
 	openGraph: {
 		type: "website",
 		url: PAGE_URL,
-		title: "LLM Token Cost Calculator & Tokenizer | LLM Gateway",
+		title: "LLM Token Cost Calculator & Tokenizer | betarouter",
 		description:
 			"Paste a prompt to count tokens, then compare cost across GPT-5, Claude, Gemini, and 200+ models at zero markup.",
 		images: [{ url: "/opengraph.png?v=1" }],
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "LLM Token Cost Calculator & Tokenizer | LLM Gateway",
+		title: "LLM Token Cost Calculator & Tokenizer | betarouter",
 		description:
-			"Count your prompt's exact tokens and compare the cost across 200+ LLMs with LLM Gateway.",
+			"Count your prompt's exact tokens and compare the cost across 200+ LLMs with betarouter.",
 		images: ["/opengraph.png?v=1"],
 	},
 };
@@ -54,7 +54,7 @@ const breadcrumbSchema = {
 			"@type": "ListItem",
 			position: 1,
 			name: "Home",
-			item: "https://llmgateway.io",
+			item: "https://betarouter.com",
 		},
 		{
 			"@type": "ListItem",
@@ -73,7 +73,7 @@ const appSchema = {
 	operatingSystem: "Web",
 	url: PAGE_URL,
 	description:
-		"Free tool to count the exact tokens in any prompt with a real BPE tokenizer and compare LLM costs across GPT-5, GPT-4o, Claude, Gemini, and 200+ models, with cheapest-provider routing from LLM Gateway.",
+		"Free tool to count the exact tokens in any prompt with a real BPE tokenizer and compare LLM costs across GPT-5, GPT-4o, Claude, Gemini, and 200+ models, with cheapest-provider routing from betarouter.",
 	offers: {
 		"@type": "Offer",
 		price: "0",
@@ -81,8 +81,8 @@ const appSchema = {
 	},
 	publisher: {
 		"@type": "Organization",
-		name: "LLM Gateway",
-		url: "https://llmgateway.io",
+		name: "betarouter",
+		url: "https://betarouter.com",
 	},
 };
 

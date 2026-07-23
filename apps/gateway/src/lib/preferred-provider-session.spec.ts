@@ -2,14 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createSessionProviderStore } from "./preferred-provider.js";
 
-vi.mock("@llmgateway/cache", () => ({
+vi.mock("@betarouter/cache", () => ({
 	redisClient: {
 		get: vi.fn(),
 		set: vi.fn(),
 	},
 }));
 
-vi.mock("@llmgateway/logger", () => ({
+vi.mock("@betarouter/logger", () => ({
 	logger: {
 		info: vi.fn(),
 		debug: vi.fn(),
@@ -17,7 +17,7 @@ vi.mock("@llmgateway/logger", () => ({
 	},
 }));
 
-const mockCache = await import("@llmgateway/cache");
+const mockCache = await import("@betarouter/cache");
 const redis = mockCache.redisClient;
 
 describe("createSessionProviderStore", () => {

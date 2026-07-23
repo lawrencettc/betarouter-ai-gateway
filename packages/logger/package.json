@@ -1,5 +1,5 @@
 {
-	"name": "@llmgateway/logger",
+	"name": "@betarouter/logger",
 	"version": "0.0.0",
 	"private": true,
 	"license": "SEE LICENSE IN ../../LICENSE",

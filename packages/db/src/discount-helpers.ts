@@ -1,6 +1,6 @@
 import { and, eq, isNull, or } from "drizzle-orm";
 
-import { logger } from "@llmgateway/logger";
+import { logger } from "@betarouter/logger";
 
 import { cdb } from "./cdb.js";
 import { discount as discountTable } from "./schema.js";

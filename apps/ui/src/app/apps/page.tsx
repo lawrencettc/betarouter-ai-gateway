@@ -10,15 +10,15 @@ import { fetchServerData } from "@/lib/server-api";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Apps using LLM Gateway",
+	title: "Apps using betarouter",
 	description:
-		"Browse coding agents and tools on LLM Gateway, ranked by tokens. Claude Code, Cursor, Cline, OpenCode, Aider, and more.",
+		"Browse coding agents and tools on betarouter, ranked by tokens. Claude Code, Cursor, Cline, OpenCode, Aider, and more.",
 	alternates: { canonical: "/apps" },
 	openGraph: {
-		title: "Apps using LLM Gateway",
+		title: "Apps using betarouter",
 		description:
-			"Coding agents and tools running on LLM Gateway, ranked by tokens processed.",
-		url: "https://llmgateway.io/apps",
+			"Coding agents and tools running on betarouter, ranked by tokens processed.",
+		url: "https://betarouter.com/apps",
 		type: "website",
 	},
 };
@@ -117,7 +117,7 @@ export default async function AppsPage() {
 							<h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-balance">
 								Apps shipping with
 								<br />
-								<span className="text-muted-foreground">LLM Gateway</span>
+								<span className="text-muted-foreground">betarouter</span>
 							</h1>
 							<p className="mx-auto mt-6 max-w-2xl text-balance text-base md:text-lg text-muted-foreground leading-relaxed">
 								Real coding agents, real traffic. Every tool below routes
@@ -162,7 +162,7 @@ export default async function AppsPage() {
 									<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
 										x-source: your-app.com
 									</code>{" "}
-									on requests to LLM Gateway.
+									on requests to betarouter.
 								</p>
 								<a
 									href="/docs"

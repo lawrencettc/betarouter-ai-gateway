@@ -14,11 +14,11 @@ export const metadata: Metadata = {
 		"Automatic failover across providers, real-time health monitoring, and intelligent routing. Never go down, even when your providers do.",
 	alternates: { canonical: "/reliability" },
 	openGraph: {
-		title: "Reliability & 99.9999% Uptime | LLM Gateway",
-		images: ["/opengraph.png?v=2"],
+		title: "Reliability & 99.9999% Uptime | betarouter",
+		images: ["/opengraph.png?v=4"],
 		description:
 			"Automatic failover across providers, real-time health monitoring, and intelligent routing. Never go down, even when your providers do.",
-		url: "https://llmgateway.io/reliability",
+		url: "https://betarouter.com/reliability",
 		type: "website",
 	},
 };

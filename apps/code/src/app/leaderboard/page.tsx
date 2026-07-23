@@ -10,7 +10,7 @@ import { fetchLeaderboard } from "@/lib/leaderboard";
 
 import type { Metadata } from "next";
 
-const BASE_URL = "https://devpass.llmgateway.io";
+const BASE_URL = "https://devpass.betarouter.com";
 
 export const revalidate = 300;
 

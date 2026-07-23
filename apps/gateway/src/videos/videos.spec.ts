@@ -8,7 +8,7 @@ import {
 	setMockVideoStatus,
 } from "@/test-utils/mock-openai-server.js";
 
-import { db, eq, tables } from "@llmgateway/db";
+import { db, eq, tables } from "@betarouter/db";
 
 describe("videos", () => {
 	const harness = createGatewayApiTestHarness();

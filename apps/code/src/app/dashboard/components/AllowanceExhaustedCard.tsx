@@ -18,7 +18,7 @@ interface AllowanceExhaustedCardProps {
 // used. Passes are pointless at that point (they lift the weekly premium cap
 // but never add credits), so instead of selling a no-op this card promotes
 // the one thing that actually unlocks more coding: a tier upgrade — or, on
-// the top tier, PAYG credits on the main LLM Gateway dashboard.
+// the top tier, PAYG credits on the main betarouter dashboard.
 export default function AllowanceExhaustedCard({
 	tier,
 	organizationId,
@@ -81,9 +81,9 @@ export default function AllowanceExhaustedCard({
 						<p className="mt-2 max-w-md text-sm text-muted-foreground">
 							You&apos;re on the biggest DevPass plan and this cycle&apos;s
 							allowance is fully used. Keep coding with pay-as-you-go credits on
-							LLM Gateway — it works with the same coding agents you&apos;ve
-							been using. All it takes is swapping in a Gateway API key and
-							buying credits: no weekly caps, pay only for what you use.
+							betarouter — it works with the same coding agents you&apos;ve been
+							using. All it takes is swapping in a Gateway API key and buying
+							credits: no weekly caps, pay only for what you use.
 						</p>
 						<div className="mt-3">
 							<Button size="sm" asChild onClick={trackClick}>
@@ -92,7 +92,7 @@ export default function AllowanceExhaustedCard({
 									target="_blank"
 									rel="noopener noreferrer"
 								>
-									Get PAYG credits on llmgateway.io
+									Get PAYG credits on betarouter.com
 									<ArrowUpRight className="ml-1.5 h-4 w-4" />
 								</a>
 							</Button>
@@ -107,7 +107,7 @@ export default function AllowanceExhaustedCard({
 				className="select-none overflow-hidden whitespace-nowrap border-t border-dashed border-stone-300/80 px-4 pb-1.5 pt-1 font-mono text-[9px] tracking-[0.3em] text-stone-400/80 dark:border-stone-700/80 dark:text-stone-600"
 			>
 				{nextPlan ? "UP" : "PG"}
-				{`<`}LLMGATEWAY{`<<`}
+				{`<`}BETAROUTER{`<<`}
 				{nextPlan ? `UPGRADE<${nextPlan.tier.toUpperCase()}` : "PAYG<CREDITS"}
 				{`<<`}
 				{serial}

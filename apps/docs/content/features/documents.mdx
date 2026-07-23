@@ -8,18 +8,18 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 # Document Reading
 
-LLMGateway supports sending documents (PDFs and other file types) to document-capable models using OpenAI's `file` content block format. The gateway forwards the document to the underlying provider so the model can read and reason over its contents.
+betarouter supports sending documents (PDFs and other file types) to document-capable models using OpenAI's `file` content block format. The gateway forwards the document to the underlying provider so the model can read and reason over its contents.
 
 ## Document-Capable Models
 
-Document input is currently supported on Google Gemini models via Google AI Studio. You can find document-capable models on the [models page with the document filter](https://llmgateway.io/models?filters=1&document=true).
+Document input is currently supported on Google Gemini models via Google AI Studio. You can find document-capable models on the [models page with the document filter](https://betarouter.com/models?filters=1&document=true).
 
 ## Sending a Document
 
 Add a `file` content block to a user message. The `file_data` field must be a base64-encoded data URL that includes the document's MIME type.
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
+curl -X POST "https://api.betarouter.com/v1/chat/completions" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -97,7 +97,7 @@ Then pass `fileData` as the `file.file_data` value in your request.
 You can include multiple `file` blocks in a single message, optionally mixed with text and image content:
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
+curl -X POST "https://api.betarouter.com/v1/chat/completions" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

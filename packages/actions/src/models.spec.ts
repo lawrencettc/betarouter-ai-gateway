@@ -1,18 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { metricsKey } from "@llmgateway/db";
+import { metricsKey } from "@betarouter/db";
 import {
 	models,
 	type ModelDefinition,
 	type ProviderModelMapping,
 	type BaseMessage,
 	type OpenAIRequestBody,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 import {
 	applyRoutingPreference,
 	buildProviderPriorityDefaults,
 	resolveRoutingConfig,
-} from "@llmgateway/shared/routing-config";
+} from "@betarouter/shared/routing-config";
 
 import {
 	getCheapestFromAvailableProviders,

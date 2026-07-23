@@ -1,11 +1,10 @@
+import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
 import { streamText } from "ai";
 import { cookies } from "next/headers";
 
 import { catalog } from "@/lib/canvas/catalog";
 import { PLAYGROUND_KEY_COOKIE_NAME } from "@/lib/constants";
 import { getUser } from "@/lib/getUser";
-
-import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
 
 export const maxDuration = 300;
 
@@ -59,13 +58,13 @@ export async function POST(req: Request) {
 		process.env.GATEWAY_URL ??
 		(process.env.NODE_ENV === "development"
 			? "http://localhost:4001/v1"
-			: "https://api.llmgateway.io/v1");
+			: "https://api.betarouter.com/v1");
 
 	const llmgateway = createLLMGateway({
 		apiKey: finalApiKey,
 		baseURL: gatewayUrl,
 		headers: {
-			"x-source": "chat.llmgateway.io",
+			"x-source": "chat.betarouter.com",
 		},
 	});
 

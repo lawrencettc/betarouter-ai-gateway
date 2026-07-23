@@ -14,7 +14,7 @@ import { allUseCases } from "content-collections";
 import type { UseCase } from "content-collections";
 import type { Metadata } from "next";
 
-const BASE_URL = "https://llmgateway.io";
+const BASE_URL = "https://betarouter.com";
 
 interface UseCasePageProps {
 	params: Promise<{ slug: string }>;

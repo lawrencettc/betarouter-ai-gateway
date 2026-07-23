@@ -22,7 +22,7 @@ export const modelCategoryContent = {
 			"Models with strong character consistency, creative prose, and long context windows — compared by price and context size",
 		intro: [
 			"A good roleplay model needs three things: prose that stays in character over hundreds of messages, a context window large enough to hold character cards and long chat histories, and per-token pricing that doesn't punish long sessions. This page lists the models the roleplay community actually uses — from budget favorites like DeepSeek and GLM to premium options like Claude — with live pricing and context sizes for every provider.",
-			"Every model here is available through the same OpenAI-compatible endpoint, so you can plug LLM Gateway into SillyTavern, RisuAI, or your own frontend with one API key, switch models mid-conversation, and fall back automatically when a provider has an outage.",
+			"Every model here is available through the same OpenAI-compatible endpoint, so you can plug betarouter into SillyTavern, RisuAI, or your own frontend with one API key, switch models mid-conversation, and fall back automatically when a provider has an outage.",
 		],
 		faqs: [
 			{
@@ -33,7 +33,7 @@ export const modelCategoryContent = {
 			{
 				question: "Can I use these models with SillyTavern or my own frontend?",
 				answer:
-					"Yes. LLM Gateway exposes an OpenAI-compatible chat completions API, so any frontend that supports a custom base URL — SillyTavern, RisuAI, Agnai, or your own app — works by pointing it at the gateway and using your LLM Gateway API key.",
+					"Yes. betarouter exposes an OpenAI-compatible chat completions API, so any frontend that supports a custom base URL — SillyTavern, RisuAI, Agnai, or your own app — works by pointing it at the gateway and using your betarouter API key.",
 			},
 			{
 				question: "Which roleplay models have the largest context windows?",
@@ -73,7 +73,7 @@ export const modelCategoryContent = {
 				question:
 					"Can I use these models with coding agents like Cline or Aider?",
 				answer:
-					"Yes. Any agent that supports an OpenAI-compatible endpoint or custom base URL can route through LLM Gateway with one API key — that includes Cline, Aider, Roo Code, and devpass-code — so you can mix models per task and see per-agent cost analytics.",
+					"Yes. Any agent that supports an OpenAI-compatible endpoint or custom base URL can route through betarouter with one API key — that includes Cline, Aider, Roo Code, and devpass-code — so you can mix models per task and see per-agent cost analytics.",
 			},
 			{
 				question: "Do coding models need tool calling?",
@@ -261,7 +261,7 @@ export const modelCategoryContent = {
 			"Open-weight models — Llama, DeepSeek, Qwen, GLM, Kimi, GPT-OSS, Gemma, and more — served through one API",
 		intro: [
 			"Open-weight models have closed most of the gap with proprietary frontiers: DeepSeek V4, Qwen3.7, GLM-5, Kimi K2, and MiniMax M3 sit near the top of real-world leaderboards, joined by OpenAI's GPT-OSS and Google's Gemma releases. Their weights are public — but running a 200B+ parameter model yourself means serious GPU infrastructure.",
-			"This page lists open-weight models served by hosted providers, so you get the openness — inspectable weights, no lock-in, the option to self-host later — with API convenience. LLM Gateway itself is open source (AGPLv3) and self-hostable, so the whole stack can run on your terms.",
+			"This page lists open-weight models served by hosted providers, so you get the openness — inspectable weights, no lock-in, the option to self-host later — with API convenience. betarouter itself is open source (AGPLv3) and self-hostable, so the whole stack can run on your terms.",
 		],
 		faqs: [
 			{
@@ -295,7 +295,7 @@ export const modelCategoryContent = {
 			"Models priced at $5+ per million input tokens or $15+ per million output tokens — the exact list used for DevPass fair-use limits",
 		intro: [
 			"Premium is a pricing classification, not a curated list: a model lands on this page when any of its providers charges at least $5 per million input tokens or $15 per million output tokens. The classification is computed directly from catalogue prices, so this page always shows exactly which models are premium right now — every model not listed here is standard.",
-			"The distinction matters for DevPass coding plans, where premium models are subject to a weekly fair-use allowance (a percentage of the plan's monthly credits) on top of the normal credit balance. When you call the LLM Gateway API directly with pay-as-you-go credits, premium models have no extra cap and no markup — you pay the same per-token provider prices shown here.",
+			"The distinction matters for DevPass coding plans, where premium models are subject to a weekly fair-use allowance (a percentage of the plan's monthly credits) on top of the normal credit balance. When you call the betarouter API directly with pay-as-you-go credits, premium models have no extra cap and no markup — you pay the same per-token provider prices shown here.",
 		],
 		faqs: [
 			{
@@ -304,9 +304,9 @@ export const modelCategoryContent = {
 					"Pricing alone. A model is premium when at least one of its providers charges $5 or more per million input tokens, or $15 or more per million output tokens. There is no hand-picked list — the classification is recomputed from the live model catalogue, so it updates automatically when prices change.",
 			},
 			{
-				question: "Do premium models cost extra on LLM Gateway?",
+				question: "Do premium models cost extra on betarouter?",
 				answer:
-					"No. LLM Gateway charges the same per-token provider prices for premium models as for any other model, with no markup. The premium classification only affects DevPass fair-use limits — it never changes what a request costs.",
+					"No. betarouter charges the same per-token provider prices for premium models as for any other model, with no markup. The premium classification only affects DevPass fair-use limits — it never changes what a request costs.",
 			},
 			{
 				question: "How do premium models work on DevPass plans?",

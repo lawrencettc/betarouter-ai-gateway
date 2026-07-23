@@ -1,4 +1,4 @@
-import type { BlockedTermsRuleConfig, GuardrailAction } from "@llmgateway/db";
+import type { BlockedTermsRuleConfig, GuardrailAction } from "@betarouter/db";
 
 export interface BlockedTermsResult {
 	passed: boolean;

@@ -1,6 +1,6 @@
-# LLM Gateway
+# betarouter
 
-LLM Gateway is an open-source API gateway for Large Language Models (LLMs). It acts as a middleware between your applications and various LLM providers, allowing you to:
+betarouter is an open-source API gateway for Large Language Models (LLMs). It acts as a middleware between your applications and various LLM providers, allowing you to:
 
 - Route requests to multiple LLM providers (OpenAI, Anthropic, Google Vertex AI, and others)
 - Manage API keys for different providers in one place
@@ -16,10 +16,10 @@ LLM Gateway is an open-source API gateway for Large Language Models (LLMs). It a
 
 ## Getting Started
 
-You can use LLM Gateway in two ways:
+You can use betarouter in two ways:
 
-- **Hosted Version**: For immediate use without setup, visit [llmgateway.io](https://llmgateway.io) to create an account and get an API key.
-- **Self-Hosted**: Deploy LLM Gateway on your own infrastructure for complete control over your data and configuration.
+- **Hosted Version**: For immediate use without setup, visit [betarouter.com](https://betarouter.com) to create an account and get an API key.
+- **Self-Hosted**: Deploy betarouter on your own infrastructure for complete control over your data and configuration.
 
 ### Self-Hosted With Docker
 
@@ -53,10 +53,10 @@ docker run -d \
   ghcr.io/theopenco/llmgateway-unified:latest
 ```
 
-### Using LLM Gateway API
+### Using betarouter API
 
 ```bash
-curl -X POST https://api.llmgateway.io/v1/chat/completions \
+curl -X POST https://api.betarouter.com/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -d '{
@@ -105,7 +105,7 @@ curl -X POST https://api.llmgateway.io/v1/chat/completions \
 
 ## License
 
-LLMGateway is available under a dual license:
+betarouter is available under a dual license:
 
 - **Open Source**: Core functionality is licensed under AGPLv3 - see the [LICENSE](LICENSE) file for details.
 - **Enterprise**: Commercial features in the `ee/` directory require an Enterprise license - see [ee/LICENSE](ee/LICENSE) for details.
@@ -119,4 +119,4 @@ LLMGateway is available under a dual license:
 - Priority support
 - And more to be defined
 
-For enterprise licensing, please contact us at contact@llmgateway.io
+For enterprise licensing, please contact us at contact@betarouter.com

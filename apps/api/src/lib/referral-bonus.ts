@@ -1,4 +1,4 @@
-import { db } from "@llmgateway/db";
+import { db } from "@betarouter/db";
 
 const DEFAULT_REFERRAL_BONUS_PERCENT = 50;
 

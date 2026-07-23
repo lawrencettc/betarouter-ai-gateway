@@ -6,7 +6,7 @@ title: "Referrals, Cache Controls & Product Updates"
 summary: "Share a referral link and reward new signups, toggle provider cache writes per project, see cache and audio costs in your logs, plus a faster Chat and more."
 image:
   src: "/changelog/referrals-cache-controls-product-updates.png"
-  alt: "Referrals, cache controls and product updates on LLM Gateway"
+  alt: "Referrals, cache controls and product updates on betarouter"
   width: 1536
   height: 1024
 ---
@@ -18,7 +18,7 @@ A roundup of everything else that shipped recently — a new referral program, f
 Every organization now has a shareable referral link. Send it to a friend and they get a bonus credit on their first top-up.
 
 ```text
-https://llmgateway.io/ref/<your-org-id>
+https://betarouter.com/ref/<your-org-id>
 ```
 
 - Grab your link from the dashboard and share it anywhere
@@ -47,4 +47,4 @@ Request logs now break out **cache-write** and **audio** tokens and cost separat
 
 ---
 
-**[Open your dashboard →](https://llmgateway.io/dashboard)** | **[Try Chat →](https://chat.llmgateway.io)** | **[Talk to sales →](https://llmgateway.io/enterprise)**
+**[Open your dashboard →](https://betarouter.com/dashboard)** | **[Try Chat →](https://chat.betarouter.com)** | **[Talk to sales →](https://betarouter.com/enterprise)**

@@ -16,7 +16,7 @@ We recently moved our Next.js deployments to Google Cloud Platform. Here's why a
 
 ## Why GCP?
 
-LLM Gateway is a full-stack application with multiple APIs and frontends. Deploying everything through Vercel meant adding another tool to our stack—one more dashboard, one more set of credentials, one more thing to manage.
+betarouter is a full-stack application with multiple APIs and frontends. Deploying everything through Vercel meant adding another tool to our stack—one more dashboard, one more set of credentials, one more thing to manage.
 
 By running on GCP directly, we consolidate our infrastructure. Our APIs, databases, and frontends all live in the same place.
 

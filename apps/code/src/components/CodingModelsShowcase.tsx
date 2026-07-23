@@ -15,12 +15,12 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
-import { models, type ModelDefinition } from "@llmgateway/models";
-import { isPremiumModel } from "@llmgateway/shared";
+import { models, type ModelDefinition } from "@betarouter/models";
+import { isPremiumModel } from "@betarouter/shared";
 import {
 	getModelFamilyIcon,
 	OPEN_WEIGHT_LAB_FAMILIES,
-} from "@llmgateway/shared/components";
+} from "@betarouter/shared/components";
 
 export type CodingModelsView = "recommended" | "standard" | "premium" | "all";
 
@@ -166,7 +166,7 @@ const TAB_DEFINITIONS: {
 		value: "all",
 		label: "All",
 		icon: List,
-		description: "Every coding-capable model on LLM Gateway.",
+		description: "Every coding-capable model on betarouter.",
 	},
 ];
 

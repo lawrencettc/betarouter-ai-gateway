@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { DashboardThemeProvider } from "@/components/dashboard-theme-provider";
 import { getUser } from "@/lib/getUser";
 
 import type { Metadata } from "next";
@@ -25,5 +26,5 @@ export default async function DashboardLayout({
 		return redirect("/login");
 	}
 
-	return await children;
+	return <DashboardThemeProvider>{await children}</DashboardThemeProvider>;
 }

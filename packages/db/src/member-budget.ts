@@ -3,7 +3,7 @@ import type { ApiKeyPeriodDurationUnit } from "./api-key-period-limit.js";
 export {
 	validateApiKeyLimitsWithinMemberBudget,
 	type ApiKeyLimitConstraints,
-} from "@llmgateway/shared";
+} from "@betarouter/shared";
 
 /**
  * The per-member budget fields (config columns on user_organization), and the

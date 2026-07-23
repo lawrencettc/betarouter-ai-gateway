@@ -3,26 +3,26 @@ import { HeroRSC } from "@/components/landing/hero-rsc";
 import { ProvidersGrid } from "@/components/providers/providers-grid";
 import { JsonLd } from "@/components/seo/json-ld";
 
-import { providers as providerDefinitions } from "@llmgateway/models";
+import { providers as providerDefinitions } from "@betarouter/models";
 
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
 	title: "LLM Providers",
 	description:
-		"Browse 40+ LLM providers on LLM Gateway — OpenAI, Anthropic, Google, Groq, Mistral, DeepSeek, xAI, and more. One API for all of them.",
+		"Browse 40+ LLM providers on betarouter — OpenAI, Anthropic, Google, Groq, Mistral, DeepSeek, xAI, and more. One API for all of them.",
 	alternates: { canonical: "/providers" },
 	openGraph: {
-		title: "LLM Providers | LLM Gateway",
+		title: "LLM Providers | betarouter",
 		description:
-			"Browse 40+ LLM providers on LLM Gateway — OpenAI, Anthropic, Google, Groq, Mistral, DeepSeek, xAI, and more.",
-		url: "https://llmgateway.io/providers",
+			"Browse 40+ LLM providers on betarouter — OpenAI, Anthropic, Google, Groq, Mistral, DeepSeek, xAI, and more.",
+		url: "https://betarouter.com/providers",
 		type: "website",
 	},
 };
 
 const listedProviders = providerDefinitions.filter(
-	(provider) => provider.name !== "LLM Gateway",
+	(provider) => provider.name !== "betarouter",
 );
 
 const collectionSchema = {
@@ -30,15 +30,15 @@ const collectionSchema = {
 	"@type": "CollectionPage",
 	name: "LLM Providers",
 	description:
-		"Browse the LLM providers available through LLM Gateway — OpenAI, Anthropic, Google, Groq, Mistral, DeepSeek, xAI, and more. One API for all of them.",
-	url: "https://llmgateway.io/providers",
+		"Browse the LLM providers available through betarouter — OpenAI, Anthropic, Google, Groq, Mistral, DeepSeek, xAI, and more. One API for all of them.",
+	url: "https://betarouter.com/providers",
 	mainEntity: {
 		"@type": "ItemList",
 		numberOfItems: listedProviders.length,
 		itemListElement: listedProviders.map((provider, index) => ({
 			"@type": "ListItem",
 			position: index + 1,
-			url: `https://llmgateway.io/providers/${provider.id}`,
+			url: `https://betarouter.com/providers/${provider.id}`,
 			name: provider.name,
 		})),
 	},
@@ -52,13 +52,13 @@ const breadcrumbSchema = {
 			"@type": "ListItem",
 			position: 1,
 			name: "Home",
-			item: "https://llmgateway.io",
+			item: "https://betarouter.com",
 		},
 		{
 			"@type": "ListItem",
 			position: 2,
 			name: "Providers",
-			item: "https://llmgateway.io/providers",
+			item: "https://betarouter.com/providers",
 		},
 	],
 };

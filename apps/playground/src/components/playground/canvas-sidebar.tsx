@@ -36,6 +36,7 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { Wordmark } from "@/components/ui/wordmark";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useUser } from "@/hooks/useUser";
 import { clearLastUsedProjectCookiesAction } from "@/lib/actions/project";
@@ -86,7 +87,7 @@ export function CanvasSidebar({
 					router.push(
 						process.env.NODE_ENV === "development"
 							? "http://localhost:3003/login"
-							: "https://chat.llmgateway.io/login",
+							: "https://chat.betarouter.com/login",
 					);
 				},
 			},
@@ -114,7 +115,9 @@ export function CanvasSidebar({
 							prefetch={true}
 						>
 							<Logo className="h-10 w-10" />
-							<h1 className="text-xl font-semibold">LLM Gateway</h1>
+							<h1 className="text-xl font-semibold">
+								<Wordmark />
+							</h1>
 							<Badge>Canvas</Badge>
 						</Link>
 					</div>
@@ -134,7 +137,9 @@ export function CanvasSidebar({
 							prefetch={true}
 						>
 							<Logo className="h-10 w-10" />
-							<h1 className="text-xl font-semibold">LLM Gateway</h1>
+							<h1 className="text-xl font-semibold">
+								<Wordmark />
+							</h1>
 							<Badge>Canvas</Badge>
 						</Link>
 						<div className="w-full rounded-md border p-4 text-sm">
@@ -165,13 +170,13 @@ export function CanvasSidebar({
 			<SidebarHeader>
 				<SidebarMenu>
 					<SidebarMenuItem>
-						<SidebarMenuButton size="lg" asChild tooltip="LLM Gateway">
+						<SidebarMenuButton size="lg" asChild tooltip="betarouter">
 							<Link href={withOrg("/")} prefetch={true}>
 								<div className="flex aspect-square size-8 items-center justify-center">
 									<Logo className="size-6" />
 								</div>
 								<span className="text-lg font-bold tracking-tight">
-									LLM Gateway
+									<Wordmark />
 								</span>
 								<Badge
 									variant="secondary"
@@ -320,7 +325,7 @@ export function CanvasSidebar({
 										href={
 											process.env.NODE_ENV === "development"
 												? "http://localhost:3002/dashboard"
-												: "https://llmgateway.io/dashboard"
+												: "https://betarouter.com/dashboard"
 										}
 										target="_blank"
 										rel="noopener noreferrer"

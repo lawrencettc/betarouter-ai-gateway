@@ -11,10 +11,10 @@ import {
 } from "@/lib/components/select";
 import { Switch } from "@/lib/components/switch";
 
-import { validateApiKeyLimitsWithinMemberBudget } from "@llmgateway/shared";
+import { validateApiKeyLimitsWithinMemberBudget } from "@betarouter/shared";
 
 import type { ApiKey } from "@/lib/types";
-import type { ApiKeyLimitConstraints } from "@llmgateway/shared";
+import type { ApiKeyLimitConstraints } from "@betarouter/shared";
 
 export type MemberBudgetConstraint = ApiKeyLimitConstraints;
 
@@ -442,7 +442,7 @@ export function ApiKeyLimitFields({
 			</div>
 
 			<div className="text-muted-foreground text-sm">
-				Usage includes both usage from LLM Gateway credits and usage from your
+				Usage includes both usage from betarouter credits and usage from your
 				own provider keys when applicable.
 			</div>
 		</div>

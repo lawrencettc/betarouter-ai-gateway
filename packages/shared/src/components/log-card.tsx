@@ -47,7 +47,7 @@ import {
 import {
 	formatServiceTierMultiplier,
 	getServiceTier,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 // ---------------------------------------------------------------------------
 // Types

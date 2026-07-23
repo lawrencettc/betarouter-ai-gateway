@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { UnifiedFinishReason } from "@llmgateway/db";
+import { UnifiedFinishReason } from "@betarouter/db";
 
 import {
 	calculateDataStorageCost,

@@ -170,7 +170,7 @@ export function MasterKeysList({ organizationId }: MasterKeysListProps) {
 						</div>
 						{limitReached && (
 							<div className="text-xs text-amber-600 font-medium">
-								Limit reached — contact us at contact@llmgateway.io to unlock
+								Limit reached — contact us at contact@betarouter.com to unlock
 								more
 							</div>
 						)}

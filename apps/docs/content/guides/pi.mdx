@@ -1,6 +1,6 @@
 ---
 title: Pi Integration
-description: Use any model with Pi coding agent through LLM Gateway — GPT-5.5, Gemini, Claude, DeepSeek, and 200+ others in your terminal.
+description: Use any model with Pi coding agent through betarouter — GPT-5.5, Gemini, Claude, DeepSeek, and 200+ others in your terminal.
 image: guides/pi/config.png
 icon: PiAgent
 ---
@@ -8,23 +8,23 @@ icon: PiAgent
 import { Step, Steps } from "fumadocs-ui/components/steps";
 import { Callout } from "fumadocs-ui/components/callout";
 
-[Pi](https://pi.dev) is a minimal terminal-based coding agent that gives an AI full access to read, write, edit, and run shell commands in your project. By pointing Pi at LLM Gateway, you can use any of our 200+ models — GPT-5.5, Gemini 3.1 Pro, Claude Opus 4.7, DeepSeek V4, and more — with full cost tracking and caching.
+[Pi](https://pi.dev) is a minimal terminal-based coding agent that gives an AI full access to read, write, edit, and run shell commands in your project. By pointing Pi at betarouter, you can use any of our 200+ models — GPT-5.5, Gemini 3.1 Pro, Claude Opus 4.7, DeepSeek V4, and more — with full cost tracking and caching.
 
 ## Prerequisites
 
-- An LLM Gateway account with an API key
+- An betarouter account with an API key
 - Pi installed (`curl -fsSL https://pi.dev/install.sh | bash`)
 - Basic terminal familiarity
 
 ## Setup
 
-Pi uses a `models.json` configuration file to define providers and models. We'll add LLM Gateway as a custom provider.
+Pi uses a `models.json` configuration file to define providers and models. We'll add betarouter as a custom provider.
 
 <Steps>
 <Step>
 ### Get Your API Key
 
-1. Log in to your [LLM Gateway dashboard](https://llmgateway.io/dashboard)
+1. Log in to your [betarouter dashboard](https://betarouter.com/dashboard)
 2. Navigate to **API Keys** section
 3. Create a new API key and copy the key
 
@@ -33,13 +33,13 @@ Pi uses a `models.json` configuration file to define providers and models. We'll
 <Step>
 ### Configure Pi
 
-Open (or create) the Pi models configuration file at `~/.pi/agent/models.json` and add LLM Gateway as a provider:
+Open (or create) the Pi models configuration file at `~/.pi/agent/models.json` and add betarouter as a provider:
 
 ```json
 {
 	"providers": {
-		"llmgateway": {
-			"baseUrl": "https://api.llmgateway.io/v1",
+		"betarouter": {
+			"baseUrl": "https://api.betarouter.com/v1",
 			"api": "openai-completions",
 			"apiKey": "llmgtwy_your_api_key_here",
 			"models": [
@@ -69,9 +69,9 @@ Replace `llmgtwy_your_api_key_here` with your actual API key from Step 1.
 
 1. Run `pi` in any project directory
 2. Type `/model` to open the model selector
-3. Select your LLM Gateway model from the list
+3. Select your betarouter model from the list
 
-All requests now route through LLM Gateway with full cost tracking.
+All requests now route through betarouter with full cost tracking.
 
 </Step>
 
@@ -84,22 +84,22 @@ Ask Pi to do something in your project to verify everything works:
 > hello
 ```
 
-![Pi Test with LLM Gateway](/guides/pi/test.png)
+![Pi Test with betarouter](/guides/pi/test.png)
 
-You should see the response streaming from your chosen model. Check your [LLM Gateway dashboard](https://llmgateway.io/dashboard) to confirm the request appears in your usage logs.
+You should see the response streaming from your chosen model. Check your [betarouter dashboard](https://betarouter.com/dashboard) to confirm the request appears in your usage logs.
 
 </Step>
 </Steps>
 
 ## Adding More Models
 
-You can add any model from the [LLM Gateway models page](https://llmgateway.io/models) to your `models.json`. Just add entries to the `models` array:
+You can add any model from the [betarouter models page](https://betarouter.com/models) to your `models.json`. Just add entries to the `models` array:
 
 ```json
 {
 	"providers": {
-		"llmgateway": {
-			"baseUrl": "https://api.llmgateway.io/v1",
+		"betarouter": {
+			"baseUrl": "https://api.betarouter.com/v1",
 			"api": "openai-completions",
 			"apiKey": "llmgtwy_your_api_key_here",
 			"models": [
@@ -128,8 +128,8 @@ Instead of hardcoding your key, you can reference an environment variable:
 ```json
 {
 	"providers": {
-		"llmgateway": {
-			"baseUrl": "https://api.llmgateway.io/v1",
+		"betarouter": {
+			"baseUrl": "https://api.betarouter.com/v1",
 			"api": "openai-completions",
 			"apiKey": "LLM_GATEWAY_API_KEY",
 			"models": [{ "id": "gpt-5.5", "name": "GPT-5.5" }]
@@ -149,26 +149,26 @@ export LLM_GATEWAY_API_KEY=llmgtwy_your_api_key_here
 ### Authentication Errors
 
 - Verify your API key is correct in `~/.pi/agent/models.json`
-- Check that the base URL is set to `https://api.llmgateway.io/v1`
-- Ensure your LLM Gateway account has sufficient credits
+- Check that the base URL is set to `https://api.betarouter.com/v1`
+- Ensure your betarouter account has sufficient credits
 
 ### Model Not Found
 
-- Verify the model ID exists on the [models page](https://llmgateway.io/models)
+- Verify the model ID exists on the [models page](https://betarouter.com/models)
 - Model IDs are case-sensitive — copy them exactly as shown
 
 ### Connection Issues
 
 - Check your internet connection
 - Ensure `api` is set to `"openai-completions"` (not `"openai-responses"`)
-- Monitor your usage in the LLM Gateway dashboard
+- Monitor your usage in the betarouter dashboard
 
 <Callout type="info">
-	Need help? Join our [Discord community](https://llmgateway.io/discord) for
+	Need help? Join our [Discord community](https://betarouter.com/discord) for
 	support and troubleshooting assistance.
 </Callout>
 
-## Benefits of Using LLM Gateway with Pi
+## Benefits of Using betarouter with Pi
 
 - **Any Model**: Use GPT-5.5, Claude Opus 4.7, Gemini 3.1 Pro, DeepSeek V4, or 200+ others
 - **Cost Tracking**: Every Pi request appears in your dashboard with token counts and costs

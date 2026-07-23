@@ -5,7 +5,7 @@ import { HTTPException } from "hono/http-exception";
 import { buildOrgHistoryFilter } from "@/utils/org-history-filter.js";
 import { getOrCreateChatOrg } from "@/utils/personal-org.js";
 
-import { db, tables, shortid, desc, eq, and, sql } from "@llmgateway/db";
+import { db, tables, shortid, desc, eq, and, sql } from "@betarouter/db";
 
 import type { ServerTypes } from "@/vars.js";
 

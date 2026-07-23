@@ -1,4 +1,4 @@
-import { db, type tables } from "@llmgateway/db";
+import { db, type tables } from "@betarouter/db";
 
 import { findDefaultOrganization } from "./default-org.js";
 

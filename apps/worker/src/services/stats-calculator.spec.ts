@@ -16,7 +16,7 @@ import {
 	eq,
 	and,
 	user,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 import {
 	calculateMinutelyHistory,

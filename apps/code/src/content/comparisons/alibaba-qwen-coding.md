@@ -61,7 +61,7 @@ For a Qwen-first developer who wants maximum volume, it's a serious option.
 
 ## What is DevPass?
 
-DevPass by LLM Gateway is a flat-rate plan covering **200+ models behind one key** — Qwen3-Coder and Qwen3-Max included, plus Claude Opus 4.8, GPT-5.5, Gemini 3.1 Pro and the other open-weight coders. You get a monthly usage allowance (about $3 of model usage per $1 paid), a per-request cost and latency dashboard, and the freedom to switch between any model mid-session.
+DevPass by betarouter is a flat-rate plan covering **200+ models behind one key** — Qwen3-Coder and Qwen3-Max included, plus Claude Opus 4.8, GPT-5.5, Gemini 3.1 Pro and the other open-weight coders. You get a monthly usage allowance (about $3 of model usage per $1 paid), a per-request cost and latency dashboard, and the freedom to switch between any model mid-session.
 
 ## Qwen-first volume vs full coverage
 

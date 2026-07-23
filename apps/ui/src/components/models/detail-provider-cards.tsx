@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { ModelCtaButton } from "@/components/models/model-cta-button";
 import { TooltipProvider } from "@/lib/components/tooltip";
 
-import { getProviderIcon } from "@llmgateway/shared/components";
+import { getProviderIcon } from "@betarouter/shared/components";
 
 import { ProviderSection } from "./model-card";
 

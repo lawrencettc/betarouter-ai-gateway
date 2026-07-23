@@ -116,7 +116,7 @@ export function RoutingStrategySettings({
 					more than one. Individual requests can override this with the{" "}
 					<code className="text-xs">routing</code> field.{" "}
 					<a
-						href="https://docs.llmgateway.io/features/routing#routing-strategy"
+						href="https://docs.betarouter.com/features/routing#routing-strategy"
 						target="_blank"
 						rel="noreferrer"
 						className="underline underline-offset-4"

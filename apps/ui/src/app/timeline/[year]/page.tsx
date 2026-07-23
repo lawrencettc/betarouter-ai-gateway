@@ -22,7 +22,7 @@ import {
 
 import type { Metadata } from "next";
 
-const BASE_URL = "https://llmgateway.io";
+const BASE_URL = "https://betarouter.com";
 
 interface YearPageProps {
 	params: Promise<{ year: string }>;
@@ -38,7 +38,7 @@ export async function generateMetadata({
 	}
 
 	const title = `LLMs Released in ${year} — AI Model Release Dates`;
-	const description = `Every large language model released in ${year}: provider release dates for GPT, Claude, Gemini, Llama, Mistral, DeepSeek and more, with the date each was added to LLM Gateway.`;
+	const description = `Every large language model released in ${year}: provider release dates for GPT, Claude, Gemini, Llama, Mistral, DeepSeek and more, with the date each was added to betarouter.`;
 
 	return {
 		title,
@@ -105,11 +105,11 @@ export default async function TimelineYearPage({ params }: YearPageProps) {
 		"@context": "https://schema.org",
 		"@type": "Dataset",
 		name: `LLM releases in ${year}`,
-		description: `Large language models released in ${year}, with provider release dates and the date each was added to LLM Gateway.`,
+		description: `Large language models released in ${year}, with provider release dates and the date each was added to betarouter.`,
 		url: `${BASE_URL}/timeline/${year}`,
 		isPartOf: { "@type": "Dataset", "@id": `${BASE_URL}/timeline` },
 		temporalCoverage: `${year}-01-01/${year}-12-31`,
-		creator: { "@type": "Organization", name: "LLM Gateway", url: BASE_URL },
+		creator: { "@type": "Organization", name: "betarouter", url: BASE_URL },
 		isAccessibleForFree: true,
 		...(summary.latestInYearAt
 			? { dateModified: summary.latestInYearAt.slice(0, 10) }
@@ -205,8 +205,8 @@ export default async function TimelineYearPage({ params }: YearPageProps) {
 								{summary.count} large language{" "}
 								{summary.count === 1 ? "model" : "models"} from{" "}
 								{summary.providerCount} providers shipped in {year} and are
-								available on LLM Gateway. See each provider release date and
-								when it was added to the gateway.
+								available on betarouter. See each provider release date and when
+								it was added to the gateway.
 							</p>
 
 							<dl className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 pt-2 text-sm">

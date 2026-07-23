@@ -3,15 +3,15 @@ id: "3"
 slug: "self-hosting-docs-upgrade"
 date: "2025-06-14"
 title: "Self-Hosting Just Got Easier"
-summary: "New and improved self-hosting documentation for teams and enterprises looking to deploy LLM Gateway on their own infrastructure."
+summary: "New and improved self-hosting documentation for teams and enterprises looking to deploy betarouter on their own infrastructure."
 image:
   src: "/changelog/self-host.png"
-  alt: "Improved self-hosting setup guide for LLM Gateway"
+  alt: "Improved self-hosting setup guide for betarouter"
   width: 1768
   height: 677
 ---
 
-We've revamped our [**self-hosting docs**](https://docs.llmgateway.io/self-host) to make it easier than ever to run LLM Gateway on your own terms.
+We've revamped our [**self-hosting docs**](https://docs.betarouter.com/self-host) to make it easier than ever to run betarouter on your own terms.
 
 ## 🚀 Simple Setup with Docker
 
@@ -33,6 +33,6 @@ For teams ready to scale and organizations with enterprise needs:
 
 All of the docker images are public so you can fully customize the hosting to your needs.
 
-Whether you're just getting started with a single Docker command or building a production-grade deployment with Docker Compose – LLM Gateway now makes it easier to go self-hosted at any scale.
+Whether you're just getting started with a single Docker command or building a production-grade deployment with Docker Compose – betarouter now makes it easier to go self-hosted at any scale.
 
-Get started in less than a minute here: [**self-hosting docs**](https://docs.llmgateway.io/self-host)
+Get started in less than a minute here: [**self-hosting docs**](https://docs.betarouter.com/self-host)

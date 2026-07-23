@@ -204,7 +204,7 @@ export function AddProviderForm({
 							Add a Provider
 						</h1>
 						<p className="text-lg text-muted-foreground text-balance leading-relaxed">
-							Want your models listed on LLMGateway? Tell us about your provider
+							Want your models listed on betarouter? Tell us about your provider
 							and our team will get in touch.
 						</p>
 					</div>
@@ -282,7 +282,7 @@ export function AddProviderForm({
 								</h3>
 								<p className="text-muted-foreground text-balance">
 									To keep listings genuine and prevent spam, you need a
-									LLMGateway account with a verified email before submitting a
+									betarouter account with a verified email before submitting a
 									provider. Create your account to get started.
 								</p>
 								<div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">

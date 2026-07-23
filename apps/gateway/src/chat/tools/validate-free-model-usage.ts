@@ -4,10 +4,10 @@ import { HTTPException } from "hono/http-exception";
 import { findUserFromOrganization } from "@/lib/cached-queries.js";
 import { checkFreeModelRateLimit } from "@/lib/rate-limit.js";
 
-import { logger } from "@llmgateway/logger";
+import { logger } from "@betarouter/logger";
 
 import type { ServerTypes } from "@/vars.js";
-import type { ModelDefinition } from "@llmgateway/models";
+import type { ModelDefinition } from "@betarouter/models";
 import type { Context } from "hono";
 
 export async function validateFreeModelUsage(

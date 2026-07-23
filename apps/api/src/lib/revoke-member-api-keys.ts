@@ -1,4 +1,4 @@
-import { and, cdb, db, eq, inArray, ne, tables } from "@llmgateway/db";
+import { and, cdb, db, eq, inArray, ne, tables } from "@betarouter/db";
 
 /**
  * Revoke the API keys a member created within an organization.

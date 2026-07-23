@@ -1,7 +1,7 @@
 import { processLogQueue } from "worker";
 
-import { redisClient } from "@llmgateway/cache";
-import { db, tables, eq } from "@llmgateway/db";
+import { redisClient } from "@betarouter/cache";
+import { db, tables, eq } from "@betarouter/db";
 
 export async function clearCache() {
 	await redisClient.flushdb();

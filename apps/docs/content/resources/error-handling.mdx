@@ -1,6 +1,6 @@
 ---
 title: Error Handling
-description: How LLMGateway returns errors in an OpenAI-compatible format on the OpenAI-compatible endpoints.
+description: How betarouter returns errors in an OpenAI-compatible format on the OpenAI-compatible endpoints.
 icon: TriangleAlert
 ---
 
@@ -8,7 +8,7 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 # Error Handling
 
-On the OpenAI-compatible endpoints, LLMGateway returns errors in the same format as the OpenAI API, so existing OpenAI SDKs and tooling can parse gateway errors without changes. This applies to errors forwarded from upstream providers as well as errors raised by the gateway itself (authentication failures, usage limits, validation problems, timeouts, and so on). The Anthropic-compatible Messages endpoint (`/v1/messages`) instead returns Anthropic-native errors — see [Anthropic Endpoint](#anthropic-endpoint) below.
+On the OpenAI-compatible endpoints, betarouter returns errors in the same format as the OpenAI API, so existing OpenAI SDKs and tooling can parse gateway errors without changes. This applies to errors forwarded from upstream providers as well as errors raised by the gateway itself (authentication failures, usage limits, validation problems, timeouts, and so on). The Anthropic-compatible Messages endpoint (`/v1/messages`) instead returns Anthropic-native errors — see [Anthropic Endpoint](#anthropic-endpoint) below.
 
 ## Error Format
 
@@ -17,7 +17,7 @@ Errors on the OpenAI-compatible endpoints (`/v1/chat/completions`, `/v1/embeddin
 ```json
 {
 	"error": {
-		"message": "Unauthorized: LLMGateway API key reached its usage limit.",
+		"message": "Unauthorized: betarouter API key reached its usage limit.",
 		"type": "invalid_request_error",
 		"param": null,
 		"code": "invalid_api_key"

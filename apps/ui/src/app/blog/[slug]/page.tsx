@@ -32,33 +32,33 @@ export default async function BlogEntryPage({ params }: BlogEntryPageProps) {
 		"@context": "https://schema.org",
 		"@type": "Article",
 		headline: entry.title,
-		description: entry.summary ?? "LLM Gateway blog post",
+		description: entry.summary ?? "betarouter blog post",
 		datePublished: entry.date,
 		dateModified: entry.date,
 		author: {
 			"@type": "Organization",
-			name: "LLM Gateway",
-			url: "https://llmgateway.io",
+			name: "betarouter",
+			url: "https://betarouter.com",
 		},
 		publisher: {
 			"@type": "Organization",
-			name: "LLM Gateway",
-			url: "https://llmgateway.io",
+			name: "betarouter",
+			url: "https://betarouter.com",
 			logo: {
 				"@type": "ImageObject",
-				url: "https://llmgateway.io/favicon/android-chrome-512x512.png",
+				url: "https://betarouter.com/favicon/android-chrome-512x512.png",
 			},
 		},
 		mainEntityOfPage: {
 			"@type": "WebPage",
-			"@id": `https://llmgateway.io/blog/${slug}`,
+			"@id": `https://betarouter.com/blog/${slug}`,
 		},
 		...(entry.image && {
 			image: {
 				"@type": "ImageObject",
 				url: entry.image.src.startsWith("http")
 					? entry.image.src
-					: `https://llmgateway.io${entry.image.src}`,
+					: `https://betarouter.com${entry.image.src}`,
 				width: entry.image.width,
 				height: entry.image.height,
 			},
@@ -73,19 +73,19 @@ export default async function BlogEntryPage({ params }: BlogEntryPageProps) {
 				"@type": "ListItem",
 				position: 1,
 				name: "Home",
-				item: "https://llmgateway.io",
+				item: "https://betarouter.com",
 			},
 			{
 				"@type": "ListItem",
 				position: 2,
 				name: "Blog",
-				item: "https://llmgateway.io/blog",
+				item: "https://betarouter.com/blog",
 			},
 			{
 				"@type": "ListItem",
 				position: 3,
 				name: entry.title,
-				item: `https://llmgateway.io/blog/${slug}`,
+				item: `https://betarouter.com/blog/${slug}`,
 			},
 		],
 	};
@@ -189,10 +189,10 @@ export async function generateMetadata({
 
 	return {
 		title: entry.title,
-		description: entry.summary ?? "LLM Gateway blog post",
+		description: entry.summary ?? "betarouter blog post",
 		openGraph: {
 			title: entry.title,
-			description: entry.summary ?? "LLM Gateway blog post",
+			description: entry.summary ?? "betarouter blog post",
 			type: "article",
 			images: entry.image
 				? [
@@ -208,7 +208,7 @@ export async function generateMetadata({
 		twitter: {
 			card: "summary_large_image",
 			title: entry.title,
-			description: entry.summary ?? "LLM Gateway blog post",
+			description: entry.summary ?? "betarouter blog post",
 		},
 	};
 }

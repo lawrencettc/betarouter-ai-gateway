@@ -13,7 +13,7 @@ import AllowanceExhaustedCard from "./AllowanceExhaustedCard";
 import ResetPassCard from "./ResetPassCard";
 
 import type { paths } from "@/lib/api/v1";
-import type { DevPlanCycle } from "@llmgateway/shared";
+import type { DevPlanCycle } from "@betarouter/shared";
 
 type ActivityResponse =
 	paths["/activity"]["get"]["responses"][200]["content"]["application/json"];

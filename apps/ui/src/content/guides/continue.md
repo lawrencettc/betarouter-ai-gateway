@@ -2,17 +2,17 @@
 id: continue
 slug: continue
 title: Continue CLI Integration
-description: Use any model with Continue CLI through LLM Gateway. One config file, 200+ models, full cost tracking.
+description: Use any model with Continue CLI through betarouter. One config file, 200+ models, full cost tracking.
 date: 2026-05-11
 ---
 
-[Continue](https://docs.continue.dev) is an open-source AI code assistant available as a CLI tool. By configuring it to use LLM Gateway, you get access to 200+ models from 40+ providers with unified cost tracking.
+[Continue](https://docs.continue.dev) is an open-source AI code assistant available as a CLI tool. By configuring it to use betarouter, you get access to 200+ models from 40+ providers with unified cost tracking.
 
 One config file. Any model. Full cost visibility.
 
 ## Prerequisites
 
-- An LLM Gateway API key — [sign up free](https://llmgateway.io/signup) (no credit card required)
+- A betarouter API key — [sign up free](https://betarouter.com/signup) (no credit card required)
 
 ## Setup
 
@@ -28,7 +28,7 @@ npm install -g @continuedev/cli
 
 ### Step 2: Get Your API Key
 
-[Sign up](https://llmgateway.io/signup) or log in to your LLM Gateway dashboard. Navigate to **API Keys** and create a new key. Copy it — it starts with `llmgtwy_`.
+[Sign up](https://betarouter.com/signup) or log in to your betarouter dashboard. Navigate to **API Keys** and create a new key. Copy it — it starts with `llmgtwy_`.
 
 ### Step 3: Create a Config File
 
@@ -38,16 +38,16 @@ Create the Continue config directory and config file:
 mkdir -p ~/.continue
 ```
 
-Then create `~/.continue/config.yaml` with your LLM Gateway configuration:
+Then create `~/.continue/config.yaml` with your betarouter configuration:
 
 ```yaml
-name: llmgateway
+name: betarouter
 version: 0.0.1
 models:
   - name: claude-sonnet-4-6
     provider: openai
     model: claude-sonnet-4-6
-    apiBase: https://api.llmgateway.io/v1
+    apiBase: https://api.betarouter.com/v1
     apiKey: llmgtwy_your-api-key-here
 ```
 
@@ -57,30 +57,30 @@ models:
 
 ### Step 4: Add More Models (Optional)
 
-Add as many models as you want from the [models page](https://llmgateway.io/models):
+Add as many models as you want from the [models page](https://betarouter.com/models):
 
 ```yaml
-name: llmgateway
+name: betarouter
 version: 0.0.1
 models:
   - name: claude-sonnet-4-6
     provider: openai
     model: claude-sonnet-4-6
-    apiBase: https://api.llmgateway.io/v1
+    apiBase: https://api.betarouter.com/v1
     apiKey: llmgtwy_your-api-key-here
   - name: gpt-5.5
     provider: openai
     model: gpt-5.5
-    apiBase: https://api.llmgateway.io/v1
+    apiBase: https://api.betarouter.com/v1
     apiKey: llmgtwy_your-api-key-here
   - name: gemini-3.1-pro
     provider: openai
     model: gemini-3.1-pro
-    apiBase: https://api.llmgateway.io/v1
+    apiBase: https://api.betarouter.com/v1
     apiKey: llmgtwy_your-api-key-here
 ```
 
-All models use `provider: openai` since LLM Gateway exposes an OpenAI-compatible API.
+All models use `provider: openai` since betarouter exposes an OpenAI-compatible API.
 
 ### Step 5: Start Using Continue
 
@@ -90,24 +90,24 @@ Launch Continue CLI with the `--config` flag pointing to your config file:
 cn --config ~/.continue/config.yaml
 ```
 
-![Continue CLI running with LLM Gateway](/images/guides/continue/2-running.png)
+![Continue CLI running with betarouter](/images/guides/continue/2-running.png)
 
-All requests now route through LLM Gateway. You'll see usage, costs, and logs in your dashboard.
+All requests now route through betarouter. You'll see usage, costs, and logs in your dashboard.
 
-## Why Use LLM Gateway with Continue
+## Why Use betarouter with Continue
 
 - **200+ models** — Claude, GPT, Gemini, Llama, DeepSeek, and more
 - **One API key** — Stop managing separate keys for each provider
 - **Cost tracking** — See exactly what each session costs in your dashboard
 - **Response caching** — Repeated requests hit cache automatically
 - **Automatic fallback** — If a provider is down, requests route to an alternative
-- **Volume discounts** — Check [discounted models](https://llmgateway.io/models?discounted=true) for savings up to 90%
+- **Volume discounts** — Check [discounted models](https://betarouter.com/models?discounted=true) for savings up to 90%
 
 ## Configuration Details
 
 ### Provider Setting
 
-Always use `provider: openai` in your Continue config. LLM Gateway exposes an OpenAI-compatible API, so Continue's OpenAI provider handles all models correctly — including Claude, Gemini, and others.
+Always use `provider: openai` in your Continue config. betarouter exposes an OpenAI-compatible API, so Continue's OpenAI provider handles all models correctly — including Claude, Gemini, and others.
 
 ### Project-Specific Config
 
@@ -120,7 +120,7 @@ models:
   - name: gpt-5.5
     provider: openai
     model: gpt-5.5
-    apiBase: https://api.llmgateway.io/v1
+    apiBase: https://api.betarouter.com/v1
     apiKey: llmgtwy_your-api-key-here
 ```
 
@@ -138,21 +138,21 @@ Add multiple models to your config and switch between them in the Continue inter
 
 ## Locking to a Specific Provider
 
-By default, LLM Gateway automatically fails over to alternative providers if your chosen provider is experiencing downtime. To disable fallback, add a custom header:
+By default, betarouter automatically fails over to alternative providers if your chosen provider is experiencing downtime. To disable fallback, add a custom header:
 
 ```yaml
 models:
   - name: claude-sonnet-4-6
     provider: openai
     model: claude-sonnet-4-6
-    apiBase: https://api.llmgateway.io/v1
+    apiBase: https://api.betarouter.com/v1
     apiKey: llmgtwy_your-api-key-here
     requestOptions:
       headers:
         X-No-Fallback: "true"
 ```
 
-> Disabling fallback means requests will fail if the chosen provider is down. See the [routing docs](https://docs.llmgateway.io/features/routing) for details.
+> Disabling fallback means requests will fail if the chosen provider is down. See the [routing docs](https://docs.betarouter.com/features/routing) for details.
 
 ## Troubleshooting
 
@@ -161,7 +161,7 @@ models:
 Make sure your config file includes `name` and `version` fields at the top level:
 
 ```yaml
-name: llmgateway
+name: betarouter
 version: 0.0.1
 models:
   - ...
@@ -179,11 +179,11 @@ Or always launch with the `--config` flag to bypass onboarding entirely.
 
 ### Model not found
 
-Verify the model ID matches exactly what's listed on the [models page](https://llmgateway.io/models). Model IDs are case-sensitive.
+Verify the model ID matches exactly what's listed on the [models page](https://betarouter.com/models). Model IDs are case-sensitive.
 
 ### Connection timeout
 
-Check that `apiBase` is set to `https://api.llmgateway.io/v1` (note the `/v1` at the end).
+Check that `apiBase` is set to `https://api.betarouter.com/v1` (note the `/v1` at the end).
 
 ### Authentication errors
 
@@ -191,10 +191,10 @@ Make sure your `apiKey` starts with `llmgtwy_` and is valid. Check your [dashboa
 
 ### Provider must be "openai"
 
-LLM Gateway uses an OpenAI-compatible API. Even when using Claude or Gemini models, set `provider: openai` in your Continue config. The gateway handles routing to the correct upstream provider.
+betarouter uses an OpenAI-compatible API. Even when using Claude or Gemini models, set `provider: openai` in your Continue config. The gateway handles routing to the correct upstream provider.
 
 ## Get Started
 
-Ready to use Continue CLI with any model? [Sign up for LLM Gateway](https://llmgateway.io/signup) and grab your API key.
+Ready to use Continue CLI with any model? [Sign up for betarouter](https://betarouter.com/signup) and grab your API key.
 
-Questions? Check [our docs](https://docs.llmgateway.io) or [join Discord](https://llmgateway.io/discord).
+Questions? Check [our docs](https://docs.betarouter.com) or [join Discord](https://betarouter.com/discord).

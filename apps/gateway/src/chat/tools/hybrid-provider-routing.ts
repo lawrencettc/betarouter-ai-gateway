@@ -1,11 +1,11 @@
 import { findActivePlatformProviderIds } from "@/lib/cached-queries.js";
 
-import { isPlatformProviderCryptoConfigured } from "@llmgateway/db";
+import { isPlatformProviderCryptoConfigured } from "@betarouter/db";
 import {
 	hasProviderEnvironmentToken,
 	type Provider,
 	providers,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 export type ProjectMode = "api-keys" | "credits" | "hybrid";
 

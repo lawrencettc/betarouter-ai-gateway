@@ -9,7 +9,7 @@ export function getGatewayPublicBaseUrl(): string {
 	}
 
 	return process.env.NODE_ENV === "production"
-		? "https://api.llmgateway.io"
+		? "https://api.betarouter.com"
 		: "http://localhost:4001";
 }
 

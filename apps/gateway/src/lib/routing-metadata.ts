@@ -1,4 +1,4 @@
-import type { RoutingMetadata } from "@llmgateway/actions";
+import type { RoutingMetadata } from "@betarouter/actions";
 
 export function getNoFallbackRoutingMetadata(
 	noFallback: boolean,

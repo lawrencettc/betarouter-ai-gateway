@@ -2,9 +2,9 @@ import { describe, expect, test } from "vitest";
 
 import { app } from "@/app.js";
 
-import { models as modelsList, providers } from "@llmgateway/models";
+import { models as modelsList, providers } from "@betarouter/models";
 
-import type { ProviderModelMapping } from "@llmgateway/models";
+import type { ProviderModelMapping } from "@betarouter/models";
 
 describe("Models API", () => {
 	test("GET /v1/models fails open when shadow mode has no catalog revision", async () => {

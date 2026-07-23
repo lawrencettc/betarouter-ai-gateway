@@ -3,7 +3,7 @@ id: "blog-best-open-source-llms"
 slug: "best-open-source-llms"
 date: "2026-07-19"
 title: "9 Best Open-Source LLMs in 2026 (Compared)"
-summary: "The best open-source LLMs in 2026, ranked — Kimi K3 (weights expected by July 27), GLM-5.2, DeepSeek V4 Pro, MiniMax M3 and more, compared on license, context window, and real per-token price. All of them run through one API with LLM Gateway."
+summary: "The best open-source LLMs in 2026, ranked — Kimi K3 (weights expected by July 27), GLM-5.2, DeepSeek V4 Pro, MiniMax M3 and more, compared on license, context window, and real per-token price. All of them run through one API with betarouter."
 categories: ["Guides"]
 image:
   src: "/blog/best-open-source-llms.png"
@@ -14,7 +14,7 @@ image:
 
 Open-source LLMs stopped being the budget option in 2026. Kimi K3 sits level with Claude Opus 4.8 on the Artificial Analysis Intelligence Index (its hosted API is live; the weights themselves are expected by July 27), GLM-5.2 held the top open-model spot before it, and the field behind them is deep enough that the hard part is choosing.
 
-This ranking covers the nine best open-weight models right now — on license, context window, hardware reality, and the per-token price you actually pay. Every one of them is available through **LLM Gateway** with one key, at each provider's published rate, so you can A/B any two of them by changing one word in a request.
+This ranking covers the nine best open-weight models right now — on license, context window, hardware reality, and the per-token price you actually pay. Every one of them is available through **betarouter** with one key, at each provider's published rate, so you can A/B any two of them by changing one word in a request.
 
 ## 1. Kimi K3 — the open frontier
 
@@ -102,7 +102,7 @@ Meta's open-weight line no longer leads benchmarks, but no model family matches 
 | 8   | gpt-oss-120b     | OpenAI   | Apache 2.0     | 131K    | $0.15     | $0.75      |
 | 9   | Llama 4 Maverick | Meta     | Llama license  | 1M      | $0.27     | $0.85      |
 
-\*Weights publish by July 27, 2026; Moonshot has not yet announced the license. Prices are each provider's published rate through LLM Gateway; the live list is on the [models page](https://llmgateway.io/models).
+\*Weights publish by July 27, 2026; Moonshot has not yet announced the license. Prices are each provider's published rate through betarouter; the live list is on the [models page](https://betarouter.com/models).
 
 ## How to choose
 
@@ -117,7 +117,7 @@ Meta's open-weight line no longer leads benchmarks, but no model family matches 
 Every model in this list is a `model` string on the same endpoint:
 
 ```bash
-curl https://api.llmgateway.io/v1/chat/completions \
+curl https://api.betarouter.com/v1/chat/completions \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -126,7 +126,7 @@ curl https://api.llmgateway.io/v1/chat/completions \
   }'
 ```
 
-Two ways to pay. **Pay-as-you-go**: top up from $10, pay the published per-token rates plus a 5% platform fee at top-up — right for shipping products. **[DevPass](https://devpass.llmgateway.io)**: flat $29/$79/$179 a month for coding agents, with roughly 3× your subscription price in model usage at provider rates. On DevPass, every model on this list except Kimi K3 is standard-tier with no weekly cap; K3 crosses the premium price threshold and draws from a weekly premium allowance.
+Two ways to pay. **Pay-as-you-go**: top up from $10, pay the published per-token rates plus a 5% platform fee at top-up — right for shipping products. **[DevPass](https://devpass.betarouter.com)**: flat $29/$79/$179 a month for coding agents, with roughly 3× your subscription price in model usage at provider rates. On DevPass, every model on this list except Kimi K3 is standard-tier with no weekly cap; K3 crosses the premium price threshold and draws from a weekly premium allowance.
 
 ## Frequently Asked Questions
 
@@ -144,10 +144,10 @@ Open weight: the trained weights are downloadable and self-hostable under permis
 
 ### What is the cheapest way to use open-source LLMs?
 
-Through a gateway at provider list prices. LLM Gateway adds no per-token markup — pay-as-you-go credits carry a 5% platform fee at top-up, and DevPass turns heavy coding-agent usage into a flat monthly rate.
+Through a gateway at provider list prices. betarouter adds no per-token markup — pay-as-you-go credits carry a 5% platform fee at top-up, and DevPass turns heavy coding-agent usage into a flat monthly rate.
 
 ## Getting started
 
-- **[Try LLM Gateway free](https://llmgateway.io/signup)** — all nine models, one key
-- **[Get DevPass](https://devpass.llmgateway.io)** — flat-rate open models in your coding agent from $29/mo
+- **[Try betarouter free](https://betarouter.com/signup)** — all nine models, one key
+- **[Get DevPass](https://devpass.betarouter.com)** — flat-rate open models in your coding agent from $29/mo
 - Deep dive on the leader: [Kimi K3 and China's Open-Weight Model Wave](/blog/kimi-k3)

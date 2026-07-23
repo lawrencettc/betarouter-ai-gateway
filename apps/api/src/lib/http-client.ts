@@ -1,8 +1,8 @@
-import { createHttpClient } from "@llmgateway/shared";
+import { createHttpClient } from "@betarouter/shared";
 
 export const httpClient = createHttpClient({
 	tracerName: "llmgateway-api",
 	clientName: "api-http-client",
 });
 
-export type { HttpClientOptions } from "@llmgateway/shared";
+export type { HttpClientOptions } from "@betarouter/shared";

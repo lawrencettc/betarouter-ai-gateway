@@ -9,8 +9,8 @@ import {
 	vi,
 } from "vitest";
 
-import { db, eq, tables, type Log } from "@llmgateway/db";
-import { getProviderDefinition } from "@llmgateway/models";
+import { db, eq, tables, type Log } from "@betarouter/db";
+import { getProviderDefinition } from "@betarouter/models";
 
 import { app } from "./app.js";
 import { SAME_KEY_RETRY_DELAY_MS } from "./chat/tools/retry-with-fallback.js";

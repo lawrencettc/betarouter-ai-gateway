@@ -12,9 +12,9 @@ import {
 } from "@/lib/components/tooltip";
 import { formatContextSize } from "@/lib/utils";
 
-import { models } from "@llmgateway/models";
+import { models } from "@betarouter/models";
 
-import type { ModelDefinition, StabilityLevel } from "@llmgateway/models";
+import type { ModelDefinition, StabilityLevel } from "@betarouter/models";
 
 export function ModelsList() {
 	const getStabilityBadgeProps = (stability?: StabilityLevel) => {

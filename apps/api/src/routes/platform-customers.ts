@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { platformSecretAuth } from "@/lib/platform-secret-auth.js";
 
-import { db, inArray, sql, tables } from "@llmgateway/db";
+import { db, inArray, sql, tables } from "@betarouter/db";
 
 import type { ServerTypes } from "@/vars.js";
 

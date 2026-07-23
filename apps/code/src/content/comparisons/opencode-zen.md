@@ -64,7 +64,7 @@ The pitch is purity: at-cost tokens, no subscription, no lock-in, only the model
 
 ## What is DevPass?
 
-DevPass by LLM Gateway is a **flat-rate** coding plan. You pay a fixed monthly price and get a usage allowance across **200+ models** — every major provider, from Claude Opus 4.8 and GPT-5.5 to Gemini 3.1 Pro and the open-weight coders. Every request's exact cost shows up in a real-time dashboard, but the number on your invoice doesn't move.
+DevPass by betarouter is a **flat-rate** coding plan. You pay a fixed monthly price and get a usage allowance across **200+ models** — every major provider, from Claude Opus 4.8 and GPT-5.5 to Gemini 3.1 Pro and the open-weight coders. Every request's exact cost shows up in a real-time dashboard, but the number on your invoice doesn't move.
 
 ## Flat rate vs pay-as-you-go
 

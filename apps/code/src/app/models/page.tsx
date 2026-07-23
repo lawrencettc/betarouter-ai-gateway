@@ -9,11 +9,11 @@ import {
 	DEV_PLAN_PREMIUM_WEEKLY_PERCENT,
 	HIGH_COST_INPUT_PRICE,
 	HIGH_COST_OUTPUT_PRICE,
-} from "@llmgateway/shared";
+} from "@betarouter/shared";
 import {
 	fetchModelsFromApi,
 	fetchProvidersFromApi,
-} from "@llmgateway/shared/components";
+} from "@betarouter/shared/components";
 
 import type { Metadata } from "next";
 
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
 		description:
 			"Browse the coding models available on DevPass — search, filter by pricing tier, capabilities, provider, price, and context size.",
 		type: "website",
-		url: "https://devpass.llmgateway.io/models",
+		url: "https://devpass.betarouter.com/models",
 	},
 };
 
@@ -47,7 +47,7 @@ export default async function DevPassModelsPage() {
 		name: "Coding Models on DevPass",
 		description:
 			"The coding models available on DevPass, with the exact premium/standard fair-use classification the gateway enforces.",
-		url: "https://devpass.llmgateway.io/models",
+		url: "https://devpass.betarouter.com/models",
 	};
 	const collectionSchemaJson = JSON.stringify(collectionSchema).replace(
 		/</g,

@@ -1,6 +1,6 @@
 import { createHash, createHmac } from "node:crypto";
 
-import { logger } from "@llmgateway/logger";
+import { logger } from "@betarouter/logger";
 import {
 	type ModelDefinition,
 	models,
@@ -23,9 +23,9 @@ import {
 	type ToolChoiceMode,
 	type ToolChoiceType,
 	type WebSearchTool,
-} from "@llmgateway/models";
-import { getApiKeyHashSecret } from "@llmgateway/shared/api-key-hash";
-import { assertSafeUserContentUrl } from "@llmgateway/shared/url-safety-node";
+} from "@betarouter/models";
+import { getApiKeyHashSecret } from "@betarouter/shared/api-key-hash";
+import { assertSafeUserContentUrl } from "@betarouter/shared/url-safety-node";
 
 import { parseDataUrl } from "./parse-data-url.js";
 import { parseToolCallArguments } from "./parse-tool-call-arguments.js";
@@ -955,7 +955,7 @@ function transformMessagesForResponsesApi(messages: any[]): any[] {
  * Prepares the request body for different providers.
  *
  * @param usedProvider - Provider id used for routing.
- * @param usedInternalModel - Canonical LLM Gateway model id (root id). Used
+ * @param usedInternalModel - Canonical betarouter model id (root id). Used
  *   for ALL internal lookups (model def + provider mapping). Never the
  *   provider-specific upstream id.
  * @param usedRegion - Region the request is bound to, when the mapping has

@@ -1,4 +1,5 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
+import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
 import { generateText, tool } from "ai";
 import { HTTPException } from "hono/http-exception";
 
@@ -10,8 +11,7 @@ import {
 	resolvePlaygroundToken,
 } from "@/utils/playground-key.js";
 
-import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
-import { db, tables, eq, and, count, desc, asc } from "@llmgateway/db";
+import { db, tables, eq, and, count, desc, asc } from "@betarouter/db";
 
 import type { ServerTypes } from "@/vars.js";
 
@@ -1017,7 +1017,7 @@ chatProjects.openapi(extractMemories, async (c) => {
 		apiKey: token,
 		baseURL: getGatewayUrl(),
 		headers: {
-			"x-source": "chat.llmgateway.io",
+			"x-source": "chat.betarouter.com",
 		},
 	});
 

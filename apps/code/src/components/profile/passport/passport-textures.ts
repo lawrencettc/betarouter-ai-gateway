@@ -206,7 +206,7 @@ export function drawCoverOuter(): HTMLCanvasElement {
 	ctx.font = `500 24px ${MONO}`;
 	ctx.letterSpacing = "8px";
 	ctx.fillStyle = "rgba(201,162,39,0.75)";
-	ctx.fillText("LLM GATEWAY", PAGE_W / 2, PAGE_H - 190);
+	ctx.fillText("BETAROUTER", PAGE_W / 2, PAGE_H - 190);
 	ctx.letterSpacing = "0px";
 	return ctx.canvas;
 }
@@ -332,7 +332,7 @@ export function drawVisaPage(data: PassportModel): HTMLCanvasElement {
 		ctx.fillText("NO ACTIVE VISA", emptyMidX, emptyMidY - 14);
 		ctx.font = `500 22px ${MONO}`;
 		ctx.letterSpacing = "2px";
-		ctx.fillText("APPLY AT DEVPASS.LLMGATEWAY.IO", emptyMidX, emptyMidY + 34);
+		ctx.fillText("APPLY AT DEVPASS.BETAROUTER.COM", emptyMidX, emptyMidY + 34);
 		ctx.letterSpacing = "0px";
 		ctx.restore();
 	}
@@ -567,8 +567,8 @@ export function drawEndorsementsPage(data: PassportModel): HTMLCanvasElement {
 		fitText(
 			ctx,
 			data.username
-				? `DEVPASS.LLMGATEWAY.IO/PROFILES/${data.username.toUpperCase()}`
-				: "DEVPASS.LLMGATEWAY.IO",
+				? `DEVPASS.BETAROUTER.COM/PROFILES/${data.username.toUpperCase()}`
+				: "DEVPASS.BETAROUTER.COM",
 			PAGE_W - 120,
 		),
 		PAGE_W / 2,

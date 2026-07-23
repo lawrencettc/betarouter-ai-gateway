@@ -1,6 +1,6 @@
-import { redisClient } from "@llmgateway/cache";
-import { db } from "@llmgateway/db/db";
-import { and, desc, eq, inArray, lte, sql } from "@llmgateway/db/orm";
+import { redisClient } from "@betarouter/cache";
+import { db } from "@betarouter/db/db";
+import { and, desc, eq, inArray, lte, sql } from "@betarouter/db/orm";
 import {
 	model,
 	modelProviderMapping,
@@ -13,8 +13,8 @@ import {
 	platformProviderCredential,
 	platformProviderPolicy,
 	provider,
-} from "@llmgateway/db/schema";
-import { getProviderEnvConfig, getProviderEnvVar } from "@llmgateway/models";
+} from "@betarouter/db/schema";
+import { getProviderEnvConfig, getProviderEnvVar } from "@betarouter/models";
 
 import { validateCatalogActivation } from "./activation.js";
 import { resolveEffectiveCatalog } from "./catalog.js";
@@ -41,8 +41,8 @@ import type {
 } from "./catalog.js";
 import type { CatalogPolicyState } from "./change-set.js";
 import type { CatalogOperationV1 } from "./contracts.js";
-import type { PlatformCatalogOperationV1 } from "@llmgateway/db/schema";
-import type { Provider } from "@llmgateway/models";
+import type { PlatformCatalogOperationV1 } from "@betarouter/db/schema";
+import type { Provider } from "@betarouter/models";
 
 const CATALOG_INVALIDATION_CHANNEL = "platform-catalog:invalidate";
 

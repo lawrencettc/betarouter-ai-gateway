@@ -8,7 +8,7 @@ import {
 	KiloCodeIcon,
 	OpenCodeIcon,
 	SoulForgeIcon,
-} from "@llmgateway/shared/components";
+} from "@betarouter/shared/components";
 
 import type { ComponentType, SVGProps } from "react";
 

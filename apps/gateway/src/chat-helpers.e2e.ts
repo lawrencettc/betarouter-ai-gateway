@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { describe, expect, it } from "vitest";
 
-import { db, tables, type ProviderKeyOptions } from "@llmgateway/db";
+import { db, tables, type ProviderKeyOptions } from "@betarouter/db";
 import {
 	type ModelDefinition,
 	getProviderDefinition,
@@ -12,7 +12,7 @@ import {
 	getConcurrentTestOptions,
 	getTestOptions,
 	expandAllProviderRegions,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 import {
 	clearCache,

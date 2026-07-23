@@ -4,7 +4,7 @@ import { app } from "@/app.js";
 import { createGatewayApiTestHarness } from "@/test-utils/gateway-api-test-harness.js";
 import { waitForLogs } from "@/test-utils/test-helpers.js";
 
-import { db, tables } from "@llmgateway/db";
+import { db, tables } from "@betarouter/db";
 
 const IMAGE_DOCUMENT = {
 	type: "image_url" as const,

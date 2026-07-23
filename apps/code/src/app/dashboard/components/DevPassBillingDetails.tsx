@@ -157,11 +157,11 @@ function BillingDetailsForm({
 							htmlFor="use-default-billing"
 							className="text-sm font-medium"
 						>
-							Use my LLM Gateway organization billing details
+							Use my betarouter organization billing details
 						</Label>
 						<p className="text-xs text-muted-foreground">
-							These come from your LLM Gateway organization settings. Turn off
-							to set custom details for DevPass invoices.
+							These come from your betarouter organization settings. Turn off to
+							set custom details for DevPass invoices.
 						</p>
 					</div>
 					<Switch

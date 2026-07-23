@@ -1,4 +1,5 @@
 import { createMCPClient } from "@ai-sdk/mcp";
+import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import {
 	streamText,
@@ -23,8 +24,6 @@ import {
 	type PlaygroundMessageMetadata,
 } from "@/lib/message-metadata";
 import { fetchServerData } from "@/lib/server-api";
-
-import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
 
 export const maxDuration = 300; // 5 minutes
 
@@ -669,7 +668,7 @@ export async function POST(req: Request) {
 		process.env.GATEWAY_URL ??
 		(process.env.NODE_ENV === "development"
 			? "http://localhost:4001/v1"
-			: "https://api.llmgateway.io/v1");
+			: "https://api.betarouter.com/v1");
 
 	let latestGatewayResponseMetadata: GatewayResponseMetadata | undefined;
 	const captureGatewayMetadata = (metadata: GatewayResponseMetadata) => {
@@ -730,7 +729,7 @@ export async function POST(req: Request) {
 		baseURL: gatewayUrl,
 		fetch: gatewayFetch,
 		headers: {
-			"x-source": "chat.llmgateway.io",
+			"x-source": "chat.betarouter.com",
 			...(noFallbackHeader ? { "x-no-fallback": noFallbackHeader } : {}),
 		},
 		extraBody: {
@@ -1376,7 +1375,7 @@ export async function POST(req: Request) {
 		}
 
 		const message =
-			error instanceof Error ? error.message : "LLM Gateway request failed";
+			error instanceof Error ? error.message : "betarouter request failed";
 		const status =
 			typeof error === "object" &&
 			error !== null &&

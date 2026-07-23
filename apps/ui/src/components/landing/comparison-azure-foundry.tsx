@@ -6,7 +6,7 @@ import { AuthLink } from "@/components/shared/auth-link";
 import { Badge } from "@/lib/components/badge";
 import { Button } from "@/lib/components/button";
 
-import { AzureIcon } from "@llmgateway/shared/components";
+import { AzureIcon } from "@betarouter/shared/components";
 
 const comparisonData = [
 	{
@@ -151,13 +151,13 @@ export function ComparisonAzureFoundry() {
 						Every model on Foundry — without the Azure ceremony
 					</h2>
 					<p className="text-muted-foreground">
-						Compare LLM Gateway and Azure AI Foundry features side by side
+						Compare betarouter and Azure AI Foundry features side by side
 					</p>
 				</div>
 
 				<div className="mb-8 bg-primary/5 dark:bg-primary/10 rounded-lg p-6 border border-primary/20">
 					<h3 className="font-bold text-lg mb-3 text-primary">
-						Why choose LLM Gateway?
+						Why choose betarouter?
 					</h3>
 					<div className="grid md:grid-cols-2 gap-4 text-sm">
 						<div className="flex items-start gap-2">
@@ -197,7 +197,7 @@ export function ComparisonAzureFoundry() {
 						<div className="text-center">
 							<div className="border-2 border-primary rounded-lg p-4 bg-background shadow-sm h-full">
 								<h3 className="font-bold text-lg mb-1 text-foreground">
-									LLM Gateway
+									betarouter
 								</h3>
 								<p className="text-sm text-muted-foreground mb-2">
 									OPEN-SOURCE & CLOUD-NEUTRAL
@@ -265,12 +265,12 @@ export function ComparisonAzureFoundry() {
 						Already on Azure? Keep it — and stop depending on it.
 					</h3>
 					<p className="text-sm text-muted-foreground">
-						Azure OpenAI and Azure AI Foundry are built-in LLM Gateway
-						providers. Bring your Azure credentials and your traffic keeps
-						flowing with 0% markup — while every request gains automatic
-						failover to other providers, response caching, guardrails, and
-						per-request cost analytics. When you need a model Foundry
-						doesn&apos;t host, it&apos;s already behind the same API.
+						Azure OpenAI and Azure AI Foundry are built-in betarouter providers.
+						Bring your Azure credentials and your traffic keeps flowing with 0%
+						markup — while every request gains automatic failover to other
+						providers, response caching, guardrails, and per-request cost
+						analytics. When you need a model Foundry doesn&apos;t host,
+						it&apos;s already behind the same API.
 					</p>
 				</div>
 
@@ -281,7 +281,7 @@ export function ComparisonAzureFoundry() {
 							size="lg"
 							className="bg-primary hover:bg-primary/90"
 						>
-							<AuthLink href="/signup">Start Free with LLM Gateway</AuthLink>
+							<AuthLink href="/signup">Start Free with betarouter</AuthLink>
 						</Button>
 						<Button asChild size="lg" variant="outline">
 							<Link href="/pricing">View Pricing Details</Link>

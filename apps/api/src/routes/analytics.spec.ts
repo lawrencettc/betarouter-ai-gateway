@@ -7,7 +7,7 @@ import {
 	deleteAll,
 } from "@/testing.js";
 
-import { db, eq, tables } from "@llmgateway/db";
+import { db, eq, tables } from "@betarouter/db";
 
 const OWNER_ID = "test-user-id";
 const MEMBER_ID = "member-2-id";

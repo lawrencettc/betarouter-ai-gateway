@@ -70,7 +70,7 @@ What you're really buying with Cursor is **the experience**: a finished editor w
 
 ## What is DevPass?
 
-DevPass by LLM Gateway isn't an editor — it's the **model layer** underneath your editor. One API key unlocks **200+ models** — Claude Opus 4.8, GPT-5.5, Gemini 3.1 Pro, plus the open-weight coders like GLM, Kimi and Qwen — for a flat monthly price: **$29 (Lite)**, **$79 (Pro)** or **$179 (Max)**.
+DevPass by betarouter isn't an editor — it's the **model layer** underneath your editor. One API key unlocks **200+ models** — Claude Opus 4.8, GPT-5.5, Gemini 3.1 Pro, plus the open-weight coders like GLM, Kimi and Qwen — for a flat monthly price: **$29 (Lite)**, **$79 (Pro)** or **$179 (Max)**.
 
 Instead of bundling usage into opaque credits, DevPass meters every request at the **provider's own published rate** and shows you the dollar cost in real time. The allowance is generous: roughly **$3 of model usage for every $1 you pay** (so ~$237 of usage on the $79 Pro plan). It plugs into anything OpenAI- or Anthropic-compatible — **Claude Code, OpenCode, Zed, Cline** — and even into **Cursor itself**.
 

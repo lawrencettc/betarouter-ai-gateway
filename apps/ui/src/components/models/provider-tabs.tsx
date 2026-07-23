@@ -4,8 +4,8 @@ import Link from "next/link";
 
 import { Button } from "@/lib/components/button";
 
-import { providers as providerDefinitions } from "@llmgateway/models";
-import { getProviderIcon } from "@llmgateway/shared/components";
+import { providers as providerDefinitions } from "@betarouter/models";
+import { getProviderIcon } from "@betarouter/shared/components";
 
 interface ProviderTabsProps {
 	modelId: string;

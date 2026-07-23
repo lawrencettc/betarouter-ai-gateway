@@ -7,7 +7,7 @@ import {
 	RequestError,
 } from "./prepare-request-body.js";
 
-import type { AnthropicRequestBody } from "@llmgateway/models";
+import type { AnthropicRequestBody } from "@betarouter/models";
 
 function getCacheControl(block: unknown): unknown {
 	if (block && typeof block === "object" && "cache_control" in block) {

@@ -30,7 +30,7 @@ import {
 import { useApi } from "@/lib/fetch-client";
 import { cn } from "@/lib/utils";
 
-import { getProviderIcon } from "@llmgateway/shared/components";
+import { getProviderIcon } from "@betarouter/shared/components";
 
 import type { paths } from "@/lib/api/v1";
 

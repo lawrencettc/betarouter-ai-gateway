@@ -30,22 +30,22 @@ export default async function MigrationPage({ params }: MigrationPageProps) {
 		"@context": "https://schema.org",
 		"@type": "TechArticle",
 		headline: migration.title,
-		description: migration.description ?? "Migration guide for LLM Gateway",
+		description: migration.description ?? "Migration guide for betarouter",
 		datePublished: migration.date,
 		dateModified: migration.date,
 		author: {
 			"@type": "Organization",
-			name: "LLM Gateway",
-			url: "https://llmgateway.io",
+			name: "betarouter",
+			url: "https://betarouter.com",
 		},
 		publisher: {
 			"@type": "Organization",
-			name: "LLM Gateway",
-			url: "https://llmgateway.io",
+			name: "betarouter",
+			url: "https://betarouter.com",
 		},
 		mainEntityOfPage: {
 			"@type": "WebPage",
-			"@id": `https://llmgateway.io/migration/${slug}`,
+			"@id": `https://betarouter.com/migration/${slug}`,
 		},
 	};
 
@@ -133,18 +133,18 @@ export async function generateMetadata({
 
 	return {
 		title: `${migration.title} - Migration Guides`,
-		description: migration.description ?? "Migration guide for LLM Gateway",
+		description: migration.description ?? "Migration guide for betarouter",
 		alternates: { canonical: `/migration/${migration.slug}` },
 		openGraph: {
-			title: `${migration.title} - Migration Guides | LLM Gateway`,
-			description: migration.description ?? "Migration guide for LLM Gateway",
+			title: `${migration.title} - Migration Guides | betarouter`,
+			description: migration.description ?? "Migration guide for betarouter",
 			type: "article",
-			url: `https://llmgateway.io/migration/${migration.slug}`,
+			url: `https://betarouter.com/migration/${migration.slug}`,
 		},
 		twitter: {
 			card: "summary_large_image",
-			title: `${migration.title} - Migration Guides | LLM Gateway`,
-			description: migration.description ?? "Migration guide for LLM Gateway",
+			title: `${migration.title} - Migration Guides | betarouter`,
+			description: migration.description ?? "Migration guide for betarouter",
 		},
 	};
 }

@@ -1,6 +1,6 @@
 import { estimateTokens } from "./estimate-tokens.js";
 
-import type { Provider } from "@llmgateway/models";
+import type { Provider } from "@betarouter/models";
 
 /**
  * Adjust Google candidatesTokenCount for inconsistent API behavior.

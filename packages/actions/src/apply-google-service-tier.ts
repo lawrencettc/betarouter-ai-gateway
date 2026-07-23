@@ -1,6 +1,6 @@
 import { getProviderDefaultBaseUrl } from "./get-provider-endpoint.js";
 
-import type { ProviderId, ProviderRequestBody } from "@llmgateway/models";
+import type { ProviderId, ProviderRequestBody } from "@betarouter/models";
 
 /**
  * Providers that select the processing tier via the `service_tier` request

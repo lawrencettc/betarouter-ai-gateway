@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getProviderDetail, getProviderHistory } from "@/lib/admin-history";
 
-import { getProviderIcon } from "@llmgateway/shared";
+import { getProviderIcon } from "@betarouter/shared";
 
 import type { HistoryWindow } from "@/components/history-chart";
 import type { ProviderDetailResponse, ProviderModelStats } from "@/lib/types";

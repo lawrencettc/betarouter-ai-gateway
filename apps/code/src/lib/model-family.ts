@@ -1,4 +1,4 @@
-import { models, type ModelDefinition } from "@llmgateway/models";
+import { models, type ModelDefinition } from "@betarouter/models";
 
 /**
  * Drop the provider prefix (everything before the first "/") and any
@@ -19,7 +19,7 @@ const modelById = new Map<string, ModelDefinition>(
 
 // A handful of model families don't share a name with a provider-icon key, so
 // map them onto the closest brand logo. Everything else falls through to
-// getProviderIcon, which already normalises and falls back to the LLM Gateway
+// getProviderIcon, which already normalises and falls back to the betarouter
 // mark for unknown families.
 const FAMILY_ICON_OVERRIDES: Record<string, string> = {
 	google: "google-ai-studio",

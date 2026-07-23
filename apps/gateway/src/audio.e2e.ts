@@ -16,11 +16,11 @@ import {
 	specifiedModels,
 } from "@/chat-helpers.e2e.js";
 
-import { db, tables } from "@llmgateway/db";
+import { db, tables } from "@betarouter/db";
 
 import { app } from "./app.js";
 
-import type { ProviderModelMapping } from "@llmgateway/models";
+import type { ProviderModelMapping } from "@betarouter/models";
 
 const AUDIO_PROJECT_ID = "audio-test-project-id";
 const AUDIO_API_KEY_ID = "audio-test-api-key-id";

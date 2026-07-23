@@ -1,10 +1,10 @@
-import { DEV_PLAN_PRICES } from "@llmgateway/shared";
+import { DEV_PLAN_PRICES } from "@betarouter/shared";
 
 /**
  * Pure math for the GitHub Copilot cost calculator.
  *
  * The model is deliberately simple and fully documented on the page:
- * both sides (Copilot AI Credits and LLM Gateway) are priced from the same
+ * both sides (Copilot AI Credits and betarouter) are priced from the same
  * token volumes at the same per-million-token rates, so the differences that
  * remain are structural — seat fees and included credits on the Copilot side,
  * prompt caching and the platform fee on the gateway side.

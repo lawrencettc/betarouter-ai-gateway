@@ -17,8 +17,8 @@ import Logo from "@/lib/icons/Logo";
 import {
 	providers as providerDefinitions,
 	type ProviderId,
-} from "@llmgateway/models";
-import { providerLogoUrls } from "@llmgateway/shared/components";
+} from "@betarouter/models";
+import { providerLogoUrls } from "@betarouter/shared/components";
 
 interface HeroProps {
 	providerId: ProviderId;

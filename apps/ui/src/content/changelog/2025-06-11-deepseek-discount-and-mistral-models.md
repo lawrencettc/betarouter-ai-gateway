@@ -6,7 +6,7 @@ title: "Deepseek Discount + Mistral Joins the Lineup"
 summary: "Massive savings with Deepseek models and the arrival of Mistral models for all users. Discover new performance benchmarks at lower costs."
 image:
   src: "/changelog/cloudrift.png"
-  alt: "Deepseek and Mistral models added to LLM Gateway with discount banner"
+  alt: "Deepseek and Mistral models added to betarouter with discount banner"
   width: 1768
   height: 677
 ---
@@ -15,7 +15,7 @@ Two big updates to help you build faster and cheaper with the best models.
 
 ## 💸 Deepseek Discount – Up to 60% Off
 
-Thanks to our partner [**Cloudrift**](https://llmgateway.io/providers/cloudrift), you get:
+Thanks to our partner [**Cloudrift**](https://betarouter.com/providers/cloudrift), you get:
 
 **50-60% off Deepseek models** until **July 15th, 2025**
 

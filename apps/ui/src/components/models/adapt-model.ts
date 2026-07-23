@@ -1,4 +1,4 @@
-import { isPremiumModel } from "@llmgateway/shared";
+import { isPremiumModel } from "@betarouter/shared";
 
 import type {
 	ApiModel,
@@ -9,7 +9,7 @@ import type {
 	ModelDefinition,
 	ProviderModelMapping,
 	ProviderDefinition,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 interface ProviderWithInfo extends ProviderModelMapping {
 	discount?: string | null;

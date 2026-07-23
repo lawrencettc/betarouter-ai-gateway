@@ -4,14 +4,14 @@ import { z } from "zod";
 
 import { platformSecretAuth } from "@/lib/platform-secret-auth.js";
 
-import { db, eq, shortid, tables } from "@llmgateway/db";
-import { assertSafeWebhookUrl } from "@llmgateway/shared";
+import { db, eq, shortid, tables } from "@betarouter/db";
+import { assertSafeWebhookUrl } from "@betarouter/shared";
 
 import type { ServerTypes } from "@/vars.js";
 
 /**
  * LLM SDK — manage developer webhook endpoints (platform secret key
- * auth). LLM Gateway POSTs signed events (wallet.credited, wallet.low_balance)
+ * auth). betarouter POSTs signed events (wallet.credited, wallet.low_balance)
  * to these. The signing secret is returned only once, at creation.
  */
 export const platformWebhooks = new OpenAPIHono<ServerTypes>();

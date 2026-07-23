@@ -12,11 +12,11 @@ const Footer = dynamic(() => import("@/components/landing/footer"));
 export const metadata = {
 	title: "Integrations — Claude Code, Cursor, Cline, n8n",
 	description:
-		"Connect LLM Gateway with your favorite tools. Integrate with Claude Code, Cursor, Cline, n8n, and more.",
+		"Connect betarouter with your favorite tools. Integrate with Claude Code, Cursor, Cline, n8n, and more.",
 	openGraph: {
 		title: "Integrations — Claude Code, Cursor, Cline, n8n",
 		description:
-			"Connect LLM Gateway with your favorite tools. Integrate with Claude Code, Cursor, Cline, n8n, and more.",
+			"Connect betarouter with your favorite tools. Integrate with Claude Code, Cursor, Cline, n8n, and more.",
 	},
 };
 
@@ -31,7 +31,7 @@ export default function IntegrationsPage() {
 							Integrations
 						</h1>
 						<p className="text-lg text-muted-foreground leading-relaxed">
-							Connect LLM Gateway with your favorite tools and workflows. Access
+							Connect betarouter with your favorite tools and workflows. Access
 							powerful AI capabilities wherever you work.
 						</p>
 					</div>

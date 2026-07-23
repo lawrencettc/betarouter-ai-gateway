@@ -7,7 +7,7 @@ import { getLogContent } from "@/lib/admin-organizations";
 import {
 	LogCard as SharedLogCard,
 	type LogCardData,
-} from "@llmgateway/shared/components";
+} from "@betarouter/shared/components";
 
 import type { ProjectLogEntry } from "@/lib/types";
 

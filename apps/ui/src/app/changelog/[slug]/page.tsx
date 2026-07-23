@@ -34,33 +34,33 @@ export default async function ChangelogEntryPage({
 		"@context": "https://schema.org",
 		"@type": "Article",
 		headline: entry.title,
-		description: entry.summary ?? "LLM Gateway changelog entry",
+		description: entry.summary ?? "betarouter changelog entry",
 		datePublished: entry.date,
 		dateModified: entry.date,
 		author: {
 			"@type": "Organization",
-			name: "LLM Gateway",
-			url: "https://llmgateway.io",
+			name: "betarouter",
+			url: "https://betarouter.com",
 		},
 		publisher: {
 			"@type": "Organization",
-			name: "LLM Gateway",
-			url: "https://llmgateway.io",
+			name: "betarouter",
+			url: "https://betarouter.com",
 			logo: {
 				"@type": "ImageObject",
-				url: "https://llmgateway.io/favicon/android-chrome-512x512.png",
+				url: "https://betarouter.com/favicon/android-chrome-512x512.png",
 			},
 		},
 		mainEntityOfPage: {
 			"@type": "WebPage",
-			"@id": `https://llmgateway.io/changelog/${slug}`,
+			"@id": `https://betarouter.com/changelog/${slug}`,
 		},
 		...(entry.image && {
 			image: {
 				"@type": "ImageObject",
 				url: entry.image.src.startsWith("http")
 					? entry.image.src
-					: `https://llmgateway.io${entry.image.src}`,
+					: `https://betarouter.com${entry.image.src}`,
 				width: entry.image.width,
 				height: entry.image.height,
 			},
@@ -75,19 +75,19 @@ export default async function ChangelogEntryPage({
 				"@type": "ListItem",
 				position: 1,
 				name: "Home",
-				item: "https://llmgateway.io",
+				item: "https://betarouter.com",
 			},
 			{
 				"@type": "ListItem",
 				position: 2,
 				name: "Changelog",
-				item: "https://llmgateway.io/changelog",
+				item: "https://betarouter.com/changelog",
 			},
 			{
 				"@type": "ListItem",
 				position: 3,
 				name: entry.title,
-				item: `https://llmgateway.io/changelog/${slug}`,
+				item: `https://betarouter.com/changelog/${slug}`,
 			},
 		],
 	};
@@ -190,13 +190,13 @@ export async function generateMetadata({
 
 	return {
 		title: `${entry.title} - Changelog`,
-		description: entry.summary ?? "LLM Gateway changelog entry",
+		description: entry.summary ?? "betarouter changelog entry",
 		alternates: { canonical: `/changelog/${entry.slug}` },
 		openGraph: {
-			title: `${entry.title} - Changelog | LLM Gateway`,
-			description: entry.summary ?? "LLM Gateway changelog entry",
+			title: `${entry.title} - Changelog | betarouter`,
+			description: entry.summary ?? "betarouter changelog entry",
 			type: "article",
-			url: `https://llmgateway.io/changelog/${entry.slug}`,
+			url: `https://betarouter.com/changelog/${entry.slug}`,
 			images: entry.image
 				? [
 						{
@@ -210,8 +210,8 @@ export async function generateMetadata({
 		},
 		twitter: {
 			card: "summary_large_image",
-			title: `${entry.title} - Changelog | LLM Gateway`,
-			description: entry.summary ?? "LLM Gateway changelog entry",
+			title: `${entry.title} - Changelog | betarouter`,
+			description: entry.summary ?? "betarouter changelog entry",
 		},
 	};
 }

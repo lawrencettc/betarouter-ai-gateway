@@ -171,6 +171,36 @@ importers:
 
   apps/api:
     dependencies:
+      '@betarouter/actions':
+        specifier: workspace:*
+        version: link:../../packages/actions
+      '@betarouter/audit':
+        specifier: workspace:*
+        version: link:../../ee/audit
+      '@betarouter/cache':
+        specifier: workspace:*
+        version: link:../../packages/cache
+      '@betarouter/catalog':
+        specifier: workspace:*
+        version: link:../../packages/catalog
+      '@betarouter/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@betarouter/guardrails':
+        specifier: workspace:*
+        version: link:../../ee/guardrails
+      '@betarouter/instrumentation':
+        specifier: workspace:*
+        version: link:../../packages/instrumentation
+      '@betarouter/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      '@betarouter/models':
+        specifier: workspace:*
+        version: link:../../packages/models
+      '@betarouter/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@better-auth/passkey':
         specifier: 1.6.23
         version: 1.6.23(@better-auth/core@1.6.23(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.0)(better-call@1.3.7(zod@3.25.75))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.4.0))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-auth@1.6.23(@opentelemetry/api@1.9.0)(drizzle-orm@1.0.0-beta.1-fd5d1e8(@opentelemetry/api@1.9.0)(@types/pg@8.15.6)(kysely@0.28.17)(pg@8.16.3)(sql.js@1.13.0))(next@16.2.10(@opentelemetry/api@1.9.0)(@types/node@26.1.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(pg@8.16.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(vitest@4.1.8(@opentelemetry/api@1.9.0)(@types/node@26.1.1)(vite@7.3.6(@types/node@26.1.1)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.8.3))))(better-call@1.3.7(zod@3.25.75))(nanostores@1.4.0)
@@ -192,39 +222,9 @@ importers:
       '@kubiks/otel-better-auth':
         specifier: 2.0.2
         version: 2.0.2(@opentelemetry/api@1.9.0)(better-auth@1.6.23(@opentelemetry/api@1.9.0)(drizzle-orm@1.0.0-beta.1-fd5d1e8(@opentelemetry/api@1.9.0)(@types/pg@8.15.6)(kysely@0.28.17)(pg@8.16.3)(sql.js@1.13.0))(next@16.2.10(@opentelemetry/api@1.9.0)(@types/node@26.1.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(pg@8.16.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(vitest@4.1.8(@opentelemetry/api@1.9.0)(@types/node@26.1.1)(vite@7.3.6(@types/node@26.1.1)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.8.3))))
-      '@llmgateway/actions':
-        specifier: workspace:*
-        version: link:../../packages/actions
       '@llmgateway/ai-sdk-provider':
         specifier: 3.7.0
         version: 3.7.0(ai@6.0.27(zod@3.25.75))(zod@3.25.75)
-      '@llmgateway/audit':
-        specifier: workspace:*
-        version: link:../../ee/audit
-      '@llmgateway/cache':
-        specifier: workspace:*
-        version: link:../../packages/cache
-      '@llmgateway/catalog':
-        specifier: workspace:*
-        version: link:../../packages/catalog
-      '@llmgateway/db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      '@llmgateway/guardrails':
-        specifier: workspace:*
-        version: link:../../ee/guardrails
-      '@llmgateway/instrumentation':
-        specifier: workspace:*
-        version: link:../../packages/instrumentation
-      '@llmgateway/logger':
-        specifier: workspace:*
-        version: link:../../packages/logger
-      '@llmgateway/models':
-        specifier: workspace:*
-        version: link:../../packages/models
-      '@llmgateway/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       '@opentelemetry/api':
         specifier: 1.9.0
         version: 1.9.0
@@ -297,6 +297,12 @@ importers:
 
   apps/code:
     dependencies:
+      '@betarouter/models':
+        specifier: workspace:*
+        version: link:../../packages/models
+      '@betarouter/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@better-auth/passkey':
         specifier: 1.6.23
         version: 1.6.23(@better-auth/core@1.6.23(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.0)(better-call@1.3.7(zod@3.25.76))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.4.0))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-auth@1.6.23(@opentelemetry/api@1.9.0)(next@16.2.10(@babel/core@7.29.7)(@opentelemetry/api@1.9.0)(@types/node@26.1.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(pg@8.16.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(vitest@4.1.8(@opentelemetry/api@1.9.0)(@types/node@26.1.1)(vite@7.3.6(@types/node@26.1.1)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.8.3))))(better-call@1.3.7(zod@3.25.76))(nanostores@1.4.0)
@@ -309,12 +315,6 @@ importers:
       '@hookform/resolvers':
         specifier: 5.2.2
         version: 5.2.2(react-hook-form@7.65.0(react@19.2.7))(zod@3.25.76)
-      '@llmgateway/models':
-        specifier: workspace:*
-        version: link:../../packages/models
-      '@llmgateway/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       '@radix-ui/react-accordion':
         specifier: 1.2.12
         version: 1.2.12(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -590,6 +590,33 @@ importers:
 
   apps/gateway:
     dependencies:
+      '@betarouter/actions':
+        specifier: workspace:*
+        version: link:../../packages/actions
+      '@betarouter/cache':
+        specifier: workspace:*
+        version: link:../../packages/cache
+      '@betarouter/catalog':
+        specifier: workspace:*
+        version: link:../../packages/catalog
+      '@betarouter/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@betarouter/guardrails':
+        specifier: workspace:*
+        version: link:../../ee/guardrails
+      '@betarouter/instrumentation':
+        specifier: workspace:*
+        version: link:../../packages/instrumentation
+      '@betarouter/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      '@betarouter/models':
+        specifier: workspace:*
+        version: link:../../packages/models
+      '@betarouter/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@hono/node-server':
         specifier: ^1.19.13
         version: 1.19.13(hono@4.12.31)
@@ -602,33 +629,6 @@ importers:
       '@hono/zod-validator':
         specifier: ^0.7.2
         version: 0.7.2(hono@4.12.31)(zod@3.25.75)
-      '@llmgateway/actions':
-        specifier: workspace:*
-        version: link:../../packages/actions
-      '@llmgateway/cache':
-        specifier: workspace:*
-        version: link:../../packages/cache
-      '@llmgateway/catalog':
-        specifier: workspace:*
-        version: link:../../packages/catalog
-      '@llmgateway/db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      '@llmgateway/guardrails':
-        specifier: workspace:*
-        version: link:../../ee/guardrails
-      '@llmgateway/instrumentation':
-        specifier: workspace:*
-        version: link:../../packages/instrumentation
-      '@llmgateway/logger':
-        specifier: workspace:*
-        version: link:../../packages/logger
-      '@llmgateway/models':
-        specifier: workspace:*
-        version: link:../../packages/models
-      '@llmgateway/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       '@modelcontextprotocol/sdk':
         specifier: 1.29.0
         version: 1.29.0(zod@3.25.75)
@@ -680,6 +680,12 @@ importers:
       '@ai-sdk/react':
         specifier: 3.0.29
         version: 3.0.29(react@19.2.7)(zod@4.3.6)
+      '@betarouter/models':
+        specifier: workspace:*
+        version: link:../../packages/models
+      '@betarouter/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@better-auth/passkey':
         specifier: 1.6.23
         version: 1.6.23(@better-auth/core@1.6.23(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.0)(better-call@1.3.7(zod@4.3.6))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.4.0))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-auth@1.6.23(@opentelemetry/api@1.9.0)(next@16.2.10(@opentelemetry/api@1.9.0)(@types/node@26.1.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(pg@8.16.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(vitest@4.1.8(@opentelemetry/api@1.9.0)(@types/node@26.1.1)(vite@7.3.6(@types/node@26.1.1)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.8.3))))(better-call@1.3.7(zod@4.3.6))(nanostores@1.4.0)
@@ -698,12 +704,6 @@ importers:
       '@llmgateway/ai-sdk-provider':
         specifier: 3.8.0
         version: 3.8.0(ai@6.0.27(zod@4.3.6))(zod@4.3.6)
-      '@llmgateway/models':
-        specifier: workspace:*
-        version: link:../../packages/models
-      '@llmgateway/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       '@modelcontextprotocol/sdk':
         specifier: 1.29.0
         version: 1.29.0(zod@4.3.6)
@@ -948,6 +948,15 @@ importers:
       '@ai-sdk/react':
         specifier: 3.0.29
         version: 3.0.29(react@19.2.7)(zod@3.25.75)
+      '@betarouter/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@betarouter/models':
+        specifier: workspace:*
+        version: link:../../packages/models
+      '@betarouter/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@better-auth/passkey':
         specifier: 1.6.23
         version: 1.6.23(@better-auth/core@1.6.23(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.0)(better-call@1.3.7(zod@3.25.75))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.4.0))(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(better-auth@1.6.23(@opentelemetry/api@1.9.0)(next@16.2.10(@opentelemetry/api@1.9.0)(@types/node@26.1.1)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(pg@8.16.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(vitest@4.1.8(@opentelemetry/api@1.9.0)(@types/node@26.1.1)(vite@7.3.6(@types/node@26.1.1)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.8.3))))(better-call@1.3.7(zod@3.25.75))(nanostores@1.4.0)
@@ -963,15 +972,6 @@ importers:
       '@hookform/resolvers':
         specifier: 5.2.2
         version: 5.2.2(react-hook-form@7.65.0(react@19.2.7))(zod@3.25.75)
-      '@llmgateway/db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      '@llmgateway/models':
-        specifier: workspace:*
-        version: link:../../packages/models
-      '@llmgateway/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       '@radix-ui/react-accordion':
         specifier: 1.2.12
         version: 1.2.12(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -1195,22 +1195,22 @@ importers:
 
   apps/worker:
     dependencies:
-      '@llmgateway/cache':
+      '@betarouter/cache':
         specifier: workspace:*
         version: link:../../packages/cache
-      '@llmgateway/catalog':
+      '@betarouter/catalog':
         specifier: workspace:*
         version: link:../../packages/catalog
-      '@llmgateway/db':
+      '@betarouter/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@llmgateway/logger':
+      '@betarouter/logger':
         specifier: workspace:*
         version: link:../../packages/logger
-      '@llmgateway/models':
+      '@betarouter/models':
         specifier: workspace:*
         version: link:../../packages/models
-      '@llmgateway/shared':
+      '@betarouter/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       decimal.js:
@@ -1228,18 +1228,18 @@ importers:
 
   ee/admin:
     dependencies:
+      '@betarouter/models':
+        specifier: workspace:*
+        version: link:../../packages/models
+      '@betarouter/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@hookform/resolvers':
         specifier: 5.2.2
         version: 5.2.2(react-hook-form@7.65.0(react@19.2.7))(zod@3.25.76)
       '@llmgateway/ai-sdk-provider':
         specifier: 3.7.0
         version: 3.7.0(ai@6.0.27(zod@3.25.76))(zod@3.25.76)
-      '@llmgateway/models':
-        specifier: workspace:*
-        version: link:../../packages/models
-      '@llmgateway/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       '@radix-ui/react-avatar':
         specifier: 1.1.11
         version: 1.1.11(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -1412,10 +1412,10 @@ importers:
 
   ee/audit:
     dependencies:
-      '@llmgateway/db':
+      '@betarouter/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@llmgateway/logger':
+      '@betarouter/logger':
         specifier: workspace:*
         version: link:../../packages/logger
       drizzle-orm:
@@ -1424,10 +1424,10 @@ importers:
 
   ee/guardrails:
     dependencies:
-      '@llmgateway/cache':
+      '@betarouter/cache':
         specifier: workspace:*
         version: link:../../packages/cache
-      '@llmgateway/db':
+      '@betarouter/db':
         specifier: workspace:*
         version: link:../../packages/db
       drizzle-orm:
@@ -1436,19 +1436,19 @@ importers:
 
   packages/actions:
     dependencies:
-      '@llmgateway/cache':
+      '@betarouter/cache':
         specifier: workspace:*
         version: link:../cache
-      '@llmgateway/db':
+      '@betarouter/db':
         specifier: workspace:*
         version: link:../db
-      '@llmgateway/logger':
+      '@betarouter/logger':
         specifier: workspace:*
         version: link:../logger
-      '@llmgateway/models':
+      '@betarouter/models':
         specifier: workspace:*
         version: link:../models
-      '@llmgateway/shared':
+      '@betarouter/shared':
         specifier: workspace:*
         version: link:../shared
       decimal.js:
@@ -1457,7 +1457,7 @@ importers:
 
   packages/cache:
     dependencies:
-      '@llmgateway/logger':
+      '@betarouter/logger':
         specifier: workspace:*
         version: link:../logger
       ioredis:
@@ -1470,16 +1470,16 @@ importers:
 
   packages/catalog:
     dependencies:
-      '@llmgateway/cache':
+      '@betarouter/cache':
         specifier: workspace:*
         version: link:../cache
-      '@llmgateway/db':
+      '@betarouter/db':
         specifier: workspace:*
         version: link:../db
-      '@llmgateway/logger':
+      '@betarouter/logger':
         specifier: workspace:*
         version: link:../logger
-      '@llmgateway/models':
+      '@betarouter/models':
         specifier: workspace:*
         version: link:../models
       decimal.js:
@@ -1495,21 +1495,21 @@ importers:
 
   packages/db:
     dependencies:
+      '@betarouter/cache':
+        specifier: workspace:*
+        version: link:../cache
+      '@betarouter/logger':
+        specifier: workspace:*
+        version: link:../logger
+      '@betarouter/models':
+        specifier: workspace:*
+        version: link:../models
+      '@betarouter/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@kubiks/otel-drizzle':
         specifier: 2.0.3
         version: 2.0.3(@opentelemetry/api@1.9.0)(drizzle-orm@1.0.0-beta.1(@opentelemetry/api@1.9.0)(@types/mssql@9.1.8)(@types/pg@8.15.5)(mssql@11.0.1)(pg@8.16.3)(sql.js@1.13.0))
-      '@llmgateway/cache':
-        specifier: workspace:*
-        version: link:../cache
-      '@llmgateway/logger':
-        specifier: workspace:*
-        version: link:../logger
-      '@llmgateway/models':
-        specifier: workspace:*
-        version: link:../models
-      '@llmgateway/shared':
-        specifier: workspace:*
-        version: link:../shared
       '@opentelemetry/api':
         specifier: 1.9.0
         version: 1.9.0
@@ -1538,15 +1538,15 @@ importers:
 
   packages/instrumentation:
     dependencies:
+      '@betarouter/logger':
+        specifier: workspace:*
+        version: link:../logger
       '@google-cloud/opentelemetry-cloud-trace-exporter':
         specifier: 3.0.0
         version: 3.0.0(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.8.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@2.1.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))
       '@google-cloud/opentelemetry-cloud-trace-propagator':
         specifier: 0.21.0
         version: 0.21.0(@opentelemetry/api@1.9.0)(@opentelemetry/core@2.8.0(@opentelemetry/api@1.9.0))
-      '@llmgateway/logger':
-        specifier: workspace:*
-        version: link:../logger
       '@opentelemetry/api':
         specifier: 1.9.0
         version: 1.9.0
@@ -1588,19 +1588,19 @@ importers:
 
   packages/scripts:
     dependencies:
-      '@llmgateway/actions':
+      '@betarouter/actions':
         specifier: workspace:*
         version: link:../actions
-      '@llmgateway/catalog':
+      '@betarouter/catalog':
         specifier: workspace:*
         version: link:../catalog
-      '@llmgateway/db':
+      '@betarouter/db':
         specifier: workspace:*
         version: link:../db
-      '@llmgateway/models':
+      '@betarouter/models':
         specifier: workspace:*
         version: link:../models
-      '@llmgateway/shared':
+      '@betarouter/shared':
         specifier: workspace:*
         version: link:../shared
       nanoid:
@@ -1628,12 +1628,12 @@ importers:
 
   packages/shared:
     dependencies:
+      '@betarouter/models':
+        specifier: workspace:*
+        version: link:../models
       '@google-cloud/storage':
         specifier: 7.19.0
         version: 7.19.0
-      '@llmgateway/models':
-        specifier: workspace:*
-        version: link:../models
       '@opentelemetry/api':
         specifier: 1.9.0
         version: 1.9.0

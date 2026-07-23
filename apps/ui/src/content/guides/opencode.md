@@ -2,11 +2,11 @@
 id: opencode
 slug: opencode
 title: OpenCode Integration
-description: Connect OpenCode to 200+ models through LLM Gateway's built-in provider. No config files needed — just select, authenticate, and code.
+description: Connect OpenCode to 200+ models through betarouter's built-in provider. No config files needed — just select, authenticate, and code.
 date: 2026-01-09
 ---
 
-OpenCode is an open-source AI coding agent for your terminal, IDE, or desktop. LLM Gateway is a built-in provider in OpenCode, so setup takes under a minute — no config files or npm adapters required. You get access to 200+ models from 40+ providers, all tracked in one dashboard.
+OpenCode is an open-source AI coding agent for your terminal, IDE, or desktop. betarouter is a built-in provider in OpenCode, so setup takes under a minute — no config files or npm adapters required. You get access to 200+ models from 40+ providers, all tracked in one dashboard.
 
 ## Prerequisites
 
@@ -40,15 +40,15 @@ Once OpenCode launches, run the `/providers` or `/connect` command to open the p
 
 ![OpenCode Connect Command](/images/guides/opencode/connect-command.png)
 
-### Step 3: Select LLM Gateway
+### Step 3: Select betarouter
 
-LLM Gateway is listed as a built-in provider. Select "LLM Gateway" from the provider list:
+betarouter is listed as a built-in provider. Select "betarouter" from the provider list:
 
-![Select LLM Gateway Provider](/images/guides/opencode/select-provider.png)
+![Select betarouter Provider](/images/guides/opencode/select-provider.png)
 
 ### Step 4: Enter Your API Key
 
-OpenCode will prompt you for your API key. Enter your LLM Gateway API key and press Enter:
+OpenCode will prompt you for your API key. Enter your betarouter API key and press Enter:
 
 ![Enter API Key](/images/guides/opencode/enter-api-key.png)
 
@@ -56,11 +56,11 @@ OpenCode will automatically save your credentials securely.
 
 **Where to get your API key:**
 
-[Sign up for LLM Gateway](/signup) and create an API key from your dashboard.
+[Sign up for betarouter](/signup) and create an API key from your dashboard.
 
 ### Step 5: Start Using OpenCode
 
-You're all set! OpenCode is now connected to LLM Gateway. You can start asking questions and building with AI:
+You're all set! OpenCode is now connected to betarouter. You can start asking questions and building with AI:
 
 ![OpenCode Ready](/images/guides/opencode/ready-to-use.png)
 
@@ -68,7 +68,7 @@ Try asking OpenCode about your project or request help with coding tasks:
 
 ![OpenCode in Action](/images/guides/opencode/opencode-usage.png)
 
-## Why Use LLM Gateway with OpenCode?
+## Why Use betarouter with OpenCode?
 
 - **200+ models** — GPT-5, Claude, Gemini, Llama, and more from 40+ providers
 - **One API key** — Stop juggling credentials for every provider
@@ -78,7 +78,7 @@ Try asking OpenCode about your project or request help with coding tasks:
 
 ## Adding Custom Models
 
-The built-in provider gives you access to all standard LLM Gateway models. If you want to add custom model aliases or configure models not yet listed in the built-in provider, you can create a `config.json` in your OpenCode configuration directory:
+The built-in provider gives you access to all standard betarouter models. If you want to add custom model aliases or configure models not yet listed in the built-in provider, you can create a `config.json` in your OpenCode configuration directory:
 
 **macOS/Linux:** `~/.config/opencode/config.json`
 
@@ -87,11 +87,11 @@ The built-in provider gives you access to all standard LLM Gateway models. If yo
 ```json
 {
   "provider": {
-    "llmgateway": {
+    "betarouter": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "LLM Gateway",
+      "name": "betarouter",
       "options": {
-        "baseURL": "https://api.llmgateway.io/v1"
+        "baseURL": "https://api.betarouter.com/v1"
       },
       "models": {
         "deepseek/deepseek-chat": {
@@ -114,7 +114,7 @@ Select a different model directly in the OpenCode interface, or update the `mode
 
 ```json
 {
-  "model": "llmgateway/gpt-5-mini"
+  "model": "betarouter/gpt-5-mini"
 }
 ```
 
@@ -130,7 +130,7 @@ After editing `config.json`, restart OpenCode completely for changes to take eff
 
 ### 404 Not Found errors with custom config
 
-If you are using a custom `config.json`, verify your `baseURL` is set to `https://api.llmgateway.io/v1` (note the `/v1` at the end).
+If you are using a custom `config.json`, verify your `baseURL` is set to `https://api.betarouter.com/v1` (note the `/v1` at the end).
 
 ## Configuration Tips
 
@@ -140,4 +140,4 @@ If you are using a custom `config.json`, verify your `baseURL` is set to `https:
 
 ## Get Started
 
-Ready to enhance your OpenCode experience? [Sign up for LLM Gateway](/signup) and get your API key today.
+Ready to enhance your OpenCode experience? [Sign up for betarouter](/signup) and get your API key today.

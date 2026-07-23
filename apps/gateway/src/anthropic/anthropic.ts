@@ -9,7 +9,7 @@ import {
 } from "@/lib/error-response.js";
 import { extractAnthropicSessionId } from "@/lib/session-id.js";
 
-import { logger, toError } from "@llmgateway/logger";
+import { logger, toError } from "@betarouter/logger";
 
 import { buildAnthropicErrorEvent } from "./streaming-error-translation.js";
 import { mapAnthropicThinkingToReasoning } from "./thinking-to-reasoning.js";

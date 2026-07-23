@@ -1,8 +1,8 @@
-import { logger } from "@llmgateway/logger";
+import { logger } from "@betarouter/logger";
 import {
 	estimateChatMessageTokens,
 	type TokenEstimateFallback,
-} from "@llmgateway/shared";
+} from "@betarouter/shared";
 
 /**
  * Converts a message content value (string, array of content parts, null, or

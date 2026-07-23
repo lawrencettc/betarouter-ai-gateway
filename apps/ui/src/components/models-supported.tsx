@@ -34,12 +34,12 @@ import {
 	type ProviderModelMapping,
 	type ProviderId,
 	type StabilityLevel,
-} from "@llmgateway/models";
-import { isPremiumModel } from "@llmgateway/shared";
+} from "@betarouter/models";
+import { isPremiumModel } from "@betarouter/shared";
 import {
 	getProviderIcon,
 	providerLogoUrls,
-} from "@llmgateway/shared/components";
+} from "@betarouter/shared/components";
 
 import type {
 	ApiModel,
@@ -320,11 +320,11 @@ export const ModelsSupported = ({ isDashboard }: { isDashboard?: boolean }) => {
 	const filteredProviderEntries =
 		selectedProvider === "all"
 			? sortedProviderEntries.filter(
-					([providerName]) => providerName !== "LLM Gateway",
+					([providerName]) => providerName !== "betarouter",
 				)
 			: sortedProviderEntries.filter(
 					([providerName]) =>
-						providerName !== "LLM Gateway" && providerName === selectedProvider,
+						providerName !== "betarouter" && providerName === selectedProvider,
 				);
 
 	// Calculate filtered counts
@@ -463,7 +463,7 @@ export const ModelsSupported = ({ isDashboard }: { isDashboard?: boolean }) => {
 									</div>
 								</SelectItem>
 								{sortedProviderEntries
-									.filter(([providerName]) => providerName !== "LLM Gateway")
+									.filter(([providerName]) => providerName !== "betarouter")
 									.map(([providerName, models]) => {
 										const providerId = models[0].providerDetails[0].provider
 											.providerId as ProviderId;
@@ -543,7 +543,7 @@ export const ModelsSupported = ({ isDashboard }: { isDashboard?: boolean }) => {
 					target="_blank"
 					className="inline-flex items-center gap-2 text-sm text-muted-foreground"
 				>
-					<span>Data sourced from @llmgateway/models</span>
+					<span>Data sourced from @betarouter/models</span>
 					<ExternalLink className="w-4 h-4" />
 				</a>
 			</footer>

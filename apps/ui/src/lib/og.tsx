@@ -17,7 +17,7 @@ interface OgImageOptions {
 
 /**
  * Shared OpenGraph image template so every marketing page renders a
- * consistent, on-brand 1200x630 card with the LLM Gateway logo in the
+ * consistent, on-brand 1200x630 card with the betarouter logo in the
  * top-left corner and a faint logo watermark in the opposite corner.
  */
 export function ogImage({ eyebrow, title, subtitle }: OgImageOptions) {
@@ -84,7 +84,7 @@ export function ogImage({ eyebrow, title, subtitle }: OgImageOptions) {
 						}}
 					>
 						<span style={{ color: "#ffffff", fontWeight: 600 }}>
-							LLM Gateway
+							betarouter
 						</span>
 						<span style={{ color: "#4B5563" }}>/</span>
 						<span style={{ color: "#9CA3AF" }}>{eyebrow}</span>
@@ -137,7 +137,7 @@ export function ogImage({ eyebrow, title, subtitle }: OgImageOptions) {
 					}}
 				>
 					<span style={{ color: "#ffffff", fontWeight: 600 }}>
-						llmgateway.io
+						betarouter.com
 					</span>
 					<span>One API. Every model.</span>
 				</div>

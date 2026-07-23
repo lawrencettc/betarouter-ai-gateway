@@ -42,7 +42,7 @@ export const features: FeatureDefinition[] = [
 		description:
 			"Compatible with the OpenAI API format — migrate by changing the base URL, keep your SDK, and reach 200+ models across 40+ providers with no code changes.",
 		longDescription:
-			"LLM Gateway provides a unified API interface that's fully compatible with the OpenAI API format. This means you can easily migrate from OpenAI to any other provider without changing your code. Simply update the base URL and API key, and you're ready to go.",
+			"betarouter provides a unified API interface that's fully compatible with the OpenAI API format. This means you can easily migrate from OpenAI to any other provider without changing your code. Simply update the base URL and API key, and you're ready to go.",
 		icon: null,
 		benefits: [
 			{
@@ -87,7 +87,7 @@ export const features: FeatureDefinition[] = [
 			code: `import OpenAI from "openai";
 
 const client = new OpenAI({
-	baseURL: "https://api.llmgateway.io/v1",
+	baseURL: "https://api.betarouter.com/v1",
 	apiKey: process.env.LLMGATEWAY_API_KEY,
 });
 
@@ -108,7 +108,7 @@ console.log(completion.choices[0].message.content);`,
 		subtitle: "Access 40+ LLM providers through one gateway",
 		description: "Connect to various LLM providers through a single gateway.",
 		longDescription:
-			"LLM Gateway supports 40+ LLM providers, including OpenAI, Anthropic, Google, AWS Bedrock, Azure, and many more. Access cutting-edge models from multiple providers without managing separate integrations.",
+			"betarouter supports 40+ LLM providers, including OpenAI, Anthropic, Google, AWS Bedrock, Azure, and many more. Access cutting-edge models from multiple providers without managing separate integrations.",
 		icon: null,
 		demoComponent: "multi-provider",
 		benefits: [
@@ -246,7 +246,7 @@ console.log(completion.choices[0].message.content);`,
 		subtitle: "Deploy anywhere",
 		description: "Deploy on your own infrastructure or use our hosted version.",
 		longDescription:
-			"LLM Gateway offers flexible deployment options. Use our hosted cloud version for instant setup, or deploy on your own infrastructure for complete control. Both options provide the same features and performance.",
+			"betarouter offers flexible deployment options. Use our hosted cloud version for instant setup, or deploy on your own infrastructure for complete control. Both options provide the same features and performance.",
 		icon: null,
 		benefits: [
 			{

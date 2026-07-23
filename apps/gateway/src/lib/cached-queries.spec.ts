@@ -9,7 +9,7 @@ import {
 	providerKey,
 	user,
 	userOrganization,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 import {
 	reportTrackedKeyError,

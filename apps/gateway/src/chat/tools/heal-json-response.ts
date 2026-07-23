@@ -13,7 +13,7 @@
  * - Format inconsistencies: Converts JavaScript-style syntax to valid JSON
  */
 
-import { logger } from "@llmgateway/logger";
+import { logger } from "@betarouter/logger";
 
 export interface HealingResult {
 	healed: boolean;

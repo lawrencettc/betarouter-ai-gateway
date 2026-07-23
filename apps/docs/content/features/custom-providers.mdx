@@ -1,6 +1,6 @@
 ---
 title: Custom Providers
-description: Learn how to integrate custom OpenAI-compatible providers with LLMGateway for enhanced flexibility and control.
+description: Learn how to integrate custom OpenAI-compatible providers with betarouter for enhanced flexibility and control.
 icon: Columns3Cog
 ---
 
@@ -8,7 +8,7 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 # Custom Providers
 
-LLMGateway supports integrating custom OpenAI-compatible providers, allowing you to use any API that follows the OpenAI chat completions format. This feature is perfect for:
+betarouter supports integrating custom OpenAI-compatible providers, allowing you to use any API that follows the OpenAI chat completions format. This feature is perfect for:
 
 - Private or self-hosted LLM deployments
 - Specialized AI providers not natively supported
@@ -32,7 +32,7 @@ Provide a lowercase name, OpenAI-compatible base URL, and API token for the cust
 Once configured, make requests using the format `{customName}/{modelName}`:
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
+curl -X POST "https://api.betarouter.com/v1/chat/completions" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -64,7 +64,7 @@ curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
 - Must be a valid URL pointing to your provider's base endpoint
 - Use an `https://` URL for hosted providers; an `http://` URL is allowed when
   self-hosting (for example a service on your own network)
-- LLMGateway will append `/v1/chat/completions` automatically
+- betarouter will append `/v1/chat/completions` automatically
 - **Example**: `https://api.example.com` → `https://api.example.com/v1/chat/completions`
 
 ### API Token
@@ -79,7 +79,7 @@ curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
 
 ## Supported Features
 
-Custom providers inherit full LLMGateway functionality.
+Custom providers inherit full betarouter functionality.
 
 ## Custom Model Catalog
 
@@ -90,9 +90,9 @@ Custom providers inherit full LLMGateway functionality.
 </Callout>
 
 By default, requests through a custom provider are **not billed** and have **no
-enforced limits** — LLMGateway has no catalog entry for the model, so it cannot
+enforced limits** — betarouter has no catalog entry for the model, so it cannot
 know its pricing, context window, or capabilities. The **custom model catalog**
-lets you define that information per custom provider key, so LLMGateway can
+lets you define that information per custom provider key, so betarouter can
 attribute cost, enforce limits, and report usage just like a built-in model.
 
 Custom catalog models are **text-output** models. Multi-modal _input_ (images,
@@ -120,7 +120,7 @@ exponent (`3.0e-6`) notation.
 
 ### Cost attribution
 
-When a request matches a catalog entry, LLMGateway bills it using the entry's
+When a request matches a catalog entry, betarouter bills it using the entry's
 token prices and records the cost on the activity log. Without a matching entry
 the request stays unbilled (zero/null cost).
 
@@ -132,7 +132,7 @@ the request stays unbilled (zero/null cost).
 
 ### Limit and capability enforcement
 
-When an entry defines limits or capabilities, LLMGateway enforces them before
+When an entry defines limits or capabilities, betarouter enforces them before
 forwarding the request:
 
 - **Context size / max output** — requests that would exceed the configured

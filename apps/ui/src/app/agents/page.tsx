@@ -7,13 +7,13 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
 	title: "AI Agents — Pre-built Tool-Calling Agents",
 	description:
-		"Pre-built tool-calling AI agents ready to integrate — weather, search, and more, powered by LLM Gateway.",
+		"Pre-built tool-calling AI agents ready to integrate — weather, search, and more, powered by betarouter.",
 	alternates: { canonical: "/agents" },
 	openGraph: {
 		title: "AI Agents — Pre-built Tool-Calling Agents",
 		description:
-			"Pre-built tool-calling AI agents ready to integrate — weather, search, and more, powered by LLM Gateway.",
-		url: "https://llmgateway.io/agents",
+			"Pre-built tool-calling AI agents ready to integrate — weather, search, and more, powered by betarouter.",
+		url: "https://betarouter.com/agents",
 		type: "website",
 	},
 };

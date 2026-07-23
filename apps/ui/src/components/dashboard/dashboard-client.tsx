@@ -678,7 +678,7 @@ export function DashboardClient({ initialActivityData }: DashboardClientProps) {
 															href={
 																process.env.NODE_ENV === "development"
 																	? "http://localhost:3003"
-																	: "https://chat.llmgateway.io"
+																	: "https://chat.betarouter.com"
 															}
 															target="_blank"
 															rel="noopener noreferrer"
@@ -690,7 +690,7 @@ export function DashboardClient({ initialActivityData }: DashboardClientProps) {
 													</Button>
 													<Button asChild variant="outline" size="sm">
 														<a
-															href="https://docs.llmgateway.io"
+															href="https://docs.betarouter.com"
 															target="_blank"
 															rel="noopener noreferrer"
 														>
@@ -711,8 +711,8 @@ export function DashboardClient({ initialActivityData }: DashboardClientProps) {
 											<CardTitle>Get Started</CardTitle>
 											<CardDescription>
 												{totalRequests > 0
-													? `You made ${totalRequests === 1 ? "your first call" : `${totalRequests} calls`} during setup! Now integrate LLM Gateway in your own code.`
-													: "Integrate LLM Gateway in 1 line — just change your base URL."}
+													? `You made ${totalRequests === 1 ? "your first call" : `${totalRequests} calls`} during setup! Now integrate betarouter in your own code.`
+													: "Integrate betarouter in 1 line — just change your base URL."}
 											</CardDescription>
 										</CardHeader>
 										<CardContent className="space-y-4">
@@ -720,7 +720,7 @@ export function DashboardClient({ initialActivityData }: DashboardClientProps) {
 											<div className="flex flex-wrap gap-2">
 												<Button asChild variant="outline" size="sm">
 													<a
-														href="https://docs.llmgateway.io"
+														href="https://docs.betarouter.com"
 														target="_blank"
 														rel="noopener noreferrer"
 													>
@@ -734,7 +734,7 @@ export function DashboardClient({ initialActivityData }: DashboardClientProps) {
 														href={
 															process.env.NODE_ENV === "development"
 																? "http://localhost:3003"
-																: "https://chat.llmgateway.io"
+																: "https://chat.betarouter.com"
 														}
 														target="_blank"
 														rel="noopener noreferrer"

@@ -12,7 +12,7 @@ import {
 	project,
 	apiKey,
 	user,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 import { batchProcessLogs } from "./worker.js";
 

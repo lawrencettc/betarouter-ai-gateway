@@ -1,11 +1,10 @@
+import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
 import { generateText, Output } from "ai";
 import { cookies } from "next/headers";
 import { z } from "zod";
 
 import { getConfig } from "@/lib/config-server";
 import { getUser } from "@/lib/getUser";
-
-import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
 
 const COOKIE_NAME = "llmgateway_admin_key";
 
@@ -138,7 +137,7 @@ export async function POST(req: Request) {
 		process.env.GATEWAY_URL ??
 		(process.env.NODE_ENV === "development"
 			? "http://localhost:4001/v1"
-			: "https://api.llmgateway.io/v1");
+			: "https://api.betarouter.com/v1");
 
 	const llmgateway = createLLMGateway({
 		apiKey: keyResult.token,
@@ -183,16 +182,16 @@ User details:
 		const emailDraft = await generateText({
 			model: llmgateway("auto"),
 			output: Output.object({ schema: emailSchema }),
-			system: `You are an email drafting assistant for BetaRouter, an AI/LLM API gateway service that provides access to 300+ AI models through a single OpenAI-compatible API.
+			system: `You are an email drafting assistant for betarouter, an AI/LLM API gateway service that provides access to 300+ AI models through a single OpenAI-compatible API.
 
 ${data.type === "enterprise" ? "Draft a professional reply to their enterprise inquiry." : "Draft a personalized welcome/outreach email to this new user."}
 
 Guidelines:
-- Write from the perspective of the BetaRouter team
+- Write from the perspective of the betarouter team
 - Be warm, professional, and helpful
 - ${data.type === "enterprise" ? "Address their specific inquiry" : "Welcome them and offer to help with their use case"}
 - Keep paragraphs short and scannable
-- Sign off as "The BetaRouter Team"
+- Sign off as "The betarouter Team"
 - Don't use markdown formatting in the email body, keep it plain text
 ${data.context ? `\nAdditional context: ${data.context}` : ""}
 

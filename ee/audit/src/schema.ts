@@ -1,4 +1,4 @@
-// Re-export audit log schema from @llmgateway/db
+// Re-export audit log schema from @betarouter/db
 export {
 	auditLog,
 	auditLogActions,
@@ -6,4 +6,4 @@ export {
 	type AuditLogAction,
 	type AuditLogMetadata,
 	type AuditLogResourceType,
-} from "@llmgateway/db";
+} from "@betarouter/db";

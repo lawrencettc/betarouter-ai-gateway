@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Test the OpenAI-compatible API against the LLM Gateway using curl.
+# Test the OpenAI-compatible API against betarouter using curl.
 #
 # Usage:
 #   export OPENAI_API_KEY=test-token
@@ -169,7 +169,7 @@ test_responses_streaming() {
   echo "$events" | grep -q "response.completed"
 }
 
-echo "Testing LLM Gateway at $BASE_URL"
+echo "Testing betarouter at $BASE_URL"
 echo "Model: $MODEL"
 echo "API Key: ${API_KEY:0:8}..."
 

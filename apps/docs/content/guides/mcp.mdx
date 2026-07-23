@@ -1,6 +1,6 @@
 ---
 title: Model Context Protocol (MCP)
-description: Use LLM Gateway as an MCP server for Claude Code, Cursor, and other MCP-compatible clients
+description: Use betarouter as an MCP server for Claude Code, Cursor, and other MCP-compatible clients
 icon: Mcp
 ---
 
@@ -8,11 +8,11 @@ import { Step, Steps } from "fumadocs-ui/components/steps";
 import { Callout } from "fumadocs-ui/components/callout";
 import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
-LLM Gateway provides a Model Context Protocol (MCP) server that enables AI assistants like Claude Code to access multiple LLM providers through a unified interface. This allows you to use any model from OpenAI, Anthropic, Google, and more directly from your AI coding assistant.
+betarouter provides a Model Context Protocol (MCP) server that enables AI assistants like Claude Code to access multiple LLM providers through a unified interface. This allows you to use any model from OpenAI, Anthropic, Google, and more directly from your AI coding assistant.
 
 ## What is MCP?
 
-The Model Context Protocol (MCP) is an open standard that allows AI assistants to connect with external tools and data sources. LLM Gateway's MCP server exposes tools for:
+The Model Context Protocol (MCP) is an open standard that allows AI assistants to connect with external tools and data sources. betarouter's MCP server exposes tools for:
 
 - **Chat completions** - Send messages to any supported LLM
 - **Image generation** - Generate images using models like Qwen Image
@@ -130,7 +130,7 @@ List all available image generation models.
     <Step>
     ### Get Your API Key
 
-    1. Log in to your [LLM Gateway dashboard](https://llmgateway.io/dashboard)
+    1. Log in to your [betarouter dashboard](https://betarouter.com/dashboard)
     2. Navigate to **API Keys** section
     3. Create a new API key and copy it
 
@@ -142,7 +142,7 @@ List all available image generation models.
     Run the following command in your terminal:
 
     ```bash
-    claude mcp add --transport http --scope user llmgateway https://api.llmgateway.io/mcp \
+    claude mcp add --transport http --scope user betarouter https://api.betarouter.com/mcp \
       --header "Authorization: Bearer your-api-key-here"
     ```
 
@@ -154,8 +154,8 @@ List all available image generation models.
       ```json
       {
         "mcpServers": {
-          "llmgateway": {
-            "url": "https://api.llmgateway.io/mcp",
+          "betarouter": {
+            "url": "https://api.betarouter.com/mcp",
             "headers": {
               "Authorization": "Bearer your-api-key-here"
             }
@@ -189,7 +189,7 @@ List all available image generation models.
     <Step>
     ### Get Your API Key
 
-    1. Log in to your [LLM Gateway dashboard](https://llmgateway.io/dashboard)
+    1. Log in to your [betarouter dashboard](https://betarouter.com/dashboard)
     2. Navigate to **API Keys** section
     3. Create a new API key and copy it
     4. Set it as an environment variable: `export LLM_GATEWAY_API_KEY="your-api-key-here"`
@@ -202,7 +202,7 @@ List all available image generation models.
     Run the following command in your terminal:
 
     ```bash
-    codex mcp add llmgateway --url https://api.llmgateway.io/mcp \
+    codex mcp add betarouter --url https://api.betarouter.com/mcp \
       --bearer-token-env-var LLM_GATEWAY_API_KEY
     ```
 
@@ -212,8 +212,8 @@ List all available image generation models.
       You can also add the MCP server manually by editing `~/.codex/config.toml`:
 
       ```toml
-      [mcp_servers.llmgateway]
-      url = "https://api.llmgateway.io/mcp"
+      [mcp_servers.betarouter]
+      url = "https://api.betarouter.com/mcp"
       bearer_token_env_var = "LLM_GATEWAY_API_KEY"
       ```
     </Callout>
@@ -223,7 +223,7 @@ List all available image generation models.
     <Step>
     ### Test the Integration
 
-    Run `/mcp` in the Codex TUI to confirm the `llmgateway` server is connected. Try:
+    Run `/mcp` in the Codex TUI to confirm the `betarouter` server is connected. Try:
 
     - "Use the chat tool to ask GPT-4o about TypeScript best practices"
     - "Generate an image of a futuristic city using the generate-image tool"
@@ -240,7 +240,7 @@ List all available image generation models.
     <Step>
     ### Get Your API Key
 
-    1. Log in to your [LLM Gateway dashboard](https://llmgateway.io/dashboard)
+    1. Log in to your [betarouter dashboard](https://betarouter.com/dashboard)
     2. Navigate to **API Keys** section
     3. Create a new API key and copy it
 
@@ -254,8 +254,8 @@ List all available image generation models.
     ```json
     {
       "mcpServers": {
-        "llmgateway": {
-          "url": "https://api.llmgateway.io/mcp",
+        "betarouter": {
+          "url": "https://api.betarouter.com/mcp",
           "headers": {
             "Authorization": "Bearer your-api-key-here"
           }
@@ -275,7 +275,7 @@ List all available image generation models.
     <Step>
     ### Test the Integration
 
-    Open a chat in **Agent Mode**, click the **Select Tools** icon, and verify the LLM Gateway tools appear. Try:
+    Open a chat in **Agent Mode**, click the **Select Tools** icon, and verify the betarouter tools appear. Try:
 
     - "Use the chat tool to ask GPT-4o about TypeScript best practices"
     - "Generate an image of a futuristic city using the generate-image tool"
@@ -288,16 +288,16 @@ List all available image generation models.
   </Tab>
 
   <Tab value="Other MCP Clients">
-    LLM Gateway's MCP server supports the standard HTTP Streamable transport. Configure your client with:
+    betarouter's MCP server supports the standard HTTP Streamable transport. Configure your client with:
 
-    - **Endpoint:** `https://api.llmgateway.io/mcp`
+    - **Endpoint:** `https://api.betarouter.com/mcp`
     - **Authentication:** Bearer token via `Authorization` header or `x-api-key` header
     - **Protocol Version:** 2024-11-05
 
     **Direct HTTP Example:**
 
     ```bash
-    curl -X POST https://api.llmgateway.io/mcp \
+    curl -X POST https://api.betarouter.com/mcp \
       -H "Content-Type: application/json" \
       -H "Authorization: Bearer your-api-key" \
       -d '{
@@ -312,7 +312,7 @@ List all available image generation models.
     For real-time updates, connect with `Accept: text/event-stream`:
 
     ```bash
-    curl -N https://api.llmgateway.io/mcp \
+    curl -N https://api.betarouter.com/mcp \
       -H "Accept: text/event-stream" \
       -H "Authorization: Bearer your-api-key"
     ```
@@ -362,11 +362,11 @@ The MCP server supports two authentication methods:
 1. **Bearer Token** - `Authorization: Bearer your-api-key`
 2. **API Key Header** - `x-api-key: your-api-key`
 
-Your API key is the same one you use for the REST API and works across all LLM Gateway services.
+Your API key is the same one you use for the REST API and works across all betarouter services.
 
 ## OAuth Support
 
-For applications that prefer OAuth authentication, LLM Gateway's MCP server implements OAuth 2.0:
+For applications that prefer OAuth authentication, betarouter's MCP server implements OAuth 2.0:
 
 - **Authorization Endpoint:** `/oauth/authorize`
 - **Token Endpoint:** `/oauth/token`
@@ -384,7 +384,7 @@ This is only possible for **self-hosted** MCP deployments. Configure `UPLOAD_DIR
 - **.env file:** Add `UPLOAD_DIR=/data/images` to the `.env` file loaded by your gateway process.
 
 <Callout type="warn">
-	The shared hosted endpoint (`api.llmgateway.io`) does not support configuring
+	The shared hosted endpoint (`api.betarouter.com`) does not support configuring
 	`UPLOAD_DIR`. On the hosted service, images are always returned inline — no
 	files are written to disk. To enable server-side image saving, you must
 	self-host the MCP server and set `UPLOAD_DIR` at startup.
@@ -397,7 +397,7 @@ This is only possible for **self-hosted** MCP deployments. Configure `UPLOAD_DIR
 If you're having trouble connecting:
 
 1. Verify your API key is valid
-2. Check the endpoint URL is correct: `https://api.llmgateway.io/mcp`
+2. Check the endpoint URL is correct: `https://api.betarouter.com/mcp`
 3. Ensure your firewall allows outbound HTTPS connections
 
 ### Tool Not Found
@@ -406,7 +406,7 @@ If tools aren't appearing:
 
 1. Restart your MCP client
 2. Check the configuration syntax
-3. Verify the MCP server is responding: `GET https://api.llmgateway.io/mcp`
+3. Verify the MCP server is responding: `GET https://api.betarouter.com/mcp`
 
 ### Rate Limiting
 
@@ -417,14 +417,14 @@ The MCP server respects your account's rate limits. If you're hitting limits:
 3. Implement request queuing in your application
 
 <Callout type="info">
-	Need help? Join our [Discord community](https://llmgateway.io/discord) for
+	Need help? Join our [Discord community](https://betarouter.com/discord) for
 	support.
 </Callout>
 
 ## Benefits
 
 - **Unified Access** - Use 200+ models from 40+ providers through one interface
-- **Cost Tracking** - Monitor usage and costs in the LLM Gateway dashboard
+- **Cost Tracking** - Monitor usage and costs in the betarouter dashboard
 - **Caching** - Automatic response caching reduces costs and latency
 - **Fallback** - Automatic provider failover ensures reliability
 - **Image Generation** - Generate images directly from your AI assistant

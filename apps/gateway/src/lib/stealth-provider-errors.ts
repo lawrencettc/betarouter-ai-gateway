@@ -1,9 +1,9 @@
 import { STATUS_CODES } from "node:http";
 
-import { isStealthProvider } from "@llmgateway/models";
+import { isStealthProvider } from "@betarouter/models";
 
-import type { errorDetails } from "@llmgateway/db";
-import type { ProviderId } from "@llmgateway/models";
+import type { errorDetails } from "@betarouter/db";
+import type { ProviderId } from "@betarouter/models";
 import type { z } from "zod";
 
 type ErrorDetails = z.infer<typeof errorDetails>;

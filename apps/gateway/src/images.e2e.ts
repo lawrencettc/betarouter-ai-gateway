@@ -17,11 +17,11 @@ import {
 	specifiedModels,
 } from "@/chat-helpers.e2e.js";
 
-import { db, tables } from "@llmgateway/db";
+import { db, tables } from "@betarouter/db";
 
 import { app } from "./app.js";
 
-import type { ModelDefinition, ProviderModelMapping } from "@llmgateway/models";
+import type { ModelDefinition, ProviderModelMapping } from "@betarouter/models";
 
 const IMAGE_PROJECT_ID = "image-test-project-id";
 const IMAGE_API_KEY_ID = "image-test-api-key-id";

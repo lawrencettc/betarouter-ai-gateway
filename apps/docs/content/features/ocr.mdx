@@ -6,7 +6,7 @@ icon: ScanText
 
 # OCR
 
-LLMGateway exposes a dedicated `/v1/ocr` endpoint for optical character
+betarouter exposes a dedicated `/v1/ocr` endpoint for optical character
 recognition. It extracts text, tables, and layout from PDFs and images and
 returns them as clean markdown, one entry per page.
 
@@ -21,9 +21,9 @@ For the full request and response schema, see the
 
 ## Endpoint
 
-`POST https://api.llmgateway.io/v1/ocr`
+`POST https://api.betarouter.com/v1/ocr`
 
-Authenticate with your LLMGateway API key:
+Authenticate with your betarouter API key:
 
 ```bash
 -H "Authorization: Bearer $LLM_GATEWAY_API_KEY"
@@ -56,7 +56,7 @@ optional `pages` field to restrict (and cap the cost of) a request:
 ### Document URL
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/ocr" \
+curl -X POST "https://api.betarouter.com/v1/ocr" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -71,7 +71,7 @@ curl -X POST "https://api.llmgateway.io/v1/ocr" \
 ### Only specific pages
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/ocr" \
+curl -X POST "https://api.betarouter.com/v1/ocr" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -87,7 +87,7 @@ curl -X POST "https://api.llmgateway.io/v1/ocr" \
 ### Image input
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/ocr" \
+curl -X POST "https://api.betarouter.com/v1/ocr" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -104,7 +104,7 @@ curl -X POST "https://api.llmgateway.io/v1/ocr" \
 ```bash
 BASE64_PDF=$(base64 -i invoice.pdf)
 
-curl -X POST "https://api.llmgateway.io/v1/ocr" \
+curl -X POST "https://api.betarouter.com/v1/ocr" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d "{

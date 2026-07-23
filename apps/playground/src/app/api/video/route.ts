@@ -27,7 +27,7 @@ export async function POST(req: Request) {
 		process.env.GATEWAY_URL?.replace(/\/v1$/, "") ??
 		(process.env.NODE_ENV === "development"
 			? "http://localhost:4001"
-			: "https://api.llmgateway.io");
+			: "https://api.betarouter.com");
 
 	const requestBody = await req.json();
 	const noFallback = req.headers.get("x-no-fallback");
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
 		headers: {
 			"Content-Type": "application/json",
 			Authorization: `Bearer ${apiKey}`,
-			"x-source": "chat.llmgateway.io",
+			"x-source": "chat.betarouter.com",
 			...(noFallback ? { "x-no-fallback": noFallback } : {}),
 		},
 		body: JSON.stringify(requestBody),

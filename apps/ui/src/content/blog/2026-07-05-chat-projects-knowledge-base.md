@@ -3,7 +3,7 @@ id: "blog-chat-projects-knowledge-base"
 slug: "chat-projects-knowledge-base"
 date: "2026-07-05"
 title: "Projects: A Knowledge Base for Your AI Chats"
-summary: "LLM Gateway Chat now has Projects: group related chats, upload files — PDFs and spreadsheets included — as a knowledge base, and get answers grounded in your own documents via RAG, with source citations, on any of 280+ models. Projects also remember durable facts across chats. Available to every Chat user."
+summary: "betarouter Chat now has Projects: group related chats, upload files — PDFs and spreadsheets included — as a knowledge base, and get answers grounded in your own documents via RAG, with source citations, on any of 280+ models. Projects also remember durable facts across chats. Available to every Chat user."
 categories: ["Announcements", "Product"]
 image:
   src: "/blog/chat-projects-knowledge-base.png"
@@ -14,7 +14,7 @@ image:
 
 Every new chat starts from zero. You paste the same product spec for the third time this week, re-upload the same README, and re-explain the same context the model forgot the moment you closed the tab. The model is smart; your setup is amnesiac.
 
-Today we're adding **Projects** to [LLM Gateway Chat](https://chat.llmgateway.io) — a knowledge base and workspace for your chats. Create a project, drop in your files once — PDFs, spreadsheets, docs, code — and every chat inside it answers from those documents, with the source file cited in the reply. It's retrieval-augmented generation (RAG) without standing up a vector database, and it works with any of the 280+ models in the picker.
+Today we're adding **Projects** to [betarouter Chat](https://chat.betarouter.com) — a knowledge base and workspace for your chats. Create a project, drop in your files once — PDFs, spreadsheets, docs, code — and every chat inside it answers from those documents, with the source file cited in the reply. It's retrieval-augmented generation (RAG) without standing up a vector database, and it works with any of the 280+ models in the picker.
 
 Projects also have memory. Mention once that you're hiring for the Stockholm team, and a brand-new chat in the same project next week still knows — without you repeating it and without the fact living in any uploaded file.
 
@@ -31,7 +31,7 @@ Open a chat inside a project and a banner shows what context it's running with. 
 
 ## How the knowledge base answers
 
-When you send a message in a project chat, LLM Gateway Chat embeds your question, pulls the most relevant passages from your files by similarity, and hands the model those passages plus your project instructions before it answers. The model responds from your documents and names the file it used.
+When you send a message in a project chat, betarouter Chat embeds your question, pulls the most relevant passages from your files by similarity, and hands the model those passages plus your project instructions before it answers. The model responds from your documents and names the file it used.
 
 Ask "what did we decide about retry behavior?" and instead of a confident guess, you get the actual decision — with `(architecture-notes.md)` at the end of the sentence.
 
@@ -57,13 +57,13 @@ You stay in control: edit any memory, delete it, or add your own by hand ("alway
 
 ## No separate bill, no separate infrastructure
 
-Indexing and retrieval run through the same gateway and the same balance as the chat itself. Embedding a 500 KB file costs fractions of a cent with `text-embedding-3-small`; there's no vector-database add-on, no per-seat knowledge fee, and no plan gate. Projects are available to every LLM Gateway Chat user today — on the Chat plan context or under a dashboard organization.
+Indexing and retrieval run through the same gateway and the same balance as the chat itself. Embedding a 500 KB file costs fractions of a cent with `text-embedding-3-small`; there's no vector-database add-on, no per-seat knowledge fee, and no plan gate. Projects are available to every betarouter Chat user today — on the Chat plan context or under a dashboard organization.
 
 Current limits: 20 files per project, up to 500 KB of extracted text per file (binary uploads up to 10 MB). PDF and Excel files are converted to text automatically on upload.
 
 ## Get started in three steps
 
-1. Open [chat.llmgateway.io/projects](https://chat.llmgateway.io/projects) and create a project.
+1. Open [chat.betarouter.com/projects](https://chat.betarouter.com/projects) and create a project.
 2. Add files to its knowledge base — a PDF is fine as-is — and optionally write instructions.
 3. Hit **New chat** and ask a question your documents can answer.
 
@@ -93,6 +93,6 @@ No. Embeddings and memory extraction are billed to the same credits as your chat
 
 **Try it now:**
 
-- **[Open LLM Gateway Chat](https://chat.llmgateway.io/projects)** — create your first project free
-- **[Chat plans](https://chat.llmgateway.io/pricing)** — more credits for heavy use, from $9/mo
+- **[Open betarouter Chat](https://chat.betarouter.com/projects)** — create your first project free
+- **[Chat plans](https://chat.betarouter.com/pricing)** — more credits for heavy use, from $9/mo
 - **[DevPass Code](/blog/devpass-code)** — our terminal coding agent, if your knowledge base is a codebase

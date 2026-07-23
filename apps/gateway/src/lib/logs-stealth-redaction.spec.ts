@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { insertLog } from "./logs.js";
 
-import type { LogInsertData } from "@llmgateway/db";
+import type { LogInsertData } from "@betarouter/db";
 
 const publishToQueue = vi.fn();
 
-vi.mock(import("@llmgateway/cache"), async (importOriginal) => {
+vi.mock(import("@betarouter/cache"), async (importOriginal) => {
 	const actual = await importOriginal();
 	return {
 		...actual,
@@ -14,7 +14,7 @@ vi.mock(import("@llmgateway/cache"), async (importOriginal) => {
 	};
 });
 
-vi.mock("@llmgateway/instrumentation", () => ({
+vi.mock("@betarouter/instrumentation", () => ({
 	recordChatCompletionMetrics: vi.fn(),
 }));
 

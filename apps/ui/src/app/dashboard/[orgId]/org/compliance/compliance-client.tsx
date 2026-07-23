@@ -29,8 +29,8 @@ import {
 	type ProviderCompliancePolicy,
 	type ProviderDefinition,
 	type ProviderId,
-} from "@llmgateway/models";
-import { providerLogoUrls } from "@llmgateway/shared/components";
+} from "@betarouter/models";
+import { providerLogoUrls } from "@betarouter/shared/components";
 
 import { ContactSalesCard } from "./contact-sales-card";
 

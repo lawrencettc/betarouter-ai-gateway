@@ -5,7 +5,7 @@ import { ChatBillingHistory } from "@/components/pricing/chat-billing-history";
 import { ChatPricingPlans } from "@/components/pricing/chat-pricing-plans";
 import { getUser } from "@/lib/getUser";
 
-import { getChatPlanCreditsMultipliers } from "@llmgateway/shared";
+import { getChatPlanCreditsMultipliers } from "@betarouter/shared";
 
 import type { Metadata } from "next";
 

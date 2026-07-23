@@ -10,7 +10,7 @@
  *
  * See: packages/db/src/cdb-resilience.spec.ts for documentation of this behavior.
  */
-import { swrWrap } from "@llmgateway/cache";
+import { swrWrap } from "@betarouter/cache";
 import {
 	and,
 	asc,
@@ -40,7 +40,7 @@ import {
 	user as userTable,
 	userOrganization as userOrganizationTable,
 	wallet as walletTable,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 import { getApiKeyFingerprint } from "./api-key-fingerprint.js";
 import {
@@ -49,10 +49,10 @@ import {
 	isTrackedKeyHealthy,
 } from "./api-key-health.js";
 
-import type { ApiKeyPeriodDurationUnit } from "@llmgateway/db";
-import type { EffectiveRateLimit } from "@llmgateway/db";
-import type { EffectiveDiscount } from "@llmgateway/db";
-import type { InferSelectModel } from "@llmgateway/db";
+import type { ApiKeyPeriodDurationUnit } from "@betarouter/db";
+import type { EffectiveRateLimit } from "@betarouter/db";
+import type { EffectiveDiscount } from "@betarouter/db";
+import type { InferSelectModel } from "@betarouter/db";
 import type {
 	apiKey,
 	apiKeyIamRule,
@@ -65,7 +65,7 @@ import type {
 	user,
 	userOrganization,
 	wallet,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 // Type aliases for cleaner function signatures
 type ApiKey = InferSelectModel<typeof apiKey>;

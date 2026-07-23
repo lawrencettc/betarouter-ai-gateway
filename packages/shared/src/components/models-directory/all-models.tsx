@@ -83,7 +83,7 @@ import type {
 	ApiProvider,
 } from "./api-types";
 import type { ModelCategoryFilter } from "./model-category-filters";
-import type { StabilityLevel } from "@llmgateway/models";
+import type { StabilityLevel } from "@betarouter/models";
 
 interface ModelWithProviders extends ApiModel {
 	providerDetails: Array<{
@@ -2041,7 +2041,7 @@ export function AllModels({
 
 								<div className="flex items-center gap-2">
 									<Link
-										href="https://docs.llmgateway.io/v1_models"
+										href="https://docs.betarouter.com/v1_models"
 										target="_blank"
 										rel="noopener noreferrer"
 									>

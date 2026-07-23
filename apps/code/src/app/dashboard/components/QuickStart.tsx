@@ -13,7 +13,7 @@ import {
 	EmpryoIcon,
 	OpenCodeIcon,
 	SoulForgeIcon,
-} from "@llmgateway/shared/components";
+} from "@betarouter/shared/components";
 
 type ToolId =
 	| "claude-code"
@@ -63,7 +63,7 @@ function buildSnippets(apiKey: string): Record<ToolId, Snippet> {
 	return {
 		"claude-code": {
 			exports: [
-				{ key: "ANTHROPIC_BASE_URL", value: "https://api.llmgateway.io" },
+				{ key: "ANTHROPIC_BASE_URL", value: "https://api.betarouter.com" },
 				{ key: "ANTHROPIC_AUTH_TOKEN", value: apiKey, secret: true },
 			],
 			command: "claude",
@@ -72,7 +72,7 @@ function buildSnippets(apiKey: string): Record<ToolId, Snippet> {
 		opencode: {
 			exports: [],
 			command: "opencode",
-			comment: "# LLM Gateway is built-in — type /connect to link your key",
+			comment: "# betarouter is built-in — type /connect to link your key",
 		},
 		empryo: {
 			exports: [],
@@ -88,7 +88,7 @@ function buildSnippets(apiKey: string): Record<ToolId, Snippet> {
 		},
 		autohand: {
 			exports: [
-				{ key: "OPENAI_BASE_URL", value: "https://api.llmgateway.io/v1" },
+				{ key: "OPENAI_BASE_URL", value: "https://api.betarouter.com/v1" },
 				{ key: "OPENAI_API_KEY", value: apiKey, secret: true },
 			],
 			command: "autohand",
@@ -96,7 +96,7 @@ function buildSnippets(apiKey: string): Record<ToolId, Snippet> {
 		},
 		cline: {
 			exports: [
-				{ key: "OPENAI_BASE_URL", value: "https://api.llmgateway.io/v1" },
+				{ key: "OPENAI_BASE_URL", value: "https://api.betarouter.com/v1" },
 				{ key: "OPENAI_API_KEY", value: apiKey, secret: true },
 			],
 			command: "cline",

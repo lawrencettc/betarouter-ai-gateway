@@ -3,7 +3,7 @@ import {
 	GoogleStudioAIIconStatic,
 	OpenAIIcon,
 	PerplexityIcon,
-} from "@llmgateway/shared/components";
+} from "@betarouter/shared/components";
 
 import type { FC, SVGProps } from "react";
 

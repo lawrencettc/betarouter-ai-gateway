@@ -1,5 +1,5 @@
-import { logger } from "@llmgateway/logger";
-import { assertSafeUserContentUrl } from "@llmgateway/shared/url-safety-node";
+import { logger } from "@betarouter/logger";
+import { assertSafeUserContentUrl } from "@betarouter/shared/url-safety-node";
 
 import { parseDataUrl } from "./parse-data-url.js";
 

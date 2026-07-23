@@ -8,7 +8,7 @@ import {
 } from "@/stripe.js";
 import { createTestUser, deleteAll } from "@/testing.js";
 
-import { db, eq, tables } from "@llmgateway/db";
+import { db, eq, tables } from "@betarouter/db";
 
 import type Stripe from "stripe";
 

@@ -4,7 +4,7 @@ import {
 	models,
 	type ProviderModelMapping,
 	type ProviderId,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 /**
  * Get the cheapest model for a given provider based on input + output pricing

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { isCodingModel, providerSupportsCachedInput } from "./coding-models.js";
 
-import type { ModelDefinition, ProviderModelMapping } from "@llmgateway/models";
+import type { ModelDefinition, ProviderModelMapping } from "@betarouter/models";
 
 const baseProvider: ProviderModelMapping = {
 	providerId: "openai",

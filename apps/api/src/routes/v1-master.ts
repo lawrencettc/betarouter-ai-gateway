@@ -20,15 +20,15 @@ import {
 } from "@/routes/keys-api.js";
 import { createProjectForOrg } from "@/routes/projects.js";
 
-import { logAuditEvent } from "@llmgateway/audit";
+import { logAuditEvent } from "@betarouter/audit";
 import {
 	cdb,
 	db,
 	eq,
 	getApiKeyCurrentPeriodState,
 	tables,
-} from "@llmgateway/db";
-import { getApiKeyFingerprint } from "@llmgateway/shared/api-key-hash";
+} from "@betarouter/db";
+import { getApiKeyFingerprint } from "@betarouter/shared/api-key-hash";
 
 import type { ServerTypes } from "@/vars.js";
 

@@ -13,7 +13,7 @@ import {
 	logMode,
 } from "@/chat-helpers.e2e.js";
 
-import { db, tables } from "@llmgateway/db";
+import { db, tables } from "@betarouter/db";
 
 import { app } from "./app.js";
 

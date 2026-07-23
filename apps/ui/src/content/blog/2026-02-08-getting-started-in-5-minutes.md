@@ -2,17 +2,17 @@
 id: blog-getting-started-in-5-minutes
 slug: getting-started-in-5-minutes
 date: 2026-02-08
-title: "Getting Started with LLM Gateway in 5 Minutes"
-summary: "A step-by-step guide to making your first LLM API request through LLM Gateway — from signup to seeing results in your dashboard."
+title: "Getting Started with betarouter in 5 Minutes"
+summary: "A step-by-step guide to making your first LLM API request through betarouter — from signup to seeing results in your dashboard."
 categories: ["Guides"]
 image:
   src: "/blog/getting-started-in-5-minutes.png"
-  alt: "Getting Started with LLM Gateway in 5 Minutes"
+  alt: "Getting Started with betarouter in 5 Minutes"
   width: 1408
   height: 768
 ---
 
-This guide walks you through making your first LLM request through LLM Gateway. By the end, you'll have a working API key and a completed request visible in your dashboard.
+This guide walks you through making your first LLM request through betarouter. By the end, you'll have a working API key and a completed request visible in your dashboard.
 
 ## Step 1: Get an API Key
 
@@ -27,12 +27,12 @@ export LLM_GATEWAY_API_KEY="llmgtwy_XXXXXXXXXXXXXXXX"
 
 ## Step 2: Make Your First Request
 
-LLM Gateway uses an OpenAI-compatible API. Point your requests to `https://api.llmgateway.io/v1` and you're done.
+betarouter uses an OpenAI-compatible API. Point your requests to `https://api.betarouter.com/v1` and you're done.
 
 ### Using curl
 
 ```bash
-curl -X POST https://api.llmgateway.io/v1/chat/completions \
+curl -X POST https://api.betarouter.com/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -d '{
@@ -49,7 +49,7 @@ curl -X POST https://api.llmgateway.io/v1/chat/completions \
 import OpenAI from "openai";
 
 const client = new OpenAI({
-  baseURL: "https://api.llmgateway.io/v1",
+  baseURL: "https://api.betarouter.com/v1",
   apiKey: process.env.LLM_GATEWAY_API_KEY,
 });
 
@@ -68,7 +68,7 @@ import requests
 import os
 
 response = requests.post(
-    "https://api.llmgateway.io/v1/chat/completions",
+    "https://api.betarouter.com/v1/chat/completions",
     headers={
         "Content-Type": "application/json",
         "Authorization": f"Bearer {os.getenv('LLM_GATEWAY_API_KEY')}",
@@ -104,8 +104,8 @@ Or use the OpenAI-compatible adapter:
 ```typescript
 import { createOpenAI } from "@ai-sdk/openai";
 
-const llmgateway = createOpenAI({
-  baseURL: "https://api.llmgateway.io/v1",
+const betarouter = createOpenAI({
+  baseURL: "https://api.betarouter.com/v1",
   apiKey: process.env.LLM_GATEWAY_API_KEY!,
 });
 ```
@@ -115,7 +115,7 @@ const llmgateway = createOpenAI({
 Pass `stream: true` to any request and the gateway will proxy the event stream unchanged:
 
 ```bash
-curl -X POST https://api.llmgateway.io/v1/chat/completions \
+curl -X POST https://api.betarouter.com/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -d '{
@@ -147,9 +147,9 @@ Same API, same code. Just a different model string.
 
 ## What's Next
 
-- **[Try models in the Playground](https://chat.llmgateway.io)** — test any model with a chat interface before integrating
+- **[Try models in the Playground](https://chat.betarouter.com)** — test any model with a chat interface before integrating
 - **[Browse all models](/models)** — compare pricing, context windows, and capabilities
-- **[Read the full docs](https://docs.llmgateway.io)** — streaming, tool calling, structured output, and more
-- **[Join our Discord](https://llmgateway.io/discord)** — get help and share what you're building
+- **[Read the full docs](https://docs.betarouter.com)** — streaming, tool calling, structured output, and more
+- **[Join our Discord](https://betarouter.com/discord)** — get help and share what you're building
 
 **[Get started now](/signup)**

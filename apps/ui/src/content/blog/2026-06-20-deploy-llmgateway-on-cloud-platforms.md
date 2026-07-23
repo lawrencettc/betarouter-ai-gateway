@@ -1,24 +1,24 @@
 ---
-id: blog-deploy-llmgateway-on-cloud-platforms
-slug: deploy-llmgateway-on-cloud-platforms
+id: blog-deploy-betarouter-on-cloud-platforms
+slug: deploy-betarouter-on-cloud-platforms
 date: 2026-06-20
-title: "How to Deploy LLM Gateway on Cloud Platforms"
-summary: "What it takes to run LLM Gateway in production on AWS, GCP, or Azure — the components you need, how they fit together, and why Kubernetes is the path we recommend once you outgrow a single box."
+title: "How to Deploy betarouter on Cloud Platforms"
+summary: "What it takes to run betarouter in production on AWS, GCP, or Azure — the components you need, how they fit together, and why Kubernetes is the path we recommend once you outgrow a single box."
 categories: ["Guides"]
 image:
-  src: "/blog/deploy-llmgateway-on-cloud-platforms.png"
-  alt: "LLM Gateway deployed across AWS, GCP, and Azure"
+  src: "/blog/deploy-betarouter-on-cloud-platforms.png"
+  alt: "betarouter deployed across AWS, GCP, and Azure"
   width: 1536
   height: 1024
 ---
 
-A single `docker run` is enough to try LLM Gateway on a laptop. Production is a different question. Once real traffic depends on it, you need a deployment that survives a node restart, scales when usage spikes, and keeps your data where your compliance team expects it.
+A single `docker run` is enough to try betarouter on a laptop. Production is a different question. Once real traffic depends on it, you need a deployment that survives a node restart, scales when usage spikes, and keeps your data where your compliance team expects it.
 
-The good news: LLM Gateway is built from a handful of standard pieces. If you've shipped any stateful web service to the cloud, you already know the shape of this. This guide walks through the components, how they fit together, and the deployment model we recommend for each cloud.
+The good news: betarouter is built from a handful of standard pieces. If you've shipped any stateful web service to the cloud, you already know the shape of this. This guide walks through the components, how they fit together, and the deployment model we recommend for each cloud.
 
 ## The components you need
 
-LLM Gateway splits cleanly into stateless application services and stateful backing stores. That split is the whole reason it scales well.
+betarouter splits cleanly into stateless application services and stateful backing stores. That split is the whole reason it scales well.
 
 **Stateless services** — these hold no data between requests, so you can run as many copies as you need and put a load balancer in front:
 
@@ -55,7 +55,7 @@ Point the application services at these via connection strings and you've remove
 
 ## Why we recommend Kubernetes
 
-For a single low-traffic instance, Docker Compose on one VM is fine, and we document that too. But the moment you want more than one box — for redundancy, for scale, or because a single instance going down isn't acceptable — you want an orchestrator. Kubernetes is the one we recommend, for reasons that line up exactly with how LLM Gateway is built:
+For a single low-traffic instance, Docker Compose on one VM is fine, and we document that too. But the moment you want more than one box — for redundancy, for scale, or because a single instance going down isn't acceptable — you want an orchestrator. Kubernetes is the one we recommend, for reasons that line up exactly with how betarouter is built:
 
 - **The gateway scales horizontally on its own.** Because it's stateless, a `HorizontalPodAutoscaler` can add and remove replicas based on load with no coordination.
 - **Self-healing.** A crashed pod gets rescheduled. A bad deploy rolls back. You don't get paged for a single node hiccup.
@@ -64,7 +64,7 @@ For a single low-traffic instance, Docker Compose on one VM is fine, and we docu
 To make this a one-step install, we publish an official **Helm chart**. It deploys the gateway, API, UI, and worker with sane defaults and lets you wire in your managed Postgres and Redis through values:
 
 ```bash
-helm install llmgateway oci://ghcr.io/theopenco/charts/llmgateway
+helm install betarouter oci://ghcr.io/theopenco/charts/betarouter
 ```
 
 Point the chart at your managed database and cache, set your secrets, and you have a production deployment on any Kubernetes cluster.
@@ -73,18 +73,18 @@ Point the chart at your managed database and cache, set your secrets, and you ha
 
 The architecture is the same everywhere; the specifics — which managed services to provision, how to wire up networking and secrets, which compute service to run the containers on — differ per cloud. We've written a dedicated guide for each:
 
-- [**Deploy on AWS**](https://docs.llmgateway.io/self-host/aws) — EKS, RDS, ElastiCache, and Secrets Manager.
-- [**Deploy on Google Cloud**](https://docs.llmgateway.io/self-host/gcp) — GKE, Cloud SQL, Memorystore, and Secret Manager.
-- [**Deploy on Azure**](https://docs.llmgateway.io/self-host/azure) — AKS, Azure Database for PostgreSQL, Azure Cache for Redis, and Key Vault.
+- [**Deploy on AWS**](https://docs.betarouter.com/self-host/aws) — EKS, RDS, ElastiCache, and Secrets Manager.
+- [**Deploy on Google Cloud**](https://docs.betarouter.com/self-host/gcp) — GKE, Cloud SQL, Memorystore, and Secret Manager.
+- [**Deploy on Azure**](https://docs.betarouter.com/self-host/azure) — AKS, Azure Database for PostgreSQL, Azure Cache for Redis, and Key Vault.
 
-Prefer to stay on a single host? The [**Docker**](https://docs.llmgateway.io/self-host/docker) and [**Docker Compose**](https://docs.llmgateway.io/self-host/docker-compose) guides cover that, and the [**Kubernetes**](https://docs.llmgateway.io/self-host/kubernetes) guide goes deeper on the Helm chart.
+Prefer to stay on a single host? The [**Docker**](https://docs.betarouter.com/self-host/docker) and [**Docker Compose**](https://docs.betarouter.com/self-host/docker-compose) guides cover that, and the [**Kubernetes**](https://docs.betarouter.com/self-host/kubernetes) guide goes deeper on the Helm chart.
 
 ## Skip the setup with Terraform
 
-If you'd rather not assemble the cloud resources by hand, our [Enterprise plan](https://llmgateway.io/enterprise) includes infrastructure-as-code: **Terraform modules that provision the cluster, managed database, cache, networking, and secrets, then deploy LLM Gateway — in one command**, on AWS, GCP, or Azure. You get a production-grade deployment without writing the plumbing yourself.
+If you'd rather not assemble the cloud resources by hand, our [Enterprise plan](https://betarouter.com/enterprise) includes infrastructure-as-code: **Terraform modules that provision the cluster, managed database, cache, networking, and secrets, then deploy betarouter — in one command**, on AWS, GCP, or Azure. You get a production-grade deployment without writing the plumbing yourself.
 
 ## Get started
 
-Self-hosting LLM Gateway gives you full control over where your LLM traffic flows and where your data lives, with no platform fees. Pick your cloud, provision a managed Postgres and Redis, and deploy the Helm chart — or [talk to us about Terraform](https://llmgateway.io/enterprise) and have it running in a single command.
+Self-hosting betarouter gives you full control over where your LLM traffic flows and where your data lives, with no platform fees. Pick your cloud, provision a managed Postgres and Redis, and deploy the Helm chart — or [talk to us about Terraform](https://betarouter.com/enterprise) and have it running in a single command.
 
-Start with the [self-hosting docs](https://docs.llmgateway.io/self-host), or [get in touch](https://llmgateway.io/enterprise#contact) if you want help putting it into production.
+Start with the [self-hosting docs](https://docs.betarouter.com/self-host), or [get in touch](https://betarouter.com/enterprise#contact) if you want help putting it into production.

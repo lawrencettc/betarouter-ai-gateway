@@ -1,4 +1,4 @@
-import { models } from "@llmgateway/models";
+import { models } from "@betarouter/models";
 
 /**
  * Model category classification used for analytics, dashboard filtering,

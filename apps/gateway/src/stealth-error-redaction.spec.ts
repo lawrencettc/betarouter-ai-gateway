@@ -2,7 +2,7 @@ import { createServer, type Server } from "node:http";
 
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 
-import { db, tables } from "@llmgateway/db";
+import { db, tables } from "@betarouter/db";
 
 import { app } from "./app.js";
 import { createGatewayApiTestHarness } from "./test-utils/gateway-api-test-harness.js";

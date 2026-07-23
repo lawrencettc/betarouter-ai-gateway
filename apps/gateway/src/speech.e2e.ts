@@ -35,7 +35,7 @@ describe("e2e speech", getConcurrentTestOptions(), () => {
 				},
 				body: JSON.stringify({
 					model,
-					input: "Hello from the LLM Gateway end-to-end speech test.",
+					input: "Hello from the betarouter end-to-end speech test.",
 					response_format: "wav",
 				}),
 			});

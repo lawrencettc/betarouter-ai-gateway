@@ -9,7 +9,7 @@ import {
 	transaction,
 	user,
 	userOrganization,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 import { processNoPurchaseEmails } from "./follow-up-emails.js";
 

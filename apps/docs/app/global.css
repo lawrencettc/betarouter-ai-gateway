@@ -5,6 +5,12 @@
 
 :root {
 	--fd-layout-width: 1600px;
+	--font-display: var(--font-bricolage);
+}
+
+.dark {
+	--color-fd-primary: #08a84e;
+	--color-fd-primary-foreground: #ffffff;
 }
 
 pre,

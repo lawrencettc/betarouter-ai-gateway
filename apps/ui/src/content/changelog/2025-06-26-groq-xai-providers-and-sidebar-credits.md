@@ -27,7 +27,7 @@ All Groq models support streaming and JSON output, with competitive pricing star
 
 ## 🤖 New Provider: xAI (Grok)
 
-xAI's Grok models are now available through LLM Gateway, offering state-of-the-art performance:
+xAI's Grok models are now available through betarouter, offering state-of-the-art performance:
 
 **grok-3** Latest flagship model with 131K context ($3.00/$15.00 per 1M tokens)
 

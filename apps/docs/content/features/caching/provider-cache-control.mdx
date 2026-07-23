@@ -15,18 +15,18 @@ This is the behavior you see surfaced as `cached_tokens` in your usage payloads,
 <Callout type="info">
 	Looking for $0 on repeated calls instead of a discount on the cached portion?
 	That is [Gateway Caching](/features/caching/gateway-caching), which serves
-	byte-identical requests entirely from LLM Gateway without hitting the
-	provider. It is a better fit for deterministic API workloads than for chat.
-	See the [Caching Overview](/features/caching) for a side-by-side comparison.
+	byte-identical requests entirely from betarouter without hitting the provider.
+	It is a better fit for deterministic API workloads than for chat. See the
+	[Caching Overview](/features/caching) for a side-by-side comparison.
 </Callout>
 
 ## Automatic caching
 
 For most users, prompt caching just works — you do not need to change your request payloads.
 
-Providers including OpenAI, Anthropic (when prompts cross the provider's minimum size), Google, DeepSeek, xAI, and Alibaba inspect incoming requests for shared prefixes and cache them automatically. LLM Gateway forwards the provider's cache metadata back to you in the response, and bills the cached portion at the model's `cached_input` rate.
+Providers including OpenAI, Anthropic (when prompts cross the provider's minimum size), Google, DeepSeek, xAI, and Alibaba inspect incoming requests for shared prefixes and cache them automatically. betarouter forwards the provider's cache metadata back to you in the response, and bills the cached portion at the model's `cached_input` rate.
 
-For **Anthropic** and **AWS Bedrock Claude**, prompt caching is strictly opt-in via `cache_control` / `cachePoint` markers on the request body. To get automatic cache benefits without rewriting your requests, LLM Gateway injects those markers for you on long system and user messages by default. If you send long prompts sporadically — with gaps wider than the 5-minute TTL — you may want to disable this entirely, since you would otherwise pay the cache-write premium (1.25× input for 5m, 2× for 1h) without ever benefiting from a cache read.
+For **Anthropic** and **AWS Bedrock Claude**, prompt caching is strictly opt-in via `cache_control` / `cachePoint` markers on the request body. To get automatic cache benefits without rewriting your requests, betarouter injects those markers for you on long system and user messages by default. If you send long prompts sporadically — with gaps wider than the 5-minute TTL — you may want to disable this entirely, since you would otherwise pay the cache-write premium (1.25× input for 5m, 2× for 1h) without ever benefiting from a cache read.
 
 To disable, open **Project Settings → Caching → Provider Cache Writes** and turn off "Allow provider cache writes". When disabled, the gateway strips **all** `cache_control` markers from outgoing requests for the project — both the ones it adds automatically and any markers your client sends. This covers callers that always emit markers regardless of the user's request cadence (e.g. Claude Code, Cursor, Cline). The change takes up to 5 minutes to take effect due to the project-settings cache.
 
@@ -114,11 +114,11 @@ The threshold counts **all tokens up to and including the marked block** (tools,
 | Sonnet 4.6, Haiku 3.5                                 | 2,048                    |
 | Sonnet 4.5 and earlier, Opus 4.1 and earlier, Haiku 3 | 1,024                    |
 
-The models endpoint (`GET https://api.llmgateway.io/v1/models`) exposes the exact threshold as `min_cacheable_tokens` on each provider entry, so clients can check it programmatically. LLM Gateway's automatic marker injection uses the same threshold, which is why short system prompts never trigger automatic cache writes either.
+The models endpoint (`GET https://api.betarouter.com/v1/models`) exposes the exact threshold as `min_cacheable_tokens` on each provider entry, so clients can check it programmatically. betarouter's automatic marker injection uses the same threshold, which is why short system prompts never trigger automatic cache writes either.
 
 ### Verifying cache writes and the write premium
 
-The first request that creates a cache entry is billed at the provider's cache-write rate (1.25× input for `5m`, 2× for `1h`). On the OpenAI-compatible `/v1/chat/completions` endpoint, LLM Gateway surfaces the write side in extended usage fields — OpenAI's standard format only has `cached_tokens` for reads, so these are gateway extensions:
+The first request that creates a cache entry is billed at the provider's cache-write rate (1.25× input for `5m`, 2× for `1h`). On the OpenAI-compatible `/v1/chat/completions` endpoint, betarouter surfaces the write side in extended usage fields — OpenAI's standard format only has `cached_tokens` for reads, so these are gateway extensions:
 
 ```json
 {
@@ -146,9 +146,9 @@ The first request that creates a cache entry is billed at the provider's cache-w
 
 ### Mixing explicit markers with automatic injection
 
-Anthropic requires cache breakpoints with longer TTLs to appear before shorter ones (blocks are processed in the order `tools`, `system`, `messages`). The markers LLM Gateway injects automatically use the default 5-minute TTL, so they could never legally precede an explicit `ttl: "1h"` marker in your messages. To keep both features compatible:
+Anthropic requires cache breakpoints with longer TTLs to appear before shorter ones (blocks are processed in the order `tools`, `system`, `messages`). The markers betarouter injects automatically use the default 5-minute TTL, so they could never legally precede an explicit `ttl: "1h"` marker in your messages. To keep both features compatible:
 
-- When your request contains an explicit `ttl: "1h"` marker in the **messages**, LLM Gateway skips its automatic marker injection for that request entirely and forwards only your markers — the same behavior you would get calling the provider directly.
+- When your request contains an explicit `ttl: "1h"` marker in the **messages**, betarouter skips its automatic marker injection for that request entirely and forwards only your markers — the same behavior you would get calling the provider directly.
 - A `ttl: "1h"` marker only on the **system** prompt does not disable automatic injection, since 5-minute breakpoints after it still satisfy the ordering rule.
 - Explicit markers that use the default 5-minute TTL coexist with automatic injection (capped at 4 breakpoints total per Anthropic's limit).
 
@@ -174,11 +174,11 @@ Anthropic returns a per-TTL breakdown of cache writes when you mix `5m` and `1h`
 }
 ```
 
-For providers that publish a separate explicit-cache read rate (for example, Alibaba Qwen charges 10% for explicit cache reads vs. 20% for automatic cache reads), LLM Gateway detects the `cache_control` markers on your request and applies the explicit rate automatically.
+For providers that publish a separate explicit-cache read rate (for example, Alibaba Qwen charges 10% for explicit cache reads vs. 20% for automatic cache reads), betarouter detects the `cache_control` markers on your request and applies the explicit rate automatically.
 
 ## Related
 
-- [Gateway Caching](/features/caching/gateway-caching) — serve byte-identical requests entirely from LLM Gateway at $0 cost
+- [Gateway Caching](/features/caching/gateway-caching) — serve byte-identical requests entirely from betarouter at $0 cost
 - [Caching Overview](/features/caching) — side-by-side comparison of provider caching vs. gateway caching
 - [Cost Breakdown](/features/cost-breakdown) — full reference for the usage and cost fields on every response
 - [Smart Routing](/features/routing) — how cache support influences provider selection for large prompts

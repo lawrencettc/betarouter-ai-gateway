@@ -8,11 +8,11 @@ const mocks = vi.hoisted(() => ({
 	getBreakers: vi.fn(),
 }));
 
-vi.mock("@llmgateway/catalog", () => ({
+vi.mock("@betarouter/catalog", () => ({
 	getCatalogBreakerStates: mocks.getBreakers,
 }));
 
-vi.mock("@llmgateway/db", () => ({
+vi.mock("@betarouter/db", () => ({
 	db: {
 		execute: mocks.execute,
 		insert: () => ({ values: mocks.insertValues }),
@@ -30,7 +30,7 @@ vi.mock("@llmgateway/db", () => ({
 	sql: (strings: TemplateStringsArray) => strings.join("?"),
 }));
 
-vi.mock("@llmgateway/logger", () => ({
+vi.mock("@betarouter/logger", () => ({
 	logger: { warn: vi.fn() },
 }));
 

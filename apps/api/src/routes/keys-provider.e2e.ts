@@ -4,14 +4,14 @@ import { afterAll, afterEach, beforeAll, describe, expect, test } from "vitest";
 import { app } from "@/index.js";
 import { deleteAll } from "@/testing.js";
 
-import { db, tables } from "@llmgateway/db";
+import { db, tables } from "@betarouter/db";
 import {
 	getProviderEnvVar,
 	getTestOptions,
 	isStealthProvider,
 	models,
 	providers,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 // Helper function to generate unique IDs for tests
 function generateTestId(): string {

@@ -25,8 +25,8 @@
  * `results[].category_scores`.
  *
  * Usage:
- * - `pnpm --filter @llmgateway/scripts analyze-content-filter --file /abs/path/to/contentfiltered.csv`
- * - `pnpm --filter @llmgateway/scripts analyze-content-filter --file /abs/path/to/contentfiltered.csv --id <row-id>`
+ * - `pnpm --filter @betarouter/scripts analyze-content-filter --file /abs/path/to/contentfiltered.csv`
+ * - `pnpm --filter @betarouter/scripts analyze-content-filter --file /abs/path/to/contentfiltered.csv --id <row-id>`
  *
  * Output:
  * - Metrics for the current `any score > threshold` rule.
@@ -220,7 +220,7 @@ function parseArgs(argv: string[]): CliOptions {
 
 	if (filePath.length === 0) {
 		fail(
-			"Usage: pnpm --filter @llmgateway/scripts analyze-content-filter --file path/to/contentfiltered.csv [--id row-id] [--threshold 0.8] [--max-false-positives 0] [--top 10]",
+			"Usage: pnpm --filter @betarouter/scripts analyze-content-filter --file path/to/contentfiltered.csv [--id row-id] [--threshold 0.8] [--max-false-positives 0] [--top 10]",
 		);
 	}
 

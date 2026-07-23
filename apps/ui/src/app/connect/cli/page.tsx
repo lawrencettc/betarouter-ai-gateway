@@ -20,7 +20,7 @@ import {
 import { toast } from "@/lib/components/use-toast";
 import { useApi } from "@/lib/fetch-client";
 
-import { CODING_AGENTS, isRecognizedCodingAgent } from "@llmgateway/shared";
+import { CODING_AGENTS, isRecognizedCodingAgent } from "@betarouter/shared";
 
 interface ConnectParams {
 	callback: string;
@@ -215,7 +215,7 @@ export default function ConnectCliPage() {
 					</div>
 					<CardTitle>Sign in to authorize {displayName}</CardTitle>
 					<CardDescription>
-						Sign in to your LLM Gateway account to connect {displayName} to your
+						Sign in to your betarouter account to connect {displayName} to your
 						terminal.
 					</CardDescription>
 				</CardHeader>
@@ -238,7 +238,7 @@ export default function ConnectCliPage() {
 				</div>
 				<CardTitle>Authorize {displayName}</CardTitle>
 				<CardDescription>
-					{displayName} wants to connect to your LLM Gateway account. Approving
+					{displayName} wants to connect to your betarouter account. Approving
 					will create an API key and send it back to the tool running in your
 					terminal.
 				</CardDescription>

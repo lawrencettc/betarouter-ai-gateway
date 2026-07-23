@@ -6,7 +6,7 @@ import {
 	pickMappingHistoryTable,
 } from "@/utils/history-window.js";
 
-import { and, cdb, gte, sql } from "@llmgateway/db";
+import { and, cdb, gte, sql } from "@betarouter/db";
 
 import type { ServerTypes } from "@/vars.js";
 

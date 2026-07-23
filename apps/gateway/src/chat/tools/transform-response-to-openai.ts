@@ -4,7 +4,7 @@ import { formatUsedModelForDisplay } from "./resolve-provider-context.js";
 
 import type { RoutingAttempt } from "./retry-with-fallback.js";
 import type { Annotation, ImageObject } from "./types.js";
-import type { Provider } from "@llmgateway/models";
+import type { Provider } from "@betarouter/models";
 
 export interface CostData {
 	inputCost: number | null;

@@ -9,10 +9,10 @@ import { parseApiToken } from "@/lib/extract-api-token.js";
 import { calculateDataStorageCost, insertLog } from "@/lib/logs.js";
 import { validateModelOutput } from "@/lib/validate-model-output.js";
 
-import { parseDataUrl, processImageUrl } from "@llmgateway/actions";
-import { shortid } from "@llmgateway/db";
-import { logger, toError } from "@llmgateway/logger";
-import { models } from "@llmgateway/models";
+import { parseDataUrl, processImageUrl } from "@betarouter/actions";
+import { shortid } from "@betarouter/db";
+import { logger, toError } from "@betarouter/logger";
+import { models } from "@betarouter/models";
 
 import type { ServerTypes } from "@/vars.js";
 import type { Context } from "hono";

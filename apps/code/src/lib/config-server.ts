@@ -29,8 +29,8 @@ export function getConfig(): AppConfig {
 		docsUrl: process.env.DOCS_URL ?? "http://localhost:3005",
 		githubUrl:
 			process.env.GITHUB_URL ?? "https://github.com/theopenco/llmgateway",
-		discordUrl: process.env.DISCORD_URL ?? "https://llmgateway.io/discord",
-		twitterUrl: process.env.TWITTER_URL ?? "https://x.com/llmgateway",
+		discordUrl: process.env.DISCORD_URL ?? "https://betarouter.com/discord",
+		twitterUrl: process.env.TWITTER_URL ?? "https://x.com/betarouterco",
 		posthogKey: process.env.POSTHOG_KEY,
 		posthogHost: process.env.POSTHOG_HOST,
 		googleTagId: process.env.GOOGLE_TAG_ID,

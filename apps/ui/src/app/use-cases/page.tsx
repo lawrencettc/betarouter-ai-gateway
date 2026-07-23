@@ -15,11 +15,11 @@ export const metadata: Metadata = {
 		"Coding agents, AI support, RAG, and cost optimization — build on one API for 200+ models with fallback, caching, and analytics.",
 	alternates: { canonical: "/use-cases" },
 	openGraph: {
-		title: "Use Cases — What You Can Build with LLM Gateway",
+		title: "Use Cases — What You Can Build with betarouter",
 		description:
 			"Coding agents, AI support, RAG, and cost optimization on one API for 200+ models with fallback, caching, and analytics.",
 		type: "website",
-		url: "https://llmgateway.io/use-cases",
+		url: "https://betarouter.com/use-cases",
 		images: ["/opengraph.png"],
 	},
 };
@@ -43,7 +43,7 @@ export default function UseCasesIndexPage() {
 								Use cases
 							</p>
 							<h1 className="text-4xl font-bold tracking-tight md:text-5xl">
-								What you can build with LLM Gateway
+								What you can build with betarouter
 							</h1>
 							<p className="mt-4 text-lg leading-relaxed text-muted-foreground">
 								One OpenAI-compatible API for 200+ models — with automatic

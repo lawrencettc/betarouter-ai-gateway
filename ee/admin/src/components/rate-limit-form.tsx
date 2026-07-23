@@ -24,7 +24,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 
-import { getProviderIcon } from "@llmgateway/shared";
+import { getProviderIcon } from "@betarouter/shared";
 
 import type { RateLimitModelMapping } from "@/lib/types";
 

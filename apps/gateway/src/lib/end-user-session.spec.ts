@@ -6,9 +6,9 @@ import {
 } from "./end-user-session.js";
 
 import type { GatewayApiKey } from "./cached-queries.js";
-import type { InferSelectModel } from "@llmgateway/db";
-import type { wallet as walletTable } from "@llmgateway/db";
-import type { ModelDefinition } from "@llmgateway/models";
+import type { InferSelectModel } from "@betarouter/db";
+import type { wallet as walletTable } from "@betarouter/db";
+import type { ModelDefinition } from "@betarouter/models";
 
 type Wallet = InferSelectModel<typeof walletTable>;
 

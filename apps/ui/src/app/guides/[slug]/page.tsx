@@ -32,33 +32,33 @@ export default async function GuidePage({ params }: GuidePageProps) {
 		"@context": "https://schema.org",
 		"@type": "TechArticle",
 		headline: guide.title,
-		description: guide.description ?? "LLM Gateway integration guide",
+		description: guide.description ?? "betarouter integration guide",
 		datePublished: guide.date,
 		dateModified: guide.date,
 		author: {
 			"@type": "Organization",
-			name: "LLM Gateway",
-			url: "https://llmgateway.io",
+			name: "betarouter",
+			url: "https://betarouter.com",
 		},
 		publisher: {
 			"@type": "Organization",
-			name: "LLM Gateway",
-			url: "https://llmgateway.io",
+			name: "betarouter",
+			url: "https://betarouter.com",
 			logo: {
 				"@type": "ImageObject",
-				url: "https://llmgateway.io/favicon/android-chrome-512x512.png",
+				url: "https://betarouter.com/favicon/android-chrome-512x512.png",
 			},
 		},
 		mainEntityOfPage: {
 			"@type": "WebPage",
-			"@id": `https://llmgateway.io/guides/${slug}`,
+			"@id": `https://betarouter.com/guides/${slug}`,
 		},
 		...(guide.image && {
 			image: {
 				"@type": "ImageObject",
 				url: guide.image.src.startsWith("http")
 					? guide.image.src
-					: `https://llmgateway.io${guide.image.src}`,
+					: `https://betarouter.com${guide.image.src}`,
 				width: guide.image.width,
 				height: guide.image.height,
 			},
@@ -73,19 +73,19 @@ export default async function GuidePage({ params }: GuidePageProps) {
 				"@type": "ListItem",
 				position: 1,
 				name: "Home",
-				item: "https://llmgateway.io",
+				item: "https://betarouter.com",
 			},
 			{
 				"@type": "ListItem",
 				position: 2,
 				name: "Guides",
-				item: "https://llmgateway.io/guides",
+				item: "https://betarouter.com/guides",
 			},
 			{
 				"@type": "ListItem",
 				position: 3,
 				name: guide.title,
-				item: `https://llmgateway.io/guides/${slug}`,
+				item: `https://betarouter.com/guides/${slug}`,
 			},
 		],
 	};
@@ -180,18 +180,18 @@ export async function generateMetadata({
 
 	return {
 		title: `${guide.title} - Guides`,
-		description: guide.description ?? "LLM Gateway integration guide",
+		description: guide.description ?? "betarouter integration guide",
 		alternates: { canonical: `/guides/${guide.slug}` },
 		openGraph: {
-			title: `${guide.title} - Guides | LLM Gateway`,
-			description: guide.description ?? "LLM Gateway integration guide",
+			title: `${guide.title} - Guides | betarouter`,
+			description: guide.description ?? "betarouter integration guide",
 			type: "article",
-			url: `https://llmgateway.io/guides/${guide.slug}`,
+			url: `https://betarouter.com/guides/${guide.slug}`,
 		},
 		twitter: {
 			card: "summary_large_image",
-			title: `${guide.title} - Guides | LLM Gateway`,
-			description: guide.description ?? "LLM Gateway integration guide",
+			title: `${guide.title} - Guides | betarouter`,
+			description: guide.description ?? "betarouter integration guide",
 		},
 	};
 }

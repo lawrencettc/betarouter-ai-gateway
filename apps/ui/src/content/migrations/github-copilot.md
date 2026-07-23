@@ -9,7 +9,7 @@ fromProvider: GitHub Copilot
 
 On June 1, 2026, GitHub Copilot replaced its flat-fee model with usage-based AI Credits: seat prices didn't change — individual plans run $10 (Pro), $39 (Pro+), and $100 (Max), while organizations pay $19 (Business) or $39 (Enterprise) per user per month — but Copilot Chat, agent mode, code review, and CLI now bill by tokens consumed, with no spending ceiling unless you manually configure one. Teams running agentic workflows have reported projected jumps from $50 to $3,000 per month.
 
-LLM Gateway gives you the same workflows — chat, agents, code review — through any coding tool you choose, with provider token rates passed through at zero markup, prompt caching, and hard budget caps per organization, project, and API key.
+betarouter gives you the same workflows — chat, agents, code review — through any coding tool you choose, with provider token rates passed through at zero markup, prompt caching, and hard budget caps per organization, project, and API key.
 
 ## What Changed in Copilot Billing
 
@@ -32,26 +32,26 @@ Copilot is an IDE product, not an API, so migration means pointing each workflow
 | Copilot feature            | Gateway-backed replacement                                                                            |
 | -------------------------- | ----------------------------------------------------------------------------------------------------- |
 | Copilot Chat               | Any chat-capable agent (DevPass Code, Claude Code, Cline, Continue) with any of 200+ models           |
-| Agent mode                 | DevPass Code, Claude Code, Cline, or Aider routed through LLM Gateway                                 |
+| Agent mode                 | DevPass Code, Claude Code, Cline, or Aider routed through betarouter                                  |
 | Inline completions         | Continue or Cline autocomplete — or keep a Copilot seat just for completions (they're still flat-fee) |
 | PR summaries & code review | Your CI calling the gateway's OpenAI-compatible API with any model                                    |
 | Copilot CLI                | Codex CLI, DevPass Code, or Claude Code in the terminal                                               |
 
 ## Migration Steps
 
-### 1. Get Your LLM Gateway API Key
+### 1. Get Your betarouter API Key
 
-Sign up at [llmgateway.io/signup](/signup) and create an API key from your dashboard. Pay-as-you-go usage has no token markup — just a flat 5% platform fee on credits, or 0% when you bring your own provider keys. For predictable per-developer pricing, [DevPass](https://devpass.llmgateway.io) plans start at $29/month.
+Sign up at [betarouter.com/signup](/signup) and create an API key from your dashboard. Pay-as-you-go usage has no token markup — just a flat 5% platform fee on credits, or 0% when you bring your own provider keys. For predictable per-developer pricing, [DevPass](https://devpass.betarouter.com) plans start at $29/month.
 
 ### 2. Pick Your Coding Agent
 
 Each of these takes minutes to set up and works with every model on the gateway:
 
-- **[DevPass Code](/guides/devpass-code)** — open-source terminal agent built for LLM Gateway. One browser login, no API keys to juggle.
+- **[DevPass Code](/guides/devpass-code)** — open-source terminal agent built for betarouter. One browser login, no API keys to juggle.
 - **[Claude Code](/guides/claude-code)** — three environment variables point it at the gateway, and it can run GPT-5, Gemini, or any other model:
 
 ```bash
-export ANTHROPIC_BASE_URL=https://api.llmgateway.io
+export ANTHROPIC_BASE_URL=https://api.betarouter.com
 export ANTHROPIC_AUTH_TOKEN=llmgtwy_your_api_key_here
 export ANTHROPIC_MODEL=gpt-5  # optional: any model from the catalog
 
@@ -67,7 +67,7 @@ claude
 Copilot code review now consumes AI Credits, and it can also consume GitHub Actions minutes when reviews run for unlicensed users. The gateway's API is OpenAI-compatible, so your CI can review diffs with any model:
 
 ```bash
-curl https://api.llmgateway.io/v1/chat/completions \
+curl https://api.betarouter.com/v1/chat/completions \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -89,18 +89,18 @@ Prompt caching is automatic. Agentic coding tools resend large context (system p
 Many teams don't drop Copilot entirely — completions are still the best part of the product and still flat-fee:
 
 1. Keep Copilot Free (2,000 completions/month) or a $10 Pro seat for inline completions.
-2. Route all chat and agentic work through LLM Gateway with the agent of your choice.
+2. Route all chat and agentic work through betarouter with the agent of your choice.
 3. Cap total spend with project budgets, or put developers on a flat DevPass plan.
 
 You keep the autocomplete experience and swap the unbounded metered part for pass-through token prices with a ceiling you set.
 
 ## Full Comparison
 
-See the detailed breakdown on the [LLM Gateway vs GitHub Copilot comparison page](/compare/github-copilot), or the [best GitHub Copilot alternatives in 2026](/blog/github-copilot-alternatives) if you're still weighing options.
+See the detailed breakdown on the [betarouter vs GitHub Copilot comparison page](/compare/github-copilot), or the [best GitHub Copilot alternatives in 2026](/blog/github-copilot-alternatives) if you're still weighing options.
 
 ## Need Help?
 
 - Estimate your exposure: [Copilot cost calculator](/copilot-cost-calculator)
-- Browse available models at [llmgateway.io/models](/models)
-- Read the [API documentation](https://docs.llmgateway.io)
-- Contact support at contact@llmgateway.io
+- Browse available models at [betarouter.com/models](/models)
+- Read the [API documentation](https://docs.betarouter.com)
+- Contact support at contact@betarouter.com

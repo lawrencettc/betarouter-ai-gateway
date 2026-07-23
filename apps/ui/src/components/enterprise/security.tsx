@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-import { MARKETING_STATS } from "@llmgateway/shared";
+import { MARKETING_STATS } from "@betarouter/shared";
 
 const assurances = [
 	{
@@ -30,7 +30,7 @@ const assurances = [
 	{
 		icon: ShieldCheck,
 		title: `${MARKETING_STATS.uptimeSla} uptime SLA`,
-		description: "Backed by live status at status.llmgateway.io.",
+		description: "Backed by live status at status.betarouter.com.",
 	},
 ];
 
@@ -97,7 +97,7 @@ export function SecurityEnterprise() {
 							</p>
 						</div>
 						<a
-							href="https://security.llmgateway.io/"
+							href="https://security.betarouter.com/"
 							target="_blank"
 							rel="noopener noreferrer"
 							className="relative mt-auto inline-flex items-center gap-1.5 text-sm font-medium text-foreground transition-colors hover:text-blue-500"

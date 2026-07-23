@@ -7,7 +7,7 @@ icon: ClaudeCode
 import { Step, Steps } from "fumadocs-ui/components/steps";
 import { Callout } from "fumadocs-ui/components/callout";
 
-Claude Code is locked to Anthropic's API by default. With LLM Gateway, you can point it at any model—GPT-5, Gemini, Llama, or 180+ others—while keeping the same Anthropic API format Claude Code expects.
+Claude Code is locked to Anthropic's API by default. With betarouter, you can point it at any model—GPT-5, Gemini, Llama, or 180+ others—while keeping the same Anthropic API format Claude Code expects.
 
 Three environment variables. No code changes. Full cost tracking in your dashboard.
 
@@ -15,19 +15,19 @@ Three environment variables. No code changes. Full cost tracking in your dashboa
 
 <Steps>
 <Step>
-### Sign Up for LLM Gateway
+### Sign Up for betarouter
 
-[Sign up free](https://llmgateway.io/signup) — no credit card required. Copy your API key from the dashboard.
+[Sign up free](https://betarouter.com/signup) — no credit card required. Copy your API key from the dashboard.
 
 </Step>
 
 <Step>
 ### Set Environment Variables
 
-Configure Claude Code to use LLM Gateway:
+Configure Claude Code to use betarouter:
 
 ```bash
-export ANTHROPIC_BASE_URL=https://api.llmgateway.io
+export ANTHROPIC_BASE_URL=https://api.betarouter.com
 export ANTHROPIC_AUTH_TOKEN=llmgtwy_your_api_key_here
 # optional: specify a model, otherwise it uses the default Claude model
 export ANTHROPIC_MODEL=gpt-5  # or any model from our catalog
@@ -42,23 +42,23 @@ export ANTHROPIC_MODEL=gpt-5  # or any model from our catalog
 claude
 ```
 
-All requests will now be routed through LLM Gateway.
+All requests will now be routed through betarouter.
 
 </Step>
 </Steps>
 
 ## Why This Works
 
-LLM Gateway's `/v1/messages` endpoint speaks Anthropic's API format natively. We handle the translation to each provider behind the scenes. This means:
+betarouter's `/v1/messages` endpoint speaks Anthropic's API format natively. We handle the translation to each provider behind the scenes. This means:
 
 - **Use any model** — GPT-5, Gemini, Llama, or Claude itself
 - **Keep your workflow** — Claude Code doesn't know the difference
-- **Track costs** — Every request appears in your LLM Gateway dashboard
+- **Track costs** — Every request appears in your betarouter dashboard
 - **Automatic caching** — Repeated requests hit cache, saving money
 
 ## Choosing Models
 
-You can use any model from the [models page](https://llmgateway.io/models).
+You can use any model from the [models page](https://betarouter.com/models).
 
 ### Use OpenAI's Latest Models
 
@@ -95,7 +95,7 @@ export ANTHROPIC_MODEL=gpt-5
 ### Complete Configuration Example
 
 ```bash
-export ANTHROPIC_BASE_URL=https://api.llmgateway.io
+export ANTHROPIC_BASE_URL=https://api.betarouter.com
 export ANTHROPIC_AUTH_TOKEN=llmgtwy_your_api_key_here
 export ANTHROPIC_MODEL=gpt-5
 export ANTHROPIC_SMALL_FAST_MODEL=gpt-5-nano
@@ -106,7 +106,7 @@ export ANTHROPIC_SMALL_FAST_MODEL=gpt-5-nano
 If you want to test the endpoint directly, you can make manual requests:
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/messages" \
+curl -X POST "https://api.betarouter.com/v1/messages" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -149,13 +149,13 @@ The endpoint returns responses in Anthropic's message format:
 - **Cost visibility** — See exactly what each coding agent costs
 - **One bill** — Stop managing separate accounts for OpenAI, Anthropic, Google
 - **Response caching** — Repeated requests (like linting the same file) hit cache
-- **Discounts** — Check [discounted models](https://llmgateway.io/models?discounted=true) for savings up to 90%
+- **Discounts** — Check [discounted models](https://betarouter.com/models?discounted=true) for savings up to 90%
 
 <Callout type="info">
-	View all available models on the [models page](https://llmgateway.io/models).
+	View all available models on the [models page](https://betarouter.com/models).
 </Callout>
 
 <Callout type="info">
-	Need help? Join our [Discord community](https://llmgateway.io/discord) for
+	Need help? Join our [Discord community](https://betarouter.com/discord) for
 	support and troubleshooting assistance.
 </Callout>

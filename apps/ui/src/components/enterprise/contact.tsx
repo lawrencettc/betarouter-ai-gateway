@@ -29,11 +29,6 @@ import { Textarea } from "@/lib/components/textarea";
 import { countries } from "@/lib/countries";
 import { useApi } from "@/lib/fetch-client";
 
-import { CalendlyInline } from "./calendly-inline";
-
-const CALENDLY_ENTERPRISE_URL =
-	"https://calendly.com/llmgateway/llmgateway-enterprise";
-
 const contactFormSchema = z.object({
 	name: z.string().min(2, "Name must be at least 2 characters"),
 	email: z.string().email("Invalid email address"),
@@ -55,11 +50,6 @@ export function ContactFormEnterprise() {
 	const submitContact = api.useMutation("post", "/public/contact/enterprise");
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isSuccess, setIsSuccess] = useState(false);
-	const [directBooking, setDirectBooking] = useState(false);
-	const [scheduled, setScheduled] = useState<{ name: string; email: string }>({
-		name: "",
-		email: "",
-	});
 	const [formLoadTime] = useState(() => Date.now());
 
 	const form = useForm<ContactFormData>({
@@ -97,7 +87,6 @@ export function ContactFormEnterprise() {
 					companySize: data.size,
 					deployment: data.deployment,
 				});
-				setScheduled({ name: data.name, email: data.email });
 				setIsSuccess(true);
 				form.reset();
 				toast.success("Message sent successfully!", {
@@ -130,35 +119,12 @@ export function ContactFormEnterprise() {
 						</h2>
 						<p className="text-lg text-muted-foreground text-balance leading-relaxed max-w-2xl mx-auto">
 							Tell us about your needs and our team will reach out to discuss
-							how LLMGateway can support your organization.
+							how betarouter can support your organization.
 						</p>
 					</div>
 
 					<div className="rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-8 sm:p-10 shadow-lg">
-						{!isSuccess && (
-							<div className="mb-8 flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-muted/30 p-4 text-center sm:flex-row sm:justify-between sm:text-left">
-								<p className="text-sm text-muted-foreground">
-									{directBooking
-										? "Prefer to write instead? Switch back to the form."
-										: "In a hurry? Skip the form and book a 20-min walkthrough directly."}
-								</p>
-								<Button
-									type="button"
-									variant="outline"
-									onClick={() => {
-										if (!directBooking) {
-											posthog.capture("enterprise_calendly_direct_opened");
-										}
-										setDirectBooking(!directBooking);
-									}}
-								>
-									{directBooking ? "Back to the form" : "Book a walkthrough"}
-								</Button>
-							</div>
-						)}
-						{!isSuccess && directBooking ? (
-							<CalendlyInline url={CALENDLY_ENTERPRISE_URL} />
-						) : isSuccess ? (
+						{isSuccess ? (
 							<div className="py-4">
 								<div className="text-center">
 									<div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/20 mb-6">
@@ -168,17 +134,9 @@ export function ContactFormEnterprise() {
 										Thank you for reaching out!
 									</h3>
 									<p className="text-muted-foreground">
-										We've received your message. Book a time below and our team
-										will meet you then — otherwise we'll reply within 24 hours.
+										We've received your message. Our team will reply within 24
+										hours.
 									</p>
-								</div>
-
-								<div className="mt-8">
-									<CalendlyInline
-										url={CALENDLY_ENTERPRISE_URL}
-										name={scheduled.name}
-										email={scheduled.email}
-									/>
 								</div>
 
 								<div className="mt-6 text-center">
@@ -343,7 +301,7 @@ export function ContactFormEnterprise() {
 										render={({ field }) => (
 											<FormItem>
 												<FormLabel>
-													How do you plan to run LLMGateway?{" "}
+													How do you plan to run betarouter?{" "}
 													<span className="text-destructive">*</span>
 												</FormLabel>
 												<Select

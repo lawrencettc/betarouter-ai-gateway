@@ -1,10 +1,10 @@
 ---
 title: Docker
-description: Run LLM Gateway as a single Docker container — the fastest way to a working instance.
+description: Run betarouter as a single Docker container — the fastest way to a working instance.
 icon: Container
 ---
 
-The unified Docker image bundles every service — UI, API, Gateway, PostgreSQL, and Redis — into a single container. It's the fastest way to get a working instance and is ideal for trying LLM Gateway out or running a single low-traffic deployment.
+The unified Docker image bundles every service — UI, API, Gateway, PostgreSQL, and Redis — into a single container. It's the fastest way to get a working instance and is ideal for trying betarouter out or running a single low-traffic deployment.
 
 For production, run each service separately with [Docker Compose](/self-host/docker-compose) or deploy to [Kubernetes](/self-host/kubernetes) with managed Postgres and Redis.
 
@@ -76,7 +76,7 @@ LLM_OPENAI_API_KEY=sk-...
 LLM_ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-LLM Gateway supports multiple API keys per provider for load balancing — provide comma-separated values. See [Docker Compose](/self-host/docker-compose#multiple-api-keys-and-load-balancing) for details.
+betarouter supports multiple API keys per provider for load balancing — provide comma-separated values. See [Docker Compose](/self-host/docker-compose#multiple-api-keys-and-load-balancing) for details.
 
 ## Next steps
 

@@ -17,7 +17,7 @@ vi.mock("./email.js", () => ({
 	sendTransactionalEmail: vi.fn(),
 }));
 
-vi.mock("@llmgateway/logger", () => ({
+vi.mock("@betarouter/logger", () => ({
 	logger: {
 		info: vi.fn(),
 		error: vi.fn(),
@@ -365,7 +365,7 @@ describe("generateAndEmailInvoice", () => {
 
 	it("should not send email when total amount is 0", async () => {
 		const { sendTransactionalEmail } = await import("./email.js");
-		const { logger } = await import("@llmgateway/logger");
+		const { logger } = await import("@betarouter/logger");
 
 		const zeroAmountData: InvoiceData = {
 			...baseInvoiceData,
@@ -395,7 +395,7 @@ describe("generateAndEmailInvoice", () => {
 		expect(sendTransactionalEmail).toHaveBeenCalledWith(
 			expect.objectContaining({
 				to: "billing@example.com",
-				subject: "Invoice INV-2025-001 - LLMGateway",
+				subject: "Invoice INV-2025-001 - betarouter",
 				attachments: expect.arrayContaining([
 					expect.objectContaining({
 						filename: "invoice-INV-2025-001.pdf",

@@ -29,8 +29,8 @@ import {
 	toolChoice,
 	toolResults,
 	tools,
-} from "@llmgateway/db";
-import { buildSignedGatewayVideoLogContentUrl } from "@llmgateway/shared/video-access";
+} from "@betarouter/db";
+import { buildSignedGatewayVideoLogContentUrl } from "@betarouter/shared/video-access";
 
 import type { ServerTypes } from "@/vars.js";
 

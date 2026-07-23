@@ -13,7 +13,7 @@ import {
 import { app } from "@/app.js";
 import { clearCache } from "@/test-utils/test-helpers.js";
 
-import { db, tables } from "@llmgateway/db";
+import { db, tables } from "@betarouter/db";
 
 const mockServer = new Hono();
 let server: ReturnType<typeof serve> | null = null;

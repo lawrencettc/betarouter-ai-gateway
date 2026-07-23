@@ -9,7 +9,7 @@ import {
 	projectHourlySourceStats,
 	projectHourlyStats,
 	sql,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 export const profileSchema = z.object({
 	username: z.string().nullable(),

@@ -1,6 +1,6 @@
 ---
 title: Cline Integration
-description: Use LLM Gateway with Cline for AI-powered coding assistance in VS Code
+description: Use betarouter with Cline for AI-powered coding assistance in VS Code
 image: guides/cline/overview.png
 icon: Cline
 ---
@@ -8,16 +8,16 @@ icon: Cline
 import { Step, Steps } from "fumadocs-ui/components/steps";
 import { Callout } from "fumadocs-ui/components/callout";
 
-[Cline](https://cline.bot) is an autonomous AI coding assistant that lives in your VS Code editor. It can create and edit files, run terminal commands, and help you build complex projects. You can configure Cline to use LLM Gateway for access to multiple AI providers with unified billing and cost tracking.
+[Cline](https://cline.bot) is an autonomous AI coding assistant that lives in your VS Code editor. It can create and edit files, run terminal commands, and help you build complex projects. You can configure Cline to use betarouter for access to multiple AI providers with unified billing and cost tracking.
 
 ## Prerequisites
 
 - VS Code based IDE installed
-- An LLM Gateway API key
+- An betarouter API key
 
 ## Setup
 
-Cline supports OpenAI-compatible API endpoints, making it straightforward to integrate with LLM Gateway.
+Cline supports OpenAI-compatible API endpoints, making it straightforward to integrate with betarouter.
 
 <Steps>
 <Step>
@@ -47,8 +47,8 @@ Cline supports OpenAI-compatible API endpoints, making it straightforward to int
 
 1. In the API Provider dropdown, select **OpenAI Compatible**
 2. Enter the following details:
-   - **Base URL**: `https://api.llmgateway.io/v1`
-   - **API Key**: Your LLM Gateway API key
+   - **Base URL**: `https://api.betarouter.com/v1`
+   - **API Key**: Your betarouter API key
    - **Model ID**: Choose a model (e.g., `claude-opus-4-5-20251101`, `gpt-5.2`, `gemini-3-pro-preview`, `deepseek-3.2`). See [provider-specific routing](/features/routing#provider-specific-routing) for more options.
 
 ![Configure API Provider](/guides/cline/modelsetup.webp)
@@ -65,18 +65,18 @@ Cline supports OpenAI-compatible API endpoints, making it straightforward to int
 
 ![Test Cline](/guides/cline/clineexec.webp)
 
-All requests will now be routed through LLM Gateway.
+All requests will now be routed through betarouter.
 
 </Step>
 </Steps>
 
 <Callout type="info">
-	View all available models on the [models page](https://llmgateway.io/models).
+	View all available models on the [models page](https://betarouter.com/models).
 </Callout>
 
 ## Features
 
-Once configured, you can use all of Cline's features with LLM Gateway:
+Once configured, you can use all of Cline's features with betarouter:
 
 ### Autonomous Coding
 
@@ -104,18 +104,18 @@ To use a specific provider's version of a model, prefix the model ID with the pr
 
 ### Using Discounted Models
 
-LLM Gateway offers discounted access to some models. Find them on the [models page](https://llmgateway.io/models?view=grid&filters=1&discounted=true) and copy the model ID.
+betarouter offers discounted access to some models. Find them on the [models page](https://betarouter.com/models?view=grid&filters=1&discounted=true) and copy the model ID.
 
 ### Using Free Models
 
-Some models are available for free. Browse them on the [models page](https://llmgateway.io/models?view=grid&filters=1&free=true).
+Some models are available for free. Browse them on the [models page](https://betarouter.com/models?view=grid&filters=1&free=true).
 
 <Callout type="info">
-	Need help? Join our [Discord community](https://llmgateway.io/discord) for
+	Need help? Join our [Discord community](https://betarouter.com/discord) for
 	support and troubleshooting assistance.
 </Callout>
 
-## Benefits of Using LLM Gateway with Cline
+## Benefits of Using betarouter with Cline
 
 - **Multi-Provider Access**: Use models from OpenAI, Anthropic, Google, and more through a single API
 - **Cost Control**: Track and limit your AI spending with detailed usage analytics

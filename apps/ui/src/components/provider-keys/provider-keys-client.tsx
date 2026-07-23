@@ -8,7 +8,7 @@ import { ProviderKeysList } from "@/components/provider-keys/provider-keys-list"
 import { useDashboardNavigation } from "@/hooks/useDashboardNavigation";
 import { Button } from "@/lib/components/button";
 
-import type { ProviderKeyOptions } from "@llmgateway/db";
+import type { ProviderKeyOptions } from "@betarouter/db";
 
 interface ProviderKeysClientProps {
 	initialProviderKeysData?: {
@@ -40,7 +40,7 @@ export function ProviderKeysClient({
 					<div className="space-y-1">
 						<h2 className="text-2xl font-bold tracking-tight">Provider Keys</h2>
 						<p className="max-w-2xl text-sm text-muted-foreground">
-							Bring your own provider API keys to use them through LLM Gateway
+							Bring your own provider API keys to use them through betarouter
 							without additional fees.
 						</p>
 					</div>

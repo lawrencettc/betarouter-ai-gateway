@@ -18,7 +18,7 @@ NOTE: these commands can only be run in the root directory of the repository, no
 - `pnpm build` - Build all applications for production. ALWAYS run this after finishing work on a feature. ALWAYS run a full build to make sure things fork.
 - `pnpm clean` - Clean build artifacts and cache directories
 
-To build a single app, ALWAYS use a Turbo filter (`turbo run build --filter=<app>`), e.g. `turbo run build --filter=gateway`. NEVER use `pnpm --filter <app> build` for builds: that runs the app's `tsc` directly without rebuilding workspace dependency packages first, so it compiles against stale `dist/` artifacts and produces spurious errors (missing `@llmgateway/*` modules, "value not in type union", etc.). Turbo's `build` depends on `^build`, so a Turbo filter builds the dependency packages in topological order first.
+To build a single app, ALWAYS use a Turbo filter (`turbo run build --filter=<app>`), e.g. `turbo run build --filter=gateway`. NEVER use `pnpm --filter <app> build` for builds: that runs the app's `tsc` directly without rebuilding workspace dependency packages first, so it compiles against stale `dist/` artifacts and produces spurious errors (missing `@betarouter/*` modules, "value not in type union", etc.). Turbo's `build` depends on `^build`, so a Turbo filter builds the dependency packages in topological order first.
 
 Note: `apps/api` and `apps/gateway` build with plain `tsc` (`tsc && resolve-tspaths`) and run `node dist/serve.js` — there is no bundler. Bundler concepts like "mark a dependency as external" do not apply to these apps; runtime dependencies are ordinary `node_modules` imports. Only the Next.js frontends have a bundler.
 
@@ -40,7 +40,7 @@ When you are done writing code features or bug fixes, ALWAYS commit your changes
 
 ### Documentation
 
-- NEVER hardcode a list of models, providers, provider countries/headquarters, or any other catalogue-derived enumeration into documentation (`apps/docs`), changelog entries, or marketing copy. These lists go stale the moment the catalogue changes and are annoying to keep in sync. Instead, link to the relevant live page that is generated from the catalogue (e.g. the [models page](https://llmgateway.io/models) or [providers page](https://llmgateway.io/providers)).
+- NEVER hardcode a list of models, providers, provider countries/headquarters, or any other catalogue-derived enumeration into documentation (`apps/docs`), changelog entries, or marketing copy. These lists go stale the moment the catalogue changes and are annoying to keep in sync. Instead, link to the relevant live page that is generated from the catalogue (e.g. the [models page](https://betarouter.com/models) or [providers page](https://betarouter.com/providers)).
 - The ONLY exception is video generation and image generation models: their per-model requirements (supported sizes, durations, resolutions, etc.) are how users figure out how to call them, so listing those specific models and their constraints in the docs is acceptable and preferred there.
 
 ### Testing
@@ -127,7 +127,7 @@ NOTE: these commands can only be run in the root directory of the repository, no
 
 ## Architecture Overview
 
-**LLM Gateway** is a monorepo containing a full-stack LLM API gateway with multiple services:
+**betarouter** is a monorepo containing a full-stack LLM API gateway with multiple services:
 
 ### Core Services
 
@@ -140,9 +140,9 @@ NOTE: these commands can only be run in the root directory of the repository, no
 
 ### Shared Packages
 
-- **@llmgateway/db** - Database schema, migrations, and utilities (Drizzle ORM)
-- **@llmgateway/models** - LLM provider definitions and model configurations
-- **@llmgateway/auth** - Authentication utilities and session management
+- **@betarouter/db** - Database schema, migrations, and utilities (Drizzle ORM)
+- **@betarouter/models** - LLM provider definitions and model configurations
+- **@betarouter/auth** - Authentication utilities and session management
 
 ## Technology Stack
 
@@ -259,7 +259,7 @@ When creating a new package in `packages/`, include these config files. Copy the
 
 ## Key Features
 
-### LLM Gateway
+### betarouter
 
 - Multi-provider support (OpenAI, Anthropic, Google Vertex AI, etc.)
 - OpenAI-compatible API interface
@@ -285,7 +285,7 @@ When creating a new package in `packages/`, include these config files. Copy the
 
 ## License
 
-LLM Gateway is available under a dual license:
+betarouter is available under a dual license:
 
 - **Open Source**: Core functionality is licensed under AGPLv3 - see the [LICENSE](LICENSE) file for details.
 - **Enterprise**: Commercial features in the `ee/` directory require an Enterprise license - see [ee/LICENSE](ee/LICENSE) for details.
@@ -299,4 +299,4 @@ LLM Gateway is available under a dual license:
 - Priority support
 - And more to be defined
 
-For enterprise licensing, please contact us at contact@llmgateway.io
+For enterprise licensing, please contact us at contact@betarouter.com

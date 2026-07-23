@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { models } from "@llmgateway/models";
+import { models } from "@betarouter/models";
 
 import { messagesContainDocuments } from "./messages-contain-documents.js";
 
-import type { BaseMessage, ProviderModelMapping } from "@llmgateway/models";
+import type { BaseMessage, ProviderModelMapping } from "@betarouter/models";
 
 describe("messagesContainDocuments", () => {
 	it("returns false for plain text-only messages", () => {

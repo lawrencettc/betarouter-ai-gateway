@@ -5,8 +5,8 @@ import {
 	isApiKeyPeriodLimitConfigured,
 	resolveEffectiveMemberBudget,
 	type InferSelectModel,
-} from "@llmgateway/db";
-import { logger, toError } from "@llmgateway/logger";
+} from "@betarouter/db";
+import { logger, toError } from "@betarouter/logger";
 
 import {
 	findOrganizationById,
@@ -15,7 +15,7 @@ import {
 	getMemberPeriodSpend,
 } from "./cached-queries.js";
 
-import type { tables } from "@llmgateway/db";
+import type { tables } from "@betarouter/db";
 
 type ApiKey = InferSelectModel<typeof tables.apiKey>;
 
@@ -33,13 +33,13 @@ export function assertApiKeyWithinUsageLimits(
 	) {
 		throw new HTTPException(401, {
 			message:
-				"Unauthorized: LLMGateway API key has expired. Set a new expiration date to reactivate it.",
+				"Unauthorized: betarouter API key has expired. Set a new expiration date to reactivate it.",
 		});
 	}
 
 	if (apiKey.usageLimit && Number(apiKey.usage) >= Number(apiKey.usageLimit)) {
 		throw new HTTPException(401, {
-			message: "Unauthorized: LLMGateway API key reached its usage limit.",
+			message: "Unauthorized: betarouter API key reached its usage limit.",
 		});
 	}
 
@@ -51,7 +51,7 @@ export function assertApiKeyWithinUsageLimits(
 	) {
 		throw new HTTPException(401, {
 			message:
-				"Unauthorized: LLMGateway API key reached its current period usage limit.",
+				"Unauthorized: betarouter API key reached its current period usage limit.",
 		});
 	}
 }

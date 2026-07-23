@@ -38,7 +38,7 @@ The practical numbers:
 
 There is no ceiling unless you configure one. Plans include monthly credit allowances, and spending budgets exist in the billing dashboard — but the budgets are off by default, an inversion of how the product was sold to procurement, where the seat price was the cap.
 
-For the developer-tool side of this, see the [best GitHub Copilot alternatives](/blog/github-copilot-alternatives) and the [LLM Gateway vs GitHub Copilot comparison](/compare/github-copilot).
+For the developer-tool side of this, see the [best GitHub Copilot alternatives](/blog/github-copilot-alternatives) and the [betarouter vs GitHub Copilot comparison](/compare/github-copilot).
 
 ## Microsoft 365 Copilot: Higher Floors, Metered Ceilings
 
@@ -67,16 +67,16 @@ Whatever stack replaces or supplements Copilot, these are the controls to demand
 5. **Model right-sizing.** Routing light tasks to light models is the single biggest lever: the same chat workload that costs $84 a month on a premium model costs about $6.40 on a mini model. Route by task, not by default.
 6. **No seat lock-in.** An OpenAI-compatible API means the tools on top — coding agents, chat UIs, internal apps — can change without renegotiating a contract.
 
-## Where LLM Gateway Fits
+## Where betarouter Fits
 
-**LLM Gateway** is an open-source AI gateway built around exactly these controls: one API in front of 200+ models from 40+ providers, zero markup on provider token rates (a flat 5% fee on credits, or 0% with your own provider keys), automatic prompt caching, and budgets with hard limits per organization, project, and key.
+**betarouter** is an open-source AI gateway built around exactly these controls: one API in front of 200+ models from 40+ providers, zero markup on provider token rates (a flat 5% fee on credits, or 0% with your own provider keys), automatic prompt caching, and budgets with hard limits per organization, project, and key.
 
 For enterprises specifically:
 
 - **Self-host under AGPLv3** or run in our managed cloud — data-residency requirements stop being a blocker
 - **Guardrails on the Enterprise plan** — PII, prompt-injection, and secret detection at the gateway, before requests leave your boundary
 - **SSO, roles, and audit logs** built in, not paywalled per feature
-- **[DevPass](https://devpass.llmgateway.io)** flat plans (from $29/month) for developer seats that need a predictable number
+- **[DevPass](https://devpass.betarouter.com)** flat plans (from $29/month) for developer seats that need a predictable number
 - A **30-Day Production Pilot** for enterprise teams that want to validate real workloads before committing — see the [enterprise page](/enterprise)
 
 Migrating developer workloads takes an afternoon, not a quarter — the [GitHub Copilot migration guide](/migration/github-copilot) walks through it feature by feature.
@@ -97,7 +97,7 @@ The seat is still $39 per user per month, but chat, agent mode, code review, and
 
 ### How can enterprises cap Copilot-style AI spend?
 
-Put a gateway between your tools and the model providers. LLM Gateway enforces hard budget limits per organization, project, and API key, records cost per request, caches repeated context automatically, and passes provider prices through with no markup — so spend is visible, attributable, and bounded.
+Put a gateway between your tools and the model providers. betarouter enforces hard budget limits per organization, project, and API key, records cost per request, caches repeated context automatically, and passes provider prices through with no markup — so spend is visible, attributable, and bounded.
 
 ---
 
@@ -105,6 +105,6 @@ Put a gateway between your tools and the model providers. LLM Gateway enforces h
 
 If June 2026 is the month AI spend became a line item your CFO reads:
 
-- **[Try LLM Gateway free](https://llmgateway.io/signup)** — no credit card required, one API for 200+ models
+- **[Try betarouter free](https://betarouter.com/signup)** — no credit card required, one API for 200+ models
 - **[Estimate your Copilot costs](/copilot-cost-calculator)** — model your team's usage under AI Credits vs pass-through pricing
 - **[Talk to us about an enterprise pilot](/enterprise)** — 30 days on production workloads, with your own keys if you prefer

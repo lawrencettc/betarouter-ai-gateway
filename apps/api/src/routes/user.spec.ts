@@ -3,7 +3,7 @@ import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import { app } from "@/index.js";
 import { createTestUser, deleteAll } from "@/testing.js";
 
-import { db, eq, tables } from "@llmgateway/db";
+import { db, eq, tables } from "@betarouter/db";
 
 describe("user passkey deletion", () => {
 	let token: string;

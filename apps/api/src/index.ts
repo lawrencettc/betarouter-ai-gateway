@@ -8,13 +8,13 @@ import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 
-import { db } from "@llmgateway/db";
+import { db } from "@betarouter/db";
 import {
 	createHonoRequestLogger,
 	createRequestLifecycleMiddleware,
-} from "@llmgateway/instrumentation";
-import { logger } from "@llmgateway/logger";
-import { HealthChecker } from "@llmgateway/shared";
+} from "@betarouter/instrumentation";
+import { logger } from "@betarouter/logger";
+import { HealthChecker } from "@betarouter/shared";
 
 import { redisClient } from "./auth/config.js";
 import { authHandler } from "./auth/handler.js";

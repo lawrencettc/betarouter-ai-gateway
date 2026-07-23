@@ -5,7 +5,7 @@ import {
 	isInputAudioContent,
 	isTextContent,
 	type ProviderId,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 import { parseDataUrl } from "./parse-data-url.js";
 import { processImageUrl } from "./process-image-url.js";

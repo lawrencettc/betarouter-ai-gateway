@@ -1,4 +1,4 @@
-import { sql, tables } from "@llmgateway/db";
+import { sql, tables } from "@betarouter/db";
 
 // All plan/subscription transaction types (DevPass dev plans, legacy
 // subscriptions, Chat Plans). These are excluded from the credits-economy
@@ -137,7 +137,7 @@ export const notEndUserWalletFilter = sql`${tables.transaction.type} NOT IN (${s
 	sql`, `,
 )})`;
 
-// The subset of end-user wallet rows that are NOT LLM Gateway revenue:
+// The subset of end-user wallet rows that are NOT betarouter revenue:
 // developer-margin bookkeeping (accrual/payout + the margin claw-back on
 // refund) and developer-funded bonus grants/claw-backs. `end_user_topup` (the
 // real payment the end-user makes, reversed by a negative `end_user_topup` on

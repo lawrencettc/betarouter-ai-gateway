@@ -3,7 +3,7 @@ id: use-case-cost-optimization
 slug: cost-optimization
 date: 2026-06-02
 title: AI cost optimization & FinOps
-metaTitle: "LLM Gateway for AI Cost Optimization & FinOps"
+metaTitle: "betarouter for AI Cost Optimization & FinOps"
 description: "Cut LLM spend without changing your code. Smart routing, prompt caching, and per-request analytics show where every token goes and route each call to the cheapest model that works."
 headline: "See where every token goes, cache repeat context, and route to the cheapest model that clears the bar."
 summary: "Reduce LLM spend with per-request analytics, prompt caching, and routing to cheaper models — all through one OpenAI-compatible API."
@@ -17,7 +17,7 @@ benefits:
   - title: One view across every provider
     description: "Spend across OpenAI, Anthropic, Google and the rest lands in one dashboard instead of a dozen separate billing pages."
 faqs:
-  - question: How does LLM Gateway reduce my LLM costs?
+  - question: How does betarouter reduce my LLM costs?
     answer: "Three ways: visibility (per-request cost analytics so you can find waste), routing (send each request to the cheapest model that meets your quality bar), and caching (avoid paying full price for repeated prompt context). Together they cut spend without requiring you to rewrite your application."
   - question: Do I have to change my code to save money?
     answer: "Very little. The gateway is OpenAI-compatible, so adopting it is a base-URL and key change. From there, routing, caching and analytics are configuration — not a rewrite of your application logic."
@@ -31,7 +31,7 @@ faqs:
 
 Teams rarely overspend on LLMs on purpose. They overspend because the bill is opaque: one big number, no breakdown of which feature, model or prompt drove it, and no easy way to test a cheaper alternative. You can't optimize what you can't see.
 
-LLM Gateway makes spend legible and then gives you the levers to lower it — visibility, routing, and caching — through one OpenAI-compatible API.
+betarouter makes spend legible and then gives you the levers to lower it — visibility, routing, and caching — through one OpenAI-compatible API.
 
 ## Step one: make every token visible
 
@@ -41,7 +41,7 @@ The gateway logs each request with its model, token counts, latency and exact do
 import OpenAI from "openai";
 
 const client = new OpenAI({
-  baseURL: "https://api.llmgateway.io/v1",
+  baseURL: "https://api.betarouter.com/v1",
   apiKey: process.env.LLM_GATEWAY_API_KEY,
 });
 

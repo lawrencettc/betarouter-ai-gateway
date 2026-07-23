@@ -9,13 +9,13 @@ export const metadata = {
 	title: "Compare AI Models Side by Side",
 	description:
 		"Select any two AI models to compare pricing, context window, and capabilities with our interactive model comparison tool.",
-	alternates: { canonical: "https://llmgateway.io/models/compare" },
+	alternates: { canonical: "https://betarouter.com/models/compare" },
 	openGraph: {
 		title: "AI Model Comparison Tool",
 		description:
 			"Compare LLM pricing, context, and features across providers in a side-by-side view.",
 		type: "website",
-		url: "https://llmgateway.io/models/compare",
+		url: "https://betarouter.com/models/compare",
 	},
 	twitter: {
 		card: "summary_large_image",
@@ -29,7 +29,7 @@ const webApplicationSchema = {
 	"@context": "https://schema.org",
 	"@type": "WebApplication",
 	name: "AI Model Comparison Tool",
-	url: "https://llmgateway.io/models/compare",
+	url: "https://betarouter.com/models/compare",
 	applicationCategory: "DeveloperApplication",
 	operatingSystem: "Web",
 	offers: {
@@ -49,19 +49,19 @@ const breadcrumbSchema = {
 			"@type": "ListItem",
 			position: 1,
 			name: "Home",
-			item: "https://llmgateway.io",
+			item: "https://betarouter.com",
 		},
 		{
 			"@type": "ListItem",
 			position: 2,
 			name: "Models",
-			item: "https://llmgateway.io/models",
+			item: "https://betarouter.com/models",
 		},
 		{
 			"@type": "ListItem",
 			position: 3,
 			name: "Compare",
-			item: "https://llmgateway.io/models/compare",
+			item: "https://betarouter.com/models/compare",
 		},
 	],
 };

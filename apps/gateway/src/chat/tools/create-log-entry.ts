@@ -1,9 +1,9 @@
 import { trace } from "@opentelemetry/api";
 
 import type { GatewayApiKey } from "@/lib/cached-queries.js";
-import type { RoutingMetadata } from "@llmgateway/actions";
-import type { GatewayContentFilterResponse, Project } from "@llmgateway/db";
-import type { OpenAIToolInput } from "@llmgateway/models";
+import type { RoutingMetadata } from "@betarouter/actions";
+import type { GatewayContentFilterResponse, Project } from "@betarouter/db";
+import type { OpenAIToolInput } from "@betarouter/models";
 
 export interface PluginResults {
 	responseHealing?: {

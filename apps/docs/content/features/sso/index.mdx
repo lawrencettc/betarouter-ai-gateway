@@ -8,13 +8,13 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 # SSO
 
-LLM Gateway supports per-organization **SAML 2.0 single sign-on (SSO)** and **SCIM 2.0 directory provisioning**, so an enterprise team can let members sign in with their corporate identity provider and keep membership in sync automatically.
+betarouter supports per-organization **SAML 2.0 single sign-on (SSO)** and **SCIM 2.0 directory provisioning**, so an enterprise team can let members sign in with their corporate identity provider and keep membership in sync automatically.
 
 <Callout type="info">
 	SSO & SCIM are available on the **Enterprise** plan only, and can be
 	configured by an organization **owner** or **admin**. Until the organization
 	is on the Enterprise plan, the **SSO** page shows a contact-sales card.
-	Contact us at contact@llmgateway.io to enable it.
+	Contact us at contact@betarouter.com to enable it.
 </Callout>
 
 ## What each part does
@@ -30,31 +30,31 @@ LLM Gateway supports per-organization **SAML 2.0 single sign-on (SSO)** and **SC
 2. **The organization is on the Enterprise plan.** An admin flips the org to `enterprise` to unlock the feature.
 3. **`SSO_ENABLED=true` on the deployment.** This global env flag controls whether the **Sign in with SSO** button appears on the login page. The admin config page works without it, but end users can't log in via SSO until it's on.
 
-## The URLs LLM Gateway gives your IdP
+## The URLs betarouter gives your IdP
 
-Everything your identity provider needs is derived from the **management API base URL** and a **Connection ID** you choose. On the hosted service the base URL defaults to `https://internal.llmgateway.io` (overridable via `API_URL`); self-hosted deployments use whatever `API_URL` is set to.
+Everything your identity provider needs is derived from the **management API base URL** and a **Connection ID** you choose. On the hosted service the base URL defaults to `https://internal.betarouter.com` (overridable via `API_URL`); self-hosted deployments use whatever `API_URL` is set to.
 
 <Callout type="warn">
-	The management API base URL is **not** `api.llmgateway.io` — that host serves
+	The management API base URL is **not** `api.betarouter.com` — that host serves
 	the `/v1` chat-completions gateway. SSO/SAML and SCIM live on the management
 	API. You don't need to construct these URLs by hand: the exact,
 	fully-qualified values are shown with copy buttons on the **SSO** page and on
 	each connection card.
 </Callout>
 
-With `API_URL = https://internal.llmgateway.io` and a connection slug of `acme-entra`:
+With `API_URL = https://internal.betarouter.com` and a connection slug of `acme-entra`:
 
-| Value                             | URL                                                                               |
-| --------------------------------- | --------------------------------------------------------------------------------- |
-| Identifier (Entity ID) / Audience | `https://internal.llmgateway.io/auth/sso/saml2/sp/metadata?providerId=acme-entra` |
-| Reply URL (ACS)                   | `https://internal.llmgateway.io/auth/sso/saml2/sp/acs/acme-entra`                 |
-| SCIM Tenant URL                   | `https://internal.llmgateway.io/scim/v2`                                          |
+| Value                             | URL                                                                                |
+| --------------------------------- | ---------------------------------------------------------------------------------- |
+| Identifier (Entity ID) / Audience | `https://internal.betarouter.com/auth/sso/saml2/sp/metadata?providerId=acme-entra` |
+| Reply URL (ACS)                   | `https://internal.betarouter.com/auth/sso/saml2/sp/acs/acme-entra`                 |
+| SCIM Tenant URL                   | `https://internal.betarouter.com/scim/v2`                                          |
 
 ## SCIM authentication
 
 SCIM uses a **static bearer token**, not OAuth. You generate the token once on the **SSO → Directory sync (SCIM)** card, and your IdP sends it as `Authorization: Bearer <token>` on every request. In your IdP's provisioning config, that means:
 
-- **Authentication method:** the **bearer token** option — Entra labels it **"Long-lived bearer token"** / **"Secret token"**; Okta calls it an **API token**. Do **not** choose an OAuth 2.0 authorization-code flow — LLM Gateway does not implement one, and the connection test will fail.
+- **Authentication method:** the **bearer token** option — Entra labels it **"Long-lived bearer token"** / **"Secret token"**; Okta calls it an **API token**. Do **not** choose an OAuth 2.0 authorization-code flow — betarouter does not implement one, and the connection test will fail.
 - **Tenant / base URL:** the SCIM Tenant URL above (`…/scim/v2`).
 - **Secret token:** the value from the SCIM card (shown once; rotate to reissue).
 
@@ -72,7 +72,7 @@ Any other SAML 2.0 IdP follows the same flow; pick the matching **Identity provi
 
 1. On the login page the user clicks **Sign in with SSO** (visible when `SSO_ENABLED=true`).
 2. They enter their work email, e.g. `jane@acme.com`.
-3. LLM Gateway resolves the domain `acme.com` → finds the org's SSO connection → redirects to the org's IdP.
+3. betarouter resolves the domain `acme.com` → finds the org's SSO connection → redirects to the org's IdP.
 4. The user authenticates at their IdP (usually instant if already signed in).
 5. They return signed in, landing in the enterprise organization.
 

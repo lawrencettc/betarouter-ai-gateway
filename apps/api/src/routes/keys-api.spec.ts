@@ -3,8 +3,8 @@ import { expect, test, beforeEach, describe, afterEach } from "vitest";
 import { app } from "@/index.js";
 import { createTestUser, deleteAll } from "@/testing.js";
 
-import { redisClient, SWR_PREFIX, swrWrap } from "@llmgateway/cache";
-import { and, cdb, db, eq, getTableName, tables } from "@llmgateway/db";
+import { redisClient, SWR_PREFIX, swrWrap } from "@betarouter/cache";
+import { and, cdb, db, eq, getTableName, tables } from "@betarouter/db";
 
 const ONE_MINUTE_MS = 60 * 1000;
 const ONE_HOUR_MS = 60 * ONE_MINUTE_MS;

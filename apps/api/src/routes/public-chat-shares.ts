@@ -1,6 +1,6 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 
-import { db, tables, eq, isNull, and, desc } from "@llmgateway/db";
+import { db, tables, eq, isNull, and, desc } from "@betarouter/db";
 
 import type { ServerTypes } from "@/vars.js";
 

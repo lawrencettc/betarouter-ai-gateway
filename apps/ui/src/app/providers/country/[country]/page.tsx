@@ -9,7 +9,7 @@ import {
 	getProviderCountries,
 	models as modelDefinitions,
 	providers as providerDefinitions,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 import type { Metadata } from "next";
 
@@ -26,7 +26,7 @@ function findCountry(code: string) {
 function providersForCountry(code: string) {
 	return providerDefinitions.filter(
 		(provider) =>
-			provider.name !== "LLM Gateway" &&
+			provider.name !== "betarouter" &&
 			provider.id !== "custom" &&
 			provider.headquarters === code,
 	);
@@ -53,13 +53,13 @@ export default async function ProviderCountryPage({
 		new Set(countryProviders.map((p) => p.id)),
 	);
 
-	const countryUrl = `https://llmgateway.io/providers/country/${country.code.toLowerCase()}`;
+	const countryUrl = `https://betarouter.com/providers/country/${country.code.toLowerCase()}`;
 
 	const collectionSchema = {
 		"@context": "https://schema.org",
 		"@type": "CollectionPage",
 		name: `LLM providers headquartered in ${country.name}`,
-		description: `Browse the ${countryProviders.length} AI providers headquartered in ${country.name} available through LLM Gateway's unified, OpenAI-compatible API.`,
+		description: `Browse the ${countryProviders.length} AI providers headquartered in ${country.name} available through betarouter's unified, OpenAI-compatible API.`,
 		url: countryUrl,
 		mainEntity: {
 			"@type": "ItemList",
@@ -67,7 +67,7 @@ export default async function ProviderCountryPage({
 			itemListElement: countryProviders.map((provider, index) => ({
 				"@type": "ListItem",
 				position: index + 1,
-				url: `https://llmgateway.io/providers/${provider.id}`,
+				url: `https://betarouter.com/providers/${provider.id}`,
 				name: provider.name,
 			})),
 		},
@@ -81,13 +81,13 @@ export default async function ProviderCountryPage({
 				"@type": "ListItem",
 				position: 1,
 				name: "Home",
-				item: "https://llmgateway.io",
+				item: "https://betarouter.com",
 			},
 			{
 				"@type": "ListItem",
 				position: 2,
 				name: "Providers",
-				item: "https://llmgateway.io/providers",
+				item: "https://betarouter.com/providers",
 			},
 			{
 				"@type": "ListItem",
@@ -133,7 +133,7 @@ export async function generateMetadata({
 	}
 
 	const countryProviders = providersForCountry(country.code);
-	const description = `Browse ${countryProviders.length} AI providers headquartered in ${country.name} — access their models through LLM Gateway's OpenAI-compatible API with automatic fallback, caching, and cost analytics.`;
+	const description = `Browse ${countryProviders.length} AI providers headquartered in ${country.name} — access their models through betarouter's OpenAI-compatible API with automatic fallback, caching, and cost analytics.`;
 	const canonical = `/providers/country/${country.code.toLowerCase()}`;
 
 	return {
@@ -141,14 +141,14 @@ export async function generateMetadata({
 		description,
 		alternates: { canonical },
 		openGraph: {
-			title: `AI Providers in ${country.name} | LLM Gateway`,
+			title: `AI Providers in ${country.name} | betarouter`,
 			description,
 			type: "website",
-			url: `https://llmgateway.io${canonical}`,
+			url: `https://betarouter.com${canonical}`,
 		},
 		twitter: {
 			card: "summary_large_image",
-			title: `AI Providers in ${country.name} | LLM Gateway`,
+			title: `AI Providers in ${country.name} | betarouter`,
 			description,
 		},
 	};

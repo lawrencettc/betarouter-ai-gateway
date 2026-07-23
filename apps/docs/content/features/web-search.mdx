@@ -8,7 +8,7 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 # Native Web Search
 
-LLM Gateway supports native web search capabilities that allow models to access real-time information from the internet. This feature is useful for answering questions about current events, recent news, live data, and other time-sensitive information that may not be in the model's training data.
+betarouter supports native web search capabilities that allow models to access real-time information from the internet. This feature is useful for answering questions about current events, recent news, live data, and other time-sensitive information that may not be in the model's training data.
 
 ## How It Works
 
@@ -22,14 +22,14 @@ When you include the `web_search` tool in your request, the model can search the
 
 ## Supported Providers
 
-Native web search is available on select models. See all models with native web search support on our [models page](https://llmgateway.io/models?filters=1&webSearch=true).
+Native web search is available on select models. See all models with native web search support on our [models page](https://betarouter.com/models?filters=1&webSearch=true).
 
 ## Basic Usage
 
 To enable web search, add the `web_search` tool to your request:
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
+curl -X POST "https://api.betarouter.com/v1/chat/completions" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -138,7 +138,7 @@ Limit the number of searches per request (provider-dependent):
 from openai import OpenAI
 
 client = OpenAI(
-    base_url="https://api.llmgateway.io/v1",
+    base_url="https://api.betarouter.com/v1",
     api_key="your-api-key"
 )
 
@@ -159,7 +159,7 @@ print(response.choices[0].message.content)
 import OpenAI from "openai";
 
 const client = new OpenAI({
-	baseURL: "https://api.llmgateway.io/v1",
+	baseURL: "https://api.betarouter.com/v1",
 	apiKey: "your-api-key",
 });
 
@@ -177,7 +177,7 @@ console.log(response.choices[0].message.content);
 Web search works with streaming responses. Citations are included in the final chunks:
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
+curl -X POST "https://api.betarouter.com/v1/chat/completions" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -209,8 +209,8 @@ Web search responses include citations to show where information was sourced fro
 ```
 
 <Callout type="info">
-	Citation format may vary slightly between providers, but LLM Gateway
-	normalizes them into a consistent structure.
+	Citation format may vary slightly between providers, but betarouter normalizes
+	them into a consistent structure.
 </Callout>
 
 ## Cost Tracking
@@ -345,10 +345,10 @@ If you try to use web search with a model that doesn't support it:
 ```json
 {
 	"error": {
-		"message": "Model gpt-4o does not support native web search. Remove the web_search tool or use a model that supports it. See https://llmgateway.io/models?features=webSearch for supported models.",
+		"message": "Model gpt-4o does not support native web search. Remove the web_search tool or use a model that supports it. See https://betarouter.com/models?features=webSearch for supported models.",
 		"type": "invalid_request_error"
 	}
 }
 ```
 
-To avoid this error, only use the `web_search` tool with [native web search enabled models](https://llmgateway.io/models?filters=1&webSearch=true).
+To avoid this error, only use the `web_search` tool with [native web search enabled models](https://betarouter.com/models?filters=1&webSearch=true).

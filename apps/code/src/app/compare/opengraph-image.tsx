@@ -90,7 +90,7 @@ export default function CompareIndexOgImage() {
 							DevPass
 						</span>
 						<span style={{ color: "#71717a", fontSize: 20 }}>
-							by LLM Gateway
+							by betarouter
 						</span>
 					</div>
 				</div>
@@ -154,7 +154,7 @@ export default function CompareIndexOgImage() {
 						fontSize: 20,
 					}}
 				>
-					devpass.llmgateway.io/compare
+					devpass.betarouter.com/compare
 				</div>
 			</div>
 		),

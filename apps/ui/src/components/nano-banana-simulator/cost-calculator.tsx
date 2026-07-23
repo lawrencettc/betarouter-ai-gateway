@@ -88,7 +88,7 @@ export function CostCalculator({ discount }: { discount: number }) {
 
 						<Card className="border-green-200 dark:border-green-900">
 							<CardHeader>
-								<CardDescription>LLM Gateway</CardDescription>
+								<CardDescription>betarouter</CardDescription>
 								<CardTitle className="text-2xl text-green-600 dark:text-green-400">
 									{formatCurrency(gatewayTotal)}
 									<span className="text-sm font-normal text-muted-foreground">

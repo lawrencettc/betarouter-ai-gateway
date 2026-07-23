@@ -99,7 +99,7 @@ export function UptimeVisualization() {
 							</span>
 						</h2>
 						<p className="mx-auto max-w-3xl text-lg leading-relaxed text-muted-foreground text-balance">
-							LLM Gateway automatically routes requests to healthy providers in
+							betarouter automatically routes requests to healthy providers in
 							real-time. When one goes down, your traffic seamlessly fails
 							over—your users never notice.
 						</p>
@@ -183,7 +183,7 @@ export function UptimeVisualization() {
 						<div className="flex items-center gap-2 sm:gap-4">
 							<div className="w-20 shrink-0 text-right sm:w-28">
 								<span className="text-xs font-bold text-foreground sm:text-sm">
-									LLM Gateway
+									betarouter
 								</span>
 							</div>
 							<div className="relative h-5 flex-1 overflow-hidden rounded sm:h-7">

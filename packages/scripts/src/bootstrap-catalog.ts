@@ -1,4 +1,4 @@
-import { buildBootstrapPolicies } from "@llmgateway/catalog";
+import { buildBootstrapPolicies } from "@betarouter/catalog";
 import {
 	closeDatabase,
 	db,
@@ -9,7 +9,7 @@ import {
 	platformModelPolicy,
 	platformProviderPolicy,
 	provider,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 const args = new Set(process.argv.slice(2));
 const apply = args.has("--apply");

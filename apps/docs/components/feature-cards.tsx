@@ -151,7 +151,7 @@ const features: Feature[] = [
 	{
 		title: "Metadata",
 		description:
-			"Send additional context and metadata to LLM Gateway using custom headers.",
+			"Send additional context and metadata to betarouter using custom headers.",
 		href: "/features/metadata",
 		icon: <Braces className="size-5" />,
 	},

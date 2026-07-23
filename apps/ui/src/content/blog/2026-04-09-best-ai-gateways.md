@@ -18,11 +18,11 @@ But not all AI gateways are created equal. Some are pure proxies. Some lock you 
 
 We evaluated eight AI gateways on what actually matters: provider coverage, pricing transparency, self-hosting, observability, and how fast you can get started.
 
-## 1. LLM Gateway
+## 1. betarouter
 
 **Best overall. Open source. Self-hostable.**
 
-[LLM Gateway](https://llmgateway.io) is an open-source API gateway that routes requests to 200+ models across 40+ providers through a single OpenAI-compatible endpoint. Change your base URL, keep your existing code.
+[betarouter](https://betarouter.com) is an open-source API gateway that routes requests to 200+ models across 40+ providers through a single OpenAI-compatible endpoint. Change your base URL, keep your existing code.
 
 **What sets it apart:**
 
@@ -44,7 +44,7 @@ import OpenAI from "openai";
 
 const client = new OpenAI({
   apiKey: "YOUR_GATEWAY_KEY",
-  baseURL: "https://api.llmgateway.io/v1",
+  baseURL: "https://api.betarouter.com/v1",
 });
 
 // Works with any of 200+ models
@@ -243,43 +243,43 @@ AWS Bedrock provides access to foundation models through AWS infrastructure. It'
 
 ## Comparison Table
 
-| Feature                 | LLM Gateway | OpenRouter | Portkey | LiteLLM  | Helicone | Vercel AI GW | Cloudflare AI GW | AWS Bedrock |
-| ----------------------- | ----------- | ---------- | ------- | -------- | -------- | ------------ | ---------------- | ----------- |
-| **Open Source**         | Yes         | No         | Partial | Yes      | Yes      | No           | No               | No          |
-| **Self-Hostable**       | Yes         | No         | Partial | Yes      | Yes      | No           | No               | No          |
-| **BYOK (No Markup)**    | Yes         | After 1M   | Yes     | Yes      | N/A      | Yes          | No               | N/A         |
-| **OpenAI-Compatible**   | Yes         | Yes        | Yes     | Yes      | Yes      | Yes          | Yes              | No          |
-| **Built-in Caching**    | Yes         | Beta       | Yes     | Built-in | No       | Yes          | Yes              | No          |
-| **Analytics Dashboard** | Yes         | Yes        | Yes     | Built-in | Yes      | Yes          | Basic            | CloudWatch  |
-| **Automatic Failover**  | Yes         | Yes        | Yes     | Config   | Limited  | Yes          | No               | No          |
-| **Guardrails**          | Enterprise  | Enterprise | Yes     | No       | No       | No           | No               | Yes         |
-| **Models**              | 300+        | 400+       | 1,600+  | 100+     | N/A      | Hundreds     | ~20              | ~30         |
-| **Playground**          | Yes         | Yes        | No      | No       | No       | Yes          | No               | Yes         |
+| Feature                 | betarouter | OpenRouter | Portkey | LiteLLM  | Helicone | Vercel AI GW | Cloudflare AI GW | AWS Bedrock |
+| ----------------------- | ---------- | ---------- | ------- | -------- | -------- | ------------ | ---------------- | ----------- |
+| **Open Source**         | Yes        | No         | Partial | Yes      | Yes      | No           | No               | No          |
+| **Self-Hostable**       | Yes        | No         | Partial | Yes      | Yes      | No           | No               | No          |
+| **BYOK (No Markup)**    | Yes        | After 1M   | Yes     | Yes      | N/A      | Yes          | No               | N/A         |
+| **OpenAI-Compatible**   | Yes        | Yes        | Yes     | Yes      | Yes      | Yes          | Yes              | No          |
+| **Built-in Caching**    | Yes        | Beta       | Yes     | Built-in | No       | Yes          | Yes              | No          |
+| **Analytics Dashboard** | Yes        | Yes        | Yes     | Built-in | Yes      | Yes          | Basic            | CloudWatch  |
+| **Automatic Failover**  | Yes        | Yes        | Yes     | Config   | Limited  | Yes          | No               | No          |
+| **Guardrails**          | Enterprise | Enterprise | Yes     | No       | No       | No           | No               | Yes         |
+| **Models**              | 300+       | 400+       | 1,600+  | 100+     | N/A      | Hundreds     | ~20              | ~30         |
+| **Playground**          | Yes        | Yes        | No      | No       | No       | Yes          | No               | Yes         |
 
 ## How to Choose
 
-**You want full control and no lock-in:** LLM Gateway is the only option that's open source, self-hostable, and charges zero markup on your own keys. You get enterprise features without enterprise pricing.
+**You want full control and no lock-in:** betarouter is the only option that's open source, self-hostable, and charges zero markup on your own keys. You get enterprise features without enterprise pricing.
 
-**You want the widest model selection:** LLM Gateway and OpenRouter both offer extensive catalogs. LLM Gateway covers 200+ models with the added benefit of self-hosting and BYOK.
+**You want the widest model selection:** betarouter and OpenRouter both offer extensive catalogs. betarouter covers 200+ models with the added benefit of self-hosting and BYOK.
 
-**You want observability above all:** Helicone is purpose-built for logging and analytics, though LLM Gateway and Portkey offer comparable dashboards with full gateway capabilities included.
+**You want observability above all:** Helicone is purpose-built for logging and analytics, though betarouter and Portkey offer comparable dashboards with full gateway capabilities included.
 
 **You're locked into a cloud provider:** AWS Bedrock makes sense if your entire stack is AWS and you need models within that boundary. Just know you're trading flexibility for integration.
 
 **You're on the Vercel AI SDK:** Vercel AI Gateway is the natural fit with zero token markup — though you trade away self-hosting and bring-your-own-infrastructure options.
 
-**You're cost-conscious:** Gateways that support BYOK (LLM Gateway, LiteLLM, Vercel) let you avoid middleman markup entirely. Over thousands of daily requests, the savings compound fast.
+**You're cost-conscious:** Gateways that support BYOK (betarouter, LiteLLM, Vercel) let you avoid middleman markup entirely. Over thousands of daily requests, the savings compound fast.
 
 ---
 
-## Getting Started with LLM Gateway
+## Getting Started with betarouter
 
 If you want to try the top pick, you can be running in under two minutes:
 
-1. **[Sign up free](https://llmgateway.io/signup)** — no credit card required
+1. **[Sign up free](https://betarouter.com/signup)** — no credit card required
 2. Create a project and copy your API key
-3. Point your existing OpenAI SDK to `https://api.llmgateway.io/v1`
+3. Point your existing OpenAI SDK to `https://api.betarouter.com/v1`
 
 That's it. Your existing code works. Every request gets logged, cached, and tracked automatically.
 
-**[Create a free account](https://llmgateway.io/signup)** | **[Browse 200+ models](https://llmgateway.io/models)** | **[Read the docs](https://docs.llmgateway.io)**
+**[Create a free account](https://betarouter.com/signup)** | **[Browse 200+ models](https://betarouter.com/models)** | **[Read the docs](https://docs.betarouter.com)**

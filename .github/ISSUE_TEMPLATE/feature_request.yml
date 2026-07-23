@@ -11,7 +11,7 @@ body:
     id: component
     attributes:
       label: Affected component
-      description: Which part of LLM Gateway would this affect?
+      description: Which part of betarouter would this affect?
       options:
         - "Gateway (API request routing)"
         - "DevPass / Code"

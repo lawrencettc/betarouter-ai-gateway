@@ -7,7 +7,7 @@ import { maskToken } from "@/lib/maskToken.js";
 import { platformKeyMode } from "@/lib/platform-secret-auth.js";
 import { getUserProjectIds } from "@/utils/authorization.js";
 
-import { logAuditEvent } from "@llmgateway/audit";
+import { logAuditEvent } from "@betarouter/audit";
 import {
 	apiKeyPeriodDurationMaxValues,
 	apiKeyPeriodDurationUnits,
@@ -22,7 +22,7 @@ import {
 	validateApiKeyLimitsWithinMemberBudget,
 	type ApiKeyPeriodDurationUnit,
 	type InferSelectModel,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 import type { ServerTypes } from "@/vars.js";
 
@@ -997,7 +997,7 @@ export async function createApiKeyForProject(
 
 	if (orgActiveApiKeys.length >= maxApiKeys) {
 		throw new HTTPException(400, {
-			message: `API key limit reached. Maximum ${maxApiKeys} active API keys per organization. Contact us at contact@llmgateway.io to unlock more.`,
+			message: `API key limit reached. Maximum ${maxApiKeys} active API keys per organization. Contact us at contact@betarouter.com to unlock more.`,
 		});
 	}
 

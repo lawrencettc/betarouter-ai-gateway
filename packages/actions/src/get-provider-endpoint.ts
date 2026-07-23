@@ -9,9 +9,9 @@ import {
 	getProviderEnvValue,
 	getProviderEnvConfig,
 	resolveVertexTokenType,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
-import type { ProviderKeyOptions } from "@llmgateway/db";
+import type { ProviderKeyOptions } from "@betarouter/db";
 
 function appendPath(url: string, path: string): string {
 	return `${url.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;

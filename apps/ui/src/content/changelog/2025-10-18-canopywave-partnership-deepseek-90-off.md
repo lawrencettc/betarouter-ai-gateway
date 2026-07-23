@@ -37,11 +37,11 @@ canopywave/deepseek-v3.1
 
 ## 🚀 Getting Started
 
-**Immediate Access**: The CanopyWave provider is available now through LLM Gateway with the promotional pricing applied automatically.
+**Immediate Access**: The CanopyWave provider is available now through betarouter with the promotional pricing applied automatically.
 
 **Simple Integration**: Use model identifier `canopywave/deepseek-v3.1` in your API calls to access DeepSeek v3.1 at the discounted rate.
 
-**No Additional Setup**: Your existing LLM Gateway API key works seamlessly with the CanopyWave provider.
+**No Additional Setup**: Your existing betarouter API key works seamlessly with the CanopyWave provider.
 
 ```javascript
 import { llmgateway } from "@llmgateway/ai-sdk-provider";
@@ -54,7 +54,7 @@ const { text } = await generateText({
 ```
 
 ```bash
-curl -X POST https://api.llmgateway.io/v1/chat/completions \
+curl -X POST https://api.betarouter.com/v1/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -67,4 +67,4 @@ curl -X POST https://api.llmgateway.io/v1/chat/completions \
 
 This partnership with CanopyWave demonstrates our commitment to making cutting-edge AI accessible to everyone. Start using `canopywave/deepseek-v3.1` today and experience premium reasoning capabilities at game-changing prices.
 
-**[Try it now in the Playground](https://chat.llmgateway.io/?model=canopywave/deepseek-v3.1)** 🚀
+**[Try it now in the Playground](https://chat.betarouter.com/?model=canopywave/deepseek-v3.1)** 🚀

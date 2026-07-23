@@ -8,7 +8,7 @@ import {
 	models,
 	type ModelDefinition,
 	type ProviderId,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 import type { GatewayApiKey } from "@/lib/cached-queries.js";
 
@@ -121,7 +121,7 @@ export async function validateModelAccess(
 				allowed: false,
 				reason:
 					(firstDenial?.reason ?? "Request denied by IAM rules.") +
-					` Adapt your LLMGateway API key IAM permissions in the dashboard or contact your LLMGateway API Key issuer. (Rule ID${group.length > 1 ? "s" : ""}: ${group.map((r) => r.id).join(", ")})`,
+					` Adapt your betarouter API key IAM permissions in the dashboard or contact your betarouter API Key issuer. (Rule ID${group.length > 1 ? "s" : ""}: ${group.map((r) => r.id).join(", ")})`,
 			};
 		}
 		if (unionedProviders) {
@@ -142,7 +142,7 @@ export async function validateModelAccess(
 				allowed: false,
 				reason:
 					result.reason +
-					` Adapt your LLMGateway API key IAM permissions in the dashboard or contact your LLMGateway API Key issuer. (Rule ID: ${rule.id})`,
+					` Adapt your betarouter API key IAM permissions in the dashboard or contact your betarouter API Key issuer. (Rule ID: ${rule.id})`,
 			};
 		}
 		if (result.allowedProviders) {

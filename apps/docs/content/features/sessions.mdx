@@ -8,7 +8,7 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 # Sessions
 
-A **session** ties together the requests that belong to the same conversation or workflow. By attaching a stable session identifier to your requests, LLMGateway can treat them as a unit — keeping provider routing consistent across turns and letting you trace and filter the whole conversation in the dashboard.
+A **session** ties together the requests that belong to the same conversation or workflow. By attaching a stable session identifier to your requests, betarouter can treat them as a unit — keeping provider routing consistent across turns and letting you trace and filter the whole conversation in the dashboard.
 
 Sessions are the foundation for several features. Today they power **sticky provider routing** and **session-level observability**; more session-scoped capabilities will build on the same identifier over time.
 
@@ -22,7 +22,7 @@ For chat completions, the session key is resolved in priority order — the firs
 4. The `user` body field (OpenAI-compatible)
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
+curl -X POST "https://api.betarouter.com/v1/chat/completions" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -H "x-session-id: conversation-9f8e7d6c" \
@@ -42,7 +42,7 @@ For the [Anthropic Messages endpoint](/features/anthropic-endpoint) (`/v1/messag
 
 When a model is served by multiple providers, requests are normally scored independently, so a multi-turn conversation can bounce between providers. That defeats provider-side **prompt caching**, which only pays off when consecutive requests with a shared prefix reach the **same** provider.
 
-With a session id set, LLMGateway scores the session's first request with the normal weighted smart-routing algorithm (price, priority, uptime, throughput) and then **pins that provider for the session**, reusing it on every subsequent request to keep the prompt cache warm. The session stays on that provider — skipping the epsilon-greedy exploration — and only moves when its provider drops below the session uptime threshold or leaves the available pool (health filtering or a failed request dropped by retry/fallback), at which point the session is re-scored and re-pinned to the current best provider.
+With a session id set, betarouter scores the session's first request with the normal weighted smart-routing algorithm (price, priority, uptime, throughput) and then **pins that provider for the session**, reusing it on every subsequent request to keep the prompt cache warm. The session stays on that provider — skipping the epsilon-greedy exploration — and only moves when its provider drops below the session uptime threshold or leaves the available pool (health filtering or a failed request dropped by retry/fallback), at which point the session is re-scored and re-pinned to the current best provider.
 
 See [Routing → Sticky Session Routing](/features/routing) for the full algorithm, fallback behavior, and the `session-sticky` routing-metadata reason.
 
@@ -58,7 +58,7 @@ Session stickiness is **on by default**. Enterprise projects can turn it off per
 
 Some providers use an OpenAI-style `prompt_cache_key` to route requests to the cache shard that already holds your prompt prefix — without it, repeat requests can land on different backends and miss the cache entirely (Meta requires it for cache hits in practice; OpenAI and Azure use it to improve hit rates under load).
 
-When a request has a session id and you didn't send a `prompt_cache_key` yourself, LLMGateway forwards a **keyed hash** (HMAC-SHA256 with a gateway-side secret) of the session id as the `prompt_cache_key` to providers that support it (currently OpenAI, Azure, and Meta). Hashing means your raw session ids are never exposed to providers; the hash is stable per session, which is all cache routing needs. A `prompt_cache_key` you set explicitly takes precedence and is forwarded as-is on those same surfaces.
+When a request has a session id and you didn't send a `prompt_cache_key` yourself, betarouter forwards a **keyed hash** (HMAC-SHA256 with a gateway-side secret) of the session id as the `prompt_cache_key` to providers that support it (currently OpenAI, Azure, and Meta). Hashing means your raw session ids are never exposed to providers; the hash is stable per session, which is all cache routing needs. A `prompt_cache_key` you set explicitly takes precedence and is forwarded as-is on those same surfaces.
 
 On provider surfaces that don't support the field, no key is sent at all — whether derived or explicit. This currently applies to Sakana (the field is not part of its API) and to Azure chat-completions requests, which can be served by legacy deployment-based API versions that reject unknown body fields; Azure requests on the Responses API always carry the key. Providers not listed above use different caching mechanisms (for example Anthropic `cache_control` breakpoints or Google implicit caching), so the `prompt_cache_key` doesn't apply to them either.
 

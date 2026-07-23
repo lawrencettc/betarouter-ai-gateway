@@ -6,7 +6,7 @@ title: "Provider Headquarters Compliance Filter"
 summary: "Restrict routing to providers headquartered in the countries you approve. Pick allowed countries on the compliance page and the gateway blocks any provider based elsewhere — before a request leaves the gateway. Available on Enterprise."
 image:
   src: "/changelog/provider-headquarters-filter.png"
-  alt: "Provider headquarters compliance filter on LLM Gateway: a country selector with flags restricting routing by provider location"
+  alt: "Provider headquarters compliance filter on betarouter: a country selector with flags restricting routing by provider location"
   width: 1536
   height: 1024
 ---
@@ -17,7 +17,7 @@ Data-residency and vendor-jurisdiction rules often come down to a simple questio
 
 Open **Organization → Compliance** and enable the provider compliance policy. A new **Provider Headquarters** card shows a country selector, rendered as flag chips. Select one or more countries to restrict routing to providers based in them; leave every country unselected to allow any location.
 
-The selector only offers countries that are actually referenced in the model catalogue, so there is nothing to choose that no provider can satisfy. Browse the [providers directory](https://llmgateway.io/providers) to see every provider and its headquarters.
+The selector only offers countries that are actually referenced in the model catalogue, so there is nothing to choose that no provider can satisfy. Browse the [providers directory](https://betarouter.com/providers) to see every provider and its headquarters.
 
 The **Provider Impact** card updates live as you select countries, splitting every provider into allowed and blocked so you can see the effect before saving.
 
@@ -27,7 +27,7 @@ The country filter composes with the existing certification and data-policy requ
 
 ## Browse providers by country
 
-The public **[Providers directory](https://llmgateway.io/providers)** now has a page per country — for example `/providers/country/us` — listing every provider headquartered there and the models they serve. Each provider card links to its country page from the location badge.
+The public **[Providers directory](https://betarouter.com/providers)** now has a page per country — for example `/providers/country/us` — listing every provider headquartered there and the models they serve. Each provider card links to its country page from the location badge.
 
 ## Availability
 
@@ -35,4 +35,4 @@ The provider headquarters filter is available on the **Enterprise plan** for org
 
 ---
 
-**[Compliance docs →](https://docs.llmgateway.io/features/compliance)** | **[Contact us about Enterprise →](https://llmgateway.io/enterprise)**
+**[Compliance docs →](https://docs.betarouter.com/features/compliance)** | **[Contact us about Enterprise →](https://betarouter.com/enterprise)**

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { redisClient, SWR_PREFIX } from "@llmgateway/cache";
+import { redisClient, SWR_PREFIX } from "@betarouter/cache";
 import {
 	cdb,
 	db,
@@ -13,7 +13,7 @@ import {
 	providerKey,
 	user,
 	userOrganization,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 import { getApiKeyFingerprint } from "./api-key-fingerprint.js";
 import {

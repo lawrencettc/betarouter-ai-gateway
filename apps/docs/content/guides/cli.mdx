@@ -1,5 +1,5 @@
 ---
-title: LLM Gateway CLI
+title: betarouter CLI
 description: Command-line tool for scaffolding projects and managing keys, budgets, and usage
 icon: Terminal
 ---
@@ -8,7 +8,7 @@ import { Step, Steps } from "fumadocs-ui/components/steps";
 import { Callout } from "fumadocs-ui/components/callout";
 import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
-The **LLM Gateway CLI** (`@llmgateway/cli`) is a command-line utility for scaffolding projects, discovering models, and managing your LLM Gateway account — API keys, spending budgets, and usage analytics — straight from the terminal.
+The **betarouter CLI** (`@llmgateway/cli`) is a command-line utility for scaffolding projects, discovering models, and managing your betarouter account — API keys, spending budgets, and usage analytics — straight from the terminal.
 
 ## Installation
 
@@ -61,7 +61,7 @@ npx @llmgateway/cli init --template image-generation --name my-ai-app
 <Step>
 ### Sign In
 
-Sign in with your LLM Gateway account to unlock key management, budgets, and usage analytics:
+Sign in with your betarouter account to unlock key management, budgets, and usage analytics:
 
 ```bash
 npx @llmgateway/cli auth login --email you@example.com
@@ -196,7 +196,7 @@ npx @llmgateway/cli dev [options]
 
 ### `upgrade`
 
-Update LLM Gateway dependencies (`@llmgateway/ai-sdk-provider`, `@llmgateway/models`, `@llmgateway/cli`) in your project.
+Update betarouter dependencies (`@llmgateway/ai-sdk-provider`, `@llmgateway/models`, `@llmgateway/cli`) in your project.
 
 ```bash
 npx @llmgateway/cli upgrade [options]
@@ -419,7 +419,7 @@ npx @llmgateway/cli credits [--org <id>] [--json]
 - **`feedback-dashboard`** — Customer feedback sentiment dashboard.
 - **`writing-assistant`** — AI writing assistant with text actions.
 - **`qa-agent`** — AI-powered QA testing agent with browser automation, real-time action timeline, and live browser preview.
-- **`showcase`** — Public, filterable gallery of apps built with LLM Gateway templates. Static and deployable, with a "Submit your app" flow.
+- **`showcase`** — Public, filterable gallery of apps built with betarouter templates. Static and deployable, with a "Submit your app" flow.
 
 ### Bots
 
@@ -462,12 +462,12 @@ Signing in with `auth login --email` also stores a dashboard session used by the
 export LLMGATEWAY_API_KEY="llmgtwy_..."
 ```
 
-- `LLMGATEWAY_API_URL` — Override the management API base URL (defaults to `https://internal.llmgateway.io`), useful for self-hosted deployments.
+- `LLMGATEWAY_API_URL` — Override the management API base URL (defaults to `https://internal.betarouter.com`), useful for self-hosted deployments.
 
 ## More Resources
 
-- [Agents](https://llmgateway.io/agents) — Pre-built AI agents
-- [Templates](https://llmgateway.io/templates) — Production-ready starter projects
+- [Agents](https://betarouter.com/agents) — Pre-built AI agents
+- [Templates](https://betarouter.com/templates) — Production-ready starter projects
 - [GitHub Repository](https://github.com/theopenco/llmgateway-templates) — Source code and issues
 
 <Callout type="info">

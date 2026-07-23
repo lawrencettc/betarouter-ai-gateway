@@ -6,7 +6,7 @@ title: "Provider Compliance Policies"
 summary: "Restrict routing to providers that meet your compliance requirements — SOC 2, ISO 27001, GDPR, no prompt training, no prompt logging. Requests to non-compliant providers are blocked before any data leaves the gateway. Available on Enterprise."
 image:
   src: "/changelog/provider-compliance-policies.png"
-  alt: "Provider compliance policies on LLM Gateway: SOC 2, ISO 27001 and GDPR requirements gating which providers can be used"
+  alt: "Provider compliance policies on betarouter: SOC 2, ISO 27001 and GDPR requirements gating which providers can be used"
   width: 1792
   height: 1024
 ---
@@ -33,7 +33,7 @@ When a request would be routed to a provider that doesn't meet the policy, the g
 ```json
 {
   "error": {
-    "message": "This request was blocked by your organization's provider compliance policy. No available provider for deepseek-v3.2 meets the required certifications. Contact your LLMGateway admin to adjust the policy."
+    "message": "This request was blocked by your organization's provider compliance policy. No available provider for deepseek-v3.2 meets the required certifications. Contact your betarouter admin to adjust the policy."
   }
 }
 ```
@@ -46,4 +46,4 @@ Provider compliance policies are available on the **Enterprise plan** for organi
 
 ---
 
-**[Compliance docs →](https://docs.llmgateway.io/features/compliance)** | **[Contact us about Enterprise →](https://llmgateway.io/enterprise)**
+**[Compliance docs →](https://docs.betarouter.com/features/compliance)** | **[Contact us about Enterprise →](https://betarouter.com/enterprise)**

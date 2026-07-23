@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { checkFreeModelRateLimit, isFreeModel } from "./rate-limit.js";
 
 // Mock dependencies
-vi.mock("@llmgateway/cache", () => ({
+vi.mock("@betarouter/cache", () => ({
 	redisClient: {
 		zremrangebyscore: vi.fn(),
 		zcard: vi.fn(),
@@ -13,7 +13,7 @@ vi.mock("@llmgateway/cache", () => ({
 	},
 }));
 
-vi.mock("@llmgateway/logger", () => ({
+vi.mock("@betarouter/logger", () => ({
 	logger: {
 		info: vi.fn(),
 		debug: vi.fn(),
@@ -26,7 +26,7 @@ vi.mock("@/lib/cached-queries.js", () => ({
 	findOrganizationById: vi.fn(),
 }));
 
-const mockCache = await import("@llmgateway/cache");
+const mockCache = await import("@betarouter/cache");
 const mockCachedQueries = await import("@/lib/cached-queries.js");
 const redis = mockCache.redisClient;
 

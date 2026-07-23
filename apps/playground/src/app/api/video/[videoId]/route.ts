@@ -56,7 +56,7 @@ export async function GET(
 		process.env.GATEWAY_URL?.replace(/\/v1$/, "") ??
 		(process.env.NODE_ENV === "development"
 			? "http://localhost:4001"
-			: "https://api.llmgateway.io");
+			: "https://api.betarouter.com");
 
 	let response: Response;
 	try {
@@ -65,7 +65,7 @@ export async function GET(
 			{
 				headers: {
 					Authorization: `Bearer ${apiKey}`,
-					"x-source": "chat.llmgateway.io",
+					"x-source": "chat.betarouter.com",
 				},
 				cache: "no-store",
 				signal: AbortSignal.timeout(API_TIMEOUT_MS),

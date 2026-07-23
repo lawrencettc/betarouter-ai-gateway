@@ -1,6 +1,6 @@
 import { HTTPException } from "hono/http-exception";
 
-import type { ModelDefinition } from "@llmgateway/models";
+import type { ModelDefinition } from "@betarouter/models";
 
 /**
  * The kinds of output a model can produce. Each kind maps 1:1 to the gateway

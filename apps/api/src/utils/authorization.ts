@@ -1,4 +1,4 @@
-import { db } from "@llmgateway/db";
+import { db } from "@betarouter/db";
 
 /**
  * Get all organization IDs that a user belongs to

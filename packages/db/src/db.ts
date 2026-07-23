@@ -2,7 +2,7 @@ import { instrumentDrizzle } from "@kubiks/otel-drizzle";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
-import { logger } from "@llmgateway/logger";
+import { logger } from "@betarouter/logger";
 
 import { patchClientQuery } from "./query-tags.js";
 import { relations } from "./relations.js";

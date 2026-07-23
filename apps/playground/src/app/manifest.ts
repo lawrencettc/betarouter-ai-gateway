@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
 	return {
-		name: "LLM Gateway Playground",
-		short_name: "LLM Gateway",
+		name: "betarouter Playground",
+		short_name: "betarouter",
 		description:
 			"Test and compare 200+ AI models in one playground. Chat, image, video, and group-chat across providers.",
 		start_url: "/",

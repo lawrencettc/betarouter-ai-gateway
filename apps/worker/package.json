@@ -23,12 +23,12 @@
 		"start": "node --enable-source-maps dist/index.js"
 	},
 	"dependencies": {
-		"@llmgateway/cache": "workspace:*",
-		"@llmgateway/catalog": "workspace:*",
-		"@llmgateway/db": "workspace:*",
-		"@llmgateway/logger": "workspace:*",
-		"@llmgateway/models": "workspace:*",
-		"@llmgateway/shared": "workspace:*",
+		"@betarouter/cache": "workspace:*",
+		"@betarouter/catalog": "workspace:*",
+		"@betarouter/db": "workspace:*",
+		"@betarouter/logger": "workspace:*",
+		"@betarouter/models": "workspace:*",
+		"@betarouter/shared": "workspace:*",
 		"decimal.js": "10.5.0",
 		"posthog-node": "5.10.4",
 		"stripe": "18.1.1",

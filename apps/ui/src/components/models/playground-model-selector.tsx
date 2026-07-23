@@ -25,13 +25,13 @@ import { Switch } from "@/lib/components/switch";
 import { getProviderForModel } from "@/lib/model-utils";
 import { cn } from "@/lib/utils";
 
-import { getProviderIcon } from "@llmgateway/shared/components";
+import { getProviderIcon } from "@betarouter/shared/components";
 
 import type {
 	ModelDefinition,
 	ProviderDefinition,
 	ProviderModelMapping,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 interface ModelSelectorProps {
 	models: ModelDefinition[];

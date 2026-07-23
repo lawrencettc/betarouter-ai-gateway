@@ -4,7 +4,7 @@ import {
 	expandAllProviderRegions,
 	models,
 	type ProviderModelMapping,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 import { applyPinnedDefaultRegions } from "./pin-default-regions.js";
 

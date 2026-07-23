@@ -244,7 +244,7 @@ export const enterpriseFeatures: EnterpriseFeatureDefinition[] = [
 		description:
 			"Tamper-evident audit trails for SOC 2, HIPAA, ISO 27001, and internal investigations. Every config change, key rotation, and admin action — captured, attributed, exportable.",
 		longDescription:
-			"Enterprise Audit Logs sit underneath every privileged action in LLM Gateway. When an admin rotates a provider key, removes a teammate, changes routing config, or downloads logs — it lands in an append-only audit stream with the actor, timestamp, IP, user-agent, and a structured diff of before/after state. Logs are filterable by user, resource, action, or time, exportable as CSV/JSON, and forwardable to your SIEM (Splunk, Datadog, Elastic) via webhook. Retention defaults to forever for enterprise plans.",
+			"Enterprise Audit Logs sit underneath every privileged action in betarouter. When an admin rotates a provider key, removes a teammate, changes routing config, or downloads logs — it lands in an append-only audit stream with the actor, timestamp, IP, user-agent, and a structured diff of before/after state. Logs are filterable by user, resource, action, or time, exportable as CSV/JSON, and forwardable to your SIEM (Splunk, Datadog, Elastic) via webhook. Retention defaults to forever for enterprise plans.",
 		iconName: "audit",
 		accent: "indigo",
 		keywords: [
@@ -563,7 +563,7 @@ export const enterpriseFeatures: EnterpriseFeatureDefinition[] = [
 			{
 				title: "Signed payloads",
 				description:
-					"All webhook payloads are HMAC-signed so your endpoint can verify they originated from LLM Gateway.",
+					"All webhook payloads are HMAC-signed so your endpoint can verify they originated from betarouter.",
 			},
 		],
 		useCases: [
@@ -625,7 +625,7 @@ export const enterpriseFeatures: EnterpriseFeatureDefinition[] = [
 		description:
 			"SAML 2.0 and OIDC SSO with SCIM provisioning, group-based role mapping, and enforced-only access. No local credentials, no shared passkeys, no off-boarding gaps.",
 		longDescription:
-			"Federated identity for LLM Gateway: SAML 2.0 and OpenID Connect, certified for Okta, Azure AD, Google Workspace, OneLogin, JumpCloud, and any compliant IdP. SCIM 2.0 provisioning auto-creates accounts on first login and de-provisions on user removal from your directory — no manual off-boarding. Group-to-role mappings let you grant Admin / Member / Viewer based on AD groups, so access is governed entirely by your existing identity system. Enforce SSO-only mode to block password and passkey logins for your domain.",
+			"Federated identity for betarouter: SAML 2.0 and OpenID Connect, certified for Okta, Azure AD, Google Workspace, OneLogin, JumpCloud, and any compliant IdP. SCIM 2.0 provisioning auto-creates accounts on first login and de-provisions on user removal from your directory — no manual off-boarding. Group-to-role mappings let you grant Admin / Member / Viewer based on AD groups, so access is governed entirely by your existing identity system. Enforce SSO-only mode to block password and passkey logins for your domain.",
 		iconName: "lock",
 		accent: "violet",
 		keywords: [
@@ -649,7 +649,7 @@ export const enterpriseFeatures: EnterpriseFeatureDefinition[] = [
 			{
 				title: "Group-based role mapping",
 				description:
-					"Map IdP groups to LLM Gateway roles (Admin / Member / Viewer). Access changes the moment your directory changes.",
+					"Map IdP groups to betarouter roles (Admin / Member / Viewer). Access changes the moment your directory changes.",
 			},
 			{
 				title: "SSO-only enforcement",
@@ -661,12 +661,12 @@ export const enterpriseFeatures: EnterpriseFeatureDefinition[] = [
 			{
 				title: "Zero-touch onboarding",
 				description:
-					"New engineer joins the AI team in Okta. They log in to LLM Gateway with their SSO; account provisions, role assigned, ready in seconds.",
+					"New engineer joins the AI team in Okta. They log in to betarouter with their SSO; account provisions, role assigned, ready in seconds.",
 			},
 			{
 				title: "Instant off-boarding",
 				description:
-					"Engineer leaves. Removed from Okta. Within minutes, their LLM Gateway session is revoked and their account de-provisioned.",
+					"Engineer leaves. Removed from Okta. Within minutes, their betarouter session is revoked and their account de-provisioned.",
 			},
 			{
 				title: "Audit-clean access reviews",
@@ -710,12 +710,12 @@ export const enterpriseFeatures: EnterpriseFeatureDefinition[] = [
 	{
 		slug: "white-label",
 		title: "White-Label Chat & Playground",
-		subtitle: "Ship the LLM Gateway playground as your own product",
+		subtitle: "Ship the betarouter playground as your own product",
 		tagline: "Your logo, your domain, your colors — our infrastructure.",
 		description:
 			"Embed or stand up a fully white-labeled chat app and playground under your own domain. Customize branding, default models, system prompts, and feature toggles.",
 		longDescription:
-			"The LLM Gateway playground is the same chat UI used by tens of thousands of developers — and you can ship it as your own internal tool or customer-facing product. White-label deployments run on your domain (chat.yourcompany.com), with your logo, color palette, and copy. Lock down model selection to your approved list, set default system prompts, disable features your users shouldn't see (like raw API key management), and integrate with your existing SSO. Use it as an internal AI workbench for non-technical staff, a customer-facing AI feature, or a productized AI offering — without writing the chat UI from scratch.",
+			"The betarouter playground is the same chat UI used by tens of thousands of developers — and you can ship it as your own internal tool or customer-facing product. White-label deployments run on your domain (chat.yourcompany.com), with your logo, color palette, and copy. Lock down model selection to your approved list, set default system prompts, disable features your users shouldn't see (like raw API key management), and integrate with your existing SSO. Use it as an internal AI workbench for non-technical staff, a customer-facing AI feature, or a productized AI offering — without writing the chat UI from scratch.",
 		iconName: "paintbrush",
 		accent: "rose",
 		keywords: [
@@ -728,7 +728,7 @@ export const enterpriseFeatures: EnterpriseFeatureDefinition[] = [
 			{
 				title: "Your domain, your brand",
 				description:
-					"Custom domain, logo, favicon, color palette, and product name. No mention of LLM Gateway in the UI unless you want it.",
+					"Custom domain, logo, favicon, color palette, and product name. No mention of betarouter in the UI unless you want it.",
 			},
 			{
 				title: "Locked-down model menu",
@@ -792,7 +792,7 @@ export const enterpriseFeatures: EnterpriseFeatureDefinition[] = [
 			{
 				question: "Does white-label work with our SSO?",
 				answer:
-					"Yes. The white-labeled deployment uses your [[sso-saml]] configuration so users authenticate against your IdP, not a separate LLM Gateway account.",
+					"Yes. The white-labeled deployment uses your [[sso-saml]] configuration so users authenticate against your IdP, not a separate betarouter account.",
 			},
 		],
 	},

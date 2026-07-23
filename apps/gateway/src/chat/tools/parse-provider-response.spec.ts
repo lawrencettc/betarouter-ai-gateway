@@ -2,13 +2,13 @@ import { describe, it, expect, vi } from "vitest";
 
 import { parseProviderResponse } from "./parse-provider-response.js";
 
-vi.mock("@llmgateway/cache", () => ({
+vi.mock("@betarouter/cache", () => ({
 	redisClient: {
 		setex: vi.fn().mockResolvedValue("OK"),
 	},
 }));
 
-vi.mock("@llmgateway/logger", () => ({
+vi.mock("@betarouter/logger", () => ({
 	logger: {
 		warn: vi.fn(),
 		error: vi.fn(),

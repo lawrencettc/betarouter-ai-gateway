@@ -10,22 +10,22 @@
  * degraded/quantized variant on any provider is caught.
  *
  * Usage (env vars must hold the provider API keys, e.g. via `--env-file`):
- *   pnpm --filter @llmgateway/scripts benchmark-model <model-id> [providers] [runs]
- *   pnpm --filter @llmgateway/scripts benchmark-model kimi-k2.6
- *   pnpm --filter @llmgateway/scripts benchmark-model kimi-k2.6 moonshot,tundra 2
+ *   pnpm --filter @betarouter/scripts benchmark-model <model-id> [providers] [runs]
+ *   pnpm --filter @betarouter/scripts benchmark-model kimi-k2.6
+ *   pnpm --filter @betarouter/scripts benchmark-model kimi-k2.6 moonshot,tundra 2
  *
  * Only OpenAI-compatible chat providers are supported (the benchmark sends a
  * plain OpenAI chat-completions body); other providers are reported as errors.
  */
 import { writeFileSync } from "fs";
 
-import { getProviderEndpoint, getProviderHeaders } from "@llmgateway/actions";
+import { getProviderEndpoint, getProviderHeaders } from "@betarouter/actions";
 import {
 	models,
 	getProviderEnvVar,
 	expandAllProviderRegions,
 	type ProviderModelMapping,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 interface Prompt {
 	id: string;

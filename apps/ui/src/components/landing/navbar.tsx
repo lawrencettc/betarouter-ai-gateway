@@ -47,9 +47,10 @@ import {
 } from "@/lib/components/navigation-menu";
 import { useAppConfig } from "@/lib/config";
 import Logo from "@/lib/icons/Logo";
+import Wordmark from "@/lib/icons/Wordmark";
 import { cn } from "@/lib/utils";
 
-import { MARKETING_STATS } from "@llmgateway/shared";
+import { MARKETING_STATS } from "@betarouter/shared";
 
 import { ThemeToggle } from "./theme-toggle";
 
@@ -171,7 +172,7 @@ export const Navbar = ({
 		},
 		{
 			title: "DevPass",
-			href: "https://devpass.llmgateway.io",
+			href: "https://devpass.betarouter.com",
 			description:
 				"Fixed-price monthly plans for Claude Code, Cursor, and every coding tool.",
 			icon: Code,
@@ -228,7 +229,7 @@ export const Navbar = ({
 		{
 			title: "Changelog",
 			href: "/changelog",
-			description: "What's new in LLM Gateway across releases.",
+			description: "What's new in betarouter across releases.",
 			icon: ScrollText,
 			gradient:
 				"hover:from-violet-500/20 hover:to-purple-600/30 hover:shadow-violet-500/10 group-hover/product:text-violet-500 dark:group-hover/product:text-violet-400",
@@ -271,7 +272,7 @@ export const Navbar = ({
 		{
 			title: "Apps",
 			href: "/apps",
-			description: "Browse apps and tools that work with LLM Gateway.",
+			description: "Browse apps and tools that work with betarouter.",
 			icon: LayoutGrid,
 			gradient:
 				"hover:from-pink-500/20 hover:to-rose-600/30 hover:shadow-pink-500/10 group-hover/product:text-pink-500 dark:group-hover/product:text-pink-400",
@@ -345,7 +346,7 @@ export const Navbar = ({
 		{
 			title: "AI SDK Provider",
 			href: "https://github.com/theopenco/llmgateway-ai-sdk-provider",
-			description: "Use LLM Gateway with Vercel's AI SDK.",
+			description: "Use betarouter with Vercel's AI SDK.",
 			icon: Zap,
 			gradient:
 				"hover:from-amber-500/20 hover:to-orange-600/30 hover:shadow-amber-500/10 group-hover/product:text-amber-500 dark:group-hover/product:text-amber-400",
@@ -441,9 +442,7 @@ export const Navbar = ({
 								prefetch={true}
 							>
 								<Logo className="h-8 w-8 rounded-full text-black dark:text-white" />
-								<span className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white whitespace-nowrap">
-									LLM Gateway
-								</span>
+								<Wordmark className="text-xl whitespace-nowrap" />
 							</Link>
 
 							<button
@@ -469,7 +468,7 @@ export const Navbar = ({
 									<NavigationMenuItem>
 										<NavigationMenuLink asChild>
 											<a
-												href="https://devpass.llmgateway.io"
+												href="https://devpass.betarouter.com"
 												onClick={() => trackNav("DevPass")}
 												className="text-muted-foreground hover:text-accent-foreground block duration-150 px-3 py-2 whitespace-nowrap"
 											>
@@ -611,7 +610,7 @@ export const Navbar = ({
 								<ul className="text-base">
 									<li>
 										<a
-											href="https://devpass.llmgateway.io"
+											href="https://devpass.betarouter.com"
 											onClick={() => trackNav("DevPass")}
 											className="text-muted-foreground hover:text-accent-foreground block py-2.5 duration-150"
 										>

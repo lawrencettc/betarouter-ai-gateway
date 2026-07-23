@@ -11,11 +11,11 @@ const Footer = dynamic(() => import("@/components/landing/footer"));
 export const metadata = {
 	title: "Migration Guides — From Copilot, OpenRouter, LiteLLM",
 	description:
-		"Step-by-step guides to migrate from GitHub Copilot, OpenRouter, Vercel AI Gateway, LiteLLM, Portkey, and other LLM providers to LLM Gateway.",
+		"Step-by-step guides to migrate from GitHub Copilot, OpenRouter, Vercel AI Gateway, LiteLLM, Portkey, and other LLM providers to betarouter.",
 	openGraph: {
 		title: "Migration Guides — From Copilot, OpenRouter, LiteLLM",
 		description:
-			"Step-by-step guides to migrate from GitHub Copilot, OpenRouter, Vercel AI Gateway, LiteLLM, Portkey, and other LLM providers to LLM Gateway.",
+			"Step-by-step guides to migrate from GitHub Copilot, OpenRouter, Vercel AI Gateway, LiteLLM, Portkey, and other LLM providers to betarouter.",
 	},
 };
 
@@ -87,7 +87,7 @@ export default async function MigrationPage() {
 							Migration Guides
 						</h1>
 						<p className="text-lg text-muted-foreground leading-relaxed">
-							Switch to LLM Gateway from other LLM providers with minimal code
+							Switch to betarouter from other LLM providers with minimal code
 							changes. Our OpenAI-compatible API makes migration
 							straightforward.
 						</p>
@@ -138,11 +138,11 @@ export default async function MigrationPage() {
 								Don't see your provider?
 							</h2>
 							<p className="mb-4 text-muted-foreground">
-								LLM Gateway's OpenAI-compatible API works with any client that
+								betarouter's OpenAI-compatible API works with any client that
 								supports OpenAI. Just change the base URL and API key.
 							</p>
 							<Link
-								href="https://docs.llmgateway.io/quick-start"
+								href="https://docs.betarouter.com/quick-start"
 								className="inline-flex items-center text-sm font-medium text-primary hover:underline"
 							>
 								View Quick Start Guide

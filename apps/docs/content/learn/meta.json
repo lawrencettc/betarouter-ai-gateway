@@ -1,6 +1,6 @@
 {
 	"title": "Knowledge base",
-	"description": "Learn how to use the LLM Gateway dashboard",
+	"description": "Learn how to use the betarouter dashboard",
 	"icon": "BookOpen",
 	"pages": [
 		"index",

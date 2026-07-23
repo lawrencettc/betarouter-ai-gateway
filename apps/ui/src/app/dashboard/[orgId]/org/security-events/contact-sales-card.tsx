@@ -66,7 +66,7 @@ export function ContactSalesCard() {
 						</div>
 
 						<Button asChild className="gap-2">
-							<a href="mailto:contact@llmgateway.io?subject=Enterprise%20Plan%20Inquiry%20-%20Security%20Events">
+							<a href="mailto:contact@betarouter.com?subject=Enterprise%20Plan%20Inquiry%20-%20Security%20Events">
 								<Mail className="h-4 w-4" />
 								Contact Sales
 							</a>

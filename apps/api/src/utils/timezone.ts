@@ -1,8 +1,8 @@
 import { z } from "zod";
 
-import { sql } from "@llmgateway/db";
+import { sql } from "@betarouter/db";
 
-import type { SQLWrapper } from "@llmgateway/db";
+import type { SQLWrapper } from "@betarouter/db";
 
 export function isValidTimeZone(timeZone: string): boolean {
 	try {

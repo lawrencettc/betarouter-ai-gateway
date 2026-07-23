@@ -16,12 +16,12 @@
 		"start": "next start"
 	},
 	"dependencies": {
+		"@betarouter/models": "workspace:*",
+		"@betarouter/shared": "workspace:*",
 		"@better-auth/passkey": "1.6.23",
 		"@content-collections/core": "0.15.0",
 		"@content-collections/next": "0.2.11",
 		"@hookform/resolvers": "5.2.2",
-		"@llmgateway/models": "workspace:*",
-		"@llmgateway/shared": "workspace:*",
 		"@radix-ui/react-accordion": "1.2.12",
 		"@radix-ui/react-alert-dialog": "1.1.15",
 		"@radix-ui/react-dialog": "^1.1.15",

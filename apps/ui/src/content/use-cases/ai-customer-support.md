@@ -3,7 +3,7 @@ id: use-case-ai-customer-support
 slug: ai-customer-support
 date: 2026-06-02
 title: AI customer support
-metaTitle: "LLM Gateway for AI Customer Support & Chatbots"
+metaTitle: "betarouter for AI Customer Support & Chatbots"
 description: "Build AI support agents and chatbots that stay up. Route across providers with automatic fallback, cache common answers, and track cost per conversation."
 headline: "Support bots that don't go down when a provider does — with caching and per-conversation cost visibility."
 summary: "Run reliable support agents on any model, with automatic failover, response caching for common questions, and cost tracking per conversation."
@@ -17,7 +17,7 @@ benefits:
   - title: Pick the right model for the tier
     description: "Route simple FAQs to a fast, cheap model and escalate complex tickets to a frontier model, all through one endpoint."
 faqs:
-  - question: How does LLM Gateway improve support reliability?
+  - question: How does betarouter improve support reliability?
     answer: "It adds automatic fallback across providers. If your primary model is rate-limited or returns an error, the gateway routes the request to another model so your support bot keeps responding. You define the chain; the gateway handles the failover transparently."
   - question: Can I reduce cost on repetitive support questions?
     answer: "Yes. Support traffic is full of repeated context and similar questions. Prompt caching lets you avoid paying full price for the same system prompt and knowledge-base context on every message, which meaningfully lowers cost at support volumes."
@@ -31,7 +31,7 @@ faqs:
 
 An AI support agent answers the same questions thousands of times a day, and the one time it returns a 503 is the time a customer was about to churn. Three things matter: **it has to stay up, it has to be cheap at volume, and you have to know what it costs.**
 
-LLM Gateway gives you all three on top of any model — one OpenAI-compatible API, automatic fallback, caching, and per-request cost logging.
+betarouter gives you all three on top of any model — one OpenAI-compatible API, automatic fallback, caching, and per-request cost logging.
 
 ## Don't let a provider outage become a support outage
 
@@ -41,7 +41,7 @@ Single-provider support bots inherit that provider's bad days. With the gateway 
 import OpenAI from "openai";
 
 const client = new OpenAI({
-  baseURL: "https://api.llmgateway.io/v1",
+  baseURL: "https://api.betarouter.com/v1",
   apiKey: process.env.LLM_GATEWAY_API_KEY,
 });
 

@@ -3,7 +3,7 @@
 import { ArrowRight, KeyRound, Server, Wallet } from "lucide-react";
 import Link from "next/link";
 
-import { MARKETING_STATS } from "@llmgateway/shared";
+import { MARKETING_STATS } from "@betarouter/shared";
 
 import { AnimatedGroup } from "./animated-group";
 

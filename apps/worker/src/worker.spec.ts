@@ -7,7 +7,7 @@ import {
 	test,
 } from "vitest";
 
-import { db, eq, inArray, tables } from "@llmgateway/db";
+import { db, eq, inArray, tables } from "@betarouter/db";
 
 import {
 	acquireLock,

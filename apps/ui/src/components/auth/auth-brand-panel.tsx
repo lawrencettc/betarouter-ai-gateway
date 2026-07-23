@@ -42,7 +42,7 @@ export async function AuthBrandPanel({
 			<div className="relative z-10 flex flex-1 flex-col justify-center px-12 xl:px-16">
 				<div>
 					<p className="mb-4 text-sm font-medium uppercase tracking-widest text-primary">
-						LLM Gateway
+						betarouter
 					</p>
 					{variant === "signup" ? (
 						<>

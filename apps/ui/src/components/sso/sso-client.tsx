@@ -556,10 +556,10 @@ export function SsoClient() {
 							SAML SSO and SCIM directory provisioning are available on the
 							Enterprise plan. Contact us at{" "}
 							<a
-								href="mailto:contact@llmgateway.io"
+								href="mailto:contact@betarouter.com"
 								className="text-primary underline underline-offset-4"
 							>
-								contact@llmgateway.io
+								contact@betarouter.com
 							</a>{" "}
 							to enable them.
 						</CardDescription>
@@ -832,7 +832,7 @@ export function SsoClient() {
 														<p className="mt-1 text-muted-foreground">
 															A short identifier for this connection — lowercase
 															letters, numbers, and hyphens only, unique across
-															all LLM Gateway organizations. It becomes part of
+															all betarouter organizations. It becomes part of
 															the SP Entity ID and ACS URLs you paste into your
 															IdP, so keep it stable and don&apos;t change it
 															after setup. We recommend the format{" "}

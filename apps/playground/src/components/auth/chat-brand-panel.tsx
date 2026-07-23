@@ -8,7 +8,7 @@ export function ChatBrandBadge() {
 		<div className="inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1">
 			<div className="h-1.5 w-1.5 rounded-full bg-violet-400" />
 			<span className="text-xs font-medium text-violet-400">
-				LLM Gateway Chat
+				betarouter Chat
 			</span>
 		</div>
 	);
@@ -58,7 +58,7 @@ export function ChatBrandPanel({
 						<div className="h-2.5 w-2.5 rounded-full bg-zinc-700" />
 						<div className="h-2.5 w-2.5 rounded-full bg-zinc-700" />
 						<span className="ml-2 text-xs text-zinc-600">
-							chat.llmgateway.io
+							chat.betarouter.com
 						</span>
 					</div>
 					<div className="space-y-3 p-4 text-sm">

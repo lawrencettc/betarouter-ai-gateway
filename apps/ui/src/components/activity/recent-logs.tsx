@@ -52,7 +52,7 @@ import { useApi } from "@/lib/fetch-client";
 import { cn } from "@/lib/utils";
 
 import type { paths } from "@/lib/api/v1";
-import type { Log } from "@llmgateway/db";
+import type { Log } from "@betarouter/db";
 
 const UnifiedFinishReason = {
 	COMPLETED: "completed",

@@ -3,7 +3,7 @@ id: use-case-rag-document-qa
 slug: rag-document-qa
 date: 2026-06-02
 title: RAG & document Q&A
-metaTitle: "LLM Gateway for RAG & Document Q&A"
+metaTitle: "betarouter for RAG & Document Q&A"
 description: "Build retrieval-augmented apps with cheap embeddings and strong generation across providers. One OpenAI-compatible API for embeddings and chat, with caching, fallback, and cost analytics."
 headline: "Mix the cheapest embeddings with the best generation models — behind one API, with caching and fallback."
 summary: "Run RAG and document Q&A on the best model for each job: affordable embeddings, long-context generation, all through one endpoint with cost tracking."
@@ -18,7 +18,7 @@ benefits:
     description: "See exactly what embedding and generation cost per query, so you can tune chunking, retrieval and model choice against real numbers."
 faqs:
   - question: Can I generate embeddings and answers through one API?
-    answer: "Yes. LLM Gateway exposes embeddings and chat completions through the same OpenAI-compatible endpoint and key, so your retrieval and generation stages share one integration instead of two separate provider SDKs."
+    answer: "Yes. betarouter exposes embeddings and chat completions through the same OpenAI-compatible endpoint and key, so your retrieval and generation stages share one integration instead of two separate provider SDKs."
   - question: How do I handle queries with a lot of retrieved context?
     answer: "Route those requests to a long-context model. Because switching models is a one-line change to the model string, you can send short queries to a fast, cheap model and long-context queries to a model like Gemini 3.1 Pro without restructuring your app."
   - question: Does caching help RAG cost?
@@ -31,7 +31,7 @@ faqs:
 
 A retrieval-augmented app does at least two model-bound jobs: **embed** content and queries, then **generate** an answer from the retrieved context. The economics of those jobs are opposite — embeddings should be cheap and run at scale, while generation should be smart and sometimes long-context. Wiring up a separate provider for each stage is how RAG codebases get messy.
 
-LLM Gateway collapses that into one OpenAI-compatible API: embeddings and chat, every provider, one key.
+betarouter collapses that into one OpenAI-compatible API: embeddings and chat, every provider, one key.
 
 ## One integration for embed and generate
 
@@ -39,7 +39,7 @@ LLM Gateway collapses that into one OpenAI-compatible API: embeddings and chat, 
 import OpenAI from "openai";
 
 const client = new OpenAI({
-  baseURL: "https://api.llmgateway.io/v1",
+  baseURL: "https://api.betarouter.com/v1",
   apiKey: process.env.LLM_GATEWAY_API_KEY,
 });
 

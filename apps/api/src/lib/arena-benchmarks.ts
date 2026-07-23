@@ -136,7 +136,7 @@ async function fetchLeaderboard(
 		const response = await fetch(url, {
 			headers: {
 				Accept: "text/html",
-				"User-Agent": "LLMGateway/1.0",
+				"User-Agent": "betarouter/1.0",
 			},
 			signal: AbortSignal.timeout(10000),
 		});

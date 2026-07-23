@@ -11,7 +11,7 @@ import {
 	models as modelDefinitions,
 	providers as providerDefinitions,
 	type ModelDefinition,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 import { ProjectCostByModelTimeseries } from "./project-cost-by-model-timeseries";
 import { ProjectLogsSection } from "./project-logs";

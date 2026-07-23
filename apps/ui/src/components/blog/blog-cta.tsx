@@ -32,7 +32,7 @@ export function BlogCta({
 		return (
 			<div className="not-prose my-10 rounded-xl border bg-muted/30 p-6 sm:p-8">
 				<div className="font-mono text-[10px] uppercase tracking-[0.35em] text-muted-foreground">
-					LLM Gateway
+					betarouter
 				</div>
 				<h3 className="mt-3 text-2xl font-bold tracking-tight text-foreground">
 					One API key for every model.
@@ -92,14 +92,14 @@ export function BlogCta({
 						className="bg-zinc-900 font-medium text-white hover:bg-zinc-700 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
 					>
 						<a
-							href={`https://devpass.llmgateway.io/signup?utm_source=blog&utm_medium=cta&utm_campaign=${post}`}
+							href={`https://devpass.betarouter.com/signup?utm_source=blog&utm_medium=cta&utm_campaign=${post}`}
 							onClick={() => track("get_devpass")}
 						>
 							Get DevPass — from $29/mo
 						</a>
 					</Button>
 					<a
-						href={`https://devpass.llmgateway.io/pricing?utm_source=blog&utm_medium=cta&utm_campaign=${post}`}
+						href={`https://devpass.betarouter.com/pricing?utm_source=blog&utm_medium=cta&utm_campaign=${post}`}
 						onClick={() => track("compare_devpass_plans")}
 						className="text-sm text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground"
 					>

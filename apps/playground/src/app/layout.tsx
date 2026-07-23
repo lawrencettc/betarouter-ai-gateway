@@ -1,4 +1,4 @@
-import { Inter, Geist_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Bricolage_Grotesque } from "next/font/google";
 
 import { Providers } from "@/components/providers";
 import { getConfig } from "@/lib/config-server";
@@ -14,19 +14,26 @@ const inter = Inter({
 	display: "swap",
 });
 
-const geistMono = Geist_Mono({
+const geistMono = JetBrains_Mono({
 	variable: "--font-mono",
 	subsets: ["latin"],
+	display: "swap",
+});
+
+const bricolage = Bricolage_Grotesque({
+	variable: "--font-bricolage",
+	subsets: ["latin"],
+	weight: ["300", "400", "500", "600", "700", "800"],
 	display: "swap",
 });
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-	metadataBase: new URL("https://chat.llmgateway.io"),
+	metadataBase: new URL("https://chat.betarouter.com"),
 	title: {
 		default: "AI Playground — Chat with 200+ Models (GPT, Claude, Gemini)",
-		template: "%s | LLM Gateway Playground",
+		template: "%s | betarouter Playground",
 	},
 	description:
 		"Test and compare 200+ AI models from one account. Chat with GPT, Claude, and Gemini, generate images and video, and run multi-model group chats.",
@@ -48,10 +55,10 @@ export const metadata: Metadata = {
 		title: "AI Playground — Chat with 200+ Models (GPT, Claude, Gemini)",
 		description:
 			"Test and compare 200+ AI models from one account. Chat, generate images and videos, and run multi-model group chats — pay-as-you-go.",
-		images: ["/opengraph.png?v=2"],
+		images: ["/opengraph.png?v=4"],
 		type: "website",
-		url: "https://chat.llmgateway.io",
-		siteName: "LLM Gateway Playground",
+		url: "https://chat.betarouter.com",
+		siteName: "betarouter Playground",
 		locale: "en_US",
 	},
 	twitter: {
@@ -59,38 +66,38 @@ export const metadata: Metadata = {
 		title: "AI Playground — Chat with 200+ Models (GPT, Claude, Gemini)",
 		description:
 			"Test and compare 200+ AI models from one account. Chat, generate images and videos, and run multi-model group chats — pay-as-you-go.",
-		images: ["/opengraph.png?v=2"],
-		creator: "@llmgateway",
+		images: ["/opengraph.png?v=4"],
+		creator: "@betarouterco",
 	},
 };
 
 const webSiteSchema = {
 	"@context": "https://schema.org",
 	"@type": "WebSite",
-	name: "LLM Gateway Playground",
-	url: "https://chat.llmgateway.io",
+	name: "betarouter Playground",
+	url: "https://chat.betarouter.com",
 	description:
 		"Test and compare 200+ AI models in one playground. Chat, generate images and videos, and run multi-model group chats.",
 	publisher: {
 		"@type": "Organization",
-		name: "LLM Gateway",
-		url: "https://llmgateway.io",
+		name: "betarouter",
+		url: "https://betarouter.com",
 	},
 };
 
 const softwareApplicationSchema = {
 	"@context": "https://schema.org",
 	"@type": "SoftwareApplication",
-	name: "LLM Gateway Playground",
-	url: "https://chat.llmgateway.io",
+	name: "betarouter Playground",
+	url: "https://chat.betarouter.com",
 	applicationCategory: "DeveloperApplication",
 	operatingSystem: "Web",
 	description:
 		"Web playground to chat with 200+ AI models including GPT, Claude, Gemini, plus image and video generation. Pay-as-you-go from a single credit balance.",
 	publisher: {
 		"@type": "Organization",
-		name: "LLM Gateway",
-		url: "https://llmgateway.io",
+		name: "betarouter",
+		url: "https://betarouter.com",
 	},
 };
 
@@ -100,7 +107,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 	return (
 		<html
 			lang="en"
-			className={`${inter.variable} ${geistMono.variable}`}
+			className={`${inter.variable} ${geistMono.variable} ${bricolage.variable}`}
 			suppressHydrationWarning
 		>
 			<head>

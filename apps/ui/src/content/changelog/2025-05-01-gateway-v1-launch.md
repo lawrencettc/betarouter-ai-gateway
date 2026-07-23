@@ -2,16 +2,16 @@
 id: "1"
 slug: "gateway-v1-launch"
 date: "2025-05-01"
-title: "LLM Gateway v1.0 Launch"
+title: "betarouter v1.0 Launch"
 summary: "The unified AI gateway is here! Access 30+ models from 8 providers through one OpenAI-compatible API with transparent pricing and powerful analytics."
 image:
   src: "/opengraph.png"
-  alt: "LLM Gateway v1.0 launch featuring multi-provider support and unified API"
+  alt: "betarouter v1.0 launch featuring multi-provider support and unified API"
   width: 1768
   height: 677
 ---
 
-🎉 **Welcome to LLM Gateway v1.0!** We're excited to launch the most comprehensive AI gateway platform, bringing together 30+ leading AI models from 8 providers under one unified, developer-friendly API.
+🎉 **Welcome to betarouter v1.0!** We're excited to launch the most comprehensive AI gateway platform, bringing together 30+ leading AI models from 8 providers under one unified, developer-friendly API.
 
 ## 🌟 Unified Multi-Provider Access
 
@@ -43,7 +43,7 @@ Smart routing ensures optimal performance:
 
 **Cost optimization** Route to most cost-effective provider
 
-**Auto model selection** Use `llmgateway/auto` for intelligent model routing
+**Auto model selection** Use `betarouter/auto` for intelligent model routing
 
 ### Provider-Specific Routing
 
@@ -56,7 +56,7 @@ model: "anthropic/claude-3-5-sonnet";
 model: "google-ai-studio/gemini-2.0-flash";
 
 // Automatic routing
-model: "llmgateway/auto";
+model: "betarouter/auto";
 ```
 
 ## 💳 Flexible Billing System
@@ -133,9 +133,9 @@ Use your own provider keys with full transparency:
 
 ### Quick Setup
 
-Start using LLM Gateway in minutes:
+Start using betarouter in minutes:
 
-**Sign up** - Create your free account at [llmgateway.io](/)
+**Sign up** - Create your free account at [betarouter.com](/)
 
 **Get API key** - Generate your authentication key
 
@@ -162,8 +162,8 @@ Migrate existing applications effortlessly:
 ```javascript
 // Just change the base URL - everything else stays the same
 const openai = new OpenAI({
-  baseURL: "https://api.llmgateway.io/v1",
-  apiKey: "your-llmgateway-key",
+  baseURL: "https://api.betarouter.com/v1",
+  apiKey: "your-betarouter-key",
 });
 ```
 
@@ -193,4 +193,4 @@ Reliable service you can depend on:
 
 ---
 
-LLM Gateway makes it easier than ever to build with AI. **[Get started today](/)** and experience the future of AI development!
+betarouter makes it easier than ever to build with AI. **[Get started today](/)** and experience the future of AI development!

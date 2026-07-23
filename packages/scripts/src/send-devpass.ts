@@ -15,10 +15,10 @@
  *
  * Usage:
  *   # dry run: print the resolved recipient list and exit without sending
- *   pnpm --filter @llmgateway/scripts send-devpass --subject="..." --body=body.txt --dry-run
+ *   pnpm --filter @betarouter/scripts send-devpass --subject="..." --body=body.txt --dry-run
  *
  *   # actually send
- *   RESEND_API_KEY=re_xxx pnpm --filter @llmgateway/scripts send-devpass \
+ *   RESEND_API_KEY=re_xxx pnpm --filter @betarouter/scripts send-devpass \
  *     --subject="Important DevPass update" --body=body.txt
  *
  * Flags:
@@ -35,10 +35,10 @@ import { readFileSync } from "fs";
 
 import { Resend } from "resend";
 
-import { and, db, eq, gt, isNotNull, ne, or, tables } from "@llmgateway/db";
+import { and, db, eq, gt, isNotNull, ne, or, tables } from "@betarouter/db";
 
-const FROM = "Luca from LLMGateway <contact@mail.llmgateway.io>";
-const REPLY_TO = "luca.steeb@llmgateway.io";
+const FROM = "Luca from betarouter <contact@mail.betarouter.com>";
+const REPLY_TO = "luca.steeb@betarouter.com";
 const RATE_LIMIT_DELAY_MS = 600;
 const MAX_RETRIES = 5;
 

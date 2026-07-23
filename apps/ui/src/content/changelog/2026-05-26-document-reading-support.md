@@ -6,15 +6,15 @@ title: "Document Reading (PDFs & more)"
 summary: "Send PDFs and text-family documents to Gemini models via the OpenAI-compatible `file` content block."
 image:
   src: "/changelog/document-reading.png"
-  alt: "LLM Gateway now supports document attachments on chat completions"
+  alt: "betarouter now supports document attachments on chat completions"
   width: 1024
   height: 1024
 ---
 
-LLM Gateway now accepts **document attachments** on chat completions through OpenAI's `file` content block. Send a PDF (or other supported file type) as base64 `file_data` and the gateway forwards it to the model.
+betarouter now accepts **document attachments** on chat completions through OpenAI's `file` content block. Send a PDF (or other supported file type) as base64 `file_data` and the gateway forwards it to the model.
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
+curl -X POST "https://api.betarouter.com/v1/chat/completions" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -33,8 +33,8 @@ curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
 ```
 
 - Initial support on **Google Gemini** via Google AI Studio
-- New `document` capability flag on models — filter at [/models?filters=1&document=true](https://llmgateway.io/models?filters=1&document=true)
+- New `document` capability flag on models — filter at [/models?filters=1&document=true](https://betarouter.com/models?filters=1&document=true)
 - Playground accepts file uploads and persists them across sessions and shares
 - Clean `400` errors when a model doesn't accept the MIME type, instead of opaque upstream failures
 
-**[Read the docs →](https://docs.llmgateway.io/features/documents)**
+**[Read the docs →](https://docs.betarouter.com/features/documents)**

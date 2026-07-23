@@ -9,13 +9,13 @@ import {
 	AccordionItem,
 } from "@/lib/components/accordion";
 
-import { MARKETING_STATS } from "@llmgateway/shared";
+import { MARKETING_STATS } from "@betarouter/shared";
 
 const faqData = [
 	{
-		question: "What makes LLM Gateway different from OpenRouter?",
+		question: "What makes betarouter different from OpenRouter?",
 		answer:
-			"Unlike OpenRouter, LLM Gateway offers: Full self-hosting under an AGPLv3 license – run the gateway entirely on your infra. Deeper, real-time cost & latency analytics for every request. Bring Your Own Keys for free. Flexible enterprise add-ons (dedicated shard, custom SLAs).",
+			"Unlike OpenRouter, betarouter offers: Full self-hosting under an AGPLv3 license – run the gateway entirely on your infra. Deeper, real-time cost & latency analytics for every request. Bring Your Own Keys for free. Flexible enterprise add-ons (dedicated shard, custom SLAs).",
 	},
 	{
 		question: "What models do you support?",
@@ -73,7 +73,7 @@ export function Faq() {
 						<p className="mt-6 text-sm text-muted-foreground">
 							Can't find an answer?{" "}
 							<a
-								href="mailto:contact@llmgateway.io"
+								href="mailto:contact@betarouter.com"
 								className="text-foreground underline underline-offset-4"
 							>
 								Contact us
@@ -93,7 +93,7 @@ export function Faq() {
 							<AccordionItem value="item-1" className="py-5 border-border/50">
 								<AccordionPrimitive.Header className="flex">
 									<AccordionPrimitive.Trigger className="focus-visible:border-ring focus-visible:ring-ring/50 flex flex-1 items-center justify-between gap-4 rounded-md py-2 text-left font-display text-lg md:text-xl font-medium leading-7 transition-all outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 [&>svg>path:last-child]:origin-center [&>svg>path:last-child]:transition-all [&>svg>path:last-child]:duration-200 [&[data-state=open]>svg]:rotate-180 [&[data-state=open]>svg>path:last-child]:rotate-90 [&[data-state=open]>svg>path:last-child]:opacity-0 text-foreground">
-										What makes LLM Gateway different from OpenRouter?
+										What makes betarouter different from OpenRouter?
 										<PlusIcon
 											size={18}
 											className="pointer-events-none shrink-0 opacity-60 transition-transform duration-200"

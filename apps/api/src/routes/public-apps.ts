@@ -1,7 +1,7 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
 import { z } from "zod";
 
-import { db, globalSourceStats, ne, sql } from "@llmgateway/db";
+import { db, globalSourceStats, ne, sql } from "@betarouter/db";
 
 import type { ServerTypes } from "@/vars.js";
 
@@ -39,7 +39,7 @@ const listAppsRoute = createRoute({
 				},
 			},
 			description:
-				"Aggregated token usage per app/source across all LLM Gateway traffic.",
+				"Aggregated token usage per app/source across all betarouter traffic.",
 		},
 	},
 });

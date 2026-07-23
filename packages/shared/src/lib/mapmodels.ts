@@ -1,5 +1,5 @@
 import type { ComboboxModel } from "./types";
-import type { ModelDefinition, ProviderDefinition } from "@llmgateway/models";
+import type { ModelDefinition, ProviderDefinition } from "@betarouter/models";
 
 export function mapModels(
 	models: readonly ModelDefinition[],

@@ -92,34 +92,34 @@ const tools: Tool[] = [
 ];
 
 const configExamples = {
-	claudeCodeCli: `claude mcp add --transport http --scope user llmgateway https://api.llmgateway.io/mcp \\
+	claudeCodeCli: `claude mcp add --transport http --scope user betarouter https://api.betarouter.com/mcp \\
   --header "Authorization: Bearer YOUR_API_KEY"`,
 	claudeCode: `{
   "mcpServers": {
-    "llmgateway": {
-      "url": "https://api.llmgateway.io/mcp",
+    "betarouter": {
+      "url": "https://api.betarouter.com/mcp",
       "headers": {
         "Authorization": "Bearer YOUR_API_KEY"
       }
     }
   }
 }`,
-	codexCli: `codex mcp add llmgateway --url https://api.llmgateway.io/mcp \\
+	codexCli: `codex mcp add betarouter --url https://api.betarouter.com/mcp \\
   --bearer-token-env-var LLM_GATEWAY_API_KEY`,
-	codex: `[mcp_servers.llmgateway]
-url = "https://api.llmgateway.io/mcp"
+	codex: `[mcp_servers.betarouter]
+url = "https://api.betarouter.com/mcp"
 bearer_token_env_var = "LLM_GATEWAY_API_KEY"`,
 	cursor: `{
   "mcpServers": {
-    "llmgateway": {
-      "url": "https://api.llmgateway.io/mcp",
+    "betarouter": {
+      "url": "https://api.betarouter.com/mcp",
       "headers": {
         "Authorization": "Bearer YOUR_API_KEY"
       }
     }
   }
 }`,
-	curl: `curl -X POST https://api.llmgateway.io/mcp \\
+	curl: `curl -X POST https://api.betarouter.com/mcp \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -d '{
@@ -137,10 +137,10 @@ bearer_token_env_var = "LLM_GATEWAY_API_KEY"`,
 };
 
 // Plain markdown content for AI agents
-const aiAgentMarkdown = `# LLM Gateway MCP Server
+const aiAgentMarkdown = `# betarouter MCP Server
 
 ## Endpoint
-\`https://api.llmgateway.io/mcp\`
+\`https://api.betarouter.com/mcp\`
 
 ## Authentication
 - Header: \`Authorization: Bearer YOUR_API_KEY\`
@@ -228,19 +228,19 @@ List available image generation models. No parameters required.
 - Anthropic: claude-sonnet-4-20250514, claude-opus-4-5
 - Google: gemini-2.0-flash, gemini-pro
 - Image: qwen-image-plus, qwen-image-max
-- And 200+ more at https://llmgateway.io/models
+- And 200+ more at https://betarouter.com/models
 
 ## MCP Configuration
 
 ### Claude Code
 \`\`\`bash
-claude mcp add --transport http --scope user llmgateway https://api.llmgateway.io/mcp \\
+claude mcp add --transport http --scope user betarouter https://api.betarouter.com/mcp \\
   --header "Authorization: Bearer YOUR_API_KEY"
 \`\`\`
 
 ### Codex
 \`\`\`bash
-codex mcp add llmgateway --url https://api.llmgateway.io/mcp \\
+codex mcp add betarouter --url https://api.betarouter.com/mcp \\
   --bearer-token-env-var LLM_GATEWAY_API_KEY
 \`\`\`
 
@@ -248,8 +248,8 @@ codex mcp add llmgateway --url https://api.llmgateway.io/mcp \\
 \`\`\`json
 {
   "mcpServers": {
-    "llmgateway": {
-      "url": "https://api.llmgateway.io/mcp",
+    "betarouter": {
+      "url": "https://api.betarouter.com/mcp",
       "headers": {
         "Authorization": "Bearer YOUR_API_KEY"
       }
@@ -265,10 +265,10 @@ codex mcp add llmgateway --url https://api.llmgateway.io/mcp \\
 - \`ping\`: Health check
 
 ## Links
-- Documentation: https://docs.llmgateway.io/guides/mcp
-- Models: https://llmgateway.io/models
-- Dashboard: https://llmgateway.io/dashboard
-- API Keys: https://llmgateway.io/dashboard/keys`;
+- Documentation: https://docs.betarouter.com/guides/mcp
+- Models: https://betarouter.com/models
+- Dashboard: https://betarouter.com/dashboard
+- API Keys: https://betarouter.com/dashboard/keys`;
 
 export function McpContent() {
 	const [copiedConfig, setCopiedConfig] = useState<string | null>(null);
@@ -586,7 +586,7 @@ export function McpContent() {
 				<div className="text-center space-y-6">
 					<h2 className="text-2xl font-bold">Ready to get started?</h2>
 					<p className="text-muted-foreground max-w-lg mx-auto">
-						Get your API key and start using LLM Gateway with your favorite AI
+						Get your API key and start using betarouter with your favorite AI
 						assistant.
 					</p>
 					<div className="flex gap-4 justify-center flex-wrap">
@@ -597,7 +597,7 @@ export function McpContent() {
 							</Link>
 						</Button>
 						<Button asChild variant="outline" size="lg">
-							<Link href="https://docs.llmgateway.io/guides/mcp">
+							<Link href="https://docs.betarouter.com/guides/mcp">
 								Read Documentation
 								<ArrowUpRight className="ml-2 h-4 w-4" />
 							</Link>

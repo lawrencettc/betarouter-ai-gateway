@@ -1,5 +1,5 @@
 {
-	"name": "@llmgateway/scripts",
+	"name": "@betarouter/scripts",
 	"version": "0.0.0",
 	"private": true,
 	"license": "SEE LICENSE IN ../../LICENSE",
@@ -24,11 +24,11 @@
 		"test-gemini-tools-simple": "tsx src/test-gemini-tools-simple.ts"
 	},
 	"dependencies": {
-		"@llmgateway/actions": "workspace:*",
-		"@llmgateway/catalog": "workspace:*",
-		"@llmgateway/db": "workspace:*",
-		"@llmgateway/models": "workspace:*",
-		"@llmgateway/shared": "workspace:*",
+		"@betarouter/actions": "workspace:*",
+		"@betarouter/catalog": "workspace:*",
+		"@betarouter/db": "workspace:*",
+		"@betarouter/models": "workspace:*",
+		"@betarouter/shared": "workspace:*",
 		"nanoid": "5.1.5",
 		"openai": "4.104.0",
 		"resend": "4.5.1",

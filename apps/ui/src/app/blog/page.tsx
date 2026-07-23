@@ -24,16 +24,16 @@ export default async function BlogPage() {
 	const collectionSchema = {
 		"@context": "https://schema.org",
 		"@type": "CollectionPage",
-		name: "LLM Gateway Blog",
-		description: "News, tutorials, and deep-dives from the LLM Gateway team.",
-		url: "https://llmgateway.io/blog",
+		name: "betarouter Blog",
+		description: "News, tutorials, and deep-dives from the betarouter team.",
+		url: "https://betarouter.com/blog",
 		mainEntity: {
 			"@type": "ItemList",
 			numberOfItems: sortedEntries.length,
 			itemListElement: sortedEntries.map((entry, index) => ({
 				"@type": "ListItem",
 				position: index + 1,
-				url: `https://llmgateway.io/blog/${entry.slug}`,
+				url: `https://betarouter.com/blog/${entry.slug}`,
 				name: entry.title,
 			})),
 		},
@@ -47,13 +47,13 @@ export default async function BlogPage() {
 				"@type": "ListItem",
 				position: 1,
 				name: "Home",
-				item: "https://llmgateway.io",
+				item: "https://betarouter.com",
 			},
 			{
 				"@type": "ListItem",
 				position: 2,
 				name: "Blog",
-				item: "https://llmgateway.io/blog",
+				item: "https://betarouter.com/blog",
 			},
 		],
 	};
@@ -65,7 +65,7 @@ export default async function BlogPage() {
 			<BlogList
 				entries={sortedEntries}
 				heading="Blog"
-				subheading="Latest news and updates from LLM Gateway"
+				subheading="Latest news and updates from betarouter"
 			/>
 		</div>
 	);
@@ -75,20 +75,20 @@ export async function generateMetadata() {
 	return {
 		title: "Blog — News, Tutorials, and Deep-Dives",
 		description:
-			"News, tutorials, and deep-dives from the LLM Gateway team on AI gateways, routing, costs, and building with LLMs.",
+			"News, tutorials, and deep-dives from the betarouter team on AI gateways, routing, costs, and building with LLMs.",
 		alternates: { canonical: "/blog" },
 		openGraph: {
 			title: "Blog — News, Tutorials, and Deep-Dives",
 			description:
-				"News, tutorials, and deep-dives from the LLM Gateway team on AI gateways, routing, costs, and building with LLMs.",
+				"News, tutorials, and deep-dives from the betarouter team on AI gateways, routing, costs, and building with LLMs.",
 			type: "website",
-			url: "https://llmgateway.io/blog",
+			url: "https://betarouter.com/blog",
 		},
 		twitter: {
 			card: "summary_large_image",
 			title: "Blog — News, Tutorials, and Deep-Dives",
 			description:
-				"News, tutorials, and deep-dives from the LLM Gateway team on AI gateways, routing, and building with LLMs.",
+				"News, tutorials, and deep-dives from the betarouter team on AI gateways, routing, and building with LLMs.",
 		},
 	};
 }

@@ -12,8 +12,8 @@ import {
 	isNull,
 	sql,
 	tables,
-} from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+} from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 import {
 	DEV_PLAN_RESET_PASS_PRICES,
 	getChatPlanCreditsLimit,
@@ -23,7 +23,7 @@ import {
 	type ChatPlanTier,
 	type DevPlanCycle,
 	type DevPlanTier,
-} from "@llmgateway/shared";
+} from "@betarouter/shared";
 
 import { computeReferralBonus } from "./lib/referral-bonus.js";
 import { posthog } from "./posthog.js";
@@ -2189,7 +2189,7 @@ export async function handleEndUserTopUpSucceeded(
 				description: "End-user credit top-up",
 			});
 
-			// Record the end-user top-up as LLM Gateway revenue, mirroring an org
+			// Record the end-user top-up as betarouter revenue, mirroring an org
 			// credit purchase: `amount` = gross Stripe charge, `creditAmount` = net
 			// credit value (Stripe fees excluded; the developer's markup margin is
 			// tracked separately as a liability, not revenue). Live wallets only —
@@ -4937,7 +4937,7 @@ export async function handleSubscriptionDeleted(
 		await sendTransactionalEmail({
 			to: organization.billingEmail,
 			organizationId: organization.id,
-			subject: "Your LLMGateway Chat Plan Has Been Cancelled",
+			subject: "Your betarouter Chat Plan Has Been Cancelled",
 			html: generateSubscriptionCancelledEmailHtml(organization.name),
 		});
 
@@ -5001,7 +5001,7 @@ export async function handleSubscriptionDeleted(
 		await sendTransactionalEmail({
 			to: organization.billingEmail,
 			organizationId: organization.id,
-			subject: "Your LLMGateway Dev Plan Has Been Cancelled",
+			subject: "Your betarouter Dev Plan Has Been Cancelled",
 			html: generateSubscriptionCancelledEmailHtml(organization.name),
 		});
 
@@ -5052,7 +5052,7 @@ export async function handleSubscriptionDeleted(
 		await sendTransactionalEmail({
 			to: organization.billingEmail,
 			organizationId: organization.id,
-			subject: "Your LLMGateway Subscription Has Been Cancelled",
+			subject: "Your betarouter Subscription Has Been Cancelled",
 			html: generateSubscriptionCancelledEmailHtml(organization.name),
 		});
 

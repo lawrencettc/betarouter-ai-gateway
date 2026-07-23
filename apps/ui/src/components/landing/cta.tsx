@@ -72,7 +72,7 @@ export default function CallToAction() {
 									})
 								}
 							>
-								Self-host LLM Gateway
+								Self-host betarouter
 							</a>
 						</Button>
 					</AnimatedGroup>

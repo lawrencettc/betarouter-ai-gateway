@@ -41,7 +41,7 @@ export function ReferralDialog({
 	const { buildOrgUrl } = useDashboardNavigation();
 	const [open, setOpen] = useState(false);
 	const [mode, setMode] = useState<"overview" | "simulation">("overview");
-	const [origin, setOrigin] = useState<string>("https://llmgateway.io");
+	const [origin, setOrigin] = useState<string>("https://betarouter.com");
 	const [copied, setCopied] = useState(false);
 	const [referredTeams, setReferredTeams] = useState(5);
 	const [avgMonthlySpend, setAvgMonthlySpend] = useState(500);
@@ -168,7 +168,7 @@ export function ReferralDialog({
 										<span>
 											Copy your personalized referral link from the dashboard
 											and share it with users and teams who could benefit from
-											LLM Gateway.
+											betarouter.
 										</span>
 									</li>
 									<li className="flex items-start gap-2">

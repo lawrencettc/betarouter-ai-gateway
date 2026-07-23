@@ -25,7 +25,7 @@ const items: ProcurementItem[] = [
 		title: "SOC 2 Type II report",
 		description:
 			"Independently audited controls, verified in operation. The full report and evidence are one request away.",
-		href: "https://security.llmgateway.io/",
+		href: "https://security.betarouter.com/",
 		linkLabel: "Request the report",
 		external: true,
 	},

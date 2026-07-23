@@ -41,11 +41,11 @@ async function sendWithRetry(
 ): Promise<{ success: boolean; id?: string; error?: unknown }> {
 	for (let attempt = 0; attempt < maxRetries; attempt++) {
 		const { data, error } = await resend.emails.send({
-			from: "Luca from LLMGateway <contact@mail.llmgateway.io>",
+			from: "Luca from betarouter <contact@mail.betarouter.com>",
 			to: row.email,
 			subject: row.email_subject,
 			text: row.email_content,
-			replyTo: "luca.steeb@llmgateway.io",
+			replyTo: "luca.steeb@betarouter.com",
 		});
 
 		if (!error) {

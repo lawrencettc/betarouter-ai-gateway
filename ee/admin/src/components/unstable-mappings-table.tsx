@@ -16,7 +16,7 @@ import {
 import { useApi } from "@/lib/fetch-client";
 import { cn } from "@/lib/utils";
 
-import { getProviderIcon } from "@llmgateway/shared";
+import { getProviderIcon } from "@betarouter/shared";
 
 import type { UnstableWindow } from "@/lib/unstable-mappings-params";
 

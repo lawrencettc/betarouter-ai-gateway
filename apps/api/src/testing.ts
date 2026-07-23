@@ -8,7 +8,7 @@ import {
 	apiKeyHourlyModelStats,
 	eq,
 	inArray,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 import { app } from "./index.js";
 

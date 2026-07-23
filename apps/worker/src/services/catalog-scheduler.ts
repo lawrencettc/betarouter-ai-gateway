@@ -1,6 +1,6 @@
-import { applyDueCatalogChangeSets } from "@llmgateway/catalog";
-import { db, platformAuditLog } from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+import { applyDueCatalogChangeSets } from "@betarouter/catalog";
+import { db, platformAuditLog } from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 
 export async function runCatalogSchedulerPass(now = new Date()): Promise<void> {
 	const results = await applyDueCatalogChangeSets({

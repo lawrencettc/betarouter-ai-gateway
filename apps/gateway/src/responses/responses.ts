@@ -20,8 +20,8 @@ import {
 	deleteResponsesContext,
 } from "@/lib/responses-context.js";
 
-import { shortid } from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+import { shortid } from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 
 import { compactRequestSchema, responsesRequestSchema } from "./schemas.js";
 import { convertChatResponseToCompaction } from "./tools/convert-chat-to-compaction.js";

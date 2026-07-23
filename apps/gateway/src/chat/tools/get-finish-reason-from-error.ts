@@ -1,6 +1,6 @@
 import { hasInvalidProviderCredentialError } from "@/lib/provider-auth-errors.js";
 
-import { isContentFilterErrorText } from "@llmgateway/shared";
+import { isContentFilterErrorText } from "@betarouter/shared";
 
 /**
  * Determines the appropriate finish reason based on HTTP status code and error message

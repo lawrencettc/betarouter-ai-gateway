@@ -6,20 +6,20 @@ title: "Video Generation, Sessions & More"
 summary: "Generate videos via the API, track conversations with sessions, and more — plus new models and providers."
 image:
   src: "/changelog/video-gen-update.png"
-  alt: "Video generation and sessions now available on LLM Gateway"
+  alt: "Video generation and sessions now available on betarouter"
   width: 1768
   height: 677
 ---
 
 ## Video Generation
 
-LLM Gateway now supports **video generation** via the API. Generate videos from text prompts using supported models, with job-based async processing and status tracking.
+betarouter now supports **video generation** via the API. Generate videos from text prompts using supported models, with job-based async processing and status tracking.
 
 - Submit a video generation request and receive a job ID
 - Poll for job status — completed jobs return the video URL
 - Failed jobs are properly marked with error details
 
-**[Read the video generation docs](https://docs.llmgateway.io/features/video-generation)**
+**[Read the video generation docs](https://docs.betarouter.com/features/video-generation)**
 
 ---
 
@@ -67,22 +67,22 @@ New MiniMax M2.7 model mappings added across providers.
 
 ## UI & Platform Improvements
 
-- **[Redesigned Code app](https://devpass.llmgateway.io)** — Fresh look for the dev plans and coding tools dashboard
+- **[Redesigned Code app](https://devpass.betarouter.com)** — Fresh look for the dev plans and coding tools dashboard
 - **Revamped admin dashboard** — Improved performance on models, mappings, and providers pages
 - **[Cost simulator](/cost-simulator) revamp** — Updated cost simulator with better navigation
 - **Activity log filters** — Improved filtering in activity logs
 - **Status page indicator** — Quick link to the status page from the dashboard
-- **[OpenCode support](https://docs.llmgateway.io/guides/opencode)** — Added OpenCode to the [integrations](/integrations) list
+- **[OpenCode support](https://docs.betarouter.com/guides/opencode)** — Added OpenCode to the [integrations](/integrations) list
 - **Free icon visibility** — Free icon now correctly hidden for paid provider mappings
 
 ---
 
 ## Documentation & Guides
 
-- **[Codex CLI guide](https://docs.llmgateway.io/guides/codex-cli)** — Step-by-step guide for using LLM Gateway with OpenAI Codex CLI
-- **[Autohand guide](https://docs.llmgateway.io/guides/autohand)** — Integration guide for Autohand
-- **[OpenClaw guide](https://docs.llmgateway.io/guides/openclaw)** — Integration guide for OpenClaw
-- **[Introduction page](https://docs.llmgateway.io)** — New docs introduction page
+- **[Codex CLI guide](https://docs.betarouter.com/guides/codex-cli)** — Step-by-step guide for using betarouter with OpenAI Codex CLI
+- **[Autohand guide](https://docs.betarouter.com/guides/autohand)** — Integration guide for Autohand
+- **[OpenClaw guide](https://docs.betarouter.com/guides/openclaw)** — Integration guide for OpenClaw
+- **[Introduction page](https://docs.betarouter.com)** — New docs introduction page
 - **Themed screenshots** — Light/dark themed screenshots in the learn section
 
 ---

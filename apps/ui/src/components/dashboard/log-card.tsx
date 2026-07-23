@@ -8,9 +8,9 @@ import { useFetchClient } from "@/lib/fetch-client";
 import {
 	LogCard as SharedLogCard,
 	type LogCardData,
-} from "@llmgateway/shared/components";
+} from "@betarouter/shared/components";
 
-import type { Log } from "@llmgateway/db";
+import type { Log } from "@betarouter/db";
 
 type DashboardLog = Partial<Log> & {
 	organizationName?: string | null;

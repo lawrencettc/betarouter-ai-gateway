@@ -6,7 +6,7 @@ title: "Sessions Rebranded to Agents"
 summary: "Sessions are now Agents — monitor your AI coding agents, track costs per agent, and drill into individual sessions."
 image:
   src: "/changelog/agents-rebrand-dark.png"
-  alt: "Agents page on LLM Gateway showing AI coding agent monitoring"
+  alt: "Agents page on betarouter showing AI coding agent monitoring"
   width: 3024
   height: 1648
 ---

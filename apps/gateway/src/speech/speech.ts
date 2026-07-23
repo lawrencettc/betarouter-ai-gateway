@@ -42,29 +42,29 @@ import { throwIamException, validateModelAccess } from "@/lib/iam.js";
 import { calculateDataStorageCost, insertLog } from "@/lib/logs.js";
 import { createCombinedSignal, isTimeoutError } from "@/lib/timeout-config.js";
 
-import { getProviderHeaders } from "@llmgateway/actions";
-import { shortid } from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+import { getProviderHeaders } from "@betarouter/actions";
+import { shortid } from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 import {
 	ELEVENLABS_VOICE_IDS,
 	getProviderEnvValue,
 	models as modelDefinitions,
 	resolveVertexTokenType,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 import type { RoutingAttempt } from "@/chat/tools/retry-with-fallback.js";
 import type { ServerTypes } from "@/vars.js";
-import type { RoutingMetadata } from "@llmgateway/actions";
+import type { RoutingMetadata } from "@betarouter/actions";
 import type {
 	InferSelectModel,
 	ProviderKeyOptions,
 	tables,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 import type {
 	ModelDefinition,
 	ProviderModelMapping,
 	VertexTokenType,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 
 const speechRequestSchema = z.object({
 	model: z.string().openapi({
@@ -73,7 +73,7 @@ const speechRequestSchema = z.object({
 	}),
 	input: z.string().min(1).openapi({
 		description: "The text to synthesize into speech.",
-		example: "Hello, welcome to LLM Gateway!",
+		example: "Hello, welcome to betarouter!",
 	}),
 	voice: z.string().optional().openapi({
 		description:
@@ -613,14 +613,14 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 	if (!apiKey) {
 		throw new HTTPException(401, {
 			message:
-				"Unauthorized: Invalid LLMGateway API token. The token could not be found. Go to the LLMGateway 'API Keys' page to generate a new token.",
+				"Unauthorized: Invalid betarouter API token. The token could not be found. Go to the betarouter 'API Keys' page to generate a new token.",
 		});
 	}
 
 	if (apiKey.status !== "active") {
 		throw new HTTPException(401, {
 			message:
-				"Unauthorized: This LLMGateway API token is not active (it may be disabled or deleted). Go to the LLMGateway 'API Keys' page to generate a new token.",
+				"Unauthorized: This betarouter API token is not active (it may be disabled or deleted). Go to the betarouter 'API Keys' page to generate a new token.",
 		});
 	}
 

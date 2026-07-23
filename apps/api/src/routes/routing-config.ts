@@ -2,7 +2,7 @@ import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 
-import { cdb, db, eq, tables } from "@llmgateway/db";
+import { cdb, db, eq, tables } from "@betarouter/db";
 import {
 	buildProviderPriorityDefaults,
 	DEFAULT_ROUTING_HISTORY,
@@ -14,7 +14,7 @@ import {
 	DEFAULT_ROUTING_WEIGHTS,
 	resolveRoutingConfig,
 	ROUTING_HISTORY_MAX_WINDOW_MINUTES,
-} from "@llmgateway/shared/routing-config";
+} from "@betarouter/shared/routing-config";
 
 import type { ServerTypes } from "@/vars.js";
 import type {
@@ -26,7 +26,7 @@ import type {
 	RoutingThresholdsConfig,
 	RoutingTimeoutsConfig,
 	RoutingWeightsConfig,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 
 export const routingConfig = new OpenAPIHono<ServerTypes>();
 

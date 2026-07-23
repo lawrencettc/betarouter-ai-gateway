@@ -6,15 +6,15 @@ title: "OpenAI-Compatible Embeddings"
 summary: "Turn text into vectors for semantic search, clustering, and RAG — through the same gateway you already use for chat."
 image:
   src: "/changelog/embeddings-support.png"
-  alt: "LLM Gateway now supports OpenAI-compatible embeddings"
+  alt: "betarouter now supports OpenAI-compatible embeddings"
   width: 3600
   height: 1890
 ---
 
-LLM Gateway now exposes an OpenAI-compatible **`/v1/embeddings`** endpoint. Same base URL, same API key, same SDK — point your existing OpenAI client at the gateway and `embeddings.create()` just works.
+betarouter now exposes an OpenAI-compatible **`/v1/embeddings`** endpoint. Same base URL, same API key, same SDK — point your existing OpenAI client at the gateway and `embeddings.create()` just works.
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/embeddings" \
+curl -X POST "https://api.betarouter.com/v1/embeddings" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -28,4 +28,4 @@ curl -X POST "https://api.llmgateway.io/v1/embeddings" \
 - Billed on input tokens only — no output tokens, no surprises
 - Full usage and cost tracking in your dashboard, alongside your chat traffic
 
-**[Browse embedding models →](https://llmgateway.io/models?filters=1&embedding=true)** | **[Read the docs →](https://docs.llmgateway.io/features/embeddings)**
+**[Browse embedding models →](https://betarouter.com/models?filters=1&embedding=true)** | **[Read the docs →](https://docs.betarouter.com/features/embeddings)**

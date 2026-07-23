@@ -39,11 +39,11 @@ import { toast } from "@/lib/components/use-toast";
 import { useApi } from "@/lib/fetch-client";
 import { extractOrgAndProjectFromPath } from "@/lib/navigation-utils";
 
-import { models, providers } from "@llmgateway/models";
+import { models, providers } from "@betarouter/models";
 import {
 	MultiModelSelector,
 	MultiProviderSelector,
-} from "@llmgateway/shared/components";
+} from "@betarouter/shared/components";
 
 import type { ApiKey } from "@/lib/types";
 import type { Route } from "next";

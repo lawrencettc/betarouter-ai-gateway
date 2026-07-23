@@ -84,7 +84,7 @@ We built a [Token Cost Calculator](/token-cost-calculator) that:
 - Shows what the same workload costs on cheaper providers for the same model (DeepSeek, Groq, Cerebras, and others often undercut the official price)
 - Generates a shareable link so you can send estimates to your team
 
-No signup required. Try it: **[llmgateway.io/token-cost-calculator](/token-cost-calculator)**.
+No signup required. Try it: **[betarouter.com/token-cost-calculator](/token-cost-calculator)**.
 
 ## Three Ways to Lower the Bill Without Lowering Quality
 
@@ -92,7 +92,7 @@ Once you can estimate the cost, you can attack it. Three high-leverage moves:
 
 ### 1. Cache identical requests
 
-Many production workloads repeat: FAQ bots, classification, batch pipelines, dev/test. A cache hit costs nothing. LLM Gateway caches responses in Redis with per-project TTLs from 10 seconds to a year — teams see 30–90% hit rates on suitable workloads. See [how caching works](/blog/prompt-caching-explained).
+Many production workloads repeat: FAQ bots, classification, batch pipelines, dev/test. A cache hit costs nothing. betarouter caches responses in Redis with per-project TTLs from 10 seconds to a year — teams see 30–90% hit rates on suitable workloads. See [how caching works](/blog/prompt-caching-explained).
 
 ### 2. Route to the cheapest healthy provider
 
@@ -108,6 +108,6 @@ Don't call GPT-5.4 to classify sentiment. A three-tier setup — Nano or Flash L
 - Output tokens dominate. Shorten responses before you shorten prompts.
 - Flagship vs budget is ~20x. Pick the cheapest model that still meets quality.
 - Multiply naive estimates by 1.5–2x to account for system prompts, RAG, tools, retries.
-- Caching and smart routing are the two biggest levers — both are free on [LLM Gateway](/signup).
+- Caching and smart routing are the two biggest levers — both are free on [betarouter](/signup).
 
 **[Try the Token Cost Calculator →](/token-cost-calculator)**

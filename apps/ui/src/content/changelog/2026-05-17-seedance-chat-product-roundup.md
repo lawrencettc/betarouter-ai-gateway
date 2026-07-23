@@ -6,14 +6,14 @@ title: "Seedance Video Models, Pinned Chats, Sharing Across Orgs & More"
 summary: "ByteDance Seedance video models land in the gateway, Chat gets pinning and cross-org sharing, plus vertex-anthropic, grok-4.20, and a stack of fixes."
 image:
   src: "/changelog/seedance-video-models.png"
-  alt: "LLM Gateway now supports all ByteDance Seedance video generation models"
+  alt: "betarouter now supports all ByteDance Seedance video generation models"
   width: 1024
   height: 1024
 ---
 
 ## ByteDance Seedance Video Generation
 
-LLM Gateway now supports the full **ByteDance Seedance** family — three models for text-to-video, image-to-video, and reference-image generation through the same API key you use for chat.
+betarouter now supports the full **ByteDance Seedance** family — three models for text-to-video, image-to-video, and reference-image generation through the same API key you use for chat.
 
 ```bash
 bytedance/seedance-2-0          # high-quality text & image-to-video
@@ -26,7 +26,7 @@ bytedance/seedance-1-5-pro      # complex instructions + native audio
 - Native audio generation on `seedance-1-5-pro` (toggle via `generate_audio`)
 - Auto-select routes to the cheapest healthy provider — or pin to ByteDance directly
 
-**[Browse video models →](https://llmgateway.io/models?filters=1&video=true)** | **[Read the announcement →](/blog/seedance-video-generation)**
+**[Browse video models →](https://betarouter.com/models?filters=1&video=true)** | **[Read the announcement →](/blog/seedance-video-generation)**
 
 ---
 
@@ -36,7 +36,7 @@ bytedance/seedance-1-5-pro      # complex instructions + native audio
 
 Keep your most-used conversations one click away. The chat sidebar now has a dedicated **Pinned** section that floats above the date groups.
 
-<img src="/changelog/pinned-chats.jpg" alt="Pin important chats in LLM Gateway Chat" width="1024" height="1024" />
+<img src="/changelog/pinned-chats.jpg" alt="Pin important chats in betarouter Chat" width="1024" height="1024" />
 
 - Pin/unpin from the chat row menu
 - Pinned chats stay grouped at the top, unpinned chats keep their date grouping
@@ -46,7 +46,7 @@ Keep your most-used conversations one click away. The chat sidebar now has a ded
 
 If you belong to more than one org, a single share link can now reach all of them.
 
-<img src="/changelog/share-chats-across-orgs.png" alt="Share chats across multiple LLM Gateway organizations" width="1024" height="1024" />
+<img src="/changelog/share-chats-across-orgs.png" alt="Share chats across multiple betarouter organizations" width="1024" height="1024" />
 
 - Pick any subset of your orgs in the share dialog
 - One link works across every selected org — no duplicating chats per workspace
@@ -59,7 +59,7 @@ A new **team chat list** view surfaces chats shared inside your organization —
 
 ### Canvas Wrap-Up
 
-[Canvas](https://chat.llmgateway.io) graduated from preview. The JSON editor and live preview now ship with six chart types (bar, line, area, pie, radar, radial bar), streaming AI spec generation, PNG and PDF export, and reusable Card and Chart primitives. Canvas now has its own entry in the sidebar across mobile and desktop.
+[Canvas](https://chat.betarouter.com) graduated from preview. The JSON editor and live preview now ship with six chart types (bar, line, area, pie, radar, radial bar), streaming AI spec generation, PNG and PDF export, and reusable Card and Chart primitives. Canvas now has its own entry in the sidebar across mobile and desktop.
 
 ### Smarter Model Selector
 
@@ -100,4 +100,4 @@ A dedicated **vertex-anthropic** provider is live for routing Claude models thro
 
 ---
 
-**[Try Chat →](https://chat.llmgateway.io)** | **[Generate a video →](https://docs.llmgateway.io/features/video-generation)** | **[Browse all models →](https://llmgateway.io/models)**
+**[Try Chat →](https://chat.betarouter.com)** | **[Generate a video →](https://docs.betarouter.com/features/video-generation)** | **[Browse all models →](https://betarouter.com/models)**

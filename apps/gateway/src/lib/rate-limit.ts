@@ -2,10 +2,10 @@ import { randomUUID } from "node:crypto";
 
 import { findOrganizationById } from "@/lib/cached-queries.js";
 
-import { redisClient } from "@llmgateway/cache";
-import { logger } from "@llmgateway/logger";
+import { redisClient } from "@betarouter/cache";
+import { logger } from "@betarouter/logger";
 
-import type { ModelDefinition } from "@llmgateway/models";
+import type { ModelDefinition } from "@betarouter/models";
 
 /**
  * Rate limiting configuration for free models

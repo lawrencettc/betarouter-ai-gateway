@@ -4,17 +4,17 @@ import {
 	getEffectiveDiscount,
 	type ProviderMetrics,
 	metricsKey,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 import {
 	getProviderDefinition,
 	type AvailableModelProvider,
 	type ModelWithPricing,
 	type ProviderModelMapping,
-} from "@llmgateway/models";
+} from "@betarouter/models";
 import {
 	getDefaultRoutingConfig,
 	type ResolvedRoutingConfig,
-} from "@llmgateway/shared/routing-config";
+} from "@betarouter/shared/routing-config";
 
 interface ProviderScore<T extends AvailableModelProvider> {
 	provider: T;

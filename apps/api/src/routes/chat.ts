@@ -2,7 +2,7 @@ import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
 
-import { logger } from "@llmgateway/logger";
+import { logger } from "@betarouter/logger";
 
 import type { ServerTypes } from "@/vars.js";
 
@@ -52,7 +52,7 @@ chat.openapi(completionRoute, async (c) => {
 
 		const response = await fetch(
 			process.env.NODE_ENV === "production"
-				? "https://api.llmgateway.io/v1/chat/completions"
+				? "https://api.betarouter.com/v1/chat/completions"
 				: "http://localhost:4001/v1/chat/completions",
 			{
 				method: "POST",

@@ -12,15 +12,15 @@ import {
 	RequestError,
 	UnsupportedAudioFormatError,
 	UnsupportedDocumentFormatError,
-} from "@llmgateway/actions";
-import { redisClient } from "@llmgateway/cache";
-import { db } from "@llmgateway/db";
+} from "@betarouter/actions";
+import { redisClient } from "@betarouter/cache";
+import { db } from "@betarouter/db";
 import {
 	createHonoRequestLogger,
 	createRequestLifecycleMiddleware,
-} from "@llmgateway/instrumentation";
-import { logger, toError } from "@llmgateway/logger";
-import { HealthChecker } from "@llmgateway/shared";
+} from "@betarouter/instrumentation";
+import { logger, toError } from "@betarouter/logger";
+import { HealthChecker } from "@betarouter/shared";
 
 import { anthropic } from "./anthropic/anthropic.js";
 import { chat } from "./chat/chat.js";
@@ -49,7 +49,7 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 export const config = {
 	servers: [
 		{
-			url: "https://api.llmgateway.io",
+			url: "https://api.betarouter.com",
 		},
 		{
 			url: "http://localhost:4001",
@@ -58,11 +58,11 @@ export const config = {
 	openapi: "3.0.0",
 	info: {
 		version: "1.0.0",
-		title: "LLMGateway API",
+		title: "betarouter API",
 	},
 	externalDocs: {
-		url: "https://docs.llmgateway.io",
-		description: "LLMGateway Documentation",
+		url: "https://docs.betarouter.com",
+		description: "betarouter Documentation",
 	},
 	components: {
 		securitySchemes: {
@@ -365,7 +365,7 @@ app.doc("/json", config);
 app.get("/docs", swaggerUI({ url: "/json" }));
 
 // The gateway is an API, not a website: keep search engines from crawling and
-// indexing its endpoints (GSC keeps reporting api.llmgateway.io URLs).
+// indexing its endpoints (GSC keeps reporting api.betarouter.com URLs).
 app.get("/robots.txt", (c) => {
 	return c.text("User-agent: *\nDisallow: /\n");
 });

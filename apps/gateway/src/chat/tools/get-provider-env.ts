@@ -12,21 +12,21 @@ import {
 	peekRoundRobinValue,
 } from "@/lib/round-robin-env.js";
 
-import { providerKeyBaseUrlSupportsServiceTier } from "@llmgateway/actions";
-import { catalogCredentialConfigurationProfile } from "@llmgateway/catalog";
+import { providerKeyBaseUrlSupportsServiceTier } from "@betarouter/actions";
+import { catalogCredentialConfigurationProfile } from "@betarouter/catalog";
 import {
 	decryptPlatformProviderToken,
 	isPlatformProviderCryptoConfigured,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 import {
 	getProviderEnvValue,
 	getProviderEnvVar,
 	getProviderEnvConfig,
 	type Provider,
-} from "@llmgateway/models";
-import { assertSafeProviderUrl } from "@llmgateway/shared/url-safety-node";
+} from "@betarouter/models";
+import { assertSafeProviderUrl } from "@betarouter/shared/url-safety-node";
 
-import type { ProviderKeyOptions } from "@llmgateway/db";
+import type { ProviderKeyOptions } from "@betarouter/db";
 
 export interface ProviderEnvResult {
 	token: string;

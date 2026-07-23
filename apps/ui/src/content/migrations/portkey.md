@@ -2,12 +2,12 @@
 id: portkey
 slug: portkey
 title: Migrate from Portkey
-description: Switch from Portkey to LLM Gateway. Same OpenAI-compatible API, no virtual keys or special headers, fully open-source self-hosting.
+description: Switch from Portkey to betarouter. Same OpenAI-compatible API, no virtual keys or special headers, fully open-source self-hosting.
 date: 2026-05-26
 fromProvider: Portkey
 ---
 
-Portkey wraps your provider calls in virtual keys, config IDs, and `x-portkey-*` headers. LLM Gateway keeps the OpenAI-compatible interface but drops the extra ceremony: standard Bearer auth, provider keys managed in a dashboard, and the option to self-host the entire platform under AGPLv3. Migration is mostly a base URL change.
+Portkey wraps your provider calls in virtual keys, config IDs, and `x-portkey-*` headers. betarouter keeps the OpenAI-compatible interface but drops the extra ceremony: standard Bearer auth, provider keys managed in a dashboard, and the option to self-host the entire platform under AGPLv3. Migration is mostly a base URL change.
 
 ## Quick Migration
 
@@ -16,15 +16,15 @@ Both services are OpenAI-compatible, so the core change is the base URL and drop
 ```diff
 - const baseURL = "https://api.portkey.ai/v1";
 - // plus x-portkey-api-key and x-portkey-virtual-key headers
-+ const baseURL = "https://api.llmgateway.io/v1";
++ const baseURL = "https://api.betarouter.com/v1";
 
 - const apiKey = process.env.PORTKEY_API_KEY;
 + const apiKey = process.env.LLM_GATEWAY_API_KEY;  // standard Bearer auth
 ```
 
-## Why Teams Switch to LLM Gateway
+## Why Teams Switch to betarouter
 
-| What You Get                  | Portkey                       | LLM Gateway                           |
+| What You Get                  | Portkey                       | betarouter                            |
 | ----------------------------- | ----------------------------- | ------------------------------------- |
 | OpenAI-compatible API         | Yes                           | Yes                                   |
 | Custom headers / virtual keys | Required for provider routing | Not needed                            |
@@ -34,17 +34,17 @@ Both services are OpenAI-compatible, so the core change is the base URL and drop
 | Image & video generation      | Limited                       | Same API as chat                      |
 | Pricing                       | Usage/seat-based tiers        | 5% platform fee, or 0% with your keys |
 
-Want a feature-by-feature breakdown? See [LLM Gateway vs Portkey](/compare/portkey).
+Want a feature-by-feature breakdown? See [betarouter vs Portkey](/compare/portkey).
 
 ## Migration Steps
 
-### 1. Get Your LLM Gateway API Key
+### 1. Get Your betarouter API Key
 
-Sign up at [llmgateway.io/signup](/signup) and create an API key from your dashboard.
+Sign up at [betarouter.com/signup](/signup) and create an API key from your dashboard.
 
 ### 2. Map Your Models
 
-LLM Gateway supports two model ID formats:
+betarouter supports two model ID formats:
 
 **Root Model IDs** (without provider prefix) — uses smart routing to automatically select the best provider based on uptime, throughput, price, and latency:
 
@@ -62,9 +62,9 @@ anthropic/claude-opus-4-5-20251101
 google-ai-studio/gemini-3-flash-preview
 ```
 
-In Portkey, the provider is usually selected by the virtual key or config attached to the request. With LLM Gateway, you select the provider in the model ID itself (or let smart routing choose) — there's no separate virtual key to manage.
+In Portkey, the provider is usually selected by the virtual key or config attached to the request. With betarouter, you select the provider in the model ID itself (or let smart routing choose) — there's no separate virtual key to manage.
 
-For more on routing behavior, see the [routing documentation](https://docs.llmgateway.io/features/routing).
+For more on routing behavior, see the [routing documentation](https://docs.betarouter.com/features/routing).
 
 ### 3. Update Your Code
 
@@ -85,9 +85,9 @@ client = OpenAI(
     ),
 )
 
-# After (LLM Gateway) - no custom headers, no virtual key
+# After (betarouter) - no custom headers, no virtual key
 client = OpenAI(
-    base_url="https://api.llmgateway.io/v1",
+    base_url="https://api.betarouter.com/v1",
     api_key=os.environ["LLM_GATEWAY_API_KEY"],
 )
 
@@ -99,7 +99,7 @@ response = client.chat.completions.create(
 
 #### Python with the Portkey SDK
 
-If you use the native `portkey-ai` client, swap to the OpenAI SDK pointed at LLM Gateway:
+If you use the native `portkey-ai` client, swap to the OpenAI SDK pointed at betarouter:
 
 ```python
 # Before (native Portkey SDK)
@@ -115,11 +115,11 @@ response = portkey.chat.completions.create(
     messages=[{"role": "user", "content": "Hello!"}],
 )
 
-# After (LLM Gateway via the standard OpenAI SDK)
+# After (betarouter via the standard OpenAI SDK)
 from openai import OpenAI
 
 client = OpenAI(
-    base_url="https://api.llmgateway.io/v1",
+    base_url="https://api.betarouter.com/v1",
     api_key=os.environ["LLM_GATEWAY_API_KEY"],
 )
 
@@ -146,13 +146,13 @@ const client = new OpenAI({
   }),
 });
 
-// After (LLM Gateway) - standard Bearer auth, no extra headers
-const llmgateway = new OpenAI({
-  baseURL: "https://api.llmgateway.io/v1",
+// After (betarouter) - standard Bearer auth, no extra headers
+const betarouter = new OpenAI({
+  baseURL: "https://api.betarouter.com/v1",
   apiKey: process.env.LLM_GATEWAY_API_KEY,
 });
 
-const completion = await llmgateway.chat.completions.create({
+const completion = await betarouter.chat.completions.create({
   model: "gpt-5.2", // or "openai/gpt-5.2" to target a specific provider
   messages: [{ role: "user", content: "Hello!" }],
 });
@@ -171,8 +171,8 @@ curl https://api.portkey.ai/v1/chat/completions \
     "messages": [{"role": "user", "content": "Hello!"}]
   }'
 
-# After (LLM Gateway) - single Authorization header
-curl https://api.llmgateway.io/v1/chat/completions \
+# After (betarouter) - single Authorization header
+curl https://api.betarouter.com/v1/chat/completions \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -184,9 +184,9 @@ curl https://api.llmgateway.io/v1/chat/completions \
 
 ### 4. Replace Virtual Keys and Configs
 
-Portkey routes through virtual keys (one per provider credential) and config objects. LLM Gateway replaces both:
+Portkey routes through virtual keys (one per provider credential) and config objects. betarouter replaces both:
 
-- **Virtual keys → Provider Keys.** Add your provider API keys once in the dashboard under **Settings > Provider Keys**. Bring your own keys and pay a 0% gateway markup, or use LLM Gateway's default keys.
+- **Virtual keys → Provider Keys.** Add your provider API keys once in the dashboard under **Settings > Provider Keys**. Bring your own keys and pay a 0% gateway markup, or use betarouter's default keys.
 - **Configs → model IDs + routing.** Provider selection, fallbacks, and load balancing are handled by the model ID and built-in smart routing — there's no separate config object to maintain.
 
 ## Streaming Support
@@ -197,7 +197,7 @@ Streaming works identically:
 from openai import OpenAI
 
 client = OpenAI(
-    base_url="https://api.llmgateway.io/v1",
+    base_url="https://api.betarouter.com/v1",
     api_key=os.environ["LLM_GATEWAY_API_KEY"],
 )
 
@@ -245,13 +245,13 @@ response = client.chat.completions.create(
 - **Generative media included** — image and video models through the same API and billing
 - **Fully open source** — self-host the entire platform, not just the router
 
-## Self-Hosting LLM Gateway
+## Self-Hosting betarouter
 
-Prefer to run it yourself? Unlike Portkey, where only the gateway is open source, the entire LLM Gateway platform is available under AGPLv3:
+Prefer to run it yourself? Unlike Portkey, where only the gateway is open source, the entire betarouter platform is available under AGPLv3:
 
 ```bash
 git clone https://github.com/theopenco/llmgateway
-cd llmgateway
+cd betarouter
 pnpm install
 pnpm setup
 pnpm dev
@@ -261,10 +261,10 @@ See the [self-hosting guide](/blog/how-to-self-host-llm-gateway) for production 
 
 ## Full Comparison
 
-Want a detailed breakdown of all features? Check out our [LLM Gateway vs Portkey comparison page](/compare/portkey).
+Want a detailed breakdown of all features? Check out our [betarouter vs Portkey comparison page](/compare/portkey).
 
 ## Need Help?
 
-- Browse available models at [llmgateway.io/models](/models)
-- Read the [API documentation](https://docs.llmgateway.io)
-- Contact support at contact@llmgateway.io
+- Browse available models at [betarouter.com/models](/models)
+- Read the [API documentation](https://docs.betarouter.com)
+- Contact support at contact@betarouter.com

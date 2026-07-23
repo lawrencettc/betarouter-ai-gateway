@@ -16,7 +16,7 @@ The cheapest LLM request is the one you don't send. If the same question shows u
 
 That's all prompt caching is. You store the response the first time, and serve it from memory the next time the same request comes in. Done well, it takes 30–99% off the bill and knocks latency down to sub-millisecond. Done badly, it serves stale or wrong answers.
 
-This post covers both: what caching is, the two kinds you'll run into, where each works, and how to enable it on LLM Gateway without touching your code.
+This post covers both: what caching is, the two kinds you'll run into, where each works, and how to enable it on betarouter without touching your code.
 
 ## What Caching Actually Does
 
@@ -39,7 +39,7 @@ App  →  Provider           App  →  Gateway cache
 
 They both save money. They work differently and stack on each other.
 
-### 1. Exact-match response caching (what LLM Gateway does)
+### 1. Exact-match response caching (what betarouter does)
 
 Hash the full request, store the full response. Only hits when the request is **identical**: same model, same messages, same temperature, same tools.
 
@@ -55,7 +55,7 @@ Cache the _prefix_ of a prompt — the system message, tool definitions, and any
 - **Savings**: Typically 50–90% off the cached portion's input cost, not 100%
 - **Latency**: Modest improvement (saves prefill compute, not the full round-trip)
 
-They're complementary. LLM Gateway's exact-match caching catches repeat queries at the edge; provider prefix caching reduces cost on everything else. You don't have to choose.
+They're complementary. betarouter's exact-match caching catches repeat queries at the edge; provider prefix caching reduces cost on everything else. You don't have to choose.
 
 ## Concrete Math
 
@@ -98,7 +98,7 @@ Caching is not free lunch. Don't enable it blindly:
 
 Rule of thumb: if your prompt sets `temperature: 0` or the task is factual/deterministic, cache it. Otherwise, don't.
 
-## How to Turn It On (LLM Gateway)
+## How to Turn It On (betarouter)
 
 No code changes required. Three steps in the dashboard:
 
@@ -112,7 +112,7 @@ Requests just work. Cached responses show `cost: 0` in the usage dashboard so yo
 import OpenAI from "openai";
 
 const client = new OpenAI({
-  baseURL: "https://api.llmgateway.io/v1",
+  baseURL: "https://api.betarouter.com/v1",
   apiKey: process.env.LLM_GATEWAY_API_KEY,
 });
 
@@ -125,7 +125,7 @@ const response = await client.chat.completions.create({
 });
 ```
 
-Full docs: [docs.llmgateway.io/features/caching](https://docs.llmgateway.io/features/caching).
+Full docs: [docs.betarouter.com/features/caching](https://docs.betarouter.com/features/caching).
 
 ## Best Practices That Actually Move the Hit Rate
 
@@ -163,7 +163,7 @@ Put the stable instructions in the system prompt (benefits from provider prefix 
 
 ### 5. Measure your hit rate
 
-If you can't see your hit rate, you can't improve it. Every response in the LLM Gateway dashboard shows `cached: true/false` and the hit rate rolls up per model, project, and API key. A hit rate under 10% means caching isn't helping — either the workload is genuinely unique, or your prompts need normalizing.
+If you can't see your hit rate, you can't improve it. Every response in the betarouter dashboard shows `cached: true/false` and the hit rate rolls up per model, project, and API key. A hit rate under 10% means caching isn't helping — either the workload is genuinely unique, or your prompts need normalizing.
 
 ## TL;DR
 
@@ -171,6 +171,6 @@ If you can't see your hit rate, you can't improve it. Every response in the LLM 
 - Provider prefix caching is free money for long system prompts and RAG. Ship it too.
 - Don't cache creative, personalized, or time-sensitive work.
 - Normalize inputs, use `temperature: 0` on deterministic tasks, and keep timestamps out of prompts.
-- On LLM Gateway, enable caching in project settings. No code changes needed.
+- On betarouter, enable caching in project settings. No code changes needed.
 
-**[Try LLM Gateway free](/signup)** | **[Caching docs](https://docs.llmgateway.io/features/caching)** | **[Estimate your savings](/token-cost-calculator)**
+**[Try betarouter free](/signup)** | **[Caching docs](https://docs.betarouter.com/features/caching)** | **[Estimate your savings](/token-cost-calculator)**

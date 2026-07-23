@@ -8,7 +8,7 @@ async function fetchGitHubStars(repo: string): Promise<number | null> {
 			next: { revalidate: 600 },
 			headers: {
 				Accept: "application/vnd.github.v3+json",
-				"User-Agent": "LLM Gateway",
+				"User-Agent": "betarouter",
 			},
 		});
 

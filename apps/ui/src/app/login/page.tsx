@@ -263,7 +263,7 @@ export default function Login() {
 			{/* Mobile brand header */}
 			<div className="mb-6 lg:hidden">
 				<p className="text-sm font-medium uppercase tracking-widest text-primary">
-					LLM Gateway
+					betarouter
 				</p>
 			</div>
 

@@ -4,9 +4,9 @@ import { z } from "zod";
 
 import { ensureStripeCustomer } from "@/stripe.js";
 
-import { logAuditEvent } from "@llmgateway/audit";
-import { db } from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+import { logAuditEvent } from "@betarouter/audit";
+import { db } from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 
 import { getStripe } from "./payments.js";
 
@@ -90,7 +90,7 @@ subscriptions.openapi(createProSubscription, async (c) => {
 	if (organization.kind !== "default") {
 		throw new HTTPException(403, {
 			message:
-				"Paid subscriptions are not available for personal organizations. Please use Dev Plans at devpass.llmgateway.io or create a regular organization.",
+				"Paid subscriptions are not available for personal organizations. Please use Dev Plans at devpass.betarouter.com or create a regular organization.",
 		});
 	}
 

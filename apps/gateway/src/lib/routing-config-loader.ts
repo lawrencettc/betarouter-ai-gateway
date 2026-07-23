@@ -1,4 +1,4 @@
-import { swrWrap } from "@llmgateway/cache";
+import { swrWrap } from "@betarouter/cache";
 import {
 	cdb,
 	eq,
@@ -12,12 +12,12 @@ import {
 	type RoutingTimeoutsConfig,
 	type RoutingWeightsConfig,
 	type ProviderPriorityOverrides,
-} from "@llmgateway/db";
+} from "@betarouter/db";
 import {
 	buildProviderPriorityDefaults,
 	resolveRoutingConfig,
 	type ResolvedRoutingConfig,
-} from "@llmgateway/shared/routing-config";
+} from "@betarouter/shared/routing-config";
 
 const routingConfigTableName = getTableName(routingConfig);
 const providerPriorityDefaults = buildProviderPriorityDefaults();

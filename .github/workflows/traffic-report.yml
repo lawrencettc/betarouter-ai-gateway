@@ -66,4 +66,4 @@ jobs:
           POSTHOG_PROJECT_ID: ${{ vars.POSTHOG_PROJECT_ID || '163518' }}
           POSTHOG_QUERY_HOST: ${{ secrets.POSTHOG_QUERY_HOST }}
           DISCORD_TRAFFIC_NOTIFICATION_URL: ${{ secrets.DISCORD_TRAFFIC_NOTIFICATION_URL }}
-        run: pnpm --filter @llmgateway/scripts traffic-report --period=${{ steps.period.outputs.period }}
+        run: pnpm --filter @betarouter/scripts traffic-report --period=${{ steps.period.outputs.period }}

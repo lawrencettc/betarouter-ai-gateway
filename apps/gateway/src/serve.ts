@@ -1,12 +1,12 @@
 import { serve } from "@hono/node-server";
 
-import { redisClient } from "@llmgateway/cache";
-import { closeDatabase, setQueryTags } from "@llmgateway/db";
+import { redisClient } from "@betarouter/cache";
+import { closeDatabase, setQueryTags } from "@betarouter/db";
 import {
 	initializeInstrumentation,
 	shutdownInstrumentation,
-} from "@llmgateway/instrumentation";
-import { logger, toError } from "@llmgateway/logger";
+} from "@betarouter/instrumentation";
+import { logger, toError } from "@betarouter/logger";
 
 import { app } from "./app.js";
 import { metricsApp } from "./metrics-app.js";

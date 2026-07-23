@@ -4,11 +4,11 @@ import { source } from "@/lib/source";
 // cached forever
 export const revalidate = false;
 
-const HEADER = `# LLM Gateway — Full Documentation
+const HEADER = `# betarouter — Full Documentation
 
-> LLM Gateway is an open-source, OpenAI-compatible API gateway that routes, manages, and analyzes LLM requests across 40+ providers (OpenAI, Anthropic, Google, and more) through a single unified API. Switch providers without changing code, manage API keys centrally, track usage and cost, add caching and guardrails, and self-host or use the managed cloud.
+> betarouter is an open-source, OpenAI-compatible API gateway that routes, manages, and analyzes LLM requests across 40+ providers (OpenAI, Anthropic, Google, and more) through a single unified API. Switch providers without changing code, manage API keys centrally, track usage and cost, add caching and guardrails, and self-host or use the managed cloud.
 
-API base URL: https://api.llmgateway.io/v1 · Docs: https://docs.llmgateway.io · Site: https://llmgateway.io
+API base URL: https://api.betarouter.com/v1 · Docs: https://docs.betarouter.com · Site: https://betarouter.com
 
 This file concatenates the full text of every documentation page below.`;
 

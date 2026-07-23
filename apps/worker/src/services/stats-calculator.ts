@@ -15,8 +15,8 @@ import {
 	lt,
 	and,
 	type SQL,
-} from "@llmgateway/db";
-import { logger } from "@llmgateway/logger";
+} from "@betarouter/db";
+import { logger } from "@betarouter/logger";
 
 // Environment variable for backfill duration in seconds (defaults to 300 seconds = 5 minutes)
 const BACKFILL_DURATION_SECONDS =
@@ -568,7 +568,7 @@ async function calculateHistoryForMinute(targetMinute: Date) {
 	const allMappings = await database
 		.select({
 			id: modelProviderMapping.id, // The mapping ID
-			modelId: modelProviderMapping.modelId, // LLMGateway model name
+			modelId: modelProviderMapping.modelId, // betarouter model name
 			providerId: modelProviderMapping.providerId,
 			region: modelProviderMapping.region,
 		})
@@ -684,7 +684,7 @@ async function calculateHistoryForMinute(targetMinute: Date) {
 		// Collect the history record for this minute; written in one bulk upsert
 		// below instead of a per-mapping round-trip.
 		mappingHistoryValues.push({
-			modelId: mapping.modelId, // LLMGateway model name
+			modelId: mapping.modelId, // betarouter model name
 			providerId: mapping.providerId,
 			modelProviderMappingId: mapping.id, // Exact model_provider_mapping.id
 			minuteTimestamp: roundedTargetMinute,

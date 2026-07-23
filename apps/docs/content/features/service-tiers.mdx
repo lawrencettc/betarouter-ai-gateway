@@ -10,7 +10,7 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 Some OpenAI and Google models support selectable **processing tiers** that trade
 latency and availability against price. You pick one per request with the
-OpenAI-compatible `service_tier` parameter, and LLM Gateway forwards it only
+OpenAI-compatible `service_tier` parameter, and betarouter forwards it only
 when the selected provider/model mapping supports that tier.
 
 | Tier         | `service_tier`            | Cost vs. standard | Latency / availability                      |
@@ -22,7 +22,7 @@ when the selected provider/model mapping supports that tier.
 ## Using the `service_tier` parameter
 
 ```bash
-curl -X POST "https://api.llmgateway.io/v1/chat/completions" \
+curl -X POST "https://api.betarouter.com/v1/chat/completions" \
   -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -82,7 +82,7 @@ the exact tiers exposed by each provider card.
 
 ## Pricing uses multipliers
 
-Service tiers do not define separate model prices in LLM Gateway. They multiply
+Service tiers do not define separate model prices in betarouter. They multiply
 the provider mapping's standard token prices:
 
 - Standard / `default` / `auto`: 1x
@@ -94,7 +94,7 @@ image tokens. Flat per-request and web-search fees are not tier-scaled.
 
 ## Billing follows the served tier
 
-When a provider reports the tier that was actually served, LLM Gateway bills
+When a provider reports the tier that was actually served, betarouter bills
 that returned tier instead of blindly billing the requested value:
 
 - A `priority` request that runs as priority is billed at 2.5x.
@@ -108,13 +108,13 @@ response header, and OpenAI can return `service_tier` in response payloads or
 stream events.
 
 <Callout type="warn">
-	LLM Gateway rejects unsupported tier requests before provider routing. For
+	betarouter rejects unsupported tier requests before provider routing. For
 	example, `gemini-3-pro-image-preview` currently exposes Flex for Google AI
 	Studio and Vertex, but not Priority.
 </Callout>
 
 You can see per-tier pricing for each model on its
-[model page](https://llmgateway.io/models). Supported provider cards include a
+[model page](https://betarouter.com/models). Supported provider cards include a
 Service Tier selector in the card header and show the active multiplier next to
 each tier.
 
