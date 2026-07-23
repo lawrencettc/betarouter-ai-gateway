@@ -67,7 +67,7 @@ export const metadata: Metadata = {
 		title: "betarouter - Unified API for Multiple LLM Providers",
 		description:
 			"Route, manage, and analyze LLM requests across OpenAI, Anthropic, Google, and 40+ providers through one unified API.",
-		images: ["/opengraph.png?v=3"],
+		images: ["/opengraph.png?v=4"],
 		type: "website",
 		url: "https://betarouter.com",
 		siteName: "betarouter",
@@ -78,7 +78,7 @@ export const metadata: Metadata = {
 		title: "betarouter - Unified API for Multiple LLM Providers",
 		description:
 			"Route, manage, and analyze LLM requests across 40+ providers through one unified API.",
-		images: ["/opengraph.png?v=3"],
+		images: ["/opengraph.png?v=4"],
 		creator: "@betarouterco",
 	},
 	robots: {
