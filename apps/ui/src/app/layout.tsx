@@ -79,7 +79,7 @@ export const metadata: Metadata = {
 		description:
 			"Route, manage, and analyze LLM requests across 40+ providers through one unified API.",
 		images: ["/opengraph.png?v=2"],
-		creator: "@llmgateway",
+		creator: "@betarouterco",
 	},
 	robots: {
 		index: true,
@@ -108,7 +108,7 @@ const organizationSchema = {
 	description:
 		"Route, manage, and analyze your LLM requests across multiple providers with a unified API interface.",
 	sameAs: [
-		"https://x.com/llmgateway",
+		"https://x.com/betarouterco",
 		"https://github.com/theopenco/llmgateway",
 	],
 	contactPoint: {

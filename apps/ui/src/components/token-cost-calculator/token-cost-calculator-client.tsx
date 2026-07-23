@@ -561,7 +561,7 @@ function ResultsPanel({
 			`Total: ${formatUsd(officialTotal)} → ${formatUsd(gatewayTotal)}`,
 		];
 		if (savings > 0) {
-			parts.push(`Saving ${savingsPercent}% with @llmgateway`);
+			parts.push(`Saving ${savingsPercent}% with @betarouterco`);
 		}
 		parts.push("", "Calculate yours:");
 		return parts.join("\n");

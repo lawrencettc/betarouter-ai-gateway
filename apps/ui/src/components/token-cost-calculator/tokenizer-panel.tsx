@@ -195,7 +195,7 @@ export function TokenizerPanel() {
 			"",
 			`That's a ${spreadPct}% swing for the exact same ${formatInt(requests)} request${requests === 1 ? "" : "s"}.`,
 			"",
-			"Count yours free with @llmgateway:",
+			"Count yours free with @betarouterco:",
 		];
 		return lines.join("\n");
 	}, [hasInput, cheapest, priciest, inputTokens, requests, spreadPct]);

@@ -155,12 +155,12 @@ const nextConfig: NextConfig = {
 			},
 			{
 				source: "/twitter",
-				destination: "https://twitter.com/llmgateway",
+				destination: "https://twitter.com/betarouterco",
 				permanent: true,
 			},
 			{
 				source: "/x",
-				destination: "https://x.com/llmgateway",
+				destination: "https://x.com/betarouterco",
 				permanent: true,
 			},
 			{

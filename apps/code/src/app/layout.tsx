@@ -67,7 +67,7 @@ export const metadata: Metadata = {
 		description:
 			"One subscription, every coding model. Fixed-price dev plans for Claude Code, Cursor, and 200+ models.",
 		images: ["/opengraph.png?v=2"],
-		creator: "@betarouter",
+		creator: "@betarouterco",
 	},
 };
 

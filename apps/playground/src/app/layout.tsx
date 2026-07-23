@@ -67,7 +67,7 @@ export const metadata: Metadata = {
 		description:
 			"Test and compare 200+ AI models from one account. Chat, generate images and videos, and run multi-model group chats — pay-as-you-go.",
 		images: ["/opengraph.png?v=2"],
-		creator: "@betarouter",
+		creator: "@betarouterco",
 	},
 };
 
