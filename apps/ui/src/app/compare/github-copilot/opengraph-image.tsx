@@ -48,190 +48,185 @@ const BrandIcon = () => (
 
 export default async function CompareGitHubCopilotOgImage() {
 	return new ImageResponse(
-		(
+		<div
+			style={{
+				width: "100%",
+				height: "100%",
+				display: "flex",
+				flexDirection: "column",
+				justifyContent: "space-between",
+				alignItems: "stretch",
+				background: "#000000",
+				color: "white",
+				fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+				padding: 60,
+				boxSizing: "border-box",
+			}}
+		>
+			{/* Header with logo */}
 			<div
 				style={{
-					width: "100%",
-					height: "100%",
 					display: "flex",
-					flexDirection: "column",
-					justifyContent: "space-between",
-					alignItems: "stretch",
-					background: "#000000",
-					color: "white",
-					fontFamily:
-						"system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-					padding: 60,
-					boxSizing: "border-box",
+					flexDirection: "row",
+					alignItems: "center",
+					gap: 16,
 				}}
 			>
-				{/* Header with logo */}
+				<svg
+					fill="none"
+					xmlns="http://www.w3.org/2000/svg"
+					viewBox="0 0 72 72"
+					width={48}
+					height={48}
+				>
+					<path
+						d="M14 20 L34 36 L14 52"
+						stroke="#e5e2e1"
+						strokeWidth={8}
+						strokeLinecap="round"
+						strokeLinejoin="round"
+					/>
+					<path
+						d="M38 20 L58 36 L38 52"
+						stroke="#08A84E"
+						strokeWidth={8}
+						strokeLinecap="round"
+						strokeLinejoin="round"
+					/>
+				</svg>
 				<div
 					style={{
 						display: "flex",
 						flexDirection: "row",
 						alignItems: "center",
-						gap: 16,
+						gap: 8,
+						fontSize: 24,
+						color: "#9CA3AF",
 					}}
 				>
-					<svg
-						fill="none"
-						xmlns="http://www.w3.org/2000/svg"
-						viewBox="0 0 72 72"
-						width={48}
-						height={48}
-					>
-						<path
-							d="M14 20 L34 36 L14 52"
-							stroke="#e5e2e1"
-							strokeWidth={8}
-							strokeLinecap="round"
-							strokeLinejoin="round"
-						/>
-						<path
-							d="M38 20 L58 36 L38 52"
-							stroke="#08A84E"
-							strokeWidth={8}
-							strokeLinecap="round"
-							strokeLinejoin="round"
-						/>
-					</svg>
+					<span style={{ color: "#ffffff", fontWeight: 600 }}>betarouter</span>
+					<span style={{ opacity: 0.6 }}>•</span>
+					<span>Comparison</span>
+				</div>
+			</div>
+
+			{/* Main content */}
+			<div
+				style={{
+					display: "flex",
+					flexDirection: "column",
+					alignItems: "center",
+					justifyContent: "center",
+					flex: 1,
+					gap: 48,
+				}}
+			>
+				{/* Comparison icons */}
+				<div
+					style={{
+						display: "flex",
+						flexDirection: "row",
+						alignItems: "center",
+						gap: 32,
+					}}
+				>
+					{/* betarouter icon */}
 					<div
 						style={{
+							width: 120,
+							height: 120,
+							borderRadius: 20,
+							backgroundColor: "#1a1a1a",
+							border: "2px solid rgba(59,130,246,0.5)",
 							display: "flex",
-							flexDirection: "row",
 							alignItems: "center",
-							gap: 8,
-							fontSize: 24,
-							color: "#9CA3AF",
+							justifyContent: "center",
+							padding: 16,
 						}}
 					>
-						<span style={{ color: "#ffffff", fontWeight: 600 }}>
-							betarouter
-						</span>
-						<span style={{ opacity: 0.6 }}>•</span>
-						<span>Comparison</span>
+						<BrandIcon />
+					</div>
+
+					{/* VS */}
+					<span
+						style={{
+							fontSize: 40,
+							fontWeight: 700,
+							color: "#9CA3AF",
+							letterSpacing: "0.05em",
+						}}
+					>
+						VS
+					</span>
+
+					{/* GitHub Copilot icon */}
+					<div
+						style={{
+							width: 120,
+							height: 120,
+							borderRadius: 20,
+							backgroundColor: "#1a1a1a",
+							border: "2px solid rgba(255,255,255,0.1)",
+							display: "flex",
+							alignItems: "center",
+							justifyContent: "center",
+							padding: 16,
+						}}
+					>
+						<GitHubCopilotIcon />
 					</div>
 				</div>
 
-				{/* Main content */}
+				{/* Title and description */}
 				<div
 					style={{
 						display: "flex",
 						flexDirection: "column",
 						alignItems: "center",
-						justifyContent: "center",
-						flex: 1,
-						gap: 48,
+						gap: 24,
+						maxWidth: 1000,
 					}}
 				>
-					{/* Comparison icons */}
-					<div
+					<h1
 						style={{
-							display: "flex",
-							flexDirection: "row",
-							alignItems: "center",
-							gap: 32,
+							fontSize: 64,
+							fontWeight: 700,
+							margin: 0,
+							letterSpacing: "-0.03em",
+							textAlign: "center",
+							lineHeight: 1.1,
 						}}
 					>
-						{/* betarouter icon */}
-						<div
-							style={{
-								width: 120,
-								height: 120,
-								borderRadius: 20,
-								backgroundColor: "#1a1a1a",
-								border: "2px solid rgba(59,130,246,0.5)",
-								display: "flex",
-								alignItems: "center",
-								justifyContent: "center",
-								padding: 16,
-							}}
-						>
-							<BrandIcon />
-						</div>
-
-						{/* VS */}
-						<span
-							style={{
-								fontSize: 40,
-								fontWeight: 700,
-								color: "#9CA3AF",
-								letterSpacing: "0.05em",
-							}}
-						>
-							VS
-						</span>
-
-						{/* GitHub Copilot icon */}
-						<div
-							style={{
-								width: 120,
-								height: 120,
-								borderRadius: 20,
-								backgroundColor: "#1a1a1a",
-								border: "2px solid rgba(255,255,255,0.1)",
-								display: "flex",
-								alignItems: "center",
-								justifyContent: "center",
-								padding: 16,
-							}}
-						>
-							<GitHubCopilotIcon />
-						</div>
-					</div>
-
-					{/* Title and description */}
-					<div
+						betarouter vs GitHub Copilot
+					</h1>
+					<p
 						style={{
-							display: "flex",
-							flexDirection: "column",
-							alignItems: "center",
-							gap: 24,
-							maxWidth: 1000,
+							fontSize: 28,
+							color: "#9CA3AF",
+							margin: 0,
+							textAlign: "center",
+							lineHeight: 1.3,
 						}}
 					>
-						<h1
-							style={{
-								fontSize: 64,
-								fontWeight: 700,
-								margin: 0,
-								letterSpacing: "-0.03em",
-								textAlign: "center",
-								lineHeight: 1.1,
-							}}
-						>
-							betarouter vs GitHub Copilot
-						</h1>
-						<p
-							style={{
-								fontSize: 28,
-								color: "#9CA3AF",
-								margin: 0,
-								textAlign: "center",
-								lineHeight: 1.3,
-							}}
-						>
-							Zero token markup, hard budget caps, and 200+ models for any
-							coding agent
-						</p>
-					</div>
-				</div>
-
-				{/* Footer */}
-				<div
-					style={{
-						display: "flex",
-						flexDirection: "row",
-						justifyContent: "flex-end",
-						fontSize: 20,
-						color: "#9CA3AF",
-					}}
-				>
-					<span>betarouter.com</span>
+						Zero token markup, hard budget caps, and 200+ models for any coding
+						agent
+					</p>
 				</div>
 			</div>
-		),
+
+			{/* Footer */}
+			<div
+				style={{
+					display: "flex",
+					flexDirection: "row",
+					justifyContent: "flex-end",
+					fontSize: 20,
+					color: "#9CA3AF",
+				}}
+			>
+				<span>betarouter.com</span>
+			</div>
+		</div>,
 		size,
 	);
 }

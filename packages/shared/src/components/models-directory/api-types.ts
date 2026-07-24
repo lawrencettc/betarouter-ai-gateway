@@ -46,8 +46,7 @@ export interface ApiModelProviderMapping {
 	vision: boolean | null;
 	reasoning: boolean | null;
 	reasoningEfforts?:
-		| ("none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max")[]
-		| null;
+		("none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max")[] | null;
 	reasoningOutput: string | null;
 	reasoningMaxTokens: boolean | null;
 	tools: boolean | null;
