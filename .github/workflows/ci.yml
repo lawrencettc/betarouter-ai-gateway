@@ -25,22 +25,10 @@ jobs:
     uses: ./.github/workflows/run.yml
     secrets: inherit
     with:
-      cmd: pnpm build && pnpm lint
-
-  generate:
-    uses: ./.github/workflows/run.yml
-    secrets: inherit
-    with:
-      cmd: pnpm build && git diff --exit-code
-
-  build:
-    uses: ./.github/workflows/run.yml
-    secrets: inherit
-    with:
-      cmd: pnpm build && pnpm run setup && bash .github/start.sh
+      cmd: pnpm build && pnpm lint && git diff --exit-code
 
   test:
     uses: ./.github/workflows/run.yml
     secrets: inherit
     with:
-      cmd: pnpm build && pnpm run setup && pnpm test:unit
+      cmd: pnpm build && pnpm run setup && pnpm test:unit && bash .github/start.sh

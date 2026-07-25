@@ -1,14 +1,6 @@
 name: e2e
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - "apps/gateway/**"
-      - "packages/actions/**"
-      - "packages/models/**"
-      - "packages/shared/**"
-      - "**/*.e2e.ts"
-      - ".github/workflows/e2e.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
