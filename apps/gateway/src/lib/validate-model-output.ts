@@ -8,12 +8,7 @@ import type { ModelDefinition } from "@betarouter/models";
  * single signal used to gate every route.
  */
 export type ModelOutput =
-	| "text"
-	| "image"
-	| "video"
-	| "embedding"
-	| "audio"
-	| "ocr";
+	"text" | "image" | "video" | "embedding" | "audio" | "ocr";
 
 const OUTPUT_ENDPOINT: Record<
 	ModelOutput,

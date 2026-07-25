@@ -1471,6 +1471,13 @@
       "when": 1784700129164,
       "tag": "1784700129_normal_lady_deathstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 210,
+      "version": "8",
+      "when": 1784934282664,
+      "tag": "1784934282_special_invisible_woman",
+      "breakpoints": true
     }
   ]
 }

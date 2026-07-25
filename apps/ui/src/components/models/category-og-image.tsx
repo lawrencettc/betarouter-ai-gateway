@@ -261,25 +261,23 @@ export async function generateCategoryOgImage(categoryKey: string) {
 	const config = categoryConfigs[categoryKey];
 	if (!config) {
 		return new ImageResponse(
-			(
-				<div
-					style={{
-						width: "100%",
-						height: "100%",
-						display: "flex",
-						alignItems: "center",
-						justifyContent: "center",
-						background: "#000000",
-						color: "white",
-						fontSize: 48,
-						fontWeight: 700,
-						fontFamily:
-							"system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-					}}
-				>
-					betarouter
-				</div>
-			),
+			<div
+				style={{
+					width: "100%",
+					height: "100%",
+					display: "flex",
+					alignItems: "center",
+					justifyContent: "center",
+					background: "#000000",
+					color: "white",
+					fontSize: 48,
+					fontWeight: 700,
+					fontFamily:
+						"system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+				}}
+			>
+				betarouter
+			</div>,
 			ogSize,
 		);
 	}
@@ -287,192 +285,109 @@ export async function generateCategoryOgImage(categoryKey: string) {
 	const modelCount = await getCategoryModelCount(categoryKey, config);
 
 	return new ImageResponse(
-		(
+		<div
+			style={{
+				width: "100%",
+				height: "100%",
+				display: "flex",
+				flexDirection: "row",
+				background: "#000000",
+				color: "white",
+				fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+				overflow: "hidden",
+			}}
+		>
+			{/* Left accent stripe */}
 			<div
 				style={{
-					width: "100%",
+					width: 8,
 					height: "100%",
+					backgroundColor: config.accentColor,
 					display: "flex",
-					flexDirection: "row",
-					background: "#000000",
-					color: "white",
-					fontFamily:
-						"system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-					overflow: "hidden",
+				}}
+			/>
+
+			{/* Main content area */}
+			<div
+				style={{
+					flex: 1,
+					display: "flex",
+					flexDirection: "column",
+					justifyContent: "space-between",
+					padding: "56px 56px 56px 48px",
 				}}
 			>
-				{/* Left accent stripe */}
+				{/* Top: Logo bar */}
 				<div
 					style={{
-						width: 8,
-						height: "100%",
-						backgroundColor: config.accentColor,
 						display: "flex",
-					}}
-				/>
-
-				{/* Main content area */}
-				<div
-					style={{
-						flex: 1,
-						display: "flex",
-						flexDirection: "column",
+						flexDirection: "row",
+						alignItems: "center",
 						justifyContent: "space-between",
-						padding: "56px 56px 56px 48px",
 					}}
 				>
-					{/* Top: Logo bar */}
 					<div
 						style={{
 							display: "flex",
 							flexDirection: "row",
 							alignItems: "center",
-							justifyContent: "space-between",
+							gap: 14,
 						}}
 					>
-						<div
-							style={{
-								display: "flex",
-								flexDirection: "row",
-								alignItems: "center",
-								gap: 14,
-							}}
+						<svg
+							fill="none"
+							xmlns="http://www.w3.org/2000/svg"
+							viewBox="0 0 72 72"
+							width={36}
+							height={36}
 						>
-							<svg
-								fill="none"
-								xmlns="http://www.w3.org/2000/svg"
-								viewBox="0 0 72 72"
-								width={36}
-								height={36}
-							>
-								<path
-									d="M14 20 L34 36 L14 52"
-									stroke="#e5e2e1"
-									strokeWidth={8}
-									strokeLinecap="round"
-									strokeLinejoin="round"
-								/>
-								<path
-									d="M38 20 L58 36 L38 52"
-									stroke="#08A84E"
-									strokeWidth={8}
-									strokeLinecap="round"
-									strokeLinejoin="round"
-								/>
-							</svg>
-							<span
-								style={{
-									fontSize: 22,
-									fontWeight: 600,
-									color: "#9CA3AF",
-									letterSpacing: "0.02em",
-								}}
-							>
-								betarouter
-							</span>
-						</div>
-
+							<path
+								d="M14 20 L34 36 L14 52"
+								stroke="#e5e2e1"
+								strokeWidth={8}
+								strokeLinecap="round"
+								strokeLinejoin="round"
+							/>
+							<path
+								d="M38 20 L58 36 L38 52"
+								stroke="#08A84E"
+								strokeWidth={8}
+								strokeLinecap="round"
+								strokeLinejoin="round"
+							/>
+						</svg>
 						<span
 							style={{
-								fontSize: 18,
-								color: "#6B7280",
-								letterSpacing: "0.05em",
+								fontSize: 22,
+								fontWeight: 600,
+								color: "#9CA3AF",
+								letterSpacing: "0.02em",
 							}}
 						>
-							betarouter.com
+							betarouter
 						</span>
 					</div>
 
-					{/* Middle: Main content */}
-					<div
+					<span
 						style={{
-							display: "flex",
-							flexDirection: "column",
-							gap: 32,
+							fontSize: 18,
+							color: "#6B7280",
+							letterSpacing: "0.05em",
 						}}
 					>
-						{/* Category icon + label */}
-						<div
-							style={{
-								display: "flex",
-								flexDirection: "row",
-								alignItems: "center",
-								gap: 16,
-							}}
-						>
-							<div
-								style={{
-									width: 56,
-									height: 56,
-									borderRadius: 14,
-									backgroundColor: config.accentColorDim,
-									border: `2px solid ${config.accentColor}`,
-									display: "flex",
-									alignItems: "center",
-									justifyContent: "center",
-								}}
-							>
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									width={28}
-									height={28}
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke={config.accentColor}
-									strokeWidth={2}
-									strokeLinecap="round"
-									strokeLinejoin="round"
-								>
-									<path d={config.iconSvgPath} />
-								</svg>
-							</div>
-							<span
-								style={{
-									fontSize: 20,
-									fontWeight: 600,
-									color: config.accentColor,
-									textTransform: "uppercase",
-									letterSpacing: "0.12em",
-								}}
-							>
-								Models
-							</span>
-						</div>
+						betarouter.com
+					</span>
+				</div>
 
-						{/* Title */}
-						<div
-							style={{
-								display: "flex",
-								flexDirection: "column",
-								gap: 16,
-							}}
-						>
-							<h1
-								style={{
-									fontSize: 82,
-									fontWeight: 700,
-									margin: 0,
-									letterSpacing: "-0.03em",
-									lineHeight: 1,
-									color: "#ffffff",
-								}}
-							>
-								{config.title}
-							</h1>
-							<p
-								style={{
-									fontSize: 28,
-									margin: 0,
-									color: "#9CA3AF",
-									lineHeight: 1.3,
-								}}
-							>
-								{config.subtitle}
-							</p>
-						</div>
-					</div>
-
-					{/* Bottom: Model count */}
+				{/* Middle: Main content */}
+				<div
+					style={{
+						display: "flex",
+						flexDirection: "column",
+						gap: 32,
+					}}
+				>
+					{/* Category icon + label */}
 					<div
 						style={{
 							display: "flex",
@@ -483,65 +398,145 @@ export async function generateCategoryOgImage(categoryKey: string) {
 					>
 						<div
 							style={{
+								width: 56,
+								height: 56,
+								borderRadius: 14,
+								backgroundColor: config.accentColorDim,
+								border: `2px solid ${config.accentColor}`,
 								display: "flex",
-								flexDirection: "row",
-								alignItems: "baseline",
-								gap: 10,
-								backgroundColor: "#0A0A0A",
-								border: "1px solid #1F2937",
-								borderRadius: 12,
-								padding: "12px 24px",
+								alignItems: "center",
+								justifyContent: "center",
 							}}
 						>
-							<span
-								style={{
-									fontSize: 36,
-									fontWeight: 700,
-									color: config.accentColor,
-									fontVariantNumeric: "tabular-nums",
-								}}
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width={28}
+								height={28}
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke={config.accentColor}
+								strokeWidth={2}
+								strokeLinecap="round"
+								strokeLinejoin="round"
 							>
-								{modelCount}
-							</span>
-							<span
-								style={{
-									fontSize: 20,
-									color: "#6B7280",
-									fontWeight: 500,
-								}}
-							>
-								{modelCount === 1 ? "model" : "models"} available
-							</span>
+								<path d={config.iconSvgPath} />
+							</svg>
 						</div>
+						<span
+							style={{
+								fontSize: 20,
+								fontWeight: 600,
+								color: config.accentColor,
+								textTransform: "uppercase",
+								letterSpacing: "0.12em",
+							}}
+						>
+							Models
+						</span>
+					</div>
+
+					{/* Title */}
+					<div
+						style={{
+							display: "flex",
+							flexDirection: "column",
+							gap: 16,
+						}}
+					>
+						<h1
+							style={{
+								fontSize: 82,
+								fontWeight: 700,
+								margin: 0,
+								letterSpacing: "-0.03em",
+								lineHeight: 1,
+								color: "#ffffff",
+							}}
+						>
+							{config.title}
+						</h1>
+						<p
+							style={{
+								fontSize: 28,
+								margin: 0,
+								color: "#9CA3AF",
+								lineHeight: 1.3,
+							}}
+						>
+							{config.subtitle}
+						</p>
 					</div>
 				</div>
 
-				{/* Right: Large decorative icon */}
+				{/* Bottom: Model count */}
 				<div
 					style={{
-						width: 300,
 						display: "flex",
+						flexDirection: "row",
 						alignItems: "center",
-						justifyContent: "center",
-						opacity: 0.06,
+						gap: 16,
 					}}
 				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width={240}
-						height={240}
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke={config.accentColor}
-						strokeWidth={1}
-						strokeLinecap="round"
-						strokeLinejoin="round"
+					<div
+						style={{
+							display: "flex",
+							flexDirection: "row",
+							alignItems: "baseline",
+							gap: 10,
+							backgroundColor: "#0A0A0A",
+							border: "1px solid #1F2937",
+							borderRadius: 12,
+							padding: "12px 24px",
+						}}
 					>
-						<path d={config.iconSvgPath} />
-					</svg>
+						<span
+							style={{
+								fontSize: 36,
+								fontWeight: 700,
+								color: config.accentColor,
+								fontVariantNumeric: "tabular-nums",
+							}}
+						>
+							{modelCount}
+						</span>
+						<span
+							style={{
+								fontSize: 20,
+								color: "#6B7280",
+								fontWeight: 500,
+							}}
+						>
+							{modelCount === 1 ? "model" : "models"} available
+						</span>
+					</div>
 				</div>
 			</div>
-		),
+
+			{/* Right: Large decorative icon */}
+			<div
+				style={{
+					width: 300,
+					display: "flex",
+					alignItems: "center",
+					justifyContent: "center",
+					opacity: 0.06,
+				}}
+			>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width={240}
+					height={240}
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke={config.accentColor}
+					strokeWidth={1}
+					strokeLinecap="round"
+					strokeLinejoin="round"
+				>
+					<path d={config.iconSvgPath} />
+				</svg>
+			</div>
+		</div>,
 		ogSize,
 	);
 }
