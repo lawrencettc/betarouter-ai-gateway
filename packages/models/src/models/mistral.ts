@@ -11,8 +11,8 @@ export const mistralModels = [
 			{
 				providerId: "mistral",
 				externalId: "mistral-large-latest",
-				inputPrice: "0.000004",
-				outputPrice: "0.000012",
+				inputPrice: "4e-6",
+				outputPrice: "12e-6",
 				requestPrice: "0",
 				contextSize: 128000,
 				maxOutput: undefined,
@@ -33,8 +33,8 @@ export const mistralModels = [
 			{
 				providerId: "mistral",
 				externalId: "pixtral-large-latest",
-				inputPrice: "0.000004",
-				outputPrice: "0.000012",
+				inputPrice: "4e-6",
+				outputPrice: "12e-6",
 				requestPrice: "0",
 				contextSize: 128000,
 				maxOutput: undefined,
