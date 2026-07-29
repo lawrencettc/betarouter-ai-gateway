@@ -55,7 +55,7 @@ export function SecurityEnterprise() {
 					<p className="text-lg text-muted-foreground leading-relaxed lg:pt-14">
 						Prompts, completions, and API keys flow through your gateway — so
 						the layer in the middle has to hold itself to a higher standard than
-						the integrations it replaces. BetaRouter provides encryption, access
+						the integrations it replaces. betarouter provides encryption, access
 						controls, and audit logs for day-to-day operations.
 					</p>
 				</div>
