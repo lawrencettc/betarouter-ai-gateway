@@ -373,23 +373,6 @@ For applications that prefer OAuth authentication, betarouter's MCP server imple
 - **Registration Endpoint:** `/oauth/register`
 - **Supported Flows:** Authorization Code, Client Credentials
 
-## Enabling Local Image Saving
-
-By default, `generate-nano-banana` returns images inline without writing to disk. To enable saving generated images to the server filesystem, the `UPLOAD_DIR` environment variable must be set on the **gateway host** at startup. This is a server-side setting — it cannot be configured from the client.
-
-This is only possible for **self-hosted** MCP deployments. Configure `UPLOAD_DIR` using your deployment method:
-
-- **Docker:** Pass `-e UPLOAD_DIR=/data/images` or add it to your `docker-compose.yml` environment section.
-- **systemd:** Add `Environment=UPLOAD_DIR=/data/images` to your service unit file.
-- **.env file:** Add `UPLOAD_DIR=/data/images` to the `.env` file loaded by your gateway process.
-
-<Callout type="warn">
-	The shared hosted endpoint (`api.betarouter.com`) does not support configuring
-	`UPLOAD_DIR`. On the hosted service, images are always returned inline — no
-	files are written to disk. To enable server-side image saving, you must
-	self-host the MCP server and set `UPLOAD_DIR` at startup.
-</Callout>
-
 ## Troubleshooting
 
 ### Connection Errors

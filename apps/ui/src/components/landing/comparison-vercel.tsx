@@ -8,25 +8,13 @@ import { Button } from "@/lib/components/button";
 
 const comparisonData = [
 	{
-		category: "Deployment & Open Source",
+		category: "Deployment",
 		features: [
 			{
 				title: "Managed cloud",
 				description: "Fully managed, production-ready hosted service",
 				llmgateway: true,
 				vercel: true,
-			},
-			{
-				title: "Self-host the platform",
-				description: "Run the entire stack on your own infrastructure",
-				llmgateway: "AGPLv3",
-				vercel: false,
-			},
-			{
-				title: "Open-source license",
-				description: "What ships under an open-source license",
-				llmgateway: "Full platform (AGPLv3)",
-				vercel: false,
 			},
 			{
 				title: "No ecosystem lock-in",
@@ -89,7 +77,7 @@ const comparisonData = [
 			{
 				title: "Free to start",
 				description: "Get going without a paid plan",
-				llmgateway: "Free self-host",
+				llmgateway: "Free with your own keys",
 				vercel: "Free tier (limited)",
 			},
 		],
@@ -166,8 +154,8 @@ export function ComparisonVercel() {
 						<div className="flex items-start gap-2">
 							<Check className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
 							<span className="text-foreground">
-								<strong>Fully open source</strong> — self-host the entire
-								platform, not just call a managed API
+								<strong>Real-time analytics</strong> for cost and latency on
+								every request
 							</span>
 						</div>
 						<div className="flex items-start gap-2">
@@ -203,11 +191,11 @@ export function ComparisonVercel() {
 									betarouter
 								</h3>
 								<p className="text-sm text-muted-foreground mb-2">
-									OPEN-SOURCE & PORTABLE
+									PORTABLE & PRODUCTION-READY
 								</p>
 								<p className="text-2xl font-bold text-primary">From $0</p>
 								<p className="text-xs text-muted-foreground mt-1">
-									Self-host free forever
+									BYOK free forever
 								</p>
 							</div>
 						</div>
@@ -270,7 +258,7 @@ export function ComparisonVercel() {
 						</Button>
 					</div>
 					<p className="text-sm text-muted-foreground mt-3">
-						No credit card required • Self-host option available • Enterprise
+						No credit card required • Bring your own keys for free • Enterprise
 						support included
 					</p>
 				</div>

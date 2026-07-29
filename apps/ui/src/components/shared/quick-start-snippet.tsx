@@ -14,9 +14,9 @@ export function QuickStartSection({
 	apiKey?: string;
 	onCopy?: () => void;
 }) {
-	const [activeTab, setActiveTab] = useState<
-		"curl" | "typescript" | "python" | "ai-sdk"
-	>("curl");
+	const [activeTab, setActiveTab] = useState<"curl" | "typescript" | "python">(
+		"curl",
+	);
 
 	const keyPlaceholder = apiKey ?? "YOUR_API_KEY";
 
@@ -58,26 +58,12 @@ response = client.chat.completions.create(
     extra_body={"free_models_only": True},
 )`;
 
-	const aiSdkExample = `import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
-import { generateText } from "ai";
-
-const llmgateway = createLLMGateway({
-  apiKey: "${keyPlaceholder}",
-});
-
-const { text } = await generateText({
-  model: llmgateway("auto"),
-  prompt: "Hello!",
-});`;
-
 	const code =
 		activeTab === "curl"
 			? curlExample
 			: activeTab === "typescript"
 				? tsExample
-				: activeTab === "python"
-					? pythonExample
-					: aiSdkExample;
+				: pythonExample;
 
 	function copyCode() {
 		void navigator.clipboard.writeText(code);
@@ -98,8 +84,7 @@ const { text } = await generateText({
 					</div>
 					<p className="text-sm text-muted-foreground">
 						Use your API key to make requests. betarouter is compatible with the
-						OpenAI SDK — just change the base URL — or use our dedicated AI SDK
-						provider.
+						OpenAI SDK — just change the base URL.
 					</p>
 					<div className="flex gap-2">
 						<Button
@@ -125,14 +110,6 @@ const { text } = await generateText({
 							type="button"
 						>
 							Python
-						</Button>
-						<Button
-							variant={activeTab === "ai-sdk" ? "default" : "outline"}
-							size="sm"
-							onClick={() => setActiveTab("ai-sdk")}
-							type="button"
-						>
-							AI SDK
 						</Button>
 					</div>
 					<div className="relative rounded-md border bg-muted/50">

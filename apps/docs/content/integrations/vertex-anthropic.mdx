@@ -12,7 +12,7 @@ Run Claude models (Sonnet, Opus, Haiku) on Google Cloud Vertex AI through betaro
 ## Prerequisites
 
 - A Google Cloud project with billing enabled
-- betarouter account or self-hosted instance
+- betarouter account
 
 ## Set up Google Cloud
 
@@ -124,20 +124,6 @@ Replace `YOUR_LLMGATEWAY_API_KEY` with your betarouter API key.
 
 </Step>
 </Steps>
-
-## Self-Host Configuration
-
-If you're self-hosting betarouter, configure the provider via environment variables instead of the dashboard:
-
-```bash
-LLM_VERTEX_ANTHROPIC_SERVICE_ACCOUNT_JSON={"type":"service_account","project_id":"YOUR_PROJECT_ID","private_key":"-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----\n","client_email":"vertex-ai-caller@YOUR_PROJECT_ID.iam.gserviceaccount.com","token_uri":"https://oauth2.googleapis.com/token"}
-LLM_VERTEX_ANTHROPIC_REGION=global
-```
-
-<Callout type="info">
-	The project ID is extracted automatically from the service account JSON — no
-	separate `LLM_VERTEX_ANTHROPIC_PROJECT` variable is needed.
-</Callout>
 
 ## How Token Refresh Works
 

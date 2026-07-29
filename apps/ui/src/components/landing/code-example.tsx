@@ -47,19 +47,6 @@ const response = await client.chat.completions.create({
 
 console.log(response.choices[0].message.content);`,
 	},
-	nextjs: {
-		label: "Next.js",
-		language: "typescript",
-		code: `import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
-import { generateText } from 'ai';
-
-const gateway = createLLMGateway({ apiKey });
-
-const { text } = await generateText({
-  model: gateway('openai/gpt-4o'),
-  prompt: 'Write a vegetarian lasagna recipe for 4 people.',
-});`,
-	},
 	python: {
 		label: "Python",
 		language: "python",
@@ -200,7 +187,7 @@ puts response.dig("choices", 0, "message", "content")
 };
 
 const bullets = [
-	"Works with OpenAI, Anthropic, and Vercel AI SDKs",
+	"Works with the official OpenAI and Anthropic SDKs",
 	"Change one line — your base URL",
 	"Every request tracked with cost, latency, and token usage",
 ];

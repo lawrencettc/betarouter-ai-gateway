@@ -27,13 +27,9 @@ export function PricingPlans() {
 			is_authenticated: isAuthenticated,
 		});
 
-		switch (planName) {
-			case "Self-Host":
-				router.push("https://docs.betarouter.com");
-				return;
-			case "Enterprise":
-				router.push("/enterprise");
-				return;
+		if (planName === "Enterprise") {
+			router.push("/enterprise");
+			return;
 		}
 
 		if (!isAuthenticated) {
@@ -44,21 +40,6 @@ export function PricingPlans() {
 	};
 
 	const plans = [
-		{
-			name: "Self-Host",
-			description: "Host on your own infrastructure",
-			price: "Free",
-			features: [
-				"100% free forever",
-				"Full control over your data",
-				"Host on your infrastructure",
-				"No usage limits",
-				"Community support",
-				"Regular updates",
-			],
-			cta: "View Documentation",
-			popular: false,
-		},
 		{
 			name: "Free",
 			description: "Full-featured plan for everyone",
@@ -111,7 +92,7 @@ export function PricingPlans() {
 					</p>
 				</div>
 
-				<div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+				<div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
 					{plans.map((plan, index) => (
 						<Card
 							key={index}

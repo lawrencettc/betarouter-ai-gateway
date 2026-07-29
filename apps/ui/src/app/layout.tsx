@@ -107,10 +107,7 @@ const organizationSchema = {
 	},
 	description:
 		"Route, manage, and analyze your LLM requests across multiple providers with a unified API interface.",
-	sameAs: [
-		"https://x.com/betarouterco",
-		"https://github.com/theopenco/llmgateway",
-	],
+	sameAs: ["https://x.com/betarouterco"],
 	contactPoint: {
 		"@type": "ContactPoint",
 		email: "contact@betarouter.com",

@@ -27,33 +27,21 @@ const pilotMilestones = [
 
 const plans = [
 	{
-		name: "Self-Hosted",
-		description: "Deploy on your infrastructure with complete control",
-		features: [
-			"Full admin dashboard included",
-			"Enterprise SSO integration",
-			"Provider configuration UI",
-			"Terraform modules for AWS, GCP, bare metal",
-			"White label gateway & chat playground",
-			"Prioritized feature requests",
-			"On-boarding assistance",
-			"Dedicated support channel",
-		],
-		cta: "Get In Touch",
-		highlighted: false,
-	},
-	{
 		name: "Enterprise Cloud",
 		description: "Fully managed with custom scaling and pricing",
 		features: [
-			"Everything in Self-Hosted",
 			"30-Day Production Pilot to start",
 			"Fully managed infrastructure",
+			"Enterprise SSO integration",
+			"White label gateway & chat playground",
 			"Custom rate limits",
 			"Volume-based pricing",
 			"Advanced monitoring & analytics",
 			"99.9% SLA guarantee",
 			"Priority incident response",
+			"Prioritized feature requests",
+			"On-boarding assistance",
+			"Dedicated support channel",
 		],
 		cta: "Contact Us",
 		highlighted: true,
@@ -73,9 +61,8 @@ export function PricingEnterprise() {
 						Enterprise pricing that scales with you
 					</h2>
 					<p className="text-lg text-muted-foreground text-balance leading-relaxed">
-						Choose between self-hosted control or fully managed convenience.
-						Both options include all enterprise features, and every plan starts
-						with the 30-Day Production Pilot.
+						Fully managed infrastructure with every enterprise feature included,
+						and every engagement starts with the 30-Day Production Pilot.
 					</p>
 				</div>
 				<div className="mx-auto mb-16 max-w-5xl">

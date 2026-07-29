@@ -17,12 +17,6 @@ const comparisonData = [
 				litellm: false,
 			},
 			{
-				title: "Self-hosting option",
-				description: "Deploy on your own infrastructure (See license)",
-				llmgateway: "Free for non-commercial use",
-				litellm: "Open source (MIT)",
-			},
-			{
 				title: "Auto-scaling",
 				description: "Automatic scaling based on traffic",
 				llmgateway: true,
@@ -217,7 +211,7 @@ export function ComparisonLiteLLM() {
 								</p>
 								<p className="text-2xl font-bold text-primary">From $0</p>
 								<p className="text-xs text-muted-foreground mt-1">
-									Self-host free forever
+									BYOK free forever
 								</p>
 							</div>
 						</div>
@@ -278,7 +272,7 @@ export function ComparisonLiteLLM() {
 						</Button>
 					</div>
 					<p className="text-sm text-muted-foreground mt-3">
-						No credit card required • Self-host option available • Enterprise
+						No credit card required • Bring your own keys for free • Enterprise
 						support included
 					</p>
 				</div>

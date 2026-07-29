@@ -1,10 +1,8 @@
-import { AdminDashboardEnterprise } from "@/components/enterprise/admin-dashboard";
 import { EnterpriseCapabilities } from "@/components/enterprise/capabilities";
 import { ContactFormEnterprise } from "@/components/enterprise/contact";
 import { FeaturesEnterprise } from "@/components/enterprise/features";
 import { HeroEnterprise } from "@/components/enterprise/hero";
 import { InfrastructureAsCodeEnterprise } from "@/components/enterprise/iac";
-import { OpenSourceEnterprise } from "@/components/enterprise/open-source";
 import { PricingEnterprise } from "@/components/enterprise/pricing";
 import { ProcurementEnterprise } from "@/components/enterprise/procurement";
 import { ProductShowcase } from "@/components/enterprise/product-showcase";
@@ -67,11 +65,9 @@ export default async function EnterprisePage() {
 			<UptimeVisualization />
 			<FeaturesEnterprise />
 			<ProductShowcase />
-			<AdminDashboardEnterprise />
 			<Testimonials />
 			<PricingEnterprise />
 			<InfrastructureAsCodeEnterprise />
-			<OpenSourceEnterprise />
 			<ProcurementEnterprise />
 			<ContactFormEnterprise />
 			<Footer />
