@@ -9,7 +9,7 @@ const bedrockFaqs: CompareFaqItem[] = [
 	{
 		question: "Is betarouter a good AWS Bedrock alternative?",
 		answer:
-			"Yes — if you want frontier models without committing to one cloud. betarouter puts 200+ models from 40+ providers behind a single OpenAI-compatible API, with automatic routing, failover, caching, and per-request cost analytics. It's fully open source (AGPLv3) and self-hostable, so nothing ties you to a hyperscaler.",
+			"Yes — if you want frontier models without committing to one cloud. betarouter puts 200+ models from 40+ providers behind a single OpenAI-compatible API, with automatic routing, failover, caching, and per-request cost analytics. Nothing ties you to a hyperscaler.",
 	},
 	{
 		question: "Can I keep using AWS Bedrock with betarouter?",
@@ -24,7 +24,7 @@ const bedrockFaqs: CompareFaqItem[] = [
 	{
 		question: "How does pricing compare to AWS Bedrock?",
 		answer:
-			"Bedrock bills model-provider rates through your AWS account. betarouter charges the same provider rates with a flat 5% platform fee on credits — or 0% when you bring your own provider keys, including AWS credentials. Self-hosting the open-source gateway is free.",
+			"Bedrock bills model-provider rates through your AWS account. betarouter charges the same provider rates with a flat 5% platform fee on credits — or 0% when you bring your own provider keys, including AWS credentials.",
 	},
 	{
 		question: "How hard is it to migrate from Bedrock to betarouter?",
@@ -41,10 +41,10 @@ export default function CompareBedrockPage() {
 					content={{
 						heading: "Looking Beyond AWS Bedrock?",
 						description:
-							"Bedrock gives you the models AWS hosts. betarouter gives you every major lab and cloud — including Bedrock itself — behind one open-source, OpenAI-compatible API with automatic routing and failover.",
+							"Bedrock gives you the models AWS hosts. betarouter gives you every major lab and cloud — including Bedrock itself — behind one OpenAI-compatible API with automatic routing and failover.",
 						badges: [
 							"Cloud-Neutral",
-							"Fully Open Source",
+							"Zero Token Markup",
 							"Cross-Cloud Failover",
 							"Bedrock Built In",
 						],

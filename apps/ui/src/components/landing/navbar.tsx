@@ -22,10 +22,8 @@ import {
 	Server,
 	Shield,
 	ShieldCheck,
-	Sparkles,
 	Wrench,
 	X,
-	Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { usePostHog } from "posthog-js/react";
@@ -330,24 +328,6 @@ export const Navbar = ({
 			icon: Bot,
 			gradient:
 				"hover:from-violet-500/20 hover:to-purple-600/30 hover:shadow-violet-500/10 group-hover/product:text-violet-500 dark:group-hover/product:text-violet-400",
-		},
-		{
-			title: "AI SDK Provider",
-			href: "https://github.com/theopenco/llmgateway-ai-sdk-provider",
-			description: "Use betarouter with Vercel's AI SDK.",
-			icon: Zap,
-			gradient:
-				"hover:from-amber-500/20 hover:to-orange-600/30 hover:shadow-amber-500/10 group-hover/product:text-amber-500 dark:group-hover/product:text-amber-400",
-			external: true,
-		},
-		{
-			title: "Agent Skills",
-			href: "https://github.com/theopenco/agent-skills",
-			description: "Skills for Claude Code and other AI agents.",
-			icon: Sparkles,
-			gradient:
-				"hover:from-pink-500/20 hover:to-rose-600/30 hover:shadow-pink-500/10 group-hover/product:text-pink-500 dark:group-hover/product:text-pink-400",
-			external: true,
 		},
 		{
 			title: "Templates",

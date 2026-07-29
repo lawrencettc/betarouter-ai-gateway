@@ -39,7 +39,7 @@ const comparisonData = [
 			{
 				title: "Free option",
 				description: "Use it without paying anything",
-				llmgateway: "Self-host free (AGPLv3)",
+				llmgateway: "Free with your own keys",
 				copilot: "2,000 completions/month",
 			},
 		],
@@ -118,12 +118,6 @@ const comparisonData = [
 				copilot: "Per-seat licensing",
 			},
 			{
-				title: "Self-hosting & data control",
-				description: "Run the whole platform on your infrastructure",
-				llmgateway: true,
-				copilot: false,
-			},
-			{
 				title: "SSO integration",
 				description: "Enterprise single sign-on support",
 				llmgateway: "Enterprise",
@@ -132,7 +126,7 @@ const comparisonData = [
 			{
 				title: "Vendor lock-in",
 				description: "How hard it is to leave",
-				llmgateway: "None — open source, standard API",
+				llmgateway: "None — standard OpenAI-compatible API",
 				copilot: "Tied to GitHub ecosystem",
 			},
 		],
@@ -211,11 +205,11 @@ export function ComparisonGitHubCopilot() {
 									betarouter
 								</h3>
 								<p className="text-sm text-muted-foreground mb-2">
-									OPEN AI GATEWAY
+									UNIFIED AI GATEWAY
 								</p>
 								<p className="text-2xl font-bold text-primary">From $0</p>
 								<p className="text-xs text-muted-foreground mt-1">
-									No token markup • self-host free
+									No token markup • BYOK free
 								</p>
 							</div>
 						</div>
@@ -290,7 +284,7 @@ export function ComparisonGitHubCopilot() {
 						</Button>
 					</div>
 					<p className="text-sm text-muted-foreground mt-3">
-						No credit card required • Self-host option available • Enterprise
+						No credit card required • Bring your own keys for free • Enterprise
 						support included
 					</p>
 				</div>

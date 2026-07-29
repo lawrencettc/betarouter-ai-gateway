@@ -22,12 +22,6 @@ const comparisonData = [
 				llmgateway: "Free — pay providers directly",
 				openrouter: "1M free reqs/mo, then 5% fee",
 			},
-			{
-				title: "Self-hosting option",
-				description: "Deploy on your infrastructure for free (See license)",
-				llmgateway: "Free for non-commercial use",
-				openrouter: false,
-			},
 		],
 	},
 	{
@@ -138,7 +132,8 @@ export function Comparison() {
 						<div className="flex items-start gap-2">
 							<Check className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
 							<span className="text-foreground">
-								<strong>Can be self hosted</strong> for complete control
+								<strong>Automatic failover</strong> across providers for maximum
+								uptime
 							</span>
 						</div>
 						<div className="flex items-start gap-2">
@@ -159,11 +154,11 @@ export function Comparison() {
 									betarouter
 								</h3>
 								<p className="text-sm text-muted-foreground mb-2">
-									OPEN & FLEXIBLE
+									TRANSPARENT & FLEXIBLE
 								</p>
 								<p className="text-2xl font-bold text-primary">From $0</p>
 								<p className="text-xs text-muted-foreground mt-1">
-									Self-host free forever
+									BYOK free forever
 								</p>
 							</div>
 						</div>
@@ -173,7 +168,7 @@ export function Comparison() {
 									OpenRouter
 								</h3>
 								<p className="text-sm text-muted-foreground mb-2">
-									CLOSED & 5.5% fee
+									5.5% platform fee
 								</p>
 								<p className="text-2xl font-bold text-foreground">From $0</p>
 								<p className="text-xs text-muted-foreground mt-1">
@@ -224,7 +219,7 @@ export function Comparison() {
 						</Button>
 					</div>
 					<p className="text-sm text-muted-foreground mt-3">
-						No credit card required • Self-host option available • Enterprise
+						No credit card required • Bring your own keys for free • Enterprise
 						support included
 					</p>
 				</div>

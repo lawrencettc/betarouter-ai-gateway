@@ -101,7 +101,7 @@ To solve the "cold start problem" where new or unused providers never get traffi
 - The system adapts to changing provider performance
 - You benefit from improved routing decisions over time
 
-The exploration rate is configurable per project through the routing configuration (`thresholds.explorationRate`), and self-hosted deployments can override it globally with the `EXPLORATION_RATE` environment variable (a number between `0` and `1`).
+The exploration rate is configurable per project through the routing configuration (`thresholds.explorationRate`).
 
 **Stable Provider Preference**:
 
@@ -118,12 +118,9 @@ Requests that are part of the epsilon-greedy exploration bypass this preference 
 The selection reason in routing metadata will show `stable-preferred` when a request was served by the stored preference rather than the top-scored provider at that moment.
 
 <Callout type="info">
-	Self-hosted deployments can tune this behavior with three environment
-	variables: `PREFERRED_PROVIDER_TTL` (preference lifetime in seconds, default
-	`3600`), `PREFERRED_PROVIDER_UPTIME_THRESHOLD` (hard-switch uptime floor,
-	default `85`), and `PREFERRED_PROVIDER_SCORE_MARGIN` (soft-switch score gap,
-	default `0.15`). On the **Enterprise plan**, these same values can be
-	customized per project from the dashboard — see [Per-Project Routing
+	On the **Enterprise plan**, the preference lifetime, hard-switch uptime floor,
+	and soft-switch score gap can be customized per project from the dashboard —
+	see [Per-Project Routing
 	Configuration](#per-project-routing-configuration-enterprise).
 </Callout>
 

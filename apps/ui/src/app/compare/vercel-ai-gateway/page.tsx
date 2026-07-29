@@ -9,12 +9,7 @@ const vercelFaqs: CompareFaqItem[] = [
 	{
 		question: "Is betarouter a good Vercel AI Gateway alternative?",
 		answer:
-			"Yes. Both pass provider token rates through with zero markup and offer automatic failover and caching. The difference is portability: betarouter is fully open source (AGPLv3) and self-hostable, and it isn't tied to a Vercel team account or deploy target.",
-	},
-	{
-		question: "Can I self-host betarouter? Vercel AI Gateway is managed-only.",
-		answer:
-			"Yes. The entire platform — gateway, dashboard, and worker — is AGPLv3 and runs on your own infrastructure with a single Docker image. Vercel AI Gateway is a managed cloud service with no self-host option.",
+			"Yes. Both pass provider token rates through with zero markup and offer automatic failover and caching. The difference is portability: betarouter isn't tied to a Vercel team account or deploy target, and works with any language or framework.",
 	},
 	{
 		question: "Does it work with the Vercel AI SDK?",
@@ -24,12 +19,12 @@ const vercelFaqs: CompareFaqItem[] = [
 	{
 		question: "How does pricing compare to Vercel AI Gateway?",
 		answer:
-			"Both charge no markup on tokens. On the managed tier betarouter adds a flat 5% platform fee on credits, or 0% when you bring your own provider keys. Self-hosting the AGPLv3 build is free, and there are no team-seat or governance add-ons gated behind a higher plan.",
+			"Both charge no markup on tokens. betarouter adds a flat 5% platform fee on credits, or 0% when you bring your own provider keys — and there are no team-seat or governance add-ons gated behind a higher plan.",
 	},
 	{
 		question: "What can betarouter do that Vercel AI Gateway doesn't?",
 		answer:
-			"Run on your own infrastructure under an open-source license, generate images and video through the same API, and use built-in guardrails (PII, prompt injection, secrets) without a paid add-on.",
+			"Generate images and video through the same API, use built-in guardrails (PII, prompt injection, secrets) without a paid add-on, and route through any provider — not just the ones on Vercel's list.",
 	},
 ];
 
@@ -39,14 +34,14 @@ export default function CompareVercelPage() {
 			<main>
 				<HeroCompare
 					content={{
-						heading: "The Open Vercel AI Gateway Alternative",
+						heading: "The Portable Vercel AI Gateway Alternative",
 						description:
-							"Compare betarouter's open-source, self-hostable platform — with zero token markup, image and video generation, and built-in guardrails — against Vercel AI Gateway's managed, AI SDK-native service.",
+							"Compare betarouter's portable platform — with zero token markup, image and video generation, and built-in guardrails — against Vercel AI Gateway's managed, AI SDK-native service.",
 						badges: [
-							"Fully Open Source",
-							"Self-Hostable",
 							"Zero Token Markup",
 							"No Lock-In",
+							"Image & Video Gen",
+							"Built-in Guardrails",
 						],
 						cta: {
 							primary: {
@@ -75,16 +70,16 @@ export default function CompareVercelPage() {
 
 export async function generateMetadata() {
 	return {
-		title: "betarouter vs Vercel AI Gateway — The Open Alternative",
+		title: "betarouter vs Vercel AI Gateway — The Alternative",
 		description:
-			"Compare open-source, self-hostable routing with zero token markup and guardrails vs Vercel AI Gateway's managed AI SDK service.",
+			"Compare portable routing with zero token markup and guardrails vs Vercel AI Gateway's managed AI SDK service.",
 		alternates: {
 			canonical: "/compare/vercel-ai-gateway",
 		},
 		openGraph: {
 			title: "betarouter vs Vercel AI Gateway — Feature Comparison",
 			description:
-				"Open-source, self-hostable platform with zero token markup vs Vercel AI Gateway's managed service.",
+				"Portable platform with zero token markup vs Vercel AI Gateway's managed service.",
 			type: "website",
 			url: "https://betarouter.com/compare/vercel-ai-gateway",
 		},
@@ -92,7 +87,7 @@ export async function generateMetadata() {
 			card: "summary_large_image",
 			title: "betarouter vs Vercel AI Gateway — Feature Comparison",
 			description:
-				"Open-source, self-hostable platform with zero token markup vs Vercel AI Gateway's managed service.",
+				"Portable platform with zero token markup vs Vercel AI Gateway's managed service.",
 		},
 	};
 }

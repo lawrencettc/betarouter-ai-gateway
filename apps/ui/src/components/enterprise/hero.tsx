@@ -68,9 +68,9 @@ export function HeroEnterprise({
 						Enterprise betarouter for mission-critical applications
 					</h1>
 					<p className="mb-10 text-lg text-muted-foreground text-balance sm:text-xl max-w-3xl mx-auto leading-relaxed">
-						Deploy a fully-managed or self-hosted LLM gateway with enterprise
-						SSO, white-labeling, and infrastructure-as-code support for your
-						cloud or bare metal infrastructure.
+						Deploy a fully-managed LLM gateway with enterprise SSO,
+						white-labeling, and infrastructure-as-code support for your cloud or
+						bare metal infrastructure.
 					</p>
 					<div className="flex flex-col sm:flex-row items-center justify-center gap-4">
 						<Button size="lg" className="w-full sm:w-auto" asChild>

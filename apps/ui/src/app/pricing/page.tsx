@@ -31,7 +31,7 @@ const pricingSchema = {
 	"@type": "Product",
 	name: "betarouter API",
 	description:
-		"Unified API for 200+ LLM models across 40+ providers. Pay per-token at provider rates with a flat 5% platform fee on credits, bring your own keys for free, or self-host under AGPLv3.",
+		"Unified API for 200+ LLM models across 40+ providers. Pay per-token at provider rates with a flat 5% platform fee on credits, or bring your own keys for free.",
 	brand: {
 		"@type": "Brand",
 		name: "betarouter",

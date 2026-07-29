@@ -19,12 +19,6 @@ const comparisonData = [
 				foundry: "Azure only",
 			},
 			{
-				title: "Open source & self-hostable",
-				description: "Run the entire platform on your own infrastructure",
-				llmgateway: "AGPLv3",
-				foundry: false,
-			},
-			{
 				title: "OpenAI-compatible API",
 				description: "One request format across every model",
 				llmgateway: true,
@@ -177,8 +171,8 @@ export function ComparisonAzureFoundry() {
 						<div className="flex items-start gap-2">
 							<Check className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
 							<span className="text-foreground">
-								<strong>Fully open source</strong> — self-host the entire
-								platform under AGPLv3
+								<strong>Real-time analytics</strong> for cost and latency on
+								every request
 							</span>
 						</div>
 						<div className="flex items-start gap-2">
@@ -200,11 +194,11 @@ export function ComparisonAzureFoundry() {
 									betarouter
 								</h3>
 								<p className="text-sm text-muted-foreground mb-2">
-									OPEN-SOURCE & CLOUD-NEUTRAL
+									CLOUD-NEUTRAL & PRODUCTION-READY
 								</p>
 								<p className="text-2xl font-bold text-primary">From $0</p>
 								<p className="text-xs text-muted-foreground mt-1">
-									Self-host free forever
+									BYOK free forever
 								</p>
 							</div>
 						</div>
@@ -288,7 +282,7 @@ export function ComparisonAzureFoundry() {
 						</Button>
 					</div>
 					<p className="text-sm text-muted-foreground mt-3">
-						No credit card required • Self-host option available • Enterprise
+						No credit card required • Bring your own keys for free • Enterprise
 						support included
 					</p>
 				</div>

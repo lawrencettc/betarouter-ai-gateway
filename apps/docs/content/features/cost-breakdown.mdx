@@ -10,10 +10,7 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 betarouter provides real-time cost information for each API request directly in the response's `usage` object. This allows you to track costs programmatically without needing to query the dashboard.
 
-<Callout type="info">
-	Cost breakdown is available for all users on both hosted and self-hosted
-	deployments.
-</Callout>
+<Callout type="info">Cost breakdown is available for all users.</Callout>
 
 ## Response Format
 
@@ -236,7 +233,3 @@ async function loggedRequest(model: string, messages: Message[]) {
 	return response;
 }
 ```
-
-## Self-Hosted Deployments
-
-If you're running a self-hosted betarouter deployment, cost breakdown is always included in API responses regardless of plan. This allows you to track internal costs and allocate them across teams or projects.

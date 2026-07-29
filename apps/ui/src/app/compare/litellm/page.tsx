@@ -9,22 +9,17 @@ const liteLlmFaqs: CompareFaqItem[] = [
 	{
 		question: "What's the difference between betarouter and LiteLLM?",
 		answer:
-			"LiteLLM is a self-hosted proxy you run and operate yourself. betarouter is a production-ready gateway with a managed hosted option, a dashboard, real-time analytics, and automatic provider routing and fallback — so there's no infrastructure to run unless you want to self-host.",
+			"LiteLLM is a self-hosted proxy you run and operate yourself. betarouter is a production-ready managed gateway with a dashboard, real-time analytics, and automatic provider routing and fallback — so there's no infrastructure for you to run.",
 	},
 	{
 		question: "Do I have to host it myself like LiteLLM?",
 		answer:
-			"No. You can use the fully managed gateway, or self-host the AGPLv3 build on your own infrastructure — the choice is yours.",
-	},
-	{
-		question: "Is betarouter open source?",
-		answer:
-			"Yes. The core gateway is AGPLv3 licensed and free to self-host forever, just like LiteLLM, while also offering a managed service.",
+			"No. betarouter is a fully managed gateway — sign up, grab an API key, and start routing. There is no proxy to deploy, patch, or scale.",
 	},
 	{
 		question: "How does pricing work compared to LiteLLM?",
 		answer:
-			"Managed usage is pay-as-you-go with a flat 5% platform fee on credits, or free when you bring your own provider keys. Self-hosting the AGPLv3 build is free.",
+			"Usage is pay-as-you-go with a flat 5% platform fee on credits, or free when you bring your own provider keys and pay providers directly.",
 	},
 	{
 		question: "Does it provide analytics and routing out of the box?",
@@ -34,7 +29,7 @@ const liteLlmFaqs: CompareFaqItem[] = [
 	{
 		question: "What are the best LiteLLM alternatives?",
 		answer:
-			"betarouter is the most complete LiteLLM alternative: open source, self-hostable, and available as a managed cloud with zero markup on your own keys. Other options teams evaluate include OpenRouter (managed, no self-hosting), Bifrost (self-hosted Go proxy), and Portkey (enterprise governance).",
+			"betarouter is the most complete LiteLLM alternative: a managed cloud gateway with zero markup on your own keys, built-in analytics, and automatic failover. Other options teams evaluate include OpenRouter (managed proxy), Bifrost (self-hosted Go proxy), and Portkey (enterprise governance).",
 	},
 ];
 

@@ -9,12 +9,7 @@ const openRouterFaqs: CompareFaqItem[] = [
 	{
 		question: "How is betarouter different from OpenRouter?",
 		answer:
-			"betarouter adds full self-hosting under an AGPLv3 license, deeper real-time cost and latency analytics for every request, free Bring Your Own Keys, and flexible enterprise add-ons. OpenRouter is a hosted proxy only and cannot be run on your own infrastructure.",
-	},
-	{
-		question: "Is betarouter open source and self-hostable?",
-		answer:
-			"Yes. The gateway is AGPLv3 licensed and can run entirely on your own infrastructure, free forever — or you can use the managed hosted version.",
+			"betarouter adds deeper real-time cost and latency analytics for every request, free Bring Your Own Keys, and flexible enterprise add-ons such as dedicated infrastructure and custom SLAs.",
 	},
 	{
 		question: "How does pricing compare to OpenRouter?",

@@ -105,12 +105,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 			priority: 0.8,
 		},
 		{
-			url: `${baseUrl}/open-source`,
-			lastModified: buildDate,
-			changeFrequency: "monthly",
-			priority: 0.8,
-		},
-		{
 			url: `${baseUrl}/integrations`,
 			lastModified: buildDate,
 			changeFrequency: "monthly",

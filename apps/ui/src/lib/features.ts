@@ -240,51 +240,6 @@ console.log(completion.choices[0].message.content);`,
 		],
 	},
 	{
-		id: "self-hosted",
-		slug: "self-hosted-or-cloud",
-		title: "Self-Hosted or Cloud",
-		subtitle: "Deploy anywhere",
-		description: "Deploy on your own infrastructure or use our hosted version.",
-		longDescription:
-			"betarouter offers flexible deployment options. Use our hosted cloud version for instant setup, or deploy on your own infrastructure for complete control. Both options provide the same features and performance.",
-		icon: null,
-		benefits: [
-			{
-				title: "Cloud Hosted",
-				description:
-					"Get started in minutes with our fully managed cloud service",
-			},
-			{
-				title: "Self-Hosted",
-				description: "Deploy on your infrastructure for complete control",
-			},
-			{
-				title: "Docker Support",
-				description: "Easy deployment with Docker and Docker Compose",
-			},
-			{
-				title: "Open Source",
-				description:
-					"Core features available under AGPLv3 license for transparency",
-			},
-		],
-		useCases: [
-			{
-				title: "Data Privacy",
-				description:
-					"Keep sensitive data on your own infrastructure with self-hosting",
-			},
-			{
-				title: "Compliance",
-				description: "Meet regulatory requirements with on-premise deployment",
-			},
-			{
-				title: "Fast Setup",
-				description: "Get started quickly with our cloud-hosted option",
-			},
-		],
-	},
-	{
 		id: "cost-analytics",
 		slug: "cost-aware-analytics",
 		title: "Cost-Aware Analytics",

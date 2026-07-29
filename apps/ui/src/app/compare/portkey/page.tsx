@@ -9,12 +9,7 @@ const portkeyFaqs: CompareFaqItem[] = [
 	{
 		question: "Is betarouter a good Portkey alternative?",
 		answer:
-			"Yes. betarouter is fully open source (AGPLv3) and self-hostable, with automatic provider routing and fallback, real-time cost and latency analytics, and transparent per-token pricing with no markup. Unlike Portkey, the entire gateway can run on your own infrastructure.",
-	},
-	{
-		question: "Is betarouter open source?",
-		answer:
-			"Yes — the gateway is licensed under AGPLv3 and free to self-host forever. Portkey's gateway is open source, but its broader LLMOps platform is a proprietary hosted product.",
+			"Yes. betarouter offers automatic provider routing and fallback, real-time cost and latency analytics, and transparent per-token pricing with no markup — all through one OpenAI-compatible endpoint.",
 	},
 	{
 		question: "How does pricing compare to Portkey?",
@@ -41,10 +36,10 @@ export default function ComparePortkeyPage() {
 					content={{
 						heading: "Looking for a Portkey Alternative?",
 						description:
-							"Compare betarouter's fully open-source platform, automatic provider routing, and transparent pricing against Portkey's gateway and LLMOps suite.",
+							"Compare betarouter's automatic provider routing, real-time analytics, and transparent pricing against Portkey's gateway and LLMOps suite.",
 						badges: [
-							"Fully Open Source",
 							"Automatic Routing",
+							"Real-time Analytics",
 							"Image & Video Gen",
 							"Transparent Pricing",
 						],
@@ -75,14 +70,14 @@ export default function ComparePortkeyPage() {
 
 export async function generateMetadata() {
 	return {
-		title: "betarouter vs Portkey — The Open Portkey Alternative",
+		title: "betarouter vs Portkey — The Portkey Alternative",
 		description:
-			"Compare open-source routing, image and video generation, and transparent pricing vs Portkey's gateway and LLMOps suite.",
+			"Compare automatic routing, image and video generation, and transparent pricing vs Portkey's gateway and LLMOps suite.",
 		alternates: { canonical: "/compare/portkey" },
 		openGraph: {
 			title: "betarouter vs Portkey — Feature Comparison",
 			description:
-				"Open-source routing and transparent pricing vs Portkey's gateway and LLMOps suite.",
+				"Automatic routing and transparent pricing vs Portkey's gateway and LLMOps suite.",
 			type: "website",
 			url: "https://betarouter.com/compare/portkey",
 		},
@@ -90,7 +85,7 @@ export async function generateMetadata() {
 			card: "summary_large_image",
 			title: "betarouter vs Portkey — Feature Comparison",
 			description:
-				"Open-source routing and transparent pricing vs Portkey's gateway and LLMOps suite.",
+				"Automatic routing and transparent pricing vs Portkey's gateway and LLMOps suite.",
 		},
 	};
 }

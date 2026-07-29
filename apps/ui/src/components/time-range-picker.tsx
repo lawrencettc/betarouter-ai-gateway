@@ -86,7 +86,7 @@ export function TimeRangePicker({
 							>
 								<p className="text-xs font-medium">Extended analytics</p>
 								<p className="text-xs text-muted-foreground">
-									Available on Enterprise or self-hosted
+									Available on Enterprise
 								</p>
 							</TooltipContent>
 						</Tooltip>
