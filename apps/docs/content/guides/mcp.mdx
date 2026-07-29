@@ -192,7 +192,7 @@ List all available image generation models.
     1. Log in to your [betarouter dashboard](https://betarouter.com/dashboard)
     2. Navigate to **API Keys** section
     3. Create a new API key and copy it
-    4. Set it as an environment variable: `export LLM_GATEWAY_API_KEY="your-api-key-here"`
+    4. Set it as an environment variable: `export BETA_GATEWAY_API_KEY="your-api-key-here"`
 
     </Step>
 
@@ -203,7 +203,7 @@ List all available image generation models.
 
     ```bash
     codex mcp add betarouter --url https://api.betarouter.com/mcp \
-      --bearer-token-env-var LLM_GATEWAY_API_KEY
+      --bearer-token-env-var BETA_GATEWAY_API_KEY
     ```
 
     <Callout type="info">
@@ -214,7 +214,7 @@ List all available image generation models.
       ```toml
       [mcp_servers.betarouter]
       url = "https://api.betarouter.com/mcp"
-      bearer_token_env_var = "LLM_GATEWAY_API_KEY"
+      bearer_token_env_var = "BETA_GATEWAY_API_KEY"
       ```
     </Callout>
 

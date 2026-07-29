@@ -9,7 +9,7 @@ import { Tabs, Tab } from "fumadocs-ui/components/tabs";
 
 Welcome to **betarouter**—a single drop‑in endpoint that lets you call today’s best large‑language models while keeping **your existing code** and development workflow intact.
 
-> **TL;DR** — Point your HTTP requests to `https://api.betarouter.com/v1/…`, supply your `LLM_GATEWAY_API_KEY`, and you’re done.
+> **TL;DR** — Point your HTTP requests to `https://api.betarouter.com/v1/…`, supply your `BETA_GATEWAY_API_KEY`, and you’re done.
 
 ---
 
@@ -20,7 +20,7 @@ Welcome to **betarouter**—a single drop‑in endpoint that lets you call today
 3. Export it in your shell (or a `.env` file):
 
 ```bash
-export LLM_GATEWAY_API_KEY="llmgtwy_XXXXXXXXXXXXXXXX"
+export BETA_GATEWAY_API_KEY="llmgtwy_XXXXXXXXXXXXXXXX"
 ```
 
 ---
@@ -45,7 +45,7 @@ export LLM_GATEWAY_API_KEY="llmgtwy_XXXXXXXXXXXXXXXX"
 ```bash
 curl -X POST https://api.betarouter.com/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -d '{
     "model": "gpt-4o",
     "messages": [
@@ -62,7 +62,7 @@ const response = await fetch("https://api.betarouter.com/v1/chat/completions", {
 	method: "POST",
 	headers: {
 		"Content-Type": "application/json",
-		Authorization: `Bearer ${process.env.LLM_GATEWAY_API_KEY}`,
+		Authorization: `Bearer ${process.env.BETA_GATEWAY_API_KEY}`,
 	},
 	body: JSON.stringify({
 		model: "gpt-4o",
@@ -97,7 +97,7 @@ function ChatComponent() {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
-						Authorization: `Bearer ${process.env.REACT_APP_LLM_GATEWAY_API_KEY}`,
+						Authorization: `Bearer ${process.env.REACT_APP_BETA_GATEWAY_API_KEY}`,
 					},
 					body: JSON.stringify({
 						model: "gpt-4o",
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
-				Authorization: `Bearer ${process.env.LLM_GATEWAY_API_KEY}`,
+				Authorization: `Bearer ${process.env.BETA_GATEWAY_API_KEY}`,
 			},
 			body: JSON.stringify({
 				model: "gpt-4o",
@@ -190,7 +190,7 @@ response = requests.post(
     'https://api.betarouter.com/v1/chat/completions',
     headers={
         'Content-Type': 'application/json',
-        'Authorization': f'Bearer {os.getenv("LLM_GATEWAY_API_KEY")}'
+        'Authorization': f'Bearer {os.getenv("BETA_GATEWAY_API_KEY")}'
     },
     json={
         'model': 'gpt-4o',
@@ -213,7 +213,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.URI;
 
-String apiKey = System.getenv("LLM_GATEWAY_API_KEY");
+String apiKey = System.getenv("BETA_GATEWAY_API_KEY");
 String requestBody = """
 {
   "model": "gpt-4o",
@@ -247,7 +247,7 @@ use std::env;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = Client::new();
-    let api_key = env::var("LLM_GATEWAY_API_KEY")?;
+    let api_key = env::var("BETA_GATEWAY_API_KEY")?;
 
     let response = client
         .post("https://api.betarouter.com/v1/chat/completions")
@@ -293,7 +293,7 @@ type Message struct {
 }
 
 func main() {
-    apiKey := os.Getenv("LLM_GATEWAY_API_KEY")
+    apiKey := os.Getenv("BETA_GATEWAY_API_KEY")
 
     requestBody := ChatRequest{
         Model:    "gpt-4o",
@@ -319,7 +319,7 @@ func main() {
 
 ```php
 <?php
-$apiKey = $_ENV['LLM_GATEWAY_API_KEY'];
+$apiKey = $_ENV['BETA_GATEWAY_API_KEY'];
 
 $data = [
     'model' => 'gpt-4o',
@@ -369,7 +369,7 @@ http.use_ssl = true
 
 request = Net::HTTP::Post.new(uri)
 request['Content-Type'] = 'application/json'
-request['Authorization'] = "Bearer #{ENV['LLM_GATEWAY_API_KEY']}"
+request['Authorization'] = "Bearer #{ENV['BETA_GATEWAY_API_KEY']}"
 
 request.body = {
   model: 'gpt-4o',
@@ -395,22 +395,12 @@ puts result['choices'][0]['message']['content']
 
 ## 3 · SDK integrations
 
-```ts title="ai-sdk.ts"
-import { llmgateway } from "@llmgateway/ai-sdk-provider";
-import { generateText } from "ai";
-
-const { text } = await generateText({
-	model: llmgateway("gpt-4o"),
-	prompt: "Write a vegetarian lasagna recipe for 4 people.",
-});
-```
-
 ```ts title="vercel-ai-sdk.ts"
 import { createOpenAI } from "@ai-sdk/openai";
 
 const llmgateway = createOpenAI({
 	baseURL: "https://api.betarouter.com/v1",
-	apiKey: process.env.LLM_GATEWAY_API_KEY!,
+	apiKey: process.env.BETA_GATEWAY_API_KEY!,
 });
 
 const completion = await llmgateway.chat({
@@ -426,7 +416,7 @@ import OpenAI from "openai";
 
 const openai = new OpenAI({
 	baseURL: "https://api.betarouter.com/v1",
-	apiKey: process.env.LLM_GATEWAY_API_KEY,
+	apiKey: process.env.BETA_GATEWAY_API_KEY,
 });
 
 const completion = await openai.chat.completions.create({

@@ -42,7 +42,7 @@ import OpenAI from "openai";
 
 const client = new OpenAI({
   baseURL: "https://api.betarouter.com/v1",
-  apiKey: process.env.LLM_GATEWAY_API_KEY,
+  apiKey: process.env.BETA_GATEWAY_API_KEY,
 });
 
 // The gateway routes to a fallback model if the primary is unavailable.

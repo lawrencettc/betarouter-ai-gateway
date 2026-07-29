@@ -105,10 +105,10 @@ const configExamples = {
   }
 }`,
 	codexCli: `codex mcp add betarouter --url https://api.betarouter.com/mcp \\
-  --bearer-token-env-var LLM_GATEWAY_API_KEY`,
+  --bearer-token-env-var BETA_GATEWAY_API_KEY`,
 	codex: `[mcp_servers.betarouter]
 url = "https://api.betarouter.com/mcp"
-bearer_token_env_var = "LLM_GATEWAY_API_KEY"`,
+bearer_token_env_var = "BETA_GATEWAY_API_KEY"`,
 	cursor: `{
   "mcpServers": {
     "betarouter": {
@@ -241,7 +241,7 @@ claude mcp add --transport http --scope user betarouter https://api.betarouter.c
 ### Codex
 \`\`\`bash
 codex mcp add betarouter --url https://api.betarouter.com/mcp \\
-  --bearer-token-env-var LLM_GATEWAY_API_KEY
+  --bearer-token-env-var BETA_GATEWAY_API_KEY
 \`\`\`
 
 ### Cursor (~/.cursor/mcp.json)
@@ -487,7 +487,7 @@ export function McpContent() {
 							<p className="text-sm text-muted-foreground mt-3">
 								Set{" "}
 								<code className="bg-muted px-1 rounded">
-									LLM_GATEWAY_API_KEY
+									BETA_GATEWAY_API_KEY
 								</code>{" "}
 								env var first, then run this command.
 							</p>

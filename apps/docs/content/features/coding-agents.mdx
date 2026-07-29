@@ -59,7 +59,7 @@ The most reliable way to identify your tool is to include the `x-source` header 
 ```bash
 curl -X POST https://api.betarouter.com/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "x-source: your-tool-name" \
   -d '{ "model": "claude-sonnet-4-5-20250514", "messages": [...] }'
 ```
@@ -73,7 +73,7 @@ If you cannot set custom headers, ensure your tool sends a recognizable `User-Ag
 ```bash
 curl -X POST https://api.betarouter.com/v1/chat/completions \
   -H "User-Agent: my-tool/1.0.0" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -d '{ "model": "claude-sonnet-4-5-20250514", "messages": [...] }'
 ```
 

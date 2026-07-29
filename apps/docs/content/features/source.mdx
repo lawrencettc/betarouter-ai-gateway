@@ -15,7 +15,7 @@ Include the `X-Source` header with your domain name in your requests:
 ```bash
 curl -X POST https://api.betarouter.com/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "X-Source: example.com" \
   -d '{
     "model": "gpt-4o",

@@ -55,11 +55,11 @@ Add any model from the [models page](https://betarouter.com/models) to the `mode
 Reference an env var instead of hardcoding your key:
 
 ```json
-"apiKey": "LLM_GATEWAY_API_KEY"
+"apiKey": "BETA_GATEWAY_API_KEY"
 ```
 
 ```bash
-export LLM_GATEWAY_API_KEY=llmgtwy_your_api_key_here
+export BETA_GATEWAY_API_KEY=llmgtwy_your_api_key_here
 ```
 
 ## Troubleshooting

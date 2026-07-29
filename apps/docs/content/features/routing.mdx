@@ -20,7 +20,7 @@ You can use any model name from our [models page](https://betarouter.com/models)
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/chat/completions" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-4o",
@@ -164,7 +164,7 @@ Because time-to-first-token is only measured for streaming requests, `routing: "
 ```bash
 # Always pick the cheapest healthy provider for this model
 curl -X POST "https://api.betarouter.com/v1/chat/completions" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "deepseek-v3.2",
@@ -176,7 +176,7 @@ curl -X POST "https://api.betarouter.com/v1/chat/completions" \
 ```bash
 # Always pick the highest-throughput healthy provider for this model
 curl -X POST "https://api.betarouter.com/v1/chat/completions" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "deepseek-v3.2",
@@ -210,7 +210,7 @@ For chat completions, the session key is resolved in priority order:
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/chat/completions" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -H "x-session-id: conversation-9f8e7d6c" \
   -d '{
@@ -255,7 +255,7 @@ To use a specific provider without any fallbacks, prefix the model name with the
 ```bash
 # Use OpenAI specifically
 curl -X POST "https://api.betarouter.com/v1/chat/completions" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "openai/gpt-4o",
@@ -264,7 +264,7 @@ curl -X POST "https://api.betarouter.com/v1/chat/completions" \
 
 # Use DeepSeek provider specifically
 curl -X POST "https://api.betarouter.com/v1/chat/completions" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "deepseek/deepseek-v3.2",
@@ -282,7 +282,7 @@ Some providers expose the same model in multiple regions. In that case, betarout
 ```bash
 # Let betarouter choose the best Alibaba region for DeepSeek V3.2
 curl -X POST "https://api.betarouter.com/v1/chat/completions" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "alibaba/deepseek-v3.2",
@@ -291,7 +291,7 @@ curl -X POST "https://api.betarouter.com/v1/chat/completions" \
 
 # Force a specific Alibaba region
 curl -X POST "https://api.betarouter.com/v1/chat/completions" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "alibaba/deepseek-v3.2:cn-beijing",
@@ -330,7 +330,7 @@ If you need to bypass this protection and always use the exact provider you spec
 ```bash
 # Force use of a specific provider even if it has low uptime
 curl -X POST "https://api.betarouter.com/v1/chat/completions" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -H "X-No-Fallback: true" \
   -d '{
@@ -479,7 +479,7 @@ The auto routing system currently:
 ```bash
 # Let betarouter choose the optimal model
 curl -X POST "https://api.betarouter.com/v1/chat/completions" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "auto",
@@ -494,7 +494,7 @@ When using auto routing, you can restrict the selection to only free models (mod
 ```bash
 # Auto route to free models only
 curl -X POST "https://api.betarouter.com/v1/chat/completions" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "auto",
@@ -522,7 +522,7 @@ Just specify the `reasoning_effort` value and only a model which supports reason
 ```bash
 # Auto route only to reasoning models
 curl -X POST "https://api.betarouter.com/v1/chat/completions" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "auto",
@@ -538,7 +538,7 @@ When using auto routing, you can exclude reasoning models from selection by sett
 ```bash
 # Auto route excluding reasoning models
 curl -X POST "https://api.betarouter.com/v1/chat/completions" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "auto",

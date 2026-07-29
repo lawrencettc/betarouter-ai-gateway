@@ -106,7 +106,7 @@ const comparisonData = [
 			{
 				title: "AI SDK integration",
 				description: "First-class Vercel AI SDK provider",
-				llmgateway: "@llmgateway/ai-sdk-provider",
+				llmgateway: "Via OpenAI-compatible provider",
 				vercel: "Default provider",
 			},
 			{

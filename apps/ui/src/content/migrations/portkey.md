@@ -19,7 +19,7 @@ Both services are OpenAI-compatible, so the core change is the base URL and drop
 + const baseURL = "https://api.betarouter.com/v1";
 
 - const apiKey = process.env.PORTKEY_API_KEY;
-+ const apiKey = process.env.LLM_GATEWAY_API_KEY;  // standard Bearer auth
++ const apiKey = process.env.BETA_GATEWAY_API_KEY;  // standard Bearer auth
 ```
 
 ## Why Teams Switch to betarouter
@@ -88,7 +88,7 @@ client = OpenAI(
 # After (betarouter) - no custom headers, no virtual key
 client = OpenAI(
     base_url="https://api.betarouter.com/v1",
-    api_key=os.environ["LLM_GATEWAY_API_KEY"],
+    api_key=os.environ["BETA_GATEWAY_API_KEY"],
 )
 
 response = client.chat.completions.create(
@@ -120,7 +120,7 @@ from openai import OpenAI
 
 client = OpenAI(
     base_url="https://api.betarouter.com/v1",
-    api_key=os.environ["LLM_GATEWAY_API_KEY"],
+    api_key=os.environ["BETA_GATEWAY_API_KEY"],
 )
 
 response = client.chat.completions.create(
@@ -149,7 +149,7 @@ const client = new OpenAI({
 // After (betarouter) - standard Bearer auth, no extra headers
 const betarouter = new OpenAI({
   baseURL: "https://api.betarouter.com/v1",
-  apiKey: process.env.LLM_GATEWAY_API_KEY,
+  apiKey: process.env.BETA_GATEWAY_API_KEY,
 });
 
 const completion = await betarouter.chat.completions.create({
@@ -173,7 +173,7 @@ curl https://api.portkey.ai/v1/chat/completions \
 
 # After (betarouter) - single Authorization header
 curl https://api.betarouter.com/v1/chat/completions \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-5.2",
@@ -198,7 +198,7 @@ from openai import OpenAI
 
 client = OpenAI(
     base_url="https://api.betarouter.com/v1",
-    api_key=os.environ["LLM_GATEWAY_API_KEY"],
+    api_key=os.environ["BETA_GATEWAY_API_KEY"],
 )
 
 stream = client.chat.completions.create(

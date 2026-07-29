@@ -30,7 +30,7 @@ To enable web search, add the `web_search` tool to your request:
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/chat/completions" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-5.2",
@@ -178,7 +178,7 @@ Web search works with streaming responses. Citations are included in the final c
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/chat/completions" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-5.2",

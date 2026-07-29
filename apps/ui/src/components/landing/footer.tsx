@@ -141,33 +141,6 @@ export default function Footer() {
 								</li>
 								<li>
 									<Link
-										href="/templates"
-										className="text-sm hover:underline underline-offset-4 hover:text-foreground"
-										prefetch
-									>
-										Templates
-									</Link>
-								</li>
-								<li>
-									<Link
-										href="/agents"
-										className="text-sm hover:underline underline-offset-4 hover:text-foreground"
-										prefetch
-									>
-										Agents
-									</Link>
-								</li>
-								<li>
-									<Link
-										href="/mcp"
-										className="text-sm hover:underline underline-offset-4 hover:text-foreground"
-										prefetch
-									>
-										MCP Server
-									</Link>
-								</li>
-								<li>
-									<Link
 										href="/use-cases"
 										className="text-sm hover:underline underline-offset-4 hover:text-foreground"
 										prefetch
@@ -191,15 +164,6 @@ export default function Footer() {
 										prefetch
 									>
 										Integrations
-									</Link>
-								</li>
-								<li>
-									<Link
-										href="/guides"
-										className="text-sm hover:underline underline-offset-4 hover:text-foreground"
-										prefetch
-									>
-										Guides
 									</Link>
 								</li>
 								<li>

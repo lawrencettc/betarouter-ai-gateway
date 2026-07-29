@@ -19,7 +19,7 @@ Add betarouter as a custom provider in your `~/.openclaw/openclaw.json`:
     "providers": {
       "betarouter": {
         "baseUrl": "https://api.betarouter.com/v1",
-        "apiKey": "${LLMGATEWAY_API_KEY}",
+        "apiKey": "${BETA_GATEWAY_API_KEY}",
         "api": "openai-completions",
         "models": [
           {
@@ -57,7 +57,7 @@ Add betarouter as a custom provider in your `~/.openclaw/openclaw.json`:
 Then set your API key:
 
 ```bash
-export LLMGATEWAY_API_KEY=llmgtwy_your_api_key_here
+export BETA_GATEWAY_API_KEY=llmgtwy_your_api_key_here
 ```
 
 ## Why Use betarouter with OpenClaw

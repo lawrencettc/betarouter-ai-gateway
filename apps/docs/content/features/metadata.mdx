@@ -17,7 +17,7 @@ You can include custom headers with the `X-LLMGateway-` prefix to send metadata 
 ```bash
 curl -X POST https://api.betarouter.com/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "X-LLMGateway-Country: US" \
   -H "X-LLMGateway-User-ID: 9403f741-a524-4b18-b1b2-dbb71cdff2a4" \
   -d '{
@@ -58,7 +58,7 @@ For a multi-tenant application, you might use metadata headers like this:
 ```bash
 curl -X POST https://api.betarouter.com/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "X-LLMGateway-Tenant-ID: acme-corp" \
   -H "X-LLMGateway-User-ID: user-12345" \
   -H "X-LLMGateway-App-Version: 2.1.4" \

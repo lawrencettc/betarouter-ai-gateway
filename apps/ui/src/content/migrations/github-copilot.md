@@ -68,7 +68,7 @@ Copilot code review now consumes AI Credits, and it can also consume GitHub Acti
 
 ```bash
 curl https://api.betarouter.com/v1/chat/completions \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "claude-opus-4-5-20251101",

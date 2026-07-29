@@ -47,7 +47,7 @@ Choose how your usage is billed. Both providers hit `https://api.betarouter.com/
 
 Select **"Log in with browser."** DevPass Code opens [betarouter.com/connect/cli](https://betarouter.com/connect/cli) and starts a local loopback server. Approve the request in the browser, and the API key is delivered straight back to your machine — nothing to copy or paste. Credentials are saved to `~/.local/share/devpass-code/auth.json`.
 
-Prefer to paste a key? Choose **"Paste an API key"** instead and use a key from your [dashboard](https://betarouter.com/dashboard), or set the `LLMGATEWAY_API_KEY` environment variable to skip the prompt entirely.
+Prefer to paste a key? Choose **"Paste an API key"** instead and use a key from your [dashboard](https://betarouter.com/dashboard), or set the `BETA_GATEWAY_API_KEY` environment variable to skip the prompt entirely.
 
 ### Step 4: Start coding
 
@@ -62,7 +62,7 @@ Every text model on the gateway shows up in the model picker, and switching is a
 ## Configuration
 
 - **Config file** — Place a `devpass-code.json` in your project (or global config directory) to customize models and behavior.
-- **`LLMGATEWAY_API_KEY`** — Provide your betarouter API key without running the login flow.
+- **`BETA_GATEWAY_API_KEY`** — Provide your betarouter API key without running the login flow.
 - **`DEVPASS_APP_URL`** — Override the app URL used for browser login (defaults to `https://betarouter.com`).
 
 ## Why Use DevPass Code

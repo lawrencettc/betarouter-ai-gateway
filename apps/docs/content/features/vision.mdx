@@ -22,7 +22,7 @@ You can provide any publicly accessible HTTPS URL pointing to an image:
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/chat/completions" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-4o",
@@ -52,7 +52,7 @@ You can also provide images as base64-encoded data URIs:
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/chat/completions" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-4o",
@@ -89,7 +89,7 @@ You can include multiple images in a single request:
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/chat/completions" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-4o",
@@ -128,7 +128,7 @@ curl -X POST "https://api.betarouter.com/v1/chat/completions" \
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/chat/completions" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-4o",

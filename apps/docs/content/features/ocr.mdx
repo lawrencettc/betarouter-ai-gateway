@@ -26,7 +26,7 @@ For the full request and response schema, see the
 Authenticate with your betarouter API key:
 
 ```bash
--H "Authorization: Bearer $LLM_GATEWAY_API_KEY"
+-H "Authorization: Bearer $BETA_GATEWAY_API_KEY"
 ```
 
 The current model is `mistral-ocr-latest`, billed at **$4 per 1,000 pages**
@@ -57,7 +57,7 @@ optional `pages` field to restrict (and cap the cost of) a request:
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/ocr" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "mistral-ocr-latest",
@@ -72,7 +72,7 @@ curl -X POST "https://api.betarouter.com/v1/ocr" \
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/ocr" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "mistral-ocr-latest",
@@ -88,7 +88,7 @@ curl -X POST "https://api.betarouter.com/v1/ocr" \
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/ocr" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "mistral-ocr-latest",
@@ -105,7 +105,7 @@ curl -X POST "https://api.betarouter.com/v1/ocr" \
 BASE64_PDF=$(base64 -i invoice.pdf)
 
 curl -X POST "https://api.betarouter.com/v1/ocr" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d "{
     \"model\": \"mistral-ocr-latest\",

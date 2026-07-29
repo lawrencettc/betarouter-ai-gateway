@@ -24,7 +24,7 @@ The gateway translates between provider-native request/response shapes (e.g. Goo
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/embeddings" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "text-embedding-3-small",
@@ -38,7 +38,7 @@ curl -X POST "https://api.betarouter.com/v1/embeddings" \
 import OpenAI from "openai";
 
 const client = new OpenAI({
-	apiKey: process.env.LLM_GATEWAY_API_KEY,
+	apiKey: process.env.BETA_GATEWAY_API_KEY,
 	baseURL: "https://api.betarouter.com/v1",
 });
 

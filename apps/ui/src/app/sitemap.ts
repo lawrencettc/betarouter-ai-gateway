@@ -141,12 +141,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 			priority: 0.8,
 		},
 		{
-			url: `${baseUrl}/ship`,
-			lastModified: buildDate,
-			changeFrequency: "monthly",
-			priority: 0.7,
-		},
-		{
 			url: `${baseUrl}/token-cost-calculator`,
 			lastModified: buildDate,
 			changeFrequency: "weekly",
@@ -286,18 +280,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		},
 		{
 			url: `${baseUrl}/mcp`,
-			lastModified: buildDate,
-			changeFrequency: "monthly",
-			priority: 0.7,
-		},
-		{
-			url: `${baseUrl}/agents`,
-			lastModified: buildDate,
-			changeFrequency: "monthly",
-			priority: 0.7,
-		},
-		{
-			url: `${baseUrl}/templates`,
 			lastModified: buildDate,
 			changeFrequency: "monthly",
 			priority: 0.7,

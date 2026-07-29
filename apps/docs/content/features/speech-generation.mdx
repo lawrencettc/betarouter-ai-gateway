@@ -56,7 +56,7 @@ Browse all speech generation models, with up-to-date pricing, on the
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/audio/speech" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gemini-2.5-flash-preview-tts",
@@ -76,7 +76,7 @@ import OpenAI from "openai";
 import { writeFileSync } from "fs";
 
 const openai = new OpenAI({
-	apiKey: process.env.LLM_GATEWAY_API_KEY,
+	apiKey: process.env.BETA_GATEWAY_API_KEY,
 	baseURL: "https://api.betarouter.com/v1",
 });
 
@@ -125,7 +125,7 @@ page](https://betarouter.com/models?filters=1&audioGeneration=true) for rates):
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/audio/speech" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "eleven-multilingual-v2",
