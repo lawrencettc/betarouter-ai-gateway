@@ -9,7 +9,7 @@ const foundryFaqs: CompareFaqItem[] = [
 	{
 		question: "Is betarouter a good Azure AI Foundry alternative?",
 		answer:
-			"Yes — if you want frontier models without committing to one cloud. betarouter puts 200+ models from 40+ providers behind a single OpenAI-compatible API, with automatic routing, failover, caching, and per-request cost analytics. It's fully open source (AGPLv3) and self-hostable, and there are no deployments or TPM quotas to manage.",
+			"Yes — if you want frontier models without committing to one cloud. betarouter puts 200+ models from 40+ providers behind a single OpenAI-compatible API, with automatic routing, failover, caching, and per-request cost analytics. There are no deployments or TPM quotas to manage.",
 	},
 	{
 		question: "Can I keep using Azure with betarouter?",
@@ -24,7 +24,7 @@ const foundryFaqs: CompareFaqItem[] = [
 	{
 		question: "How does pricing compare to Azure AI Foundry?",
 		answer:
-			"Foundry bills model rates through your Azure subscription, with provisioned-throughput (PTU) reservations for guaranteed capacity. betarouter charges the same provider rates with a flat 5% platform fee on credits — or 0% when you bring your own provider keys, including Azure credentials. Self-hosting the open-source gateway is free.",
+			"Foundry bills model rates through your Azure subscription, with provisioned-throughput (PTU) reservations for guaranteed capacity. betarouter charges the same provider rates with a flat 5% platform fee on credits — or 0% when you bring your own provider keys, including Azure credentials.",
 	},
 	{
 		question: "How hard is it to migrate from Azure AI Foundry to betarouter?",
@@ -41,10 +41,10 @@ export default function CompareAzureFoundryPage() {
 					content={{
 						heading: "Looking Beyond Azure AI Foundry?",
 						description:
-							"Foundry gives you the models Azure hosts — after you create resources, deployments, and quotas. betarouter gives you every major lab and cloud — including Azure itself — behind one open-source, OpenAI-compatible API. No provisioning required.",
+							"Foundry gives you the models Azure hosts — after you create resources, deployments, and quotas. betarouter gives you every major lab and cloud — including Azure itself — behind one OpenAI-compatible API. No provisioning required.",
 						badges: [
 							"Cloud-Neutral",
-							"Fully Open Source",
+							"Zero Token Markup",
 							"No Deployments or Quotas",
 							"Azure Built In",
 						],

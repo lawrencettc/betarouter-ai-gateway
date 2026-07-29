@@ -317,9 +317,6 @@ export function ContactFormEnterprise() {
 														<SelectItem value="cloud">
 															Cloud (managed)
 														</SelectItem>
-														<SelectItem value="self_host">
-															Self-hosted
-														</SelectItem>
 														<SelectItem value="not_sure">
 															Not sure yet
 														</SelectItem>

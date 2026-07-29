@@ -16,9 +16,6 @@ const Uptime = dynamic(() =>
 const PricingStrip = dynamic(() =>
 	import("@/components/landing/pricing-strip").then((mod) => mod.PricingStrip),
 );
-const Testimonials = dynamic(() =>
-	import("@/components/landing/testimonials").then((mod) => mod.Testimonials),
-);
 const Graph = dynamic(() =>
 	import("@/components/landing/graph").then((mod) => mod.Graph),
 );
@@ -45,7 +42,6 @@ export default function Home() {
 			<Graph />
 			<CodeExample />
 			<Uptime />
-			<Testimonials />
 			<PricingStrip />
 			<Faq />
 			<EnterpriseCTA />

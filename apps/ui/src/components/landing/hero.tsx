@@ -82,17 +82,15 @@ const providerIcons: Record<string, React.ReactNode> = {
 export function Hero({
 	navbarOnly,
 	sticky = true,
-	children,
 	migrations = [],
 }: {
 	navbarOnly?: boolean;
 	sticky?: boolean;
-	children: React.ReactNode;
 	migrations?: MigrationData[];
 }) {
 	return (
 		<>
-			<Navbar sticky={sticky}>{children}</Navbar>
+			<Navbar sticky={sticky} />
 			{!navbarOnly && (
 				<main className="overflow-hidden" style={{ background: "#131313" }}>
 					<div
@@ -114,7 +112,7 @@ export function Hero({
 								<div className="text-center max-w-4xl mx-auto">
 									<div className="animate-hero-enter">
 										<h1 className="font-display text-balance text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground">
-											betarouter — One{" "}
+											One{" "}
 											<span
 												style={{
 													background: "#08A84E",
@@ -124,14 +122,13 @@ export function Hero({
 											>
 												API
 											</span>{" "}
-											for {MARKETING_STATS.providers} providers, including
-											OpenAI, Anthropic, and Google
+											for {MARKETING_STATS.providers} providers and{" "}
+											{MARKETING_STATS.models} models
 										</h1>
 										<p className="mt-4 md:mt-6 max-w-2xl mx-auto text-balance text-base md:text-lg text-muted-foreground">
-											Stop juggling API keys and provider dashboards. Route
-											requests across {MARKETING_STATS.models} models, track
-											costs in real-time, and switch providers without changing
-											your code.
+											Route every request with automatic failover, real-time
+											cost analytics, and no token markup. Switch providers
+											without changing a line of code.
 										</p>
 									</div>
 
@@ -147,7 +144,7 @@ export function Hero({
 													className="shadow-2xl shadow-blue-500/25 px-10 md:px-12 py-3 md:py-4"
 												>
 													<span className="flex items-center gap-3 text-center text-xl leading-none font-bold tracking-tight whitespace-pre-wrap text-white md:text-2xl">
-														<span>Get My API Key</span>
+														<span>Get your free API key</span>
 														<ArrowRight className="size-6 md:size-7 transition-transform group-hover:translate-x-1" />
 													</span>
 												</ShimmerButton>
@@ -211,7 +208,7 @@ export function Hero({
 								<div className="animate-hero-enter hero-enter-delay-2">
 									<div className="mx-auto mt-10 max-w-4xl px-6">
 										<p className="mb-4 text-center text-sm text-muted-foreground">
-											Switching from another provider?
+											Migrate in minutes from:
 										</p>
 										<div className="flex flex-wrap items-center justify-center gap-3">
 											{migrations.map((migration) => (

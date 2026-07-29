@@ -42,7 +42,7 @@ const screenshots = [
 		alt: "betarouter Documentation",
 		title: "Developer Documentation",
 		description:
-			"Comprehensive API reference, integration guides, and self-hosting documentation for your team.",
+			"Comprehensive API reference, integration guides, and deployment documentation for your team.",
 	},
 ];
 

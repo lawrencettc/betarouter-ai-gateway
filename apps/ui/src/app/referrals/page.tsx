@@ -115,10 +115,10 @@ const sellingPoints = [
 	},
 	{
 		icon: Globe,
-		title: "Self-Host for Free",
+		title: "Automatic Failover",
 		description:
-			"Open source under AGPLv3. Deploy on your own infrastructure for full data control, or use the managed cloud for instant setup.",
-		href: "/features/self-hosted-or-cloud",
+			"When a provider goes down, traffic reroutes to healthy providers automatically — your users never notice an outage.",
+		href: "/features/multi-provider-support",
 		accent: "text-cyan-500 dark:text-cyan-400",
 		accentBg: "bg-cyan-500/10",
 	},

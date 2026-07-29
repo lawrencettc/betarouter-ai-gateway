@@ -284,7 +284,7 @@ export default async function ModelUptimePage({ params }: PageProps) {
 								</p>
 								<p>
 									Use this page to verify SLA performance, debug regressions, or
-									pick a primary provider for a self-hosted deployment.
+									pick a preferred provider for your routing rules.
 								</p>
 							</CardContent>
 						</Card>
