@@ -14,7 +14,7 @@ const vercelFaqs: CompareFaqItem[] = [
 	{
 		question: "Does it work with the Vercel AI SDK?",
 		answer:
-			"Yes. betarouter ships a first-class AI SDK provider (`@llmgateway/ai-sdk-provider`), so you keep using `generateText` and `streamText` — just point them at betarouter instead of the default gateway.",
+			"Yes. betarouter is OpenAI-compatible, so it plugs straight into the AI SDK's OpenAI-compatible provider — you keep using `generateText` and `streamText`, just pointed at betarouter instead of the default gateway.",
 	},
 	{
 		question: "How does pricing compare to Vercel AI Gateway?",

@@ -85,7 +85,7 @@ Frame inputs interpolate a video between a starting frame and an optional ending
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/videos" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "seedance-2-0",
@@ -101,7 +101,7 @@ curl -X POST "https://api.betarouter.com/v1/videos" \
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/videos" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "kling-v3-0",
@@ -144,7 +144,7 @@ Reference images only (subjects / style):
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/videos" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "seedance-2-0",
@@ -162,7 +162,7 @@ Reference video only (motion / scene — let the clip drive the output):
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/videos" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "seedance-2-0",
@@ -177,7 +177,7 @@ All three reference types combined:
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/videos" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "seedance-2-0",
@@ -245,7 +245,7 @@ KLING (AtlasCloud):
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/videos" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "veo-3.1-generate-preview",
@@ -275,7 +275,7 @@ Example response:
 
 ```bash
 curl "https://api.betarouter.com/v1/videos/v_123" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY"
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY"
 ```
 
 Typical statuses:
@@ -301,7 +301,7 @@ Once the job is complete, stream the resulting video bytes from the content endp
 
 ```bash
 curl "https://api.betarouter.com/v1/videos/v_123/content" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   --output video.mp4
 ```
 
@@ -311,7 +311,7 @@ betarouter can notify your application when the job reaches a terminal state.
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/videos" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "veo-3.1-fast-generate-preview",

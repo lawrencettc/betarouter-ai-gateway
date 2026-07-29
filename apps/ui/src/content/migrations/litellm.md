@@ -18,7 +18,7 @@ Both services use OpenAI-compatible endpoints, so migration is a two-line change
 + const baseURL = "https://api.betarouter.com/v1";
 
 - const apiKey = process.env.LITELLM_API_KEY;
-+ const apiKey = process.env.LLM_GATEWAY_API_KEY;
++ const apiKey = process.env.BETA_GATEWAY_API_KEY;
 ```
 
 ## Why Teams Switch to betarouter
@@ -96,7 +96,7 @@ response = client.chat.completions.create(
 # After (betarouter) - model name can stay the same!
 client = OpenAI(
     base_url="https://api.betarouter.com/v1",
-    api_key=os.environ["LLM_GATEWAY_API_KEY"]
+    api_key=os.environ["BETA_GATEWAY_API_KEY"]
 )
 
 response = client.chat.completions.create(
@@ -123,7 +123,7 @@ response = litellm.completion(
     model="gpt-4",  # or "openai/gpt-4" to target a specific provider
     messages=[{"role": "user", "content": "Hello!"}],
     api_base="https://api.betarouter.com/v1",
-    api_key=os.environ["LLM_GATEWAY_API_KEY"]
+    api_key=os.environ["BETA_GATEWAY_API_KEY"]
 )
 ```
 
@@ -141,7 +141,7 @@ const client = new OpenAI({
 // After (betarouter) - same model name works
 const client = new OpenAI({
   baseURL: "https://api.betarouter.com/v1",
-  apiKey: process.env.LLM_GATEWAY_API_KEY,
+  apiKey: process.env.BETA_GATEWAY_API_KEY,
 });
 
 const completion = await client.chat.completions.create({
@@ -164,7 +164,7 @@ curl http://localhost:4000/v1/chat/completions \
 
 # After (betarouter) - same model name works
 curl https://api.betarouter.com/v1/chat/completions \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-4",
@@ -205,7 +205,7 @@ from openai import OpenAI
 
 client = OpenAI(
     base_url="https://api.betarouter.com/v1",
-    api_key=os.environ["LLM_GATEWAY_API_KEY"]
+    api_key=os.environ["BETA_GATEWAY_API_KEY"]
 )
 
 stream = client.chat.completions.create(
@@ -228,7 +228,7 @@ from openai import OpenAI
 
 client = OpenAI(
     base_url="https://api.betarouter.com/v1",
-    api_key=os.environ["LLM_GATEWAY_API_KEY"]
+    api_key=os.environ["BETA_GATEWAY_API_KEY"]
 )
 
 tools = [{

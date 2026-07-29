@@ -17,7 +17,7 @@ Change your base URL and API key:
 - const baseURL = "https://openrouter.ai/api/v1";
 - const apiKey = process.env.OPENROUTER_API_KEY;
 + const baseURL = "https://api.betarouter.com/v1";
-+ const apiKey = process.env.LLM_GATEWAY_API_KEY;
++ const apiKey = process.env.BETA_GATEWAY_API_KEY;
 ```
 
 ## Migration Steps
@@ -33,7 +33,7 @@ Sign up at [betarouter.com/signup](/signup) and create an API key from your dash
 # OPENROUTER_API_KEY=sk-or-...
 
 # Add betarouter credentials
-LLM_GATEWAY_API_KEY=llmgtwy_your_key_here
+BETA_GATEWAY_API_KEY=llmgtwy_your_key_here
 ```
 
 ### 3. Update Your Code
@@ -58,7 +58,7 @@ const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
 const response = await fetch("https://api.betarouter.com/v1/chat/completions", {
   method: "POST",
   headers: {
-    Authorization: `Bearer ${process.env.LLM_GATEWAY_API_KEY}`,
+    Authorization: `Bearer ${process.env.BETA_GATEWAY_API_KEY}`,
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
@@ -82,7 +82,7 @@ const client = new OpenAI({
 // After (betarouter)
 const client = new OpenAI({
   baseURL: "https://api.betarouter.com/v1",
-  apiKey: process.env.LLM_GATEWAY_API_KEY,
+  apiKey: process.env.BETA_GATEWAY_API_KEY,
 });
 
 // Usage remains the same
@@ -111,11 +111,13 @@ const { text } = await generateText({
   prompt: "Hello!",
 });
 
-// After (betarouter AI SDK Provider)
-import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
+// After (betarouter via the AI SDK's OpenAI-compatible provider)
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 
-const betarouter = createLLMGateway({
-  apiKey: process.env.LLMGATEWAY_API_KEY,
+const betarouter = createOpenAICompatible({
+  name: "betarouter",
+  baseURL: "https://api.betarouter.com/v1",
+  apiKey: process.env.BETA_GATEWAY_API_KEY,
 });
 
 const { text } = await generateText({

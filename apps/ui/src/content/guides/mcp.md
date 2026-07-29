@@ -46,9 +46,9 @@ Or add it manually to `~/.claude.json` (user scope) or `.mcp.json` in your proje
 ### Codex CLI
 
 ```bash
-export LLM_GATEWAY_API_KEY="your-api-key-here"
+export BETA_GATEWAY_API_KEY="your-api-key-here"
 codex mcp add betarouter --url https://api.betarouter.com/mcp \
-  --bearer-token-env-var LLM_GATEWAY_API_KEY
+  --bearer-token-env-var BETA_GATEWAY_API_KEY
 ```
 
 Or in `~/.codex/config.toml`:
@@ -56,7 +56,7 @@ Or in `~/.codex/config.toml`:
 ```toml
 [mcp_servers.betarouter]
 url = "https://api.betarouter.com/mcp"
-bearer_token_env_var = "LLM_GATEWAY_API_KEY"
+bearer_token_env_var = "BETA_GATEWAY_API_KEY"
 ```
 
 ### Cursor

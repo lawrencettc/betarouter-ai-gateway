@@ -27,7 +27,7 @@ To enable Response Healing, add `response-healing` to the `plugins` array in you
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/chat/completions" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-4o",
@@ -111,7 +111,7 @@ Request a structured response with automatic healing:
 const response = await fetch("https://api.betarouter.com/v1/chat/completions", {
 	method: "POST",
 	headers: {
-		Authorization: `Bearer ${process.env.LLM_GATEWAY_API_KEY}`,
+		Authorization: `Bearer ${process.env.BETA_GATEWAY_API_KEY}`,
 		"Content-Type": "application/json",
 	},
 	body: JSON.stringify({
@@ -141,7 +141,7 @@ For stricter validation, combine with `json_schema`:
 const response = await fetch("https://api.betarouter.com/v1/chat/completions", {
 	method: "POST",
 	headers: {
-		Authorization: `Bearer ${process.env.LLM_GATEWAY_API_KEY}`,
+		Authorization: `Bearer ${process.env.BETA_GATEWAY_API_KEY}`,
 		"Content-Type": "application/json",
 	},
 	body: JSON.stringify({
@@ -214,7 +214,7 @@ Combine Response Healing with clear instructions for best results:
 const response = await fetch("https://api.betarouter.com/v1/chat/completions", {
 	method: "POST",
 	headers: {
-		Authorization: `Bearer ${process.env.LLM_GATEWAY_API_KEY}`,
+		Authorization: `Bearer ${process.env.BETA_GATEWAY_API_KEY}`,
 		"Content-Type": "application/json",
 	},
 	body: JSON.stringify({

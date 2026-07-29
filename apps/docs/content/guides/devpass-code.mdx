@@ -75,7 +75,7 @@ Your credentials are saved to `~/.local/share/devpass-code/auth.json`. You're re
 	Prefer to paste a key? Choose **"Paste an API key"** during `devpass-code auth
 	login` and enter a key from your [betarouter
 	dashboard](https://betarouter.com/dashboard). You can also set the
-	`LLMGATEWAY_API_KEY` environment variable to skip the prompt entirely.
+	`BETA_GATEWAY_API_KEY` environment variable to skip the prompt entirely.
 </Callout>
 
 ## Providers
@@ -100,7 +100,7 @@ Once authenticated, start DevPass Code in any project directory and describe wha
 ## Configuration
 
 - **Config file** — Place a `devpass-code.json` in your project (or global config directory) to customize models and behavior.
-- **`LLMGATEWAY_API_KEY`** — Provide your betarouter API key without running the login flow.
+- **`BETA_GATEWAY_API_KEY`** — Provide your betarouter API key without running the login flow.
 - **`DEVPASS_APP_URL`** — Override the app URL used for browser login (defaults to `https://betarouter.com`).
 
 ## Why Use betarouter with DevPass Code

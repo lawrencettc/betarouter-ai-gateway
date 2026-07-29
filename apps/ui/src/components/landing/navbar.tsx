@@ -4,7 +4,6 @@ import {
 	Activity,
 	Blocks,
 	BookOpen,
-	Bot,
 	Boxes,
 	Building2,
 	Calculator,
@@ -19,10 +18,8 @@ import {
 	MessagesSquare,
 	Network,
 	ScrollText,
-	Server,
 	Shield,
 	ShieldCheck,
-	Wrench,
 	X,
 } from "lucide-react";
 import Link from "next/link";
@@ -221,8 +218,17 @@ export const Navbar = ({
 				"hover:from-violet-500/20 hover:to-purple-600/30 hover:shadow-violet-500/10 group-hover/product:text-violet-500 dark:group-hover/product:text-violet-400",
 		},
 		{
+			title: "Documentation",
+			href: config.docsUrl ?? "https://docs.betarouter.com",
+			description: "API reference, feature guides, and integration docs.",
+			icon: BookOpen,
+			gradient:
+				"hover:from-sky-500/20 hover:to-blue-600/30 hover:shadow-sky-500/10 group-hover/product:text-sky-500 dark:group-hover/product:text-sky-400",
+			external: true,
+		},
+		{
 			title: "Integrations",
-			href: "/guides",
+			href: "/integrations",
 			description:
 				"Connect seamlessly with popular frameworks, SDKs, and tools.",
 			icon: Blocks,
@@ -305,48 +311,6 @@ export const Navbar = ({
 		},
 	];
 
-	const aiLinks: Array<{
-		title: string;
-		href: string;
-		description: string;
-		icon: React.ElementType;
-		gradient: string;
-		external?: boolean;
-	}> = [
-		{
-			title: "MCP Server",
-			href: "/mcp",
-			description: `Connect AI assistants to ${MARKETING_STATS.models} LLMs via MCP protocol.`,
-			icon: Server,
-			gradient:
-				"hover:from-cyan-500/20 hover:to-blue-600/30 hover:shadow-cyan-500/10 group-hover/product:text-cyan-500 dark:group-hover/product:text-cyan-400",
-		},
-		{
-			title: "Agents",
-			href: "/agents",
-			description: "Pre-built AI agents with tool calling capabilities.",
-			icon: Bot,
-			gradient:
-				"hover:from-violet-500/20 hover:to-purple-600/30 hover:shadow-violet-500/10 group-hover/product:text-violet-500 dark:group-hover/product:text-violet-400",
-		},
-		{
-			title: "Templates",
-			href: "/templates",
-			description: "Production-ready templates for AI applications.",
-			icon: Wrench,
-			gradient:
-				"hover:from-emerald-500/20 hover:to-teal-600/30 hover:shadow-emerald-500/10 group-hover/product:text-emerald-500 dark:group-hover/product:text-emerald-400",
-		},
-		{
-			title: "Guides",
-			href: "/guides",
-			description: "Integration and usage guides for every framework.",
-			icon: BookOpen,
-			gradient:
-				"hover:from-blue-500/20 hover:to-indigo-600/30 hover:shadow-blue-500/10 group-hover/product:text-blue-500 dark:group-hover/product:text-blue-400",
-		},
-	];
-
 	const mobileSections = [
 		{
 			label: "Products",
@@ -359,14 +323,6 @@ export const Navbar = ({
 		{
 			label: "Resources",
 			items: resourcesLinks.map((i) => ({
-				name: i.title,
-				href: i.href,
-				external: i.external,
-			})),
-		},
-		{
-			label: "AI",
-			items: aiLinks.map((i) => ({
 				name: i.title,
 				href: i.href,
 				external: i.external,
@@ -514,43 +470,6 @@ export const Navbar = ({
 										</NavigationMenuContent>
 									</NavigationMenuItem>
 
-									{/* AI dropdown */}
-									<NavigationMenuItem>
-										<NavigationMenuTrigger className="text-muted-foreground hover:text-accent-foreground px-3 py-2 bg-transparent">
-											AI
-										</NavigationMenuTrigger>
-										<NavigationMenuContent className="md:left-1/2 md:-translate-x-1/2">
-											<ul className="grid grid-cols-2 gap-2 p-4 md:w-[520px] lg:w-[580px]">
-												{aiLinks.map((item) => (
-													<IconMenuItem
-														key={item.title}
-														title={item.title}
-														href={item.href}
-														description={item.description}
-														icon={item.icon}
-														gradient={item.gradient}
-														external={item.external}
-													/>
-												))}
-											</ul>
-										</NavigationMenuContent>
-									</NavigationMenuItem>
-
-									{/* Docs link */}
-									<NavigationMenuItem>
-										<NavigationMenuLink asChild>
-											<a
-												href={config.docsUrl ?? ""}
-												target="_blank"
-												rel="noopener noreferrer"
-												onClick={() => trackNav("Docs")}
-												className="text-muted-foreground hover:text-accent-foreground block duration-150 px-3 py-2"
-											>
-												Docs
-											</a>
-										</NavigationMenuLink>
-									</NavigationMenuItem>
-
 									{/* Pricing link */}
 									<NavigationMenuItem>
 										<NavigationMenuLink asChild>
@@ -602,16 +521,6 @@ export const Navbar = ({
 										>
 											Pricing
 										</Link>
-									</li>
-									<li>
-										<a
-											href={config.docsUrl ?? ""}
-											target="_blank"
-											rel="noopener noreferrer"
-											className="text-muted-foreground hover:text-accent-foreground block py-2.5 duration-150"
-										>
-											Docs
-										</a>
 									</li>
 									<li>
 										<Link

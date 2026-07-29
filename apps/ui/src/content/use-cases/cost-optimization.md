@@ -42,7 +42,7 @@ import OpenAI from "openai";
 
 const client = new OpenAI({
   baseURL: "https://api.betarouter.com/v1",
-  apiKey: process.env.LLM_GATEWAY_API_KEY,
+  apiKey: process.env.BETA_GATEWAY_API_KEY,
 });
 
 // Every call below is logged with model, tokens, latency and cost —

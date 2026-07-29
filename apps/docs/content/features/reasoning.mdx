@@ -54,7 +54,7 @@ Add the `reasoning_effort` parameter directly to your request:
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/chat/completions" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-oss-120b",
@@ -82,7 +82,7 @@ Use the unified `reasoning` configuration object with an `effort` field:
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/chat/completions" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-5",
@@ -150,7 +150,7 @@ For models that support it, you can specify an exact token budget for reasoning 
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/chat/completions" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "anthropic/claude-sonnet-4-20250514",
@@ -206,7 +206,7 @@ Accepted values:
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/chat/completions" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-5",
@@ -247,7 +247,7 @@ When streaming is enabled, reasoning content will be streamed as part of the res
 
 ```bash
 curl -X POST "https://api.betarouter.com/v1/chat/completions" \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-oss-120b",
