@@ -111,209 +111,214 @@ const VSCodeIcon = () => (
 
 export default async function GuidesOgImage() {
 	return new ImageResponse(
-		<div
-			style={{
-				width: "100%",
-				height: "100%",
-				display: "flex",
-				flexDirection: "column",
-				justifyContent: "space-between",
-				alignItems: "stretch",
-				background: "#000000",
-				color: "white",
-				fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-				padding: 60,
-				boxSizing: "border-box",
-			}}
-		>
-			{/* Header with logo */}
+		(
 			<div
 				style={{
+					width: "100%",
+					height: "100%",
 					display: "flex",
-					flexDirection: "row",
-					alignItems: "center",
-					gap: 16,
+					flexDirection: "column",
+					justifyContent: "space-between",
+					alignItems: "stretch",
+					background: "#000000",
+					color: "white",
+					fontFamily:
+						"system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+					padding: 60,
+					boxSizing: "border-box",
 				}}
 			>
-				<div
-					style={{
-						width: 48,
-						height: 48,
-						display: "flex",
-						alignItems: "center",
-						justifyContent: "center",
-						color: "#ffffff",
-					}}
-				>
-					<Logo style={{ width: 48, height: 48 }} />
-				</div>
+				{/* Header with logo */}
 				<div
 					style={{
 						display: "flex",
 						flexDirection: "row",
 						alignItems: "center",
-						gap: 8,
-						fontSize: 24,
-						color: "#9CA3AF",
+						gap: 16,
 					}}
 				>
-					<span style={{ color: "#ffffff", fontWeight: 600 }}>betarouter</span>
-					<span style={{ opacity: 0.6 }}>•</span>
-					<span>Guides</span>
+					<div
+						style={{
+							width: 48,
+							height: 48,
+							display: "flex",
+							alignItems: "center",
+							justifyContent: "center",
+							color: "#ffffff",
+						}}
+					>
+						<Logo style={{ width: 48, height: 48 }} />
+					</div>
+					<div
+						style={{
+							display: "flex",
+							flexDirection: "row",
+							alignItems: "center",
+							gap: 8,
+							fontSize: 24,
+							color: "#9CA3AF",
+						}}
+					>
+						<span style={{ color: "#ffffff", fontWeight: 600 }}>
+							betarouter
+						</span>
+						<span style={{ opacity: 0.6 }}>•</span>
+						<span>Guides</span>
+					</div>
 				</div>
-			</div>
 
-			{/* Main content */}
-			<div
-				style={{
-					display: "flex",
-					flexDirection: "column",
-					alignItems: "center",
-					justifyContent: "center",
-					flex: 1,
-					gap: 48,
-				}}
-			>
+				{/* Main content */}
 				<div
 					style={{
 						display: "flex",
 						flexDirection: "column",
 						alignItems: "center",
-						gap: 16,
+						justifyContent: "center",
+						flex: 1,
+						gap: 48,
 					}}
 				>
-					<h1
+					<div
 						style={{
-							fontSize: 72,
-							fontWeight: 700,
-							margin: 0,
-							letterSpacing: "-0.02em",
+							display: "flex",
+							flexDirection: "column",
+							alignItems: "center",
+							gap: 16,
 						}}
 					>
-						Guides
-					</h1>
-					<p
+						<h1
+							style={{
+								fontSize: 72,
+								fontWeight: 700,
+								margin: 0,
+								letterSpacing: "-0.02em",
+							}}
+						>
+							Guides
+						</h1>
+						<p
+							style={{
+								fontSize: 28,
+								color: "#9CA3AF",
+								margin: 0,
+								textAlign: "center",
+							}}
+						>
+							Step-by-step tutorials for your favorite tools
+						</p>
+					</div>
+
+					{/* Integration icons */}
+					<div
 						style={{
-							fontSize: 28,
-							color: "#9CA3AF",
-							margin: 0,
-							textAlign: "center",
+							display: "flex",
+							flexDirection: "row",
+							alignItems: "center",
+							justifyContent: "center",
+							gap: 32,
 						}}
 					>
-						Step-by-step tutorials for your favorite tools
-					</p>
+						<div
+							style={{
+								width: 88,
+								height: 88,
+								borderRadius: 16,
+								backgroundColor: "#1a1a1a",
+								border: "1px solid rgba(255,255,255,0.1)",
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+							}}
+						>
+							<AnthropicIcon />
+						</div>
+						<div
+							style={{
+								width: 88,
+								height: 88,
+								borderRadius: 16,
+								backgroundColor: "#1a1a1a",
+								border: "1px solid rgba(255,255,255,0.1)",
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+							}}
+						>
+							<CursorIcon />
+						</div>
+						<div
+							style={{
+								width: 88,
+								height: 88,
+								borderRadius: 16,
+								backgroundColor: "#1a1a1a",
+								border: "1px solid rgba(255,255,255,0.1)",
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+							}}
+						>
+							<ClineIcon />
+						</div>
+						<div
+							style={{
+								width: 88,
+								height: 88,
+								borderRadius: 16,
+								backgroundColor: "#1a1a1a",
+								border: "1px solid rgba(255,255,255,0.1)",
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+							}}
+						>
+							<N8nIcon />
+						</div>
+						<div
+							style={{
+								width: 88,
+								height: 88,
+								borderRadius: 16,
+								backgroundColor: "#1a1a1a",
+								border: "1px solid rgba(255,255,255,0.1)",
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+							}}
+						>
+							<OpenCodeIcon />
+						</div>
+						<div
+							style={{
+								width: 88,
+								height: 88,
+								borderRadius: 16,
+								backgroundColor: "#1a1a1a",
+								border: "1px solid rgba(255,255,255,0.1)",
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+							}}
+						>
+							<VSCodeIcon />
+						</div>
+					</div>
 				</div>
 
-				{/* Integration icons */}
+				{/* Footer */}
 				<div
 					style={{
 						display: "flex",
 						flexDirection: "row",
-						alignItems: "center",
-						justifyContent: "center",
-						gap: 32,
+						justifyContent: "flex-end",
+						fontSize: 20,
+						color: "#9CA3AF",
 					}}
 				>
-					<div
-						style={{
-							width: 88,
-							height: 88,
-							borderRadius: 16,
-							backgroundColor: "#1a1a1a",
-							border: "1px solid rgba(255,255,255,0.1)",
-							display: "flex",
-							alignItems: "center",
-							justifyContent: "center",
-						}}
-					>
-						<AnthropicIcon />
-					</div>
-					<div
-						style={{
-							width: 88,
-							height: 88,
-							borderRadius: 16,
-							backgroundColor: "#1a1a1a",
-							border: "1px solid rgba(255,255,255,0.1)",
-							display: "flex",
-							alignItems: "center",
-							justifyContent: "center",
-						}}
-					>
-						<CursorIcon />
-					</div>
-					<div
-						style={{
-							width: 88,
-							height: 88,
-							borderRadius: 16,
-							backgroundColor: "#1a1a1a",
-							border: "1px solid rgba(255,255,255,0.1)",
-							display: "flex",
-							alignItems: "center",
-							justifyContent: "center",
-						}}
-					>
-						<ClineIcon />
-					</div>
-					<div
-						style={{
-							width: 88,
-							height: 88,
-							borderRadius: 16,
-							backgroundColor: "#1a1a1a",
-							border: "1px solid rgba(255,255,255,0.1)",
-							display: "flex",
-							alignItems: "center",
-							justifyContent: "center",
-						}}
-					>
-						<N8nIcon />
-					</div>
-					<div
-						style={{
-							width: 88,
-							height: 88,
-							borderRadius: 16,
-							backgroundColor: "#1a1a1a",
-							border: "1px solid rgba(255,255,255,0.1)",
-							display: "flex",
-							alignItems: "center",
-							justifyContent: "center",
-						}}
-					>
-						<OpenCodeIcon />
-					</div>
-					<div
-						style={{
-							width: 88,
-							height: 88,
-							borderRadius: 16,
-							backgroundColor: "#1a1a1a",
-							border: "1px solid rgba(255,255,255,0.1)",
-							display: "flex",
-							alignItems: "center",
-							justifyContent: "center",
-						}}
-					>
-						<VSCodeIcon />
-					</div>
+					<span>betarouter.com</span>
 				</div>
 			</div>
-
-			{/* Footer */}
-			<div
-				style={{
-					display: "flex",
-					flexDirection: "row",
-					justifyContent: "flex-end",
-					fontSize: 20,
-					color: "#9CA3AF",
-				}}
-			>
-				<span>betarouter.com</span>
-			</div>
-		</div>,
+		),
 		size,
 	);
 }

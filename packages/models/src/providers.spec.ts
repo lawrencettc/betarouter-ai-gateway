@@ -469,7 +469,8 @@ describe("AtlasCloud video models", () => {
 			supportsVideoWithoutAudio,
 		] of expected) {
 			const model = models.find((candidate) => candidate.id === modelId) as
-				ModelDefinition | undefined;
+				| ModelDefinition
+				| undefined;
 			const mapping = model?.providers.find(
 				(provider) => provider.providerId === "atlascloud",
 			) as ProviderModelMapping | undefined;

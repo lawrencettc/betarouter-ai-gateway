@@ -140,7 +140,12 @@ function isModelUnstable(
 }
 
 type PriceField =
-	"input" | "output" | "cachedInput" | "request" | "imageInput" | "imageOutput";
+	| "input"
+	| "output"
+	| "cachedInput"
+	| "request"
+	| "imageInput"
+	| "imageOutput";
 
 interface MappingPriceInfo {
 	label: string;

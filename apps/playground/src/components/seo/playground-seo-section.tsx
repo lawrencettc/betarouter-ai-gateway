@@ -1,7 +1,12 @@
 import Link from "next/link";
 
 export type SeoVariant =
-	"chat" | "image" | "video" | "audio" | "group" | "canvas";
+	| "chat"
+	| "image"
+	| "video"
+	| "audio"
+	| "group"
+	| "canvas";
 
 interface VariantContent {
 	h1: string;

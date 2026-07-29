@@ -1003,7 +1003,8 @@ export default function ChatPageClient({
 		}
 
 		const childIds = (currentChatData as any).comparisonChatIds as
-			string[] | undefined;
+			| string[]
+			| undefined;
 		if (childIds && childIds.length > 0) {
 			setComparisonChatIds(childIds);
 			setExtraPanelIds(childIds.map((_, i) => i + 1));

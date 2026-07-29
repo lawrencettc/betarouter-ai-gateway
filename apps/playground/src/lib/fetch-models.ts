@@ -14,7 +14,13 @@ export interface ApiProvider {
 }
 
 export type ReasoningEffortOption =
-	"none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+	| "none"
+	| "minimal"
+	| "low"
+	| "medium"
+	| "high"
+	| "xhigh"
+	| "max";
 
 export interface ApiModelProviderMapping {
 	id: string;

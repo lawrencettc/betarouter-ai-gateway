@@ -21,7 +21,13 @@ export interface AnthropicThinkingConfig {
  * them too rather than capping at `low | medium | high`.
  */
 export type ReasoningEffort =
-	"none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+	| "none"
+	| "minimal"
+	| "low"
+	| "medium"
+	| "high"
+	| "xhigh"
+	| "max";
 
 export interface MappedReasoningFields {
 	reasoning?: {

@@ -359,14 +359,16 @@ export default async function GuideOgImage({
 
 	if (!guide) {
 		return new ImageResponse(
-			<div
-				style={{
-					width: "100%",
-					height: "100%",
-					display: "flex",
-					background: "#000000",
-				}}
-			/>,
+			(
+				<div
+					style={{
+						width: "100%",
+						height: "100%",
+						display: "flex",
+						background: "#000000",
+					}}
+				/>
+			),
 			size,
 		);
 	}
@@ -374,145 +376,150 @@ export default async function GuideOgImage({
 	const Icon = getIconForGuide(guide.slug);
 
 	return new ImageResponse(
-		<div
-			style={{
-				width: "100%",
-				height: "100%",
-				display: "flex",
-				flexDirection: "column",
-				justifyContent: "space-between",
-				alignItems: "stretch",
-				background: "#000000",
-				color: "white",
-				fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-				padding: 60,
-				boxSizing: "border-box",
-			}}
-		>
-			{/* Header with logo */}
+		(
 			<div
 				style={{
+					width: "100%",
+					height: "100%",
 					display: "flex",
-					flexDirection: "row",
-					alignItems: "center",
-					gap: 16,
+					flexDirection: "column",
+					justifyContent: "space-between",
+					alignItems: "stretch",
+					background: "#000000",
+					color: "white",
+					fontFamily:
+						"system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+					padding: 60,
+					boxSizing: "border-box",
 				}}
 			>
-				<svg
-					fill="none"
-					xmlns="http://www.w3.org/2000/svg"
-					viewBox="0 0 72 72"
-					width={48}
-					height={48}
-				>
-					<path
-						d="M14 20 L34 36 L14 52"
-						stroke="#e5e2e1"
-						strokeWidth={8}
-						strokeLinecap="round"
-						strokeLinejoin="round"
-					/>
-					<path
-						d="M38 20 L58 36 L38 52"
-						stroke="#08A84E"
-						strokeWidth={8}
-						strokeLinecap="round"
-						strokeLinejoin="round"
-					/>
-				</svg>
+				{/* Header with logo */}
 				<div
 					style={{
 						display: "flex",
 						flexDirection: "row",
 						alignItems: "center",
-						gap: 8,
-						fontSize: 24,
-						color: "#9CA3AF",
+						gap: 16,
 					}}
 				>
-					<span style={{ color: "#ffffff", fontWeight: 600 }}>betarouter</span>
-					<span style={{ opacity: 0.6 }}>•</span>
-					<span>Guides</span>
+					<svg
+						fill="none"
+						xmlns="http://www.w3.org/2000/svg"
+						viewBox="0 0 72 72"
+						width={48}
+						height={48}
+					>
+						<path
+							d="M14 20 L34 36 L14 52"
+							stroke="#e5e2e1"
+							strokeWidth={8}
+							strokeLinecap="round"
+							strokeLinejoin="round"
+						/>
+						<path
+							d="M38 20 L58 36 L38 52"
+							stroke="#08A84E"
+							strokeWidth={8}
+							strokeLinecap="round"
+							strokeLinejoin="round"
+						/>
+					</svg>
+					<div
+						style={{
+							display: "flex",
+							flexDirection: "row",
+							alignItems: "center",
+							gap: 8,
+							fontSize: 24,
+							color: "#9CA3AF",
+						}}
+					>
+						<span style={{ color: "#ffffff", fontWeight: 600 }}>
+							betarouter
+						</span>
+						<span style={{ opacity: 0.6 }}>•</span>
+						<span>Guides</span>
+					</div>
 				</div>
-			</div>
 
-			{/* Main content */}
-			<div
-				style={{
-					display: "flex",
-					flexDirection: "column",
-					alignItems: "center",
-					justifyContent: "center",
-					flex: 1,
-					gap: 48,
-				}}
-			>
-				{/* Integration icon */}
-				<div
-					style={{
-						width: 120,
-						height: 120,
-						borderRadius: 20,
-						backgroundColor: "#1a1a1a",
-						border: "2px solid rgba(255,255,255,0.1)",
-						display: "flex",
-						alignItems: "center",
-						justifyContent: "center",
-						padding: 16,
-					}}
-				>
-					<Icon />
-				</div>
-
-				{/* Title and description */}
+				{/* Main content */}
 				<div
 					style={{
 						display: "flex",
 						flexDirection: "column",
 						alignItems: "center",
-						gap: 24,
-						maxWidth: 1000,
+						justifyContent: "center",
+						flex: 1,
+						gap: 48,
 					}}
 				>
-					<h1
+					{/* Integration icon */}
+					<div
 						style={{
-							fontSize: 80,
-							fontWeight: 700,
-							margin: 0,
-							letterSpacing: "-0.03em",
-							textAlign: "center",
-							lineHeight: 1.1,
+							width: 120,
+							height: 120,
+							borderRadius: 20,
+							backgroundColor: "#1a1a1a",
+							border: "2px solid rgba(255,255,255,0.1)",
+							display: "flex",
+							alignItems: "center",
+							justifyContent: "center",
+							padding: 16,
 						}}
 					>
-						{guide.title}
-					</h1>
-					<p
+						<Icon />
+					</div>
+
+					{/* Title and description */}
+					<div
 						style={{
-							fontSize: 36,
-							color: "#9CA3AF",
-							margin: 0,
-							textAlign: "center",
-							lineHeight: 1.3,
+							display: "flex",
+							flexDirection: "column",
+							alignItems: "center",
+							gap: 24,
+							maxWidth: 1000,
 						}}
 					>
-						{guide.description}
-					</p>
+						<h1
+							style={{
+								fontSize: 80,
+								fontWeight: 700,
+								margin: 0,
+								letterSpacing: "-0.03em",
+								textAlign: "center",
+								lineHeight: 1.1,
+							}}
+						>
+							{guide.title}
+						</h1>
+						<p
+							style={{
+								fontSize: 36,
+								color: "#9CA3AF",
+								margin: 0,
+								textAlign: "center",
+								lineHeight: 1.3,
+							}}
+						>
+							{guide.description}
+						</p>
+					</div>
+				</div>
+
+				{/* Footer */}
+				<div
+					style={{
+						display: "flex",
+						flexDirection: "row",
+						justifyContent: "flex-end",
+						fontSize: 20,
+						color: "#9CA3AF",
+					}}
+				>
+					<span>betarouter.com</span>
 				</div>
 			</div>
-
-			{/* Footer */}
-			<div
-				style={{
-					display: "flex",
-					flexDirection: "row",
-					justifyContent: "flex-end",
-					fontSize: 20,
-					color: "#9CA3AF",
-				}}
-			>
-				<span>betarouter.com</span>
-			</div>
-		</div>,
+		),
 		size,
 	);
 }

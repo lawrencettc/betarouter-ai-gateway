@@ -34,7 +34,8 @@ export function useDashboardState({
 		{},
 		{
 			initialData: initialOrganizationsData as
-				{ organizations: Organization[] } | undefined,
+				| { organizations: Organization[] }
+				| undefined,
 			staleTime: 5 * 60 * 1000, // 5 minutes
 			refetchOnWindowFocus: false,
 		},

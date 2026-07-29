@@ -794,7 +794,16 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 							status: upstreamResponse.status,
 						}),
 					upstreamResponse.status as
-						400 | 401 | 403 | 404 | 410 | 429 | 500 | 502 | 503 | 504,
+						| 400
+						| 401
+						| 403
+						| 404
+						| 410
+						| 429
+						| 500
+						| 502
+						| 503
+						| 504,
 				);
 			}
 

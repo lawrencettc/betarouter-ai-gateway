@@ -71,7 +71,10 @@ type ApiKeyIamRuleBase = InferSelectModel<typeof tables.apiKeyIamRule>;
 export type ApiKey = Omit<ApiKeyBase, "status" | "keyType"> & {
 	status: "active" | "inactive" | "deleted" | null;
 	keyType:
-		"user" | "platform_secret" | "platform_publishable" | "end_user_customer";
+		| "user"
+		| "platform_secret"
+		| "platform_publishable"
+		| "end_user_customer";
 };
 
 export type EndCustomer = Omit<
@@ -97,7 +100,12 @@ export type WalletLedger = Omit<
 	"type"
 > & {
 	type:
-		"topup" | "bonus" | "usage_debit" | "refund" | "adjustment" | "reversal";
+		| "topup"
+		| "bonus"
+		| "usage_debit"
+		| "refund"
+		| "adjustment"
+		| "reversal";
 };
 
 export type WebhookEndpoint = Omit<
