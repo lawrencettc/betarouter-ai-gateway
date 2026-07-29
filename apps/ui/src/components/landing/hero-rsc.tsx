@@ -1,4 +1,3 @@
-import { GitHubStars } from "./github-stars";
 import { Hero } from "./hero";
 import { allMigrations } from "content-collections";
 
@@ -10,11 +9,7 @@ export const HeroRSC = async ({
 	sticky?: boolean;
 }) => {
 	if (navbarOnly) {
-		return (
-			<Hero navbarOnly sticky={sticky}>
-				<GitHubStars />
-			</Hero>
-		);
+		return <Hero navbarOnly sticky={sticky} />;
 	}
 
 	// Models/providers are intentionally not fetched here: serializing the full
@@ -30,8 +25,6 @@ export const HeroRSC = async ({
 		}));
 
 	return (
-		<Hero navbarOnly={navbarOnly} sticky={sticky} migrations={migrations}>
-			<GitHubStars />
-		</Hero>
+		<Hero navbarOnly={navbarOnly} sticky={sticky} migrations={migrations} />
 	);
 };

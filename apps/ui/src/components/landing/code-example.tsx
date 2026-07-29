@@ -20,7 +20,7 @@ const codeExamples = {
 		language: "bash",
 		code: `curl -X POST https://api.betarouter.com/v1/chat/completions \\
   -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \\
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \\
   -d '{
   "model": "gpt-4o",
   "messages": [
@@ -34,7 +34,7 @@ const codeExamples = {
 		code: `import OpenAI from "openai";
 
 const client = new OpenAI({
-  apiKey: process.env.LLM_GATEWAY_API_KEY, // or your API key string
+  apiKey: process.env.BETA_GATEWAY_API_KEY, // or your API key string
   baseURL: "https://api.betarouter.com/v1/"
 });
 
@@ -53,10 +53,10 @@ console.log(response.choices[0].message.content);`,
 		code: `import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
 import { generateText } from 'ai';
 
-const llmgateway = createLLMGateway({ apiKey });
+const gateway = createLLMGateway({ apiKey });
 
 const { text } = await generateText({
-  model: llmgateway('openai/gpt-4o'),
+  model: gateway('openai/gpt-4o'),
   prompt: 'Write a vegetarian lasagna recipe for 4 people.',
 });`,
 	},
@@ -66,7 +66,7 @@ const { text } = await generateText({
 		code: `import openai
 
 client = openai.OpenAI(
-    api_key="YOUR_LLM_GATEWAY_API_KEY",
+    api_key="YOUR_BETA_GATEWAY_API_KEY",
     base_url="https://api.betarouter.com/v1"
 )
 
@@ -88,7 +88,7 @@ import java.util.List;
 
 public class Main {
     public static void main(String[] args) {
-        String apiKey = System.getenv("LLM_GATEWAY_API_KEY");
+        String apiKey = System.getenv("BETA_GATEWAY_API_KEY");
         OpenAiService service = new OpenAiService(apiKey, 60);
         service.setOpenAiApiUrl("https://api.betarouter.com/v1/");
 
@@ -113,7 +113,7 @@ use std::env;
 
 #[tokio::main]
 async fn main() {
-    let api_key = env::var("LLM_GATEWAY_API_KEY").unwrap();
+    let api_key = env::var("BETA_GATEWAY_API_KEY").unwrap();
     let openai = OpenAI::new(&api_key).with_base_url("https://api.betarouter.com/v1");
 
     let request = ChatCompletionRequest::new(
@@ -140,7 +140,7 @@ import (
 )
 
 func main() {
-    client := openai.NewClientWithConfig(openai.DefaultConfig(os.Getenv("LLM_GATEWAY_API_KEY"), "https://api.betarouter.com/v1"))
+    client := openai.NewClientWithConfig(openai.DefaultConfig(os.Getenv("BETA_GATEWAY_API_KEY"), "https://api.betarouter.com/v1"))
     resp, err := client.CreateChatCompletion(
         context.Background(),
         openai.ChatCompletionRequest{
@@ -163,7 +163,7 @@ func main() {
 		code: `<?php
 require 'vendor/autoload.php';
 
-$client = OpenAI::client('YOUR_LLM_GATEWAY_API_KEY', [
+$client = OpenAI::client('YOUR_BETA_GATEWAY_API_KEY', [
     'base_uri' => 'https://api.betarouter.com/v1',
 ]);
 
@@ -183,7 +183,7 @@ echo $response['choices'][0]['message']['content'];
 		code: `require "openai"
 
 client = OpenAI::Client.new(
-  access_token: ENV["LLM_GATEWAY_API_KEY"],
+  access_token: ENV["BETA_GATEWAY_API_KEY"],
   uri_base: "https://api.betarouter.com/v1"
 )
 
