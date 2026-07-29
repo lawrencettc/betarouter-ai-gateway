@@ -15,9 +15,9 @@ const capabilities = [
 	},
 	{
 		icon: Server,
-		title: "Self-hosted or Managed",
+		title: "Managed Infrastructure",
 		description:
-			"Deploy on your infrastructure or let us handle it with 99.9% SLA",
+			"Dedicated, fully managed deployments backed by a 99.9% uptime SLA",
 	},
 	{
 		icon: Zap,
@@ -57,9 +57,8 @@ export function EnterpriseCTA() {
 							ship at scale
 						</h2>
 						<p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-							When your LLM infrastructure becomes mission-critical, you need
-							dedicated support, compliance controls, and infrastructure that
-							matches your ambitions.
+							SSO, audit logs, custom SLAs, and dedicated infrastructure for
+							when your LLM traffic becomes mission-critical.
 						</p>
 					</AnimatedGroup>
 

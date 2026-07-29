@@ -1,11 +1,8 @@
 "use client";
-import { DiscordLogoIcon } from "@radix-ui/react-icons";
-import { GithubIcon } from "lucide-react";
 import Link from "next/link";
 
 import Newsletter from "@/components/landing/newsletter";
 import { useAppConfig } from "@/lib/config";
-import { XIcon } from "@/lib/icons/XIcon";
 
 import { providers as providerDefinitions } from "@betarouter/models";
 
@@ -25,40 +22,11 @@ export default function Footer() {
 
 				<div className="flex flex-col md:flex-row md:justify-between md:items-start">
 					<div className="mb-8 md:mb-0 md:w-48 md:shrink-0">
-						<div className="flex items-center gap-2">
-							<a
-								href={config.githubUrl}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-card/40 text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
-								aria-label="GitHub"
-							>
-								<GithubIcon className="h-4 w-4" />
-							</a>
-							<a
-								href={config.twitterUrl}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-card/40 text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
-								aria-label="X"
-							>
-								<XIcon className="h-4 w-4" />
-							</a>
-							<a
-								href={config.discordUrl}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 bg-card/40 text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
-								aria-label="Discord"
-							>
-								<DiscordLogoIcon className="h-4 w-4" />
-							</a>
-						</div>
 						<a
 							href="https://status.betarouter.com/"
 							target="_blank"
 							rel="noopener noreferrer"
-							className="mt-6 inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/40 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
+							className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/40 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
 						>
 							<span className="relative flex h-2 w-2">
 								<span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
@@ -271,49 +239,12 @@ export default function Footer() {
 								</li>
 								<li>
 									<a
-										href={config.githubUrl ?? ""}
-										target="_blank"
-										className="text-sm hover:underline underline-offset-4 hover:text-foreground"
-									>
-										GitHub
-									</a>
-								</li>
-								<li>
-									<a
 										href="mailto:contact@betarouter.com"
 										target="_blank"
 										rel="noreferrer noopener"
 										className="text-sm hover:underline underline-offset-4 hover:text-foreground"
 									>
 										Contact Us
-									</a>
-								</li>
-							</ul>
-						</div>
-
-						<div>
-							<h3 className="font-display text-sm font-semibold mb-4 text-foreground">
-								Community
-							</h3>
-							<ul className="space-y-2">
-								<li>
-									<a
-										href={config.twitterUrl}
-										target="_blank"
-										rel="noopener noreferrer"
-										className="text-sm hover:underline underline-offset-4 hover:text-foreground"
-									>
-										Twitter
-									</a>
-								</li>
-								<li>
-									<a
-										href={config.discordUrl}
-										target="_blank"
-										rel="noopener noreferrer"
-										className="text-sm hover:underline underline-offset-4 hover:text-foreground"
-									>
-										Discord
 									</a>
 								</li>
 							</ul>

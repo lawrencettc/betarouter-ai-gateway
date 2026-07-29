@@ -1,6 +1,8 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
+import { MARKETING_STATS } from "@betarouter/shared";
+
 import { AnimatedGroup } from "./animated-group";
 import { GlowingEffect } from "./glowing-effect";
 
@@ -63,8 +65,7 @@ const features: FeatureItem[] = [
 			</svg>
 		),
 		title: "Multi-provider Support",
-		description:
-			"Access 40+ providers through one integration—no vendor lock-in, switch models instantly.",
+		description: `Access ${MARKETING_STATS.providers} providers through one integration—no vendor lock-in, switch models instantly.`,
 		slug: "multi-provider-support",
 	},
 	{
@@ -162,47 +163,6 @@ const features: FeatureItem[] = [
 				className="h-8 w-8"
 				fill="none"
 				xmlns="http://www.w3.org/2000/svg"
-				viewBox="0 0 144 141"
-			>
-				<path
-					d="m21.3493 85.4372 49.8235 5.7766 1.0679-.0084 49.7503-5.7682c8.206-.6034 23.894-7.8197 20.998-31.858.603-8.4471-5.141-25.4139-32.944-25.7035C105.459 17.2564 91.5915 0 72.0322 0h-.7239C52.1312 0 37.8816 17.2564 33.2959 27.8757 5.49266 28.1653-.251398 45.1321.351984 53.5792-2.54419 77.6175 13.1434 84.8338 21.3493 85.4372Z"
-					fill="#D4CFCB"
-				/>
-				<path
-					d="M17.377 78.7269c0-6.0751 4.9248-11 11-11h87.331c6.075 0 11 4.9249 11 11v14.2022c0 6.0751-4.925 10.9999-11 10.9999H28.377c-6.0752 0-11-4.9248-11-10.9999V78.7269ZM17.377 115.653c0-6.075 4.9248-11 11-11h87.331c6.075 0 11 4.925 11 11v14.202c0 6.075-4.925 11-11 11H28.377c-6.0752 0-11-4.925-11-11v-14.202Z"
-					fill="#59595B"
-				/>
-				<rect
-					x="28.2378"
-					y="79.3116"
-					width="49.959"
-					height="13.0328"
-					rx="6.51639"
-					fill="#2F3032"
-				/>
-				<rect
-					x="28.2378"
-					y="117.686"
-					width="49.959"
-					height="13.0328"
-					rx="6.51639"
-					fill="#2F3032"
-				/>
-				<circle cx="107.521" cy="84.7419" r="5.43033" fill="#77B359" />
-				<circle cx="106.797" cy="126.012" r="3.98224" fill="#77B359" />
-			</svg>
-		),
-		title: "Self-hosted or Cloud",
-		description:
-			"Run on your own infrastructure for full control, or let us handle it—your choice.",
-		slug: "self-hosted-or-cloud",
-	},
-	{
-		icon: (
-			<svg
-				className="h-8 w-8"
-				fill="none"
-				xmlns="http://www.w3.org/2000/svg"
 				viewBox="0 0 144 144"
 			>
 				<rect x="10" y="20" width="124" height="94" rx="16" fill="#0F172A" />
@@ -240,7 +200,7 @@ const features: FeatureItem[] = [
 				<circle cx="102" cy="106" r="3" fill="#22C55E" />
 			</svg>
 		),
-		title: "Per-model/provider breakdown",
+		title: "Spot expensive outliers instantly",
 		description:
 			"Break down usage and spend by provider and model so you can quickly spot expensive outliers.",
 		slug: "per-model-provider-breakdown",
@@ -265,7 +225,7 @@ const features: FeatureItem[] = [
 				<circle cx="104" cy="60" r="6" fill="#F97316" />
 			</svg>
 		),
-		title: "Errors & reliability monitoring",
+		title: "Catch failures before users do",
 		description:
 			"Monitor error rate, cache hit rate, and reliability trends directly from the dashboard.",
 		slug: "errors-reliability-monitoring",
@@ -368,9 +328,9 @@ export default function Features() {
 						Platform Capabilities
 					</p>
 					<h2 className="font-display text-4xl md:text-5xl font-bold tracking-tight text-foreground">
-						Everything you need to
+						One integration.
 						<br />
-						ship with confidence
+						Every model, tracked and controlled.
 					</h2>
 				</div>
 

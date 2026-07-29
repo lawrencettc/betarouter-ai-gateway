@@ -15,21 +15,21 @@ const faqData = [
 	{
 		question: "What makes betarouter different from OpenRouter?",
 		answer:
-			"Unlike OpenRouter, betarouter offers: Full self-hosting under an AGPLv3 license – run the gateway entirely on your infra. Deeper, real-time cost & latency analytics for every request. Bring Your Own Keys for free. Flexible enterprise add-ons (dedicated shard, custom SLAs).",
+			"Unlike OpenRouter, betarouter offers: Deeper, real-time cost & latency analytics for every request. Bring Your Own Keys for free. Flexible enterprise add-ons (dedicated shard, custom SLAs).",
 	},
 	{
 		question: "What models do you support?",
-		answer: `We support ${MARKETING_STATS.models} models across ${MARKETING_STATS.providers} providers—including GPT-4o, Claude, Gemini, Llama, Mistral, and more. We add new releases within 48 hours of launch.`,
+		answer: `We support ${MARKETING_STATS.models} models across ${MARKETING_STATS.providers} providers, and we add new releases within 48 hours of launch.`,
 	},
 	{
 		question: "What is your uptime guarantee?",
 		answer:
-			"Our public status page posts real-time metrics. Enterprise instances come with a 99.9% uptime SLA; self-host installations depend on your infrastructure.",
+			"Our public status page posts real-time metrics. Enterprise instances come with a 99.9% uptime SLA.",
 	},
 	{
 		question: "How much does it cost?",
 		answer:
-			"Credits: Pay-as-you-go with a flat 5% platform fee. BYOK: Use your own provider API keys for free. Enterprise: Custom SLA, dedicated infrastructure, and volume discounts. Self-host: Deploy free forever under AGPLv3 license.",
+			"Credits: Pay-as-you-go with a flat 5% platform fee. BYOK: Use your own provider API keys for free. Enterprise: Custom SLA, dedicated infrastructure, and volume discounts.",
 	},
 ];
 
@@ -106,10 +106,6 @@ export function Faq() {
 										<p>Unlike OpenRouter, we offer:</p>
 										<ul className="list-disc pl-6 mt-2 space-y-1">
 											<li>
-												Full <strong>self-hosting</strong> under an AGPLv3
-												license – run the gateway entirely on your infra.
-											</li>
-											<li>
 												Deeper, real-time{" "}
 												<strong>cost & latency analytics</strong> for every
 												request
@@ -165,8 +161,7 @@ export function Faq() {
 								<AccordionContent className="overflow-hidden transition-all data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up text-base text-muted-foreground leading-relaxed pb-2">
 									<div className="border-l-2 border-foreground/10 pl-4">
 										Our public status page posts real-time metrics. Enterprise
-										instances come with a <strong>99.9% uptime SLA</strong>;
-										self-host installations depend on your infrastructure.
+										instances come with a <strong>99.9% uptime SLA</strong>.
 									</div>
 								</AccordionContent>
 							</AccordionItem>
@@ -204,10 +199,6 @@ export function Faq() {
 												<strong>Enterprise:</strong> Custom SLA, dedicated
 												infrastructure, bring-your-own cloud capacity, and
 												volume discounts. Contact sales for a tailored quote.
-											</li>
-											<li>
-												<strong>Self-host:</strong> Deploy the AGPLv3-licensed
-												gateway on your own infrastructure—free forever.
 											</li>
 										</ul>
 									</div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, KeyRound, Server, Wallet } from "lucide-react";
+import { ArrowRight, KeyRound, Wallet } from "lucide-react";
 import Link from "next/link";
 
 import { MARKETING_STATS } from "@betarouter/shared";
@@ -22,13 +22,6 @@ const options = [
 		description:
 			"Route through your own provider API keys and pay providers directly. Routing, tracking, and analytics included at no cost.",
 	},
-	{
-		icon: Server,
-		name: "Self-host",
-		price: "Free forever",
-		description:
-			"Deploy the AGPLv3-licensed gateway on your own infrastructure. The full routing layer, yours to run.",
-	},
 ];
 
 export function PricingStrip() {
@@ -41,7 +34,7 @@ export function PricingStrip() {
 						Pricing
 					</p>
 					<h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-foreground">
-						Three ways to run it. Two are free.
+						Two ways to run it. One is free.
 					</h2>
 					<p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
 						No seats, no minimums, no token markup. Start free and only pay when
@@ -51,7 +44,7 @@ export function PricingStrip() {
 
 				<AnimatedGroup
 					preset="slide"
-					className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-5xl mx-auto"
+					className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto"
 				>
 					{options.map((option) => (
 						<div

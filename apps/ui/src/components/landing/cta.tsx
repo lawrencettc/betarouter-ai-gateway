@@ -2,14 +2,13 @@
 import { usePostHog } from "posthog-js/react";
 
 import { AuthLink } from "@/components/shared/auth-link";
-import { Button } from "@/lib/components/button";
 import { ShimmerButton } from "@/lib/components/shimmer-button";
-import { useAppConfig } from "@/lib/config";
+
+import { MARKETING_STATS } from "@betarouter/shared";
 
 import { AnimatedGroup } from "./animated-group";
 
 export default function CallToAction() {
-	const config = useAppConfig();
 	const posthog = usePostHog();
 	return (
 		<section className="relative py-32 md:py-40 overflow-hidden">
@@ -31,8 +30,9 @@ export default function CallToAction() {
 							in 30 seconds
 						</h2>
 						<p className="text-lg text-muted-foreground max-w-xl mx-auto">
-							Join thousands of developers processing 100B+ tokens through LLM
-							Gateway. Free tier included, no credit card required.
+							Join thousands of developers routing{" "}
+							{MARKETING_STATS.tokensRouted} tokens through betarouter. Free
+							with your own keys—no credit card required.
 						</p>
 					</AnimatedGroup>
 
@@ -54,27 +54,9 @@ export default function CallToAction() {
 								background="rgb(37, 99, 235)"
 								className="shadow-2xl shadow-blue-500/25 px-8 py-4 text-base font-medium w-full sm:w-auto"
 							>
-								Create Free Account
+								Get your free API key
 							</ShimmerButton>
 						</AuthLink>
-						<Button
-							variant="outline"
-							className="border-border bg-transparent text-foreground hover:bg-muted px-8 py-6 text-base w-full sm:w-auto"
-							asChild
-						>
-							<a
-								href={config.githubUrl ?? ""}
-								target="_blank"
-								onClick={() =>
-									posthog.capture("cta_clicked", {
-										location: "landing_bottom",
-										cta: "self_host",
-									})
-								}
-							>
-								Self-host betarouter
-							</a>
-						</Button>
 					</AnimatedGroup>
 				</div>
 			</div>

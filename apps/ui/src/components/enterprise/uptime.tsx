@@ -220,7 +220,7 @@ export function UptimeVisualization() {
 						{/* Without */}
 						<div className="rounded-xl border border-red-500/20 bg-red-500/[0.03] p-5 sm:p-6">
 							<div className="mb-3 text-xs font-mono tracking-wider text-red-700 dark:text-red-400">
-								WITHOUT LLM GATEWAY
+								WITHOUT BETAROUTER
 							</div>
 							<div className="font-mono text-3xl font-bold sm:text-4xl">
 								94%
@@ -241,7 +241,7 @@ export function UptimeVisualization() {
 						{/* With */}
 						<div className="rounded-xl border border-emerald-500/30 bg-emerald-500/[0.03] p-5 sm:p-6">
 							<div className="mb-3 text-xs font-mono tracking-wider text-emerald-700 dark:text-emerald-400">
-								WITH LLM GATEWAY
+								WITH BETAROUTER
 							</div>
 							<div className="font-mono text-3xl font-bold text-emerald-600 sm:text-4xl dark:text-emerald-400">
 								<NumberTicker
