@@ -869,36 +869,21 @@ describe("stats-calculator", () => {
 
 			await calculateMinutelyHistory();
 
-			// Should create history records for existing mappings only, ignoring the invalid log
+			// Invalid traffic must not materialize zero rows for unrelated mappings.
 			const historyRecords = await db
 				.select()
 				.from(modelProviderMappingHistory);
-			expect(historyRecords.length).toBeGreaterThanOrEqual(2); // Our test mappings
-
-			// All should have zero stats since the log was for non-existent model/provider
-			for (const record of historyRecords) {
-				expect(record.logsCount).toBe(0);
-				expect(record.totalOutputTokens).toBe(0);
-			}
+			expect(historyRecords).toHaveLength(0);
 		});
 
 		it("should handle empty logs gracefully", async () => {
 			await calculateMinutelyHistory();
 
-			// Should create history records for all mappings with zero stats
 			const historyRecords = await db
 				.select()
 				.from(modelProviderMappingHistory);
-			expect(historyRecords.length).toBeGreaterThanOrEqual(2); // Our test mappings
-
-			// All should have zero stats since no logs were inserted
-			for (const record of historyRecords) {
-				expect(record.logsCount).toBe(0);
-				expect(record.errorsCount).toBe(0);
-				expect(record.totalOutputTokens).toBe(0);
-				expect(record.totalDuration).toBe(0);
-				expect(record.cachedCount).toBe(0);
-			}
+			expect(historyRecords).toHaveLength(0);
+			expect(await db.select().from(modelHistory)).toHaveLength(0);
 		});
 
 		it("should update existing history records on conflict", async () => {
@@ -941,11 +926,10 @@ describe("stats-calculator", () => {
 
 			await calculateMinutelyHistory();
 
-			// Should have records for both mappings (including inactive one)
 			const historyRecords = await db
 				.select()
 				.from(modelProviderMappingHistory);
-			expect(historyRecords.length).toBeGreaterThanOrEqual(2); // At least the 2 test mappings
+			expect(historyRecords).toHaveLength(1);
 
 			// Check the active mapping was updated
 			const gptRecord = historyRecords.find(
@@ -955,18 +939,16 @@ describe("stats-calculator", () => {
 			expect(gptRecord?.logsCount).toBe(1);
 			expect(gptRecord?.totalOutputTokens).toBe(100);
 
-			// Check inactive mapping has zero stats
+			// Mappings without traffic are represented by an absent bucket.
 			const claudeRecord = historyRecords.find(
 				(r) =>
 					r.modelId === "claude-3-5-sonnet" && r.providerId === "anthropic",
 			);
-			expect(claudeRecord).toBeTruthy();
-			expect(claudeRecord?.logsCount).toBe(0);
-			expect(claudeRecord?.totalOutputTokens).toBe(0);
+			expect(claudeRecord).toBeUndefined();
 
 			// Check that model history was also created
 			const modelHistoryRecords = await db.select().from(modelHistory);
-			expect(modelHistoryRecords.length).toBeGreaterThanOrEqual(2); // At least 2 models
+			expect(modelHistoryRecords).toHaveLength(1);
 
 			const gptModelRecord = modelHistoryRecords.find(
 				(r) => r.modelId === "gpt-4",
@@ -978,42 +960,17 @@ describe("stats-calculator", () => {
 			const claudeModelRecord = modelHistoryRecords.find(
 				(r) => r.modelId === "claude-3-5-sonnet",
 			);
-			expect(claudeModelRecord).toBeTruthy();
-			expect(claudeModelRecord?.logsCount).toBe(0); // No logs for claude in this test
-			expect(claudeModelRecord?.totalOutputTokens).toBe(0);
+			expect(claudeModelRecord).toBeUndefined();
 		});
 
-		it("should create entries for inactive model-provider mappings", async () => {
-			// Don't insert any logs, so all mappings should be inactive
-
+		it("should not create entries for mappings without traffic", async () => {
 			await calculateMinutelyHistory();
 
-			// Should create history records for all model-provider mappings
 			const historyRecords = await db
 				.select()
 				.from(modelProviderMappingHistory);
-			expect(historyRecords.length).toBeGreaterThanOrEqual(2); // At least our 2 test mappings
-
-			// All should have zero stats since no logs were inserted
-			for (const record of historyRecords) {
-				expect(record.logsCount).toBe(0);
-				expect(record.errorsCount).toBe(0);
-				expect(record.totalOutputTokens).toBe(0);
-				expect(record.totalDuration).toBe(0);
-				expect(record.cachedCount).toBe(0);
-			}
-
-			// Check model history was also created with zero stats
-			const modelHistoryRecords = await db.select().from(modelHistory);
-			expect(modelHistoryRecords.length).toBeGreaterThanOrEqual(2); // At least our 2 test models
-
-			for (const record of modelHistoryRecords) {
-				expect(record.logsCount).toBe(0);
-				expect(record.errorsCount).toBe(0);
-				expect(record.totalOutputTokens).toBe(0);
-				expect(record.totalDuration).toBe(0);
-				expect(record.cachedCount).toBe(0);
-			}
+			expect(historyRecords).toHaveLength(0);
+			expect(await db.select().from(modelHistory)).toHaveLength(0);
 		});
 	});
 
@@ -1102,22 +1059,11 @@ describe("stats-calculator", () => {
 			expect(anthropicMapping?.logsCount).toBe(1);
 		});
 
-		it("should create model history entries for inactive models", async () => {
-			// Don't insert any logs, so all models should have zero stats
-
+		it("should not create model history entries without traffic", async () => {
 			await calculateMinutelyHistory();
 
 			const modelHistoryRecords = await db.select().from(modelHistory);
-			expect(modelHistoryRecords.length).toBeGreaterThanOrEqual(2); // At least our 2 test models
-
-			// All should have zero stats since no logs were inserted
-			for (const record of modelHistoryRecords) {
-				expect(record.logsCount).toBe(0);
-				expect(record.errorsCount).toBe(0);
-				expect(record.totalOutputTokens).toBe(0);
-				expect(record.totalDuration).toBe(0);
-				expect(record.cachedCount).toBe(0);
-			}
+			expect(modelHistoryRecords).toHaveLength(0);
 		});
 
 		it("should handle model history conflicts with upsert", async () => {
@@ -1326,7 +1272,7 @@ describe("stats-calculator", () => {
 	});
 
 	describe("backfillHistoryIfNeeded", () => {
-		it("should backfill when no history exists", async () => {
+		it("should not materialize empty buckets when no history exists", async () => {
 			// Set time to 12:30 so we backfill from 12:25 to 12:29 (5 minutes)
 			vi.setSystemTime(new Date("2024-01-01T12:30:00.000Z"));
 
@@ -1336,24 +1282,8 @@ describe("stats-calculator", () => {
 				.select()
 				.from(modelProviderMappingHistory);
 
-			// Should have created history for 5 minutes (12:25-12:29) for 2 mappings = 10 records
-			expect(historyRecords.length).toBeGreaterThanOrEqual(10);
-
-			// Check that we have entries for each minute
-			const timestamps = historyRecords.map((r) => r.minuteTimestamp.getTime());
-			const uniqueTimestamps = new Set(timestamps);
-			expect(uniqueTimestamps.size).toBe(5); // 5 different minutes
-
-			// Check that model history was also backfilled
-			const modelHistoryRecords = await db.select().from(modelHistory);
-			// Should have created history for 5 minutes for 2 models = 10 records
-			expect(modelHistoryRecords.length).toBeGreaterThanOrEqual(10);
-
-			const modelTimestamps = modelHistoryRecords.map((r) =>
-				r.minuteTimestamp.getTime(),
-			);
-			const uniqueModelTimestamps = new Set(modelTimestamps);
-			expect(uniqueModelTimestamps.size).toBe(5); // 5 different minutes
+			expect(historyRecords).toHaveLength(0);
+			expect(await db.select().from(modelHistory)).toHaveLength(0);
 		});
 
 		it("should not backfill when history is up to date", async () => {
@@ -1380,7 +1310,7 @@ describe("stats-calculator", () => {
 			expect(historyRecords).toHaveLength(1);
 		});
 
-		it("should backfill missing periods", async () => {
+		it("should leave missing periods empty when they had no traffic", async () => {
 			// Create old history entry from 5 minutes ago
 			const oldMinute = new Date("2024-01-01T12:25:00.000Z");
 			await db.insert(modelProviderMappingHistory).values({
@@ -1408,18 +1338,9 @@ describe("stats-calculator", () => {
 				.select()
 				.from(modelProviderMappingHistory);
 
-			// Should have backfilled 4 minutes (12:26-12:29) for 2 mappings = 8 new records + 1 existing = 9
-			expect(historyRecords.length).toBeGreaterThanOrEqual(9);
-
-			// Check we have entries for the missing minutes
-			const timestamps = historyRecords.map((r) => r.minuteTimestamp);
-			const sortedTimestamps = timestamps.sort(
-				(a, b) => a.getTime() - b.getTime(),
-			);
-
-			expect(sortedTimestamps[0]?.getTime()).toBe(oldMinute.getTime());
-			expect(sortedTimestamps[sortedTimestamps.length - 1]?.getTime()).toBe(
-				new Date("2024-01-01T12:29:00.000Z").getTime(),
+			expect(historyRecords).toHaveLength(1);
+			expect(historyRecords[0]?.minuteTimestamp.getTime()).toBe(
+				oldMinute.getTime(),
 			);
 		});
 	});

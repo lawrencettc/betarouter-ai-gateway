@@ -354,7 +354,9 @@ async function calculateModelHistoryForMinute(targetMinute: Date) {
 		)
 		.groupBy(usedBaseModelSql);
 
-	// Get all active models to ensure we create entries for inactive ones too
+	// Limit history to active catalog models, but only persist a row when that
+	// model actually received traffic. Missing buckets are equivalent to zero
+	// and must not consume a permanent row (plus four index entries).
 	const allModels = await database
 		.select({
 			modelId: model.id,
@@ -370,9 +372,10 @@ async function calculateModelHistoryForMinute(targetMinute: Date) {
 		}
 	}
 
-	// Process all models
+	// Process active catalog models that had traffic.
 	const processedModels = new Set<string>();
 	const modelHistoryValues: (typeof modelHistory.$inferInsert)[] = [];
+	let activeModelsCount = 0;
 
 	for (const modelEntry of allModels) {
 		if (processedModels.has(modelEntry.modelId)) {
@@ -381,30 +384,33 @@ async function calculateModelHistoryForMinute(targetMinute: Date) {
 		processedModels.add(modelEntry.modelId);
 
 		const stat = activeModelsMap.get(modelEntry.modelId);
+		if (!stat || stat.logsCount <= 0) {
+			continue;
+		}
+		activeModelsCount++;
 
-		// Use actual stats if available, otherwise create zero stats
-		const logsCount = stat?.logsCount ?? 0;
-		const errorsCount = stat?.errorsCount ?? 0;
-		const clientErrorsCount = stat?.clientErrorsCount ?? 0;
-		const gatewayErrorsCount = stat?.gatewayErrorsCount ?? 0;
-		const upstreamErrorsCount = stat?.upstreamErrorsCount ?? 0;
-		const completedCount = stat?.completedCount ?? 0;
-		const lengthLimitCount = stat?.lengthLimitCount ?? 0;
-		const contentFilterCount = stat?.contentFilterCount ?? 0;
-		const toolCallsCount = stat?.toolCallsCount ?? 0;
-		const canceledCount = stat?.canceledCount ?? 0;
-		const unknownFinishCount = stat?.unknownFinishCount ?? 0;
-		const cachedCount = stat?.cachedCount ?? 0;
-		const totalInputTokens = stat?.totalInputTokens ?? 0;
-		const totalOutputTokens = stat?.totalOutputTokens ?? 0;
-		const totalTokens = stat?.totalTokens ?? 0;
-		const totalReasoningTokens = stat?.totalReasoningTokens ?? 0;
-		const totalCachedTokens = stat?.totalCachedTokens ?? 0;
-		const totalDuration = stat?.totalDuration ?? 0;
-		const totalTimeToFirstToken = stat?.totalTimeToFirstToken ?? 0;
+		const logsCount = stat.logsCount;
+		const errorsCount = stat.errorsCount ?? 0;
+		const clientErrorsCount = stat.clientErrorsCount ?? 0;
+		const gatewayErrorsCount = stat.gatewayErrorsCount ?? 0;
+		const upstreamErrorsCount = stat.upstreamErrorsCount ?? 0;
+		const completedCount = stat.completedCount ?? 0;
+		const lengthLimitCount = stat.lengthLimitCount ?? 0;
+		const contentFilterCount = stat.contentFilterCount ?? 0;
+		const toolCallsCount = stat.toolCallsCount ?? 0;
+		const canceledCount = stat.canceledCount ?? 0;
+		const unknownFinishCount = stat.unknownFinishCount ?? 0;
+		const cachedCount = stat.cachedCount ?? 0;
+		const totalInputTokens = stat.totalInputTokens ?? 0;
+		const totalOutputTokens = stat.totalOutputTokens ?? 0;
+		const totalTokens = stat.totalTokens ?? 0;
+		const totalReasoningTokens = stat.totalReasoningTokens ?? 0;
+		const totalCachedTokens = stat.totalCachedTokens ?? 0;
+		const totalDuration = stat.totalDuration ?? 0;
+		const totalTimeToFirstToken = stat.totalTimeToFirstToken ?? 0;
 		const totalTimeToFirstReasoningToken =
-			stat?.totalTimeToFirstReasoningToken ?? 0;
-		const totalCost = stat?.totalCost ?? 0;
+			stat.totalTimeToFirstReasoningToken ?? 0;
+		const totalCost = stat.totalCost ?? 0;
 
 		// Collect the history record for this minute; written in one bulk upsert
 		// below instead of a per-model round-trip.
@@ -453,8 +459,8 @@ async function calculateModelHistoryForMinute(targetMinute: Date) {
 
 	return {
 		totalModels: allModels.length,
-		activeModels: modelStats.length,
-		inactiveModels: allModels.length - modelStats.length,
+		activeModels: activeModelsCount,
+		inactiveModels: allModels.length - activeModelsCount,
 	};
 }
 
@@ -652,34 +658,33 @@ async function calculateHistoryForMinute(targetMinute: Date) {
 
 		const key = `${mapping.modelId}-${mapping.providerId}-${mapping.region ?? ""}`;
 		const stat = activeMappingsMap.get(key);
-
-		// Use actual stats if available, otherwise create zero stats
-		const logsCount = stat?.logsCount ?? 0;
-		const errorsCount = stat?.errorsCount ?? 0;
-		const clientErrorsCount = stat?.clientErrorsCount ?? 0;
-		const gatewayErrorsCount = stat?.gatewayErrorsCount ?? 0;
-		const upstreamErrorsCount = stat?.upstreamErrorsCount ?? 0;
-		const completedCount = stat?.completedCount ?? 0;
-		const lengthLimitCount = stat?.lengthLimitCount ?? 0;
-		const contentFilterCount = stat?.contentFilterCount ?? 0;
-		const toolCallsCount = stat?.toolCallsCount ?? 0;
-		const canceledCount = stat?.canceledCount ?? 0;
-		const unknownFinishCount = stat?.unknownFinishCount ?? 0;
-		const cachedCount = stat?.cachedCount ?? 0;
-		const totalInputTokens = stat?.totalInputTokens ?? 0;
-		const totalOutputTokens = stat?.totalOutputTokens ?? 0;
-		const totalTokens = stat?.totalTokens ?? 0;
-		const totalReasoningTokens = stat?.totalReasoningTokens ?? 0;
-		const totalCachedTokens = stat?.totalCachedTokens ?? 0;
-		const totalDuration = stat?.totalDuration ?? 0;
-		const totalTimeToFirstToken = stat?.totalTimeToFirstToken ?? 0;
-		const totalTimeToFirstReasoningToken =
-			stat?.totalTimeToFirstReasoningToken ?? 0;
-		const totalCost = stat?.totalCost ?? 0;
-
-		if (logsCount > 0) {
-			activeMappingsCount++;
+		if (!stat || stat.logsCount <= 0) {
+			continue;
 		}
+		activeMappingsCount++;
+
+		const logsCount = stat.logsCount;
+		const errorsCount = stat.errorsCount ?? 0;
+		const clientErrorsCount = stat.clientErrorsCount ?? 0;
+		const gatewayErrorsCount = stat.gatewayErrorsCount ?? 0;
+		const upstreamErrorsCount = stat.upstreamErrorsCount ?? 0;
+		const completedCount = stat.completedCount ?? 0;
+		const lengthLimitCount = stat.lengthLimitCount ?? 0;
+		const contentFilterCount = stat.contentFilterCount ?? 0;
+		const toolCallsCount = stat.toolCallsCount ?? 0;
+		const canceledCount = stat.canceledCount ?? 0;
+		const unknownFinishCount = stat.unknownFinishCount ?? 0;
+		const cachedCount = stat.cachedCount ?? 0;
+		const totalInputTokens = stat.totalInputTokens ?? 0;
+		const totalOutputTokens = stat.totalOutputTokens ?? 0;
+		const totalTokens = stat.totalTokens ?? 0;
+		const totalReasoningTokens = stat.totalReasoningTokens ?? 0;
+		const totalCachedTokens = stat.totalCachedTokens ?? 0;
+		const totalDuration = stat.totalDuration ?? 0;
+		const totalTimeToFirstToken = stat.totalTimeToFirstToken ?? 0;
+		const totalTimeToFirstReasoningToken =
+			stat.totalTimeToFirstReasoningToken ?? 0;
+		const totalCost = stat.totalCost ?? 0;
 
 		// Collect the history record for this minute; written in one bulk upsert
 		// below instead of a per-mapping round-trip.

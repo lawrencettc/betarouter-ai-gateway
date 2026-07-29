@@ -782,9 +782,9 @@ export async function cleanupExpiredLogData(): Promise<void> {
 // minute and otherwise grow unbounded. The hourly rollups
 // (model_history_hourly, model_provider_mapping_history_hourly) are kept
 // forever and now serve every window beyond 24h (7d/30d/90d public stats), so
-// the only readers of the minute tables are short windows (<=24h). 30 days
-// leaves a comfortable buffer over the largest minute-level reader.
-const MODEL_HISTORY_RETENTION_DAYS = 30;
+// the only readers of the minute tables are short windows (<=24h). Two days
+// leaves a full-day buffer while bounding the source data needed for backfill.
+const MODEL_HISTORY_RETENTION_DAYS = 2;
 const MODEL_HISTORY_CLEANUP_BATCH_SIZE = 10000;
 // Cap the work per run (per table) so a single cleanup reliably finishes well
 // within the lock TTL (LOCK_DURATION_MINUTES), even on a large initial backlog.
