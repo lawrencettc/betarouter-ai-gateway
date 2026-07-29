@@ -15,12 +15,20 @@ Configure these public hostnames on the remotely managed Cloudflare tunnel:
 | `platform-api.betarouter.com` | `http://betarouter:4002` |
 | `playground.betarouter.com`   | `http://betarouter:3003` |
 | `code.betarouter.com`         | `http://betarouter:3004` |
+| `betapass.betarouter.com`     | `http://betarouter:3004` |
 | `docs.betarouter.com`         | `http://betarouter:3005` |
 | `admin.betarouter.com`        | `http://betarouter:3006` |
 
 Cloudflare creates and proxies the required DNS records when each public
 hostname is saved. The application, PostgreSQL, and Redis ports are not bound
 to the Droplet's public interface.
+
+`betapass.betarouter.com` is the public domain of the BetaPass product (the
+`code` app); it shares the same tunnel service as `code.betarouter.com`. After
+adding the hostname, add `https://betapass.betarouter.com/` to the
+"Verify public routes" step in `.github/workflows/deploy-production.yml` so
+deploys check it — do not add the check before the hostname exists, or every
+deploy will fail verification.
 
 Create a Cloudflare Access self-hosted application for
 `admin.betarouter.com` before sharing the admin URL. Tunnel transport protects
