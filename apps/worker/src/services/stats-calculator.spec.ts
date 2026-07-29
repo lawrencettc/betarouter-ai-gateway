@@ -1240,6 +1240,50 @@ describe("stats-calculator", () => {
 			expect(providers).toHaveLength(2); // Our test providers
 		});
 
+		it("should reset stale counters when recent traffic becomes idle", async () => {
+			const staleStats = {
+				logsCount: 25,
+				errorsCount: 3,
+				clientErrorsCount: 1,
+				gatewayErrorsCount: 1,
+				upstreamErrorsCount: 1,
+				cachedCount: 2,
+			};
+			await db
+				.update(provider)
+				.set(staleStats)
+				.where(eq(provider.id, "openai"));
+			await db.update(model).set(staleStats).where(eq(model.id, "gpt-4"));
+			await db
+				.update(modelProviderMapping)
+				.set(staleStats)
+				.where(eq(modelProviderMapping.id, "mapping-1"));
+
+			await calculateAggregatedStatistics();
+
+			const staleProvider = await db.query.provider.findFirst({
+				where: { id: { eq: "openai" } },
+			});
+			const staleModel = await db.query.model.findFirst({
+				where: { id: { eq: "gpt-4" } },
+			});
+			const staleMapping = await db.query.modelProviderMapping.findFirst({
+				where: { id: { eq: "mapping-1" } },
+			});
+
+			for (const record of [staleProvider, staleModel, staleMapping]) {
+				expect(record).toMatchObject({
+					logsCount: 0,
+					errorsCount: 0,
+					clientErrorsCount: 0,
+					gatewayErrorsCount: 0,
+					upstreamErrorsCount: 0,
+					cachedCount: 0,
+				});
+				expect(record?.statsUpdatedAt).not.toBeNull();
+			}
+		});
+
 		it("should only process history from the last 60 minutes", async () => {
 			const now = new Date("2024-01-01T12:30:00.000Z");
 
@@ -1342,6 +1386,56 @@ describe("stats-calculator", () => {
 			expect(historyRecords[0]?.minuteTimestamp.getTime()).toBe(
 				oldMinute.getTime(),
 			);
+		});
+
+		it("should backfill traffic after a quiet gap longer than 24 hours", async () => {
+			vi.setSystemTime(new Date("2024-01-03T12:30:00.000Z"));
+			const oldMinute = new Date("2024-01-01T00:00:00.000Z");
+			const trafficMinute = new Date("2024-01-02T12:00:00.000Z");
+
+			await db.insert(modelProviderMappingHistory).values({
+				modelId: "gpt-4",
+				providerId: "openai",
+				modelProviderMappingId: "mapping-1",
+				minuteTimestamp: oldMinute,
+				logsCount: 1,
+			});
+			await db.insert(log).values({
+				id: "quiet-gap-log",
+				requestId: "quiet-gap-request",
+				organizationId: "org-1",
+				projectId: "proj-1",
+				apiKeyId: "key-1",
+				duration: 1000,
+				requestedModel: "gpt-4",
+				requestedProvider: "openai",
+				usedModel: "openai/gpt-4",
+				usedProvider: "openai",
+				responseSize: 100,
+				hasError: false,
+				completionTokens: "100",
+				mode: "api-keys",
+				usedMode: "api-keys",
+				createdAt: new Date(trafficMinute.getTime() + 30000),
+			});
+
+			await backfillHistoryIfNeeded();
+
+			const mappingRecord =
+				await db.query.modelProviderMappingHistory.findFirst({
+					where: {
+						modelProviderMappingId: { eq: "mapping-1" },
+						minuteTimestamp: { eq: trafficMinute },
+					},
+				});
+			const modelRecord = await db.query.modelHistory.findFirst({
+				where: {
+					modelId: { eq: "gpt-4" },
+					minuteTimestamp: { eq: trafficMinute },
+				},
+			});
+			expect(mappingRecord?.logsCount).toBe(1);
+			expect(modelRecord?.logsCount).toBe(1);
 		});
 	});
 
