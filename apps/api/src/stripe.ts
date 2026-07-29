@@ -3133,7 +3133,7 @@ function refundProductLabel(type: string): string {
 		return "Credits";
 	}
 	if (type.startsWith("dev_plan")) {
-		return "DevPass";
+		return "BetaPass";
 	}
 	if (type.startsWith("chat_plan")) {
 		return "Chat Plan";
