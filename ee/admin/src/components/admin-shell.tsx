@@ -160,7 +160,7 @@ export function AdminShell({ children }: AdminShellProps) {
 								<Link href="/devpass" className="block">
 									<SidebarMenuButton isActive={isDevpass} size="lg">
 										<Sparkles className="h-4 w-4" />
-										<span>DevPass</span>
+										<span>BetaPass</span>
 									</SidebarMenuButton>
 								</Link>
 							</SidebarMenuItem>

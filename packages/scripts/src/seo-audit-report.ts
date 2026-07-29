@@ -76,14 +76,14 @@ const PAGES: ReadonlyArray<PageTarget> = [
 	{ url: "https://betarouter.com/blog", label: "Blog index" },
 	{ url: "https://betarouter.com/timeline", label: "Timeline" },
 	{ url: "https://docs.betarouter.com/", label: "Docs home" },
-	{ url: "https://devpass.betarouter.com/", label: "DevPass landing" },
+	{ url: "https://betapass.betarouter.com/", label: "BetaPass landing" },
 	{ url: "https://chat.betarouter.com/", label: "Chat landing" },
 ];
 
 const ROBOTS_HOSTS: ReadonlyArray<string> = [
 	"betarouter.com",
 	"docs.betarouter.com",
-	"devpass.betarouter.com",
+	"betapass.betarouter.com",
 	"chat.betarouter.com",
 ];
 
@@ -557,7 +557,7 @@ const RESPONSE_JSON_SCHEMA = {
 	},
 } as const;
 
-const SHARED_CONTEXT = `You are auditing the public web presence of betarouter (betarouter.com), an open-source LLM API gateway SaaS that routes OpenAI-compatible requests across 40+ providers. Products on separate hosts: betarouter.com (marketing site + dashboard), docs.betarouter.com (documentation), devpass.betarouter.com (DevPass developer subscription), chat.betarouter.com (Chat product).
+const SHARED_CONTEXT = `You are auditing the public web presence of betarouter (betarouter.com), an open-source LLM API gateway SaaS that routes OpenAI-compatible requests across 40+ providers. Products on separate hosts: betarouter.com (marketing site + dashboard), docs.betarouter.com (documentation), betapass.betarouter.com (BetaPass developer subscription), chat.betarouter.com (Chat product).
 
 Evidence provenance: all page evidence was extracted from raw server-rendered HTML WITHOUT executing JavaScript. JSON-LD types listed were found in the server HTML. If something could plausibly be injected client-side, phrase the finding cautiously instead of asserting absence.
 

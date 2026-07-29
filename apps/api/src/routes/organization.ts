@@ -925,7 +925,7 @@ organization.openapi(deleteOrganization, async (c) => {
 	if (userOrganization.organization?.kind === "devpass") {
 		throw new HTTPException(403, {
 			message:
-				"Personal organizations cannot be deleted. Please cancel your dev plan at devpass.betarouter.com instead.",
+				"Personal organizations cannot be deleted. Please cancel your dev plan at betapass.betarouter.com instead.",
 		});
 	}
 

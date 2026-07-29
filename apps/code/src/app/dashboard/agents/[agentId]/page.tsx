@@ -22,7 +22,7 @@ export default async function AgentDetailPage({
 				<div className="container mx-auto flex items-center justify-between px-4 py-3">
 					<Link href="/" className="flex items-center gap-2">
 						<Code className="h-5 w-5" />
-						<span className="font-semibold">DevPass</span>
+						<span className="font-semibold">BetaPass</span>
 					</Link>
 					<Link
 						href="/dashboard"

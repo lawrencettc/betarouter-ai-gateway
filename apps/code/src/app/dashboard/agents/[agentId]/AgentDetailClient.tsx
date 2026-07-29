@@ -407,10 +407,10 @@ export default function AgentDetailClient({ agentId }: { agentId: string }) {
 						<Terminal className="h-5 w-5 text-muted-foreground" />
 					</div>
 					<h3 className="text-base font-semibold tracking-tight">
-						No active DevPass
+						No active BetaPass
 					</h3>
 					<p className="mx-auto mt-1.5 max-w-md text-sm text-muted-foreground">
-						Subscribe to DevPass to see usage details for {agent.label}.
+						Subscribe to BetaPass to see usage details for {agent.label}.
 					</p>
 				</div>
 			) : !stats ? (
@@ -423,7 +423,7 @@ export default function AgentDetailClient({ agentId }: { agentId: string }) {
 					</h3>
 					<p className="mx-auto mt-1.5 max-w-md text-sm text-muted-foreground">
 						We haven&apos;t seen any requests from this agent in the last 30
-						days. Run it with your DevPass key and it will show up here.
+						days. Run it with your BetaPass key and it will show up here.
 					</p>
 				</div>
 			) : (

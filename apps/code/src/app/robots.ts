@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
 				disallow: ["/dashboard/", "/login", "/signup", "/api/"],
 			},
 		],
-		sitemap: "https://devpass.betarouter.com/sitemap.xml",
+		sitemap: "https://betapass.betarouter.com/sitemap.xml",
 	};
 }

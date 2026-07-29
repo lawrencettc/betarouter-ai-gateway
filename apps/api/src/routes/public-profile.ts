@@ -25,7 +25,7 @@ const getPublicProfile = createRoute({
 					schema: z.object({ profile: profileSchema }),
 				},
 			},
-			description: "A public DevPass profile.",
+			description: "A public BetaPass profile.",
 		},
 		404: {
 			content: {

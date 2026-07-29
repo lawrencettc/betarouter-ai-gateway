@@ -60,7 +60,7 @@ interface ReportData {
 
 const PRODUCTS: ReadonlyArray<{ host: string; label: string }> = [
 	{ host: "betarouter.com", label: "betarouter" },
-	{ host: "devpass.betarouter.com", label: "DevPass" },
+	{ host: "betapass.betarouter.com", label: "BetaPass" },
 	{ host: "chat.betarouter.com", label: "Chat" },
 	{ host: "docs.betarouter.com", label: "Docs" },
 ];
@@ -75,7 +75,7 @@ const EVENTS: ReadonlyArray<{
 }> = [
 	{ event: "user_signed_up", label: "Signups" },
 	{ event: "credits_purchased", label: "Credit purchases" },
-	{ event: "dev_plan_started", label: "DevPass starts" },
+	{ event: "dev_plan_started", label: "BetaPass starts" },
 	{ event: "chat_plan_started", label: "Chat plan starts" },
 	{ event: "reset_pass_purchased", label: "Reset passes" },
 	{ event: "onboarding_completed", label: "Onboarding done" },

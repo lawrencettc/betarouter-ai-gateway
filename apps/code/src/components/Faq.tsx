@@ -87,10 +87,10 @@ const faqData: FaqItem[] = [
 	},
 	{
 		question: "Do I need a subscription, or is there pay-as-you-go?",
-		answer: `Both work. DevPass plans turn every dollar into $3 of model usage. If you'd rather not subscribe, betarouter offers pay-as-you-go: top up credits and pay per token at provider rates with a flat ${MARKETING_STATS.platformFee} platform fee, or bring your own provider keys for free.`,
+		answer: `Both work. BetaPass plans turn every dollar into $3 of model usage. If you'd rather not subscribe, betarouter offers pay-as-you-go: top up credits and pay per token at provider rates with a flat ${MARKETING_STATS.platformFee} platform fee, or bring your own provider keys for free.`,
 	},
 	{
-		question: "Which tools and SDKs work with DevPass?",
+		question: "Which tools and SDKs work with BetaPass?",
 		answer:
 			"Anything that speaks the OpenAI or Anthropic API — Claude Code, Empryo, SoulForge, Cursor, Cline, Continue, Aider, the OpenAI and Anthropic SDKs, and more. Set two environment variables and you're in.",
 	},
@@ -171,10 +171,10 @@ const faqData: FaqItem[] = [
 	{
 		question: "Can I get a refund?",
 		answer:
-			"Yes — DevPass comes with a first-month guarantee. Cancel within 7 days of your first purchase and email contact@betarouter.com: we'll refund your first month minus the usage you consumed at provider rates. There's no cancellation fee.",
+			"Yes — BetaPass comes with a first-month guarantee. Cancel within 7 days of your first purchase and email contact@betarouter.com: we'll refund your first month minus the usage you consumed at provider rates. There's no cancellation fee.",
 		content: (
 			<>
-				Yes — DevPass comes with a <strong>first-month guarantee</strong>.
+				Yes — BetaPass comes with a <strong>first-month guarantee</strong>.
 				Cancel within 7 days of your first purchase and email{" "}
 				<Link href="mailto:contact@betarouter.com" className="underline">
 					contact@betarouter.com
@@ -221,7 +221,7 @@ export function Faq() {
 						</h2>
 						<p className="mt-4 text-muted-foreground">
 							Everything you need to know about usage limits, plans, and getting
-							started with DevPass.
+							started with BetaPass.
 						</p>
 						<p className="mt-6 text-sm text-muted-foreground">
 							Can&apos;t find an answer?{" "}

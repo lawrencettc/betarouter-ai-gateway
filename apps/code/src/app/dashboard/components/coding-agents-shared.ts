@@ -31,7 +31,7 @@ export interface AgentDefinition {
 export const AGENTS: AgentDefinition[] = [
 	{
 		id: "devpass-code",
-		label: "DevPass Code",
+		label: "BetaPass Code",
 		icon: DevPassCodeIcon,
 		sources: ["devpass-code"],
 		guideUrl: "/guides/devpass-code",

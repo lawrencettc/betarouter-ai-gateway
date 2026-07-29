@@ -143,7 +143,7 @@ function BillingDetailsForm({
 				<>
 					<h2 className="mb-1 font-semibold">Billing details</h2>
 					<p className="mb-4 text-sm text-muted-foreground">
-						These details appear on your DevPass invoices.
+						These details appear on your BetaPass invoices.
 					</p>
 				</>
 			)}
@@ -161,7 +161,7 @@ function BillingDetailsForm({
 						</Label>
 						<p className="text-xs text-muted-foreground">
 							These come from your betarouter organization settings. Turn off to
-							set custom details for DevPass invoices.
+							set custom details for BetaPass invoices.
 						</p>
 					</div>
 					<Switch

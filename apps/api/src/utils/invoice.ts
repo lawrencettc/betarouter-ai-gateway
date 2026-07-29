@@ -52,9 +52,9 @@ export interface InvoiceData {
 const TRANSACTION_TYPE_LABELS: Record<string, string> = {
 	credit_topup: "Credit Top-up",
 	subscription_start: "Subscription",
-	dev_plan_start: "DevPass Plan",
-	dev_plan_renewal: "DevPass Plan Renewal",
-	dev_plan_upgrade: "DevPass Plan Upgrade",
+	dev_plan_start: "BetaPass Plan",
+	dev_plan_renewal: "BetaPass Plan Renewal",
+	dev_plan_upgrade: "BetaPass Plan Upgrade",
 	chat_plan_start: "Chat Plan",
 	chat_plan_renewal: "Chat Plan Renewal",
 	chat_plan_upgrade: "Chat Plan Upgrade",

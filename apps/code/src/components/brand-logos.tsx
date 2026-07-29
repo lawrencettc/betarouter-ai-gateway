@@ -216,7 +216,7 @@ export interface BrandSpec {
 
 export const BRAND: Record<string, BrandSpec> = {
 	devpass: {
-		label: "DevPass",
+		label: "BetaPass",
 		bg: "#fafafa",
 		fg: "#0a0a0b",
 		scale: 0.56,

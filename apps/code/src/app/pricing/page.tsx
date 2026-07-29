@@ -30,12 +30,12 @@ import {
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Pricing — DevPass",
+	title: "Pricing — BetaPass",
 	description:
 		"Flat-rate AI coding plans. Lite, Pro, and Max — every plan includes 200+ models metered at provider rates.",
 	alternates: { canonical: "/pricing" },
 	openGraph: {
-		title: "Pricing — DevPass",
+		title: "Pricing — BetaPass",
 		description:
 			"Flat-rate AI coding plans. Every plan includes 200+ models — Claude Opus 4.8, GPT-5.5, Gemini 3.1 Pro, GLM-4.7, and more.",
 	},
@@ -59,7 +59,7 @@ const premiumOutputPerM = Math.round(HIGH_COST_OUTPUT_PRICE * 1_000_000);
 const productSchema = {
 	"@context": "https://schema.org",
 	"@type": "Product",
-	name: "DevPass by betarouter",
+	name: "BetaPass by betarouter",
 	description:
 		"Flat-rate AI coding plans with access to 200+ models — Claude Opus 4.8, GPT-5.5, Gemini 3.1 Pro, GLM-4.7, and more. Works with Claude Code, OpenCode, Empryo, SoulForge, and any OpenAI-compatible tool.",
 	brand: {
@@ -75,10 +75,10 @@ const productSchema = {
 		offers: [
 			{
 				"@type": "Offer",
-				name: "DevPass Lite",
+				name: "BetaPass Lite",
 				price: DEV_PLAN_PRICES.lite,
 				priceCurrency: "USD",
-				url: "https://devpass.betarouter.com/pricing",
+				url: "https://betapass.betarouter.com/pricing",
 				availability: "https://schema.org/InStock",
 				priceSpecification: {
 					"@type": "UnitPriceSpecification",
@@ -94,10 +94,10 @@ const productSchema = {
 			},
 			{
 				"@type": "Offer",
-				name: "DevPass Pro",
+				name: "BetaPass Pro",
 				price: DEV_PLAN_PRICES.pro,
 				priceCurrency: "USD",
-				url: "https://devpass.betarouter.com/pricing",
+				url: "https://betapass.betarouter.com/pricing",
 				availability: "https://schema.org/InStock",
 				priceSpecification: {
 					"@type": "UnitPriceSpecification",
@@ -113,10 +113,10 @@ const productSchema = {
 			},
 			{
 				"@type": "Offer",
-				name: "DevPass Max",
+				name: "BetaPass Max",
 				price: DEV_PLAN_PRICES.max,
 				priceCurrency: "USD",
-				url: "https://devpass.betarouter.com/pricing",
+				url: "https://betapass.betarouter.com/pricing",
 				availability: "https://schema.org/InStock",
 				priceSpecification: {
 					"@type": "UnitPriceSpecification",
@@ -178,7 +178,7 @@ const includedInEveryPlan = [
 	"All 200+ models — flagships land day one",
 	"Claude Opus 4.8, GPT-5.5, Gemini 3.1 Pro",
 	"Open-weight coders — GLM-4.7, Qwen3, Kimi K2.6",
-	"DevPass Code, Claude Code, OpenCode, Empryo, SoulForge",
+	"BetaPass Code, Claude Code, OpenCode, Empryo, SoulForge",
 	"Any OpenAI/Anthropic-compatible tool",
 	"Real-time dashboard with per-request cost & latency",
 	"Switch tiers anytime — no lock-in, no cancellation fee",

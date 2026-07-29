@@ -612,7 +612,7 @@ const getProfile = createRoute({
 					schema: z.object({ profile: profileSchema }),
 				},
 			},
-			description: "The authenticated user's DevPass profile data.",
+			description: "The authenticated user's BetaPass profile data.",
 		},
 		401: {
 			content: {

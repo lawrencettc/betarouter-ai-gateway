@@ -37,7 +37,7 @@ const plans: PlanContent[] = [
 		support: "Email",
 		features: [
 			"All 200+ models — Claude, GPT-5, Gemini, GLM, Qwen, …",
-			"DevPass Code, Claude Code, OpenCode, Empryo, SoulForge & any OpenAI-compatible tool",
+			"BetaPass Code, Claude Code, OpenCode, Empryo, SoulForge & any OpenAI-compatible tool",
 			"Real-time dashboard with per-request cost",
 		],
 	},
@@ -229,7 +229,7 @@ export function PricingPlans({ credits, paygoUrl }: PricingPlansProps) {
 				<div>
 					<p className="text-sm font-semibold">First-month guarantee</p>
 					<p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-						Try DevPass for a week. If it&apos;s not for you, cancel within 7
+						Try BetaPass for a week. If it&apos;s not for you, cancel within 7
 						days of your first purchase and we&apos;ll refund your first month
 						minus the usage you consumed at provider rates — one email to{" "}
 						<a
@@ -254,7 +254,7 @@ export function PricingPlans({ credits, paygoUrl }: PricingPlansProps) {
 							<span className="font-semibold text-foreground">betarouter</span>{" "}
 							without a plan — top up credits and pay per token at provider
 							rates with a flat {MARKETING_STATS.platformFee} platform fee, or
-							bring your own provider keys for free. DevPass simply triples
+							bring your own provider keys for free. BetaPass simply triples
 							every dollar.
 						</p>
 					</div>

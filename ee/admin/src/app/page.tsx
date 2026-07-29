@@ -317,7 +317,7 @@ export default async function Page({
 									value: currencyFormatter.format(metrics.grossCreditsRevenue),
 								},
 								{
-									label: "DevPass",
+									label: "BetaPass",
 									value: currencyFormatter.format(metrics.grossDevpassRevenue),
 								},
 								{

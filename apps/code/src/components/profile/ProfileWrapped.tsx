@@ -40,7 +40,7 @@ export function ProfileWrapped({ profile }: { profile: ProfileData }) {
 	const { user } = useUser();
 
 	const handle = profile.username ?? "";
-	const displayName = profile.name?.trim() || handle || "DevPass user";
+	const displayName = profile.name?.trim() || handle || "BetaPass user";
 	const isOwner = !!user && (user.username ?? "") === handle;
 	const topAgent =
 		profile.agents.length > 0
@@ -58,7 +58,7 @@ export function ProfileWrapped({ profile }: { profile: ProfileData }) {
 							<Sparkles className="h-3.5 w-3.5" />
 							Coding wrapped
 						</div>
-						<span className="text-xs font-medium text-white/50">DevPass</span>
+						<span className="text-xs font-medium text-white/50">BetaPass</span>
 					</div>
 
 					<div className="mt-5 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">

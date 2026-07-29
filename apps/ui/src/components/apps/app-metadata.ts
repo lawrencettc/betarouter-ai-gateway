@@ -26,10 +26,10 @@ export interface AppMetadata {
 
 export const APP_METADATA: Record<string, AppMetadata> = {
 	"devpass-code": {
-		displayName: "DevPass Code",
+		displayName: "BetaPass Code",
 		url: "https://github.com/theopenco/devpass-code",
 		description:
-			"betarouter's first-party terminal coding agent. One-click browser login connects it straight to your DevPass — no keys to copy.",
+			"betarouter's first-party terminal coding agent. One-click browser login connects it straight to your BetaPass — no keys to copy.",
 		category: "coding",
 		Icon: DevPassCodeIcon,
 	},
@@ -53,7 +53,7 @@ export const APP_METADATA: Record<string, AppMetadata> = {
 		displayName: "Cline",
 		url: "https://cline.bot",
 		description:
-			"Autonomous coding agent in VS Code. Plug in your DevPass key and let it ship.",
+			"Autonomous coding agent in VS Code. Plug in your BetaPass key and let it ship.",
 		category: "coding",
 		Icon: ClineIcon,
 	},
@@ -69,7 +69,7 @@ export const APP_METADATA: Record<string, AppMetadata> = {
 		displayName: "OpenCode",
 		url: "https://opencode.ai",
 		description:
-			"Native betarouter integration. Run `opencode`, `/connect`, paste your DevPass key.",
+			"Native betarouter integration. Run `opencode`, `/connect`, paste your BetaPass key.",
 		category: "coding",
 		Icon: OpenCodeIcon,
 	},
@@ -98,7 +98,7 @@ export const APP_METADATA: Record<string, AppMetadata> = {
 		displayName: "Roo Code",
 		url: "https://roocode.com",
 		description:
-			"Cline fork with extended autonomy. Same DevPass key, same flat price.",
+			"Cline fork with extended autonomy. Same BetaPass key, same flat price.",
 		category: "coding",
 	},
 	"kilo-code": {

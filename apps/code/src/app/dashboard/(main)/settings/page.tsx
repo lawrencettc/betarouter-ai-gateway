@@ -26,7 +26,7 @@ export default function SettingsPage() {
 			<div>
 				<h1 className="text-lg font-semibold tracking-tight">Settings</h1>
 				<p className="mt-0.5 text-sm text-muted-foreground">
-					Control how DevPass routes and stores your requests.
+					Control how BetaPass routes and stores your requests.
 				</p>
 			</div>
 

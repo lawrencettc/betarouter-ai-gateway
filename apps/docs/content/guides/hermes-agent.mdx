@@ -124,16 +124,16 @@ Once you press `Y`, Hermes launches a full agent session connected to betarouter
 </Step>
 </Steps>
 
-## DevPass Compatibility
+## BetaPass Compatibility
 
-Hermes Agent is fully compatible with [DevPass coding plans](/features/coding-agents). The gateway automatically detects Hermes via multiple signals:
+Hermes Agent is fully compatible with [BetaPass coding plans](/features/coding-agents). The gateway automatically detects Hermes via multiple signals:
 
 - **X-Source header** — Hermes sends `X-Source: https://hermes-agent.nousresearch.com` (auto-detected)
 - **User-Agent** — `HermesAgent/<version>` is recognized
 - **X-Title** — Title containing "hermes agent" is matched
 - **HTTP-Referer** — Any referer URL containing `hermes-agent.nousresearch.com`
 
-No configuration is needed on your side — DevPass plans automatically allow Hermes traffic.
+No configuration is needed on your side — BetaPass plans automatically allow Hermes traffic.
 
 <Callout type="info">
 	Native betarouter provider support is being added to Hermes Agent upstream.

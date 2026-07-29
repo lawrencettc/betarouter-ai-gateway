@@ -44,7 +44,7 @@ export default function DevPassPaymentMethod({
 				<div>
 					<h2 className="font-semibold">Payment method</h2>
 					<p className="mt-1 text-sm text-muted-foreground">
-						The card used for your DevPass subscription.
+						The card used for your BetaPass subscription.
 					</p>
 				</div>
 				{!editing && (

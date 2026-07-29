@@ -21,12 +21,12 @@ export async function generateMetadata({
 	const profile = await fetchPublicProfile(username);
 
 	if (!profile) {
-		return { title: "Profile not found · DevPass" };
+		return { title: "Profile not found · BetaPass" };
 	}
 
 	const name = profile.name?.trim() || `@${profile.username}`;
-	const title = `${name} · DevPass`;
-	const description = `${name}'s AI coding activity on DevPass — ${profile.stats.activeDays} active days, ${profile.stats.currentStreak}-day streak.`;
+	const title = `${name} · BetaPass`;
+	const description = `${name}'s AI coding activity on BetaPass — ${profile.stats.activeDays} active days, ${profile.stats.currentStreak}-day streak.`;
 
 	return {
 		title,

@@ -7,7 +7,7 @@ import { logger } from "@betarouter/logger";
 // these URLs and can fetch their content on demand to ground answers.
 const KNOWLEDGE_SITEMAPS = [
 	"https://betarouter.com/sitemap.xml",
-	"https://devpass.betarouter.com/sitemap.xml",
+	"https://betapass.betarouter.com/sitemap.xml",
 	"https://docs.betarouter.com/sitemap.xml",
 	"https://chat.betarouter.com/sitemap.xml",
 ];
@@ -15,7 +15,7 @@ const KNOWLEDGE_SITEMAPS = [
 // Only pages on these hosts may be fetched by the agent's grounding tool.
 const ALLOWED_HOSTS = [
 	"betarouter.com",
-	"devpass.betarouter.com",
+	"betapass.betarouter.com",
 	"docs.betarouter.com",
 	"chat.betarouter.com",
 ];

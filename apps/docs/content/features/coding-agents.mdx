@@ -1,12 +1,12 @@
 ---
 title: Coding Agents
-description: Supported coding agents for DevPass plans and how to configure your tool.
+description: Supported coding agents for BetaPass plans and how to configure your tool.
 icon: Terminal
 ---
 
 # Coding Agents
 
-The gateway detects which coding agent or tool a DevPass request comes from and records it as the `x-source` attribution in logs and the dashboard. Detection runs on every request.
+The gateway detects which coding agent or tool a BetaPass request comes from and records it as the `x-source` attribution in logs and the dashboard. Detection runs on every request.
 
 Source enforcement is gated behind the `DEVPASS_ENFORCE_SOURCE_RESTRICTION` environment variable and is **disabled by default**. While disabled, all sources are allowed and detection is used only for attribution. When enabled (`DEVPASS_ENFORCE_SOURCE_RESTRICTION=true`), requests from unrecognized sources (browsers, curl, generic HTTP clients) are rejected with a `403` response.
 
@@ -20,18 +20,18 @@ The gateway identifies coding agents using a multi-layer priority chain:
 4. **`HTTP-Referer` header** — Referer URL pattern matching (e.g., `hermes-agent.nousresearch.com`)
 5. **User-Agent fallback** — If an unrecognized `x-source` is sent, falls back to UA detection
 
-If your tool sends a recognized `x-source` header, no further detection is needed. Otherwise, the gateway checks each subsequent layer until a match is found. If no layer produces a match, the request is rejected on DevPass plans only when source enforcement is enabled (see above); otherwise it is allowed and logged as an unrecognized source.
+If your tool sends a recognized `x-source` header, no further detection is needed. Otherwise, the gateway checks each subsequent layer until a match is found. If no layer produces a match, the request is rejected on BetaPass plans only when source enforcement is enabled (see above); otherwise it is allowed and logged as an unrecognized source.
 
 ## Supported Agents
 
-The following agents are automatically detected and allowed on DevPass plans:
+The following agents are automatically detected and allowed on BetaPass plans:
 
 | Agent              | Source ID                | Detection                                                                   |
 | ------------------ | ------------------------ | --------------------------------------------------------------------------- |
 | Claude Code        | `claude.com/claude-code` | UA: `claude-cli/...` or contains `claude-code`                              |
 | Codex CLI          | `codex`                  | UA: `codex-cli/...`, `codex_cli_rs/...`, `codex-tui/...`                    |
 | OpenCode           | `opencode`               | UA: `opencode/...` or contains `opencode-cli`                               |
-| DevPass Code       | `devpass-code`           | Header: `x-source: devpass-code`                                            |
+| BetaPass Code      | `devpass-code`           | Header: `x-source: devpass-code`                                            |
 | Roo Code           | `roo-code`               | UA: contains `roo-code` or `roo-cline`                                      |
 | Cline              | `cline`                  | UA: contains `cline`                                                        |
 | Cursor             | `cursor`                 | UA: `Cursor/...` or contains `cursor-llm`                                   |
@@ -81,12 +81,12 @@ The User-Agent must match one of the patterns in the detection table above.
 
 ## Error Response
 
-When a DevPass plan request comes from an unrecognized source, the gateway returns:
+When a BetaPass plan request comes from an unrecognized source, the gateway returns:
 
 ```json
 {
 	"error": {
-		"message": "DevPass coding plans are restricted to recognized coding agents. Your request was not identified as coming from a supported tool. Please ensure your coding tool sends an identifiable User-Agent header or x-source header. Supported agents: Claude Code, Codex CLI, OpenCode, ..., and any *claw fork.",
+		"message": "BetaPass coding plans are restricted to recognized coding agents. Your request was not identified as coming from a supported tool. Please ensure your coding tool sends an identifiable User-Agent header or x-source header. Supported agents: Claude Code, Codex CLI, OpenCode, ..., and any *claw fork.",
 		"type": "gateway_error",
 		"param": null,
 		"code": "403"
@@ -123,7 +123,7 @@ To add support for a new coding agent, add an entry to the centralized registry 
 After adding the entry:
 
 1. The agent is automatically detected from User-Agent headers
-2. The agent is automatically allowlisted for DevPass plans
+2. The agent is automatically allowlisted for BetaPass plans
 3. The agent appears in the Agents activity view in the dashboard
 4. The `x-source` values are normalized to the canonical `id` in logs
 
@@ -131,7 +131,7 @@ No other code changes are required.
 
 ## Removing an Agent
 
-To remove an agent from the allowlist, delete its entry from `packages/shared/src/coding-agents.ts`. Once source enforcement is enabled, requests from that tool will be rejected on DevPass plans after deployment.
+To remove an agent from the allowlist, delete its entry from `packages/shared/src/coding-agents.ts`. Once source enforcement is enabled, requests from that tool will be rejected on BetaPass plans after deployment.
 
 ## Source Normalization
 

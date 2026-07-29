@@ -25,15 +25,15 @@ export function ProfileViewerCta({ profile }: { profile: ProfileData }) {
 			<div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_60%_at_50%_-10%,_rgba(16,185,129,0.12),_transparent)]" />
 			<div className="relative">
 				<p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-400">
-					Powered by DevPass
+					Powered by BetaPass
 				</p>
 				<h2 className="mx-auto mt-3 max-w-xl text-2xl font-bold tracking-tight sm:text-3xl">
 					One key. Every model. Three flat prices.
 				</h2>
 				<p className="mx-auto mt-3 max-w-xl text-muted-foreground">
 					{displayName} has routed {formatTokens(profile.stats.totalTokens)}{" "}
-					tokens through DevPass — Claude, GPT, Gemini, GLM and more, all from a
-					single key. Start your own and turn every dollar into $3 of model
+					tokens through BetaPass — Claude, GPT, Gemini, GLM and more, all from
+					a single key. Start your own and turn every dollar into $3 of model
 					usage.
 				</p>
 				<div className="mt-7 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">

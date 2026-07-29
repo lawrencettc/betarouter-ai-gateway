@@ -101,7 +101,7 @@ export function BlockOrgButton({
 							<ul className="list-disc space-y-1 pl-5">
 								<li>
 									Immediately cancel every active Stripe subscription on this
-									organization (DevPass and any pro subscription).
+									organization (BetaPass and any pro subscription).
 								</li>
 								<li>
 									Mark the organization as deleted so gateway requests are

@@ -59,9 +59,9 @@ const revenueViews = {
 		lines: ["processed", "revenue", "net"],
 	},
 	devpass: {
-		label: "DevPass Net",
+		label: "BetaPass Net",
 		description:
-			"Cumulative gross and net (after refunds) DevPass plan revenue",
+			"Cumulative gross and net (after refunds) BetaPass plan revenue",
 		lines: ["devpassRevenue", "devpassNet"],
 	},
 } as const;
@@ -103,7 +103,7 @@ export function RevenueChart({
 			<CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
 				<div className="flex flex-1 flex-col justify-center gap-1.5 px-6 py-5 sm:py-6">
 					<CardTitle className="font-mono text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-						Credits & DevPass Revenue
+						Credits & BetaPass Revenue
 					</CardTitle>
 					<CardDescription className="text-xs">
 						{revenueViews[activeView].description}

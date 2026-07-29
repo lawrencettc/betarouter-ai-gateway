@@ -10,7 +10,7 @@ describe("isAllowedKnowledgeUrl", () => {
 		expect(isAllowedKnowledgeUrl("https://docs.betarouter.com/v1_models")).toBe(
 			true,
 		);
-		expect(isAllowedKnowledgeUrl("https://devpass.betarouter.com/")).toBe(true);
+		expect(isAllowedKnowledgeUrl("https://betapass.betarouter.com/")).toBe(true);
 		expect(isAllowedKnowledgeUrl("https://chat.betarouter.com/")).toBe(true);
 	});
 

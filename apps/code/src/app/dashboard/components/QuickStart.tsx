@@ -16,7 +16,12 @@ import {
 } from "@betarouter/shared/components";
 
 type ToolId =
-	"claude-code" | "opencode" | "empryo" | "soulforge" | "autohand" | "cline";
+	| "claude-code"
+	| "opencode"
+	| "empryo"
+	| "soulforge"
+	| "autohand"
+	| "cline";
 
 interface ToolDef {
 	id: ToolId;
@@ -73,13 +78,13 @@ function buildSnippets(apiKey: string): Record<ToolId, Snippet> {
 			exports: [],
 			command: "empryo",
 			comment:
-				"# inside: /keys → paste your DevPass key (or: empryo --set-key llmgateway <key>)",
+				"# inside: /keys → paste your BetaPass key (or: empryo --set-key llmgateway <key>)",
 		},
 		soulforge: {
 			exports: [],
 			command: "soulforge",
 			comment:
-				"# inside: /keys → paste your DevPass key (or: soulforge --set-key llmgateway <key>)",
+				"# inside: /keys → paste your BetaPass key (or: soulforge --set-key llmgateway <key>)",
 		},
 		autohand: {
 			exports: [

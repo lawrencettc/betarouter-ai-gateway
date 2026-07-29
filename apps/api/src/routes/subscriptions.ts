@@ -90,7 +90,7 @@ subscriptions.openapi(createProSubscription, async (c) => {
 	if (organization.kind !== "default") {
 		throw new HTTPException(403, {
 			message:
-				"Paid subscriptions are not available for personal organizations. Please use Dev Plans at devpass.betarouter.com or create a regular organization.",
+				"Paid subscriptions are not available for personal organizations. Please use Dev Plans at betapass.betarouter.com or create a regular organization.",
 		});
 	}
 

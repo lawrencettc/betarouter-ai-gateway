@@ -1,6 +1,6 @@
-# DevPass by LLM Gateway
+# BetaPass by LLM Gateway
 
-> DevPass is a flat-price subscription for AI coding tools. One API key unlocks 200+ models across 40+ providers in any OpenAI-compatible coding agent — DevPass Code, Claude Code, opencode, Cursor, Continue, and more — with a fixed monthly usage allowance instead of surprise token bills.
+> BetaPass is a flat-price subscription for AI coding tools. One API key unlocks 200+ models across 40+ providers in any OpenAI-compatible coding agent — BetaPass Code, Claude Code, opencode, Cursor, Continue, and more — with a fixed monthly usage allowance instead of surprise token bills.
 
 ## Plans
 
@@ -11,13 +11,13 @@
 
 ## Key pages
 
-- [DevPass](https://devpass.llmgateway.io): Plans, supported coding agents, and setup.
+- [BetaPass](https://betapass.betarouter.com): Plans, supported coding agents, and setup.
 - [Docs & agent guides](https://docs.llmgateway.io/guides): Step-by-step setup for each coding agent.
 - [Models](https://llmgateway.io/models): Full catalog of supported models with pricing and capabilities.
-- [LLM Gateway](https://llmgateway.io): The open-source gateway platform DevPass runs on.
+- [LLM Gateway](https://llmgateway.io): The open-source gateway platform BetaPass runs on.
 - [Pricing (machine-readable)](https://llmgateway.io/pricing.md): Plain-markdown pricing for the whole platform.
 
 ## Notes
 
-- DevPass works with any tool that speaks the OpenAI API format — point it at the gateway base URL.
+- BetaPass works with any tool that speaks the OpenAI API format — point it at the gateway base URL.
 - Usage allowances are metered at provider list rates; there is no markup on tokens.

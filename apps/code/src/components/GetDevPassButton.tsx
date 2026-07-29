@@ -27,7 +27,7 @@ export function GetDevPassButton({
 		<CodeCTATracker cta={cta} location={location}>
 			<Button size="lg" className={className} asChild>
 				<Link href={isAuthenticated ? "/dashboard" : signupHref}>
-					{isAuthenticated ? "Go to Dashboard" : "Get your DevPass"}
+					{isAuthenticated ? "Go to Dashboard" : "Get your BetaPass"}
 					{showArrow && <ArrowRight className="h-4 w-4" />}
 				</Link>
 			</Button>

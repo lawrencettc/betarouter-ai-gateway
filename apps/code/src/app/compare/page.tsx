@@ -11,16 +11,16 @@ import type { Comparison } from "content-collections";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "DevPass vs the Alternatives — Coding Plan Comparisons",
+	title: "BetaPass vs the Alternatives — Coding Plan Comparisons",
 	description:
-		"How DevPass compares to Cursor, OpenCode, FirePass, the z.ai GLM Coding Plan, and Alibaba's Qwen plan. Pricing, model catalogs, and limits side by side.",
+		"How BetaPass compares to Cursor, OpenCode, FirePass, the z.ai GLM Coding Plan, and Alibaba's Qwen plan. Pricing, model catalogs, and limits side by side.",
 	alternates: { canonical: "/compare" },
 	openGraph: {
-		title: "DevPass vs the Alternatives — Coding Plan Comparisons",
+		title: "BetaPass vs the Alternatives — Coding Plan Comparisons",
 		description:
-			"How DevPass compares to Cursor, OpenCode, FirePass, z.ai and Alibaba Qwen. Pricing, models, and limits side by side.",
+			"How BetaPass compares to Cursor, OpenCode, FirePass, z.ai and Alibaba Qwen. Pricing, models, and limits side by side.",
 		type: "website",
-		url: "https://devpass.betarouter.com/compare",
+		url: "https://betapass.betarouter.com/compare",
 	},
 };
 
@@ -55,11 +55,11 @@ export default function CompareIndexPage() {
 							Comparisons
 						</div>
 						<h1 className="text-4xl font-bold tracking-tight text-balance sm:text-5xl">
-							DevPass vs the alternatives
+							BetaPass vs the alternatives
 						</h1>
 						<p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-pretty text-muted-foreground">
 							Single-vendor plans and single-model deals each do one thing well.
-							DevPass gives you all 200+ models — frontier and open-weight —
+							BetaPass gives you all 200+ models — frontier and open-weight —
 							under one key. Here&apos;s how it stacks up.
 						</p>
 
@@ -106,7 +106,7 @@ export default function CompareIndexPage() {
 									</div>
 
 									<h2 className="text-lg font-semibold tracking-tight text-foreground">
-										DevPass vs {entry.competitor}
+										BetaPass vs {entry.competitor}
 									</h2>
 									<p className="mt-1 text-xs font-medium text-muted-foreground">
 										{entry.competitorTagline}

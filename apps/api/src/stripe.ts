@@ -931,7 +931,7 @@ export async function finalizeDevPlanSetupSession(
 					await sendTransactionalEmail({
 						to: notifyEmail,
 						organizationId: organization.id,
-						subject: "DevPass activation failed — card already in use",
+						subject: "BetaPass activation failed — card already in use",
 						html: generateDevPlanDuplicateCardEmailHtml(organization.name),
 					});
 				} catch (err) {
@@ -2585,7 +2585,7 @@ export async function fulfillResetPassPurchase(
 				currency: "USD",
 				status: "completed",
 				stripePaymentIntentId: paymentIntent.id,
-				description: `DevPass Reset Pass (${tier.toUpperCase()})`,
+				description: `BetaPass Reset Pass (${tier.toUpperCase()})`,
 			})
 			.returning();
 
@@ -2614,7 +2614,7 @@ export async function fulfillResetPassPurchase(
 			...billingDetails,
 			lineItems: [
 				{
-					description: `DevPass Reset Pass (${tier.toUpperCase()}) — weekly premium allowance reset`,
+					description: `BetaPass Reset Pass (${tier.toUpperCase()}) — weekly premium allowance reset`,
 					amount: amountPaid,
 				},
 			],

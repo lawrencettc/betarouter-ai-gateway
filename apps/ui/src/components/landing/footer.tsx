@@ -130,10 +130,10 @@ export default function Footer() {
 								</li>
 								<li>
 									<a
-										href="https://devpass.betarouter.com"
+										href="https://betapass.betarouter.com"
 										className="text-sm hover:underline underline-offset-4 hover:text-foreground"
 									>
-										DevPass
+										BetaPass
 									</a>
 								</li>
 								<li>

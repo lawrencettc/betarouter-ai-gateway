@@ -386,7 +386,7 @@ export function generateDevPlanDuplicateCardEmailHtml(
 	<head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>DevPass activation failed - betarouter</title>
+		<title>BetaPass activation failed - betarouter</title>
 	</head>
 	<body
 		style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #ffffff;"
@@ -410,11 +410,11 @@ export function generateDevPlanDuplicateCardEmailHtml(
 								</p>
 
 								<p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: #333333;">
-									We couldn't activate DevPass for <strong>${escapedOrgName}</strong>. The card you provided is already linked to another DevPass account, so it can't be used a second time. <strong>You were not charged.</strong>
+									We couldn't activate BetaPass for <strong>${escapedOrgName}</strong>. The card you provided is already linked to another BetaPass account, so it can't be used a second time. <strong>You were not charged.</strong>
 								</p>
 
 								<p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: #333333;">
-									To activate DevPass on this account, please try again with a different payment method.
+									To activate BetaPass on this account, please try again with a different payment method.
 								</p>
 
 								<table role="presentation" style="width: 100%; border-collapse: collapse;">

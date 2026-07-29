@@ -110,7 +110,7 @@ export function formatPassportDate(iso: string | null): string {
 export function spreadSummary(model: PassportModel, turned: number): string {
 	switch (turned) {
 		case 0:
-			return `Closed DevPass passport of ${model.holderName}. Press Enter or tap to open it.`;
+			return `Closed BetaPass passport of ${model.holderName}. Press Enter or tap to open it.`;
 		case 1: {
 			const visa = model.visa
 				? `${model.visa.tier.toUpperCase()} visa, valid from ${formatPassportDate(model.visa.startedAt)} until ${formatPassportDate(model.visa.expiresAt)}`

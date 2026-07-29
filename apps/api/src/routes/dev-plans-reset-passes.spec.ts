@@ -659,7 +659,7 @@ describe("reset pass lifecycle and status", () => {
 			currency: "USD",
 			status: "completed",
 			stripePaymentIntentId: paymentIntentId,
-			description: "DevPass Reset Pass (PRO)",
+			description: "BetaPass Reset Pass (PRO)",
 		});
 	}
 

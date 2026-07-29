@@ -46,8 +46,8 @@ const TOOLS: ToolGuide[] = [
 		blurb: "Two env vars. No SDK changes, no reinstall.",
 		steps: [
 			{
-				label: "Point Claude Code at DevPass",
-				code: `export ANTHROPIC_BASE_URL=${API_BASE}\nexport ANTHROPIC_AUTH_TOKEN=<your-devpass-key>`,
+				label: "Point Claude Code at BetaPass",
+				code: `export ANTHROPIC_BASE_URL=${API_BASE}\nexport ANTHROPIC_AUTH_TOKEN=<your-betapass-key>`,
 			},
 			{
 				label: "Run it — switch models with one ANTHROPIC_MODEL flip",
@@ -62,7 +62,7 @@ const TOOLS: ToolGuide[] = [
 		blurb: "Built in. No env vars, no config files.",
 		steps: [
 			{ label: "Launch OpenCode", code: "opencode" },
-			{ label: "Type /connect, pick betarouter, paste your DevPass key" },
+			{ label: "Type /connect, pick betarouter, paste your BetaPass key" },
 		],
 	},
 	{
@@ -72,7 +72,7 @@ const TOOLS: ToolGuide[] = [
 		blurb: "Edits symbols, not strings. One key, every model.",
 		steps: [
 			{ label: "Launch Empryo", code: "empryo" },
-			{ label: "Type /keys and paste your DevPass key" },
+			{ label: "Type /keys and paste your BetaPass key" },
 		],
 	},
 	{
@@ -82,7 +82,7 @@ const TOOLS: ToolGuide[] = [
 		blurb: "Paste one key and the whole catalog is live.",
 		steps: [
 			{ label: "Launch SoulForge", code: "soulforge" },
-			{ label: "Type /keys and paste your DevPass key" },
+			{ label: "Type /keys and paste your BetaPass key" },
 		],
 	},
 	{
@@ -93,7 +93,7 @@ const TOOLS: ToolGuide[] = [
 		steps: [
 			{
 				label: "Set the base URL and key in your tool's settings",
-				code: `Base URL: ${API_BASE}/v1\nAPI key:  <your-devpass-key>`,
+				code: `Base URL: ${API_BASE}/v1\nAPI key:  <your-betapass-key>`,
 			},
 			{ label: "Pick any model id — Claude, GPT, Gemini, GLM, Qwen…" },
 		],
@@ -149,7 +149,7 @@ export function SwitchIn60() {
 					Switch in 60 seconds
 				</div>
 				<h2 className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">
-					Keep your editor. Point it at DevPass.
+					Keep your editor. Point it at BetaPass.
 				</h2>
 				<p className="mt-2 max-w-2xl text-muted-foreground">
 					No migration project, no rewrite. Your existing tool, every model, one
@@ -200,7 +200,7 @@ export function SwitchIn60() {
 						<CodeCTATracker cta="get_started" location="compare_switch_in_60">
 							<Button className="gap-2" asChild>
 								<Link href="/signup?plan=pro">
-									Get your DevPass key
+									Get your BetaPass key
 									<ArrowRight className="h-4 w-4" />
 								</Link>
 							</Button>

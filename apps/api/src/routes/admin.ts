@@ -10512,7 +10512,7 @@ const getDevpassSubscribers = createRoute({
 					schema: devpassListSchema.openapi({}),
 				},
 			},
-			description: "List of DevPass subscribers.",
+			description: "List of BetaPass subscribers.",
 		},
 	},
 });
@@ -10559,7 +10559,7 @@ const getDevpassSubscriber = createRoute({
 					schema: devpassDetailSchema.openapi({}),
 				},
 			},
-			description: "DevPass subscriber detail.",
+			description: "BetaPass subscriber detail.",
 		},
 		404: {
 			description: "Subscriber not found.",
@@ -10605,7 +10605,7 @@ const getDevpassTimeseries = createRoute({
 					schema: devpassTimeseriesSchema.openapi({}),
 				},
 			},
-			description: "DevPass revenue/cost/margin per day.",
+			description: "BetaPass revenue/cost/margin per day.",
 		},
 	},
 });
@@ -10644,7 +10644,7 @@ const getDevpassUsage = createRoute({
 					schema: devpassUsageSchema.openapi({}),
 				},
 			},
-			description: "DevPass usage breakdown by model, provider, and source.",
+			description: "BetaPass usage breakdown by model, provider, and source.",
 		},
 	},
 });

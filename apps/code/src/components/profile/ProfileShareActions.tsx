@@ -10,7 +10,7 @@ import { useUser } from "@/hooks/useUser";
 
 import type { ProfileData } from "@/components/profile/ProfileView";
 
-export const PROFILE_SITE_URL = "https://devpass.betarouter.com";
+export const PROFILE_SITE_URL = "https://betapass.betarouter.com";
 
 export function XIcon({ className }: { className?: string }) {
 	return (
@@ -61,15 +61,15 @@ export function ProfileShareActions({
 	const statsLine = `${formatTokens(profile.stats.totalTokens)} tokens routed, ${profile.stats.activeDays} active days, ${profile.stats.currentStreak}-day streak`;
 
 	const xText = isOwner
-		? `My DevPass coding profile: ${statsLine}. One key, every model.`
-		: `${displayName}'s DevPass coding profile: ${statsLine}. One key, every model.`;
+		? `My BetaPass coding profile: ${statsLine}. One key, every model.`
+		: `${displayName}'s BetaPass coding profile: ${statsLine}. One key, every model.`;
 	const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(
 		xText,
 	)}&url=${encodeURIComponent(profileUrl)}`;
 
 	const linkedInText = isOwner
-		? `My AI coding activity on DevPass: ${statsLine}.\n\nOne key, every model — Claude, GPT, Gemini and more.\n\n${profileUrl}`
-		: `${displayName}'s AI coding activity on DevPass: ${statsLine}.\n\n${profileUrl}`;
+		? `My AI coding activity on BetaPass: ${statsLine}.\n\nOne key, every model — Claude, GPT, Gemini and more.\n\n${profileUrl}`
+		: `${displayName}'s AI coding activity on BetaPass: ${statsLine}.\n\n${profileUrl}`;
 	const linkedInUrl = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(
 		linkedInText,
 	)}`;

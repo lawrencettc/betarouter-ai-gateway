@@ -292,7 +292,7 @@ export default function ConnectCliPage() {
 				{projectError ? (
 					<p className="text-xs text-destructive">
 						{wantsDevPassOrg
-							? "Couldn't load your DevPass organization. Refresh this page and try again."
+							? "Couldn't load your BetaPass organization. Refresh this page and try again."
 							: "No project found on your account. Finish setup in the dashboard first."}
 					</p>
 				) : null}

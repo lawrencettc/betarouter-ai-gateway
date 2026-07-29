@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Privacy Policy — DevPass",
+	title: "Privacy Policy — BetaPass",
 	description:
-		"Supplemental DevPass Privacy Policy. It builds on the betarouter Privacy Policy and covers DevPass-specific request retention, per-agent metadata, AI provider routing, and sub-processors.",
+		"Supplemental BetaPass Privacy Policy. It builds on the betarouter Privacy Policy and covers BetaPass-specific request retention, per-agent metadata, AI provider routing, and sub-processors.",
 	alternates: { canonical: "/legal/privacy" },
 };
 
 export default function PrivacyPage() {
 	return (
 		<>
-			<h1>DevPass Supplemental Privacy Policy</h1>
+			<h1>BetaPass Supplemental Privacy Policy</h1>
 			<p>
 				<strong>Effective Date:</strong> April 26, 2026
 				<br />
@@ -20,30 +20,30 @@ export default function PrivacyPage() {
 				This Supplemental Privacy Policy describes how{" "}
 				<strong>betarouter</strong> (&ldquo;we&rdquo;, &ldquo;our&rdquo;, or
 				&ldquo;us&rdquo;) collects, uses, and protects information when you use{" "}
-				<strong>DevPass</strong>, our flat-rate subscription for AI coding
+				<strong>BetaPass</strong>, our flat-rate subscription for AI coding
 				tools, available at{" "}
-				<a href="https://devpass.betarouter.com">devpass.betarouter.com</a>.
+				<a href="https://betapass.betarouter.com">betapass.betarouter.com</a>.
 			</p>
 			<p>
 				<strong>
-					This DevPass Privacy Policy is an addendum to, and incorporates by
+					This BetaPass Privacy Policy is an addendum to, and incorporates by
 					reference, the main{" "}
 					<a href="https://betarouter.com/privacy">betarouter Privacy Policy</a>{" "}
 					(the &ldquo;Base Policy&rdquo;), which forms the base of how we handle
 					your data.
 				</strong>{" "}
-				The Base Policy applies in full to DevPass and governs all topics not
+				The Base Policy applies in full to BetaPass and governs all topics not
 				specifically addressed here — including our role as controller and
 				processor, legal bases for processing, your privacy rights (GDPR,
 				UK&nbsp;GDPR, CCPA/CPRA), security, international transfers, and
-				children&rsquo;s privacy. This DevPass Privacy Policy only adds DevPass-
-				specific detail to the Base Policy.
+				children&rsquo;s privacy. This BetaPass Privacy Policy only adds
+				BetaPass- specific detail to the Base Policy.
 			</p>
 			<p>
 				<strong>Order of precedence.</strong> If there is a direct conflict
-				between this DevPass Privacy Policy and the Base Policy with respect to
-				DevPass, this DevPass Privacy Policy controls for that conflict only. In
-				all other respects, the Base Policy remains in full force and effect.
+				between this BetaPass Privacy Policy and the Base Policy with respect to
+				BetaPass, this BetaPass Privacy Policy controls for that conflict only.
+				In all other respects, the Base Policy remains in full force and effect.
 			</p>
 			<hr />
 			<h2>1. Information We Collect</h2>
@@ -56,7 +56,7 @@ export default function PrivacyPage() {
 			</p>
 			<h3>b. Usage and Request Data</h3>
 			<p>
-				We log technical metadata for every request routed through DevPass,
+				We log technical metadata for every request routed through BetaPass,
 				including:
 			</p>
 			<ul>
@@ -75,7 +75,7 @@ export default function PrivacyPage() {
 			</ul>
 			<p>
 				Whether full request and response <strong>payloads</strong> (your
-				prompts and the model output) are stored depends on your DevPass
+				prompts and the model output) are stored depends on your BetaPass
 				retention settings:
 			</p>
 			<ul>
@@ -101,7 +101,7 @@ export default function PrivacyPage() {
 			<hr />
 			<h2>2. How We Use Information</h2>
 			<ul>
-				<li>To operate, secure, and improve the DevPass service</li>
+				<li>To operate, secure, and improve the BetaPass service</li>
 				<li>To meter usage, enforce plan allowances, and process billing</li>
 				<li>
 					To power dashboards (per-agent costs, sessions, and usage trends)
@@ -127,7 +127,7 @@ export default function PrivacyPage() {
 				example, &ldquo;no training&rdquo; flags). You are responsible for
 				reviewing the privacy policies of any provider you use. The Base
 				Policy&rsquo;s sections on AI Providers and on stealth/undisclosed
-				providers also apply to DevPass.
+				providers also apply to BetaPass.
 			</p>
 			<hr />
 			<h2>4. Sub-processors</h2>
@@ -146,7 +146,7 @@ export default function PrivacyPage() {
 				<li>
 					<strong>Email delivery providers</strong> — transactional email
 				</li>
-				<li>AI providers, as listed in the DevPass model catalog</li>
+				<li>AI providers, as listed in the BetaPass model catalog</li>
 			</ul>
 			<p>
 				Each sub-processor is bound by contractual data-protection obligations.
@@ -167,7 +167,7 @@ export default function PrivacyPage() {
 				</li>
 				<li>
 					<strong>Request metadata</strong> — kept for the life of your active
-					DevPass subscription according to your retention setting (default:
+					BetaPass subscription according to your retention setting (default:
 					retained on Lite, Pro, and Max)
 				</li>
 				<li>
@@ -187,7 +187,7 @@ export default function PrivacyPage() {
 				authority), our security practices, and international transfer
 				safeguards are described in the{" "}
 				<a href="https://betarouter.com/privacy">betarouter Privacy Policy</a>{" "}
-				and apply to DevPass. To exercise any of these rights, or for questions
+				and apply to BetaPass. To exercise any of these rights, or for questions
 				about this Policy, email{" "}
 				<a href="mailto:contact@betarouter.com">contact@betarouter.com</a> from
 				the address associated with your account.

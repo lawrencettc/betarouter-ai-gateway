@@ -33,7 +33,7 @@ const comparisonData = [
 			{
 				title: "Flat-fee coding plans",
 				description: "Predictable monthly pricing for coding agents",
-				llmgateway: "DevPass from $29/month",
+				llmgateway: "BetaPass from $29/month",
 				copilot: "Base seat only — chat and agents billed by usage",
 			},
 			{
@@ -84,7 +84,7 @@ const comparisonData = [
 			},
 			{
 				title: "Works with any coding agent",
-				description: "Claude Code, Cline, Continue, Aider, DevPass Code",
+				description: "Claude Code, Cline, Continue, Aider, BetaPass Code",
 				llmgateway: true,
 				copilot: "Copilot only",
 			},
@@ -189,7 +189,7 @@ export function ComparisonGitHubCopilot() {
 							<Check className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
 							<span className="text-foreground">
 								<strong>Any coding agent</strong> — Claude Code, Cline,
-								Continue, Aider, DevPass Code
+								Continue, Aider, BetaPass Code
 							</span>
 						</div>
 						<div className="flex items-start gap-2">

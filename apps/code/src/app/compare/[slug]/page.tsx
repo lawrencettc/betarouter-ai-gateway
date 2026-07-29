@@ -17,7 +17,7 @@ import { allComparisons } from "content-collections";
 import type { Comparison } from "content-collections";
 import type { Metadata } from "next";
 
-const BASE_URL = "https://devpass.betarouter.com";
+const BASE_URL = "https://betapass.betarouter.com";
 
 interface ComparePageProps {
 	params: Promise<{ slug: string }>;
@@ -206,7 +206,7 @@ export default async function ComparePage({ params }: ComparePageProps) {
 						<div className="relative mt-10 grid grid-cols-1 items-stretch gap-4 sm:grid-cols-[1fr_auto_1fr]">
 							<Pole
 								brand="devpass"
-								name="DevPass"
+								name="BetaPass"
 								caption="One key, 200+ models at provider rates"
 								price={entry.devpassPrice}
 								recommended
@@ -228,7 +228,7 @@ export default async function ComparePage({ params }: ComparePageProps) {
 							<CodeCTATracker cta="get_started" location="compare_hero">
 								<Button size="lg" className="gap-2" asChild>
 									<Link href="/signup?plan=pro">
-										Get your DevPass
+										Get your BetaPass
 										<ArrowRight className="h-4 w-4" />
 									</Link>
 								</Button>
@@ -258,7 +258,7 @@ export default async function ComparePage({ params }: ComparePageProps) {
 				<section className="px-4 pb-4">
 					<div className="container mx-auto max-w-4xl">
 						<h2 className="mb-2 text-2xl font-bold tracking-tight sm:text-3xl">
-							DevPass vs {entry.competitor} at a glance
+							BetaPass vs {entry.competitor} at a glance
 						</h2>
 						<p className="mb-6 text-sm text-muted-foreground">
 							{entry.competitorTagline}. Pricing and limits as of{" "}
@@ -328,7 +328,7 @@ export default async function ComparePage({ params }: ComparePageProps) {
 							<CodeCTATracker cta="get_started" location="compare_bottom_cta">
 								<Button size="lg" className="gap-2 px-8" asChild>
 									<Link href="/signup?plan=pro">
-										Get your DevPass
+										Get your BetaPass
 										<ArrowRight className="h-4 w-4" />
 									</Link>
 								</Button>

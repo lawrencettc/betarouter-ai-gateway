@@ -528,7 +528,7 @@ function EmptyState() {
 				No agent activity yet
 			</h3>
 			<p className="text-sm text-muted-foreground max-w-sm text-center mb-6">
-				Activity appears when coding agents like DevPass Code, Claude Code,
+				Activity appears when coding agents like BetaPass Code, Claude Code,
 				OpenCode, Cursor, or Cline make API requests through the gateway.
 			</p>
 			<div className="flex flex-wrap items-center justify-center gap-4">

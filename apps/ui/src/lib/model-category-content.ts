@@ -289,13 +289,13 @@ export const modelCategoryContent = {
 	premium: {
 		metaTitle: "Premium AI Models — High-Cost Frontier LLMs",
 		metaDescription:
-			"See exactly which AI models are classified as premium — priced at $5+ per million input tokens or $15+ per million output tokens — and which count against DevPass weekly fair-use allowances.",
+			"See exactly which AI models are classified as premium — priced at $5+ per million input tokens or $15+ per million output tokens — and which count against BetaPass weekly fair-use allowances.",
 		heading: "Premium Models",
 		subheading:
-			"Models priced at $5+ per million input tokens or $15+ per million output tokens — the exact list used for DevPass fair-use limits",
+			"Models priced at $5+ per million input tokens or $15+ per million output tokens — the exact list used for BetaPass fair-use limits",
 		intro: [
 			"Premium is a pricing classification, not a curated list: a model lands on this page when any of its providers charges at least $5 per million input tokens or $15 per million output tokens. The classification is computed directly from catalogue prices, so this page always shows exactly which models are premium right now — every model not listed here is standard.",
-			"The distinction matters for DevPass coding plans, where premium models are subject to a weekly fair-use allowance (a percentage of the plan's monthly credits) on top of the normal credit balance. When you call the betarouter API directly with pay-as-you-go credits, premium models have no extra cap and no markup — you pay the same per-token provider prices shown here.",
+			"The distinction matters for BetaPass coding plans, where premium models are subject to a weekly fair-use allowance (a percentage of the plan's monthly credits) on top of the normal credit balance. When you call the betarouter API directly with pay-as-you-go credits, premium models have no extra cap and no markup — you pay the same per-token provider prices shown here.",
 		],
 		faqs: [
 			{
@@ -306,17 +306,17 @@ export const modelCategoryContent = {
 			{
 				question: "Do premium models cost extra on betarouter?",
 				answer:
-					"No. betarouter charges the same per-token provider prices for premium models as for any other model, with no markup. The premium classification only affects DevPass fair-use limits — it never changes what a request costs.",
+					"No. betarouter charges the same per-token provider prices for premium models as for any other model, with no markup. The premium classification only affects BetaPass fair-use limits — it never changes what a request costs.",
 			},
 			{
-				question: "How do premium models work on DevPass plans?",
+				question: "How do premium models work on BetaPass plans?",
 				answer:
-					"DevPass plans include a weekly fair-use allowance for premium models: 12% of monthly credits on Lite, 15% on Pro, and 18% on Max. The allowance works on a fixed 7-day window that opens with your first premium request and fully resets when it ends. Standard models are never affected — they're limited only by the plan's credit balance.",
+					"BetaPass plans include a weekly fair-use allowance for premium models: 12% of monthly credits on Lite, 15% on Pro, and 18% on Max. The allowance works on a fixed 7-day window that opens with your first premium request and fully resets when it ends. Standard models are never affected — they're limited only by the plan's credit balance.",
 			},
 			{
 				question: "How do I check whether a specific model is premium?",
 				answer:
-					"If it appears on this page, it's premium; otherwise it's standard. In the full models directory, premium models are marked with a gem icon, and the DevPass models directory offers a pricing-tier filter, since the distinction only affects DevPass fair-use limits. The classification is also documented in the model categories guide in our docs.",
+					"If it appears on this page, it's premium; otherwise it's standard. In the full models directory, premium models are marked with a gem icon, and the BetaPass models directory offers a pricing-tier filter, since the distinction only affects BetaPass fair-use limits. The classification is also documented in the model categories guide in our docs.",
 			},
 		],
 	},

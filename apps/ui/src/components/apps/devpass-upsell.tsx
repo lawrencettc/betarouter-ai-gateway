@@ -18,7 +18,7 @@ const APP_LOGOS: Array<{
 	name: string;
 	Icon: React.FC<React.SVGProps<SVGSVGElement>>;
 }> = [
-	{ name: "DevPass Code", Icon: DevPassCodeIcon },
+	{ name: "BetaPass Code", Icon: DevPassCodeIcon },
 	{ name: "Claude Code", Icon: AnthropicIcon },
 	{ name: "Cursor", Icon: CursorIcon },
 	{ name: "Cline", Icon: ClineIcon },
@@ -49,7 +49,7 @@ export function DevPassUpsell() {
 						</h2>
 
 						<p className="max-w-xl text-base md:text-lg text-muted-foreground leading-relaxed">
-							Stop juggling nine separate subscriptions. DevPass is{" "}
+							Stop juggling nine separate subscriptions. BetaPass is{" "}
 							<span className="text-foreground font-medium">
 								one flat price
 							</span>{" "}
@@ -76,7 +76,7 @@ export function DevPassUpsell() {
 
 						<div className="flex flex-wrap items-center gap-5 pt-3">
 							<a
-								href="https://devpass.betarouter.com"
+								href="https://betapass.betarouter.com"
 								target="_blank"
 								rel="noopener noreferrer"
 								className="group"
@@ -86,7 +86,7 @@ export function DevPassUpsell() {
 									className="shadow-2xl shadow-blue-500/25 px-8 md:px-10 py-3 md:py-4"
 								>
 									<span className="flex items-center gap-2 text-base md:text-lg font-bold tracking-tight text-white">
-										Get DevPass
+										Get BetaPass
 										<ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
 									</span>
 								</ShimmerButton>
@@ -97,7 +97,7 @@ export function DevPassUpsell() {
 								className="text-muted-foreground hover:text-foreground"
 							>
 								<a
-									href="https://devpass.betarouter.com/pricing"
+									href="https://betapass.betarouter.com/pricing"
 									target="_blank"
 									rel="noopener noreferrer"
 								>
