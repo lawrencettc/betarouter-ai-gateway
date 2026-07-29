@@ -403,6 +403,8 @@ describe("worker", () => {
 
 			// eslint-disable-next-line no-mixed-operators
 			const oldTimestamp = new Date(Date.now() - 31 * 24 * 60 * 60 * 1000);
+			const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
+			const threeDayTimestamp = new Date(Date.now() - threeDaysMs);
 			// eslint-disable-next-line no-mixed-operators
 			const recentTimestamp = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000);
 
@@ -413,6 +415,13 @@ describe("worker", () => {
 					providerId: "retention-provider",
 					modelProviderMappingId: "retention-mapping",
 					minuteTimestamp: oldTimestamp,
+				},
+				{
+					id: "mph-three-day",
+					modelId: "retention-model",
+					providerId: "retention-provider",
+					modelProviderMappingId: "retention-mapping",
+					minuteTimestamp: threeDayTimestamp,
 				},
 				{
 					id: "mph-recent",
@@ -430,6 +439,11 @@ describe("worker", () => {
 					minuteTimestamp: oldTimestamp,
 				},
 				{
+					id: "mh-three-day",
+					modelId: "retention-model",
+					minuteTimestamp: threeDayTimestamp,
+				},
+				{
 					id: "mh-recent",
 					modelId: "retention-model",
 					minuteTimestamp: recentTimestamp,
@@ -439,10 +453,12 @@ describe("worker", () => {
 			await cleanupExpiredModelHistory();
 
 			const mappingRows = await db.query.modelProviderMappingHistory.findMany({
-				where: { id: { in: ["mph-old", "mph-recent"] } },
+				where: {
+					id: { in: ["mph-old", "mph-three-day", "mph-recent"] },
+				},
 			});
 			const modelRows = await db.query.modelHistory.findMany({
-				where: { id: { in: ["mh-old", "mh-recent"] } },
+				where: { id: { in: ["mh-old", "mh-three-day", "mh-recent"] } },
 			});
 
 			expect(mappingRows.map((r) => r.id)).toEqual(["mph-recent"]);

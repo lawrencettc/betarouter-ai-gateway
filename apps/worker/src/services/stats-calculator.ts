@@ -14,6 +14,9 @@ import {
 	gte,
 	lt,
 	and,
+	ne,
+	notInArray,
+	or,
 	type SQL,
 } from "@betarouter/db";
 import { logger } from "@betarouter/logger";
@@ -354,7 +357,9 @@ async function calculateModelHistoryForMinute(targetMinute: Date) {
 		)
 		.groupBy(usedBaseModelSql);
 
-	// Get all active models to ensure we create entries for inactive ones too
+	// Limit history to active catalog models, but only persist a row when that
+	// model actually received traffic. Missing buckets are equivalent to zero
+	// and must not consume a permanent row (plus four index entries).
 	const allModels = await database
 		.select({
 			modelId: model.id,
@@ -370,9 +375,10 @@ async function calculateModelHistoryForMinute(targetMinute: Date) {
 		}
 	}
 
-	// Process all models
+	// Process active catalog models that had traffic.
 	const processedModels = new Set<string>();
 	const modelHistoryValues: (typeof modelHistory.$inferInsert)[] = [];
+	let activeModelsCount = 0;
 
 	for (const modelEntry of allModels) {
 		if (processedModels.has(modelEntry.modelId)) {
@@ -381,30 +387,33 @@ async function calculateModelHistoryForMinute(targetMinute: Date) {
 		processedModels.add(modelEntry.modelId);
 
 		const stat = activeModelsMap.get(modelEntry.modelId);
+		if (!stat || stat.logsCount <= 0) {
+			continue;
+		}
+		activeModelsCount++;
 
-		// Use actual stats if available, otherwise create zero stats
-		const logsCount = stat?.logsCount ?? 0;
-		const errorsCount = stat?.errorsCount ?? 0;
-		const clientErrorsCount = stat?.clientErrorsCount ?? 0;
-		const gatewayErrorsCount = stat?.gatewayErrorsCount ?? 0;
-		const upstreamErrorsCount = stat?.upstreamErrorsCount ?? 0;
-		const completedCount = stat?.completedCount ?? 0;
-		const lengthLimitCount = stat?.lengthLimitCount ?? 0;
-		const contentFilterCount = stat?.contentFilterCount ?? 0;
-		const toolCallsCount = stat?.toolCallsCount ?? 0;
-		const canceledCount = stat?.canceledCount ?? 0;
-		const unknownFinishCount = stat?.unknownFinishCount ?? 0;
-		const cachedCount = stat?.cachedCount ?? 0;
-		const totalInputTokens = stat?.totalInputTokens ?? 0;
-		const totalOutputTokens = stat?.totalOutputTokens ?? 0;
-		const totalTokens = stat?.totalTokens ?? 0;
-		const totalReasoningTokens = stat?.totalReasoningTokens ?? 0;
-		const totalCachedTokens = stat?.totalCachedTokens ?? 0;
-		const totalDuration = stat?.totalDuration ?? 0;
-		const totalTimeToFirstToken = stat?.totalTimeToFirstToken ?? 0;
+		const logsCount = stat.logsCount;
+		const errorsCount = stat.errorsCount ?? 0;
+		const clientErrorsCount = stat.clientErrorsCount ?? 0;
+		const gatewayErrorsCount = stat.gatewayErrorsCount ?? 0;
+		const upstreamErrorsCount = stat.upstreamErrorsCount ?? 0;
+		const completedCount = stat.completedCount ?? 0;
+		const lengthLimitCount = stat.lengthLimitCount ?? 0;
+		const contentFilterCount = stat.contentFilterCount ?? 0;
+		const toolCallsCount = stat.toolCallsCount ?? 0;
+		const canceledCount = stat.canceledCount ?? 0;
+		const unknownFinishCount = stat.unknownFinishCount ?? 0;
+		const cachedCount = stat.cachedCount ?? 0;
+		const totalInputTokens = stat.totalInputTokens ?? 0;
+		const totalOutputTokens = stat.totalOutputTokens ?? 0;
+		const totalTokens = stat.totalTokens ?? 0;
+		const totalReasoningTokens = stat.totalReasoningTokens ?? 0;
+		const totalCachedTokens = stat.totalCachedTokens ?? 0;
+		const totalDuration = stat.totalDuration ?? 0;
+		const totalTimeToFirstToken = stat.totalTimeToFirstToken ?? 0;
 		const totalTimeToFirstReasoningToken =
-			stat?.totalTimeToFirstReasoningToken ?? 0;
-		const totalCost = stat?.totalCost ?? 0;
+			stat.totalTimeToFirstReasoningToken ?? 0;
+		const totalCost = stat.totalCost ?? 0;
 
 		// Collect the history record for this minute; written in one bulk upsert
 		// below instead of a per-model round-trip.
@@ -453,8 +462,8 @@ async function calculateModelHistoryForMinute(targetMinute: Date) {
 
 	return {
 		totalModels: allModels.length,
-		activeModels: modelStats.length,
-		inactiveModels: allModels.length - modelStats.length,
+		modelsWithTraffic: activeModelsCount,
+		modelsWithoutTraffic: allModels.length - activeModelsCount,
 	};
 }
 
@@ -564,7 +573,8 @@ async function calculateHistoryForMinute(targetMinute: Date) {
 		)
 		.groupBy(usedBaseModelSql, log.usedProvider, usedRegionSql);
 
-	// Get all active model-provider mappings to ensure we create entries for inactive ones too
+	// Limit history to active catalog mappings; rows are persisted only for
+	// mappings represented in the minute's traffic.
 	const allMappings = await database
 		.select({
 			id: modelProviderMapping.id, // The mapping ID
@@ -636,7 +646,7 @@ async function calculateHistoryForMinute(targetMinute: Date) {
 		}
 	}
 
-	// Process all model-provider mappings
+	// Process active catalog mappings that had traffic.
 	const processedMappings = new Set<string>();
 	const mappingHistoryValues: (typeof modelProviderMappingHistory.$inferInsert)[] =
 		[];
@@ -652,34 +662,33 @@ async function calculateHistoryForMinute(targetMinute: Date) {
 
 		const key = `${mapping.modelId}-${mapping.providerId}-${mapping.region ?? ""}`;
 		const stat = activeMappingsMap.get(key);
-
-		// Use actual stats if available, otherwise create zero stats
-		const logsCount = stat?.logsCount ?? 0;
-		const errorsCount = stat?.errorsCount ?? 0;
-		const clientErrorsCount = stat?.clientErrorsCount ?? 0;
-		const gatewayErrorsCount = stat?.gatewayErrorsCount ?? 0;
-		const upstreamErrorsCount = stat?.upstreamErrorsCount ?? 0;
-		const completedCount = stat?.completedCount ?? 0;
-		const lengthLimitCount = stat?.lengthLimitCount ?? 0;
-		const contentFilterCount = stat?.contentFilterCount ?? 0;
-		const toolCallsCount = stat?.toolCallsCount ?? 0;
-		const canceledCount = stat?.canceledCount ?? 0;
-		const unknownFinishCount = stat?.unknownFinishCount ?? 0;
-		const cachedCount = stat?.cachedCount ?? 0;
-		const totalInputTokens = stat?.totalInputTokens ?? 0;
-		const totalOutputTokens = stat?.totalOutputTokens ?? 0;
-		const totalTokens = stat?.totalTokens ?? 0;
-		const totalReasoningTokens = stat?.totalReasoningTokens ?? 0;
-		const totalCachedTokens = stat?.totalCachedTokens ?? 0;
-		const totalDuration = stat?.totalDuration ?? 0;
-		const totalTimeToFirstToken = stat?.totalTimeToFirstToken ?? 0;
-		const totalTimeToFirstReasoningToken =
-			stat?.totalTimeToFirstReasoningToken ?? 0;
-		const totalCost = stat?.totalCost ?? 0;
-
-		if (logsCount > 0) {
-			activeMappingsCount++;
+		if (!stat || stat.logsCount <= 0) {
+			continue;
 		}
+		activeMappingsCount++;
+
+		const logsCount = stat.logsCount;
+		const errorsCount = stat.errorsCount ?? 0;
+		const clientErrorsCount = stat.clientErrorsCount ?? 0;
+		const gatewayErrorsCount = stat.gatewayErrorsCount ?? 0;
+		const upstreamErrorsCount = stat.upstreamErrorsCount ?? 0;
+		const completedCount = stat.completedCount ?? 0;
+		const lengthLimitCount = stat.lengthLimitCount ?? 0;
+		const contentFilterCount = stat.contentFilterCount ?? 0;
+		const toolCallsCount = stat.toolCallsCount ?? 0;
+		const canceledCount = stat.canceledCount ?? 0;
+		const unknownFinishCount = stat.unknownFinishCount ?? 0;
+		const cachedCount = stat.cachedCount ?? 0;
+		const totalInputTokens = stat.totalInputTokens ?? 0;
+		const totalOutputTokens = stat.totalOutputTokens ?? 0;
+		const totalTokens = stat.totalTokens ?? 0;
+		const totalReasoningTokens = stat.totalReasoningTokens ?? 0;
+		const totalCachedTokens = stat.totalCachedTokens ?? 0;
+		const totalDuration = stat.totalDuration ?? 0;
+		const totalTimeToFirstToken = stat.totalTimeToFirstToken ?? 0;
+		const totalTimeToFirstReasoningToken =
+			stat.totalTimeToFirstReasoningToken ?? 0;
+		const totalCost = stat.totalCost ?? 0;
 
 		// Collect the history record for this minute; written in one bulk upsert
 		// below instead of a per-mapping round-trip.
@@ -735,13 +744,16 @@ async function calculateHistoryForMinute(targetMinute: Date) {
 
 	return {
 		totalMappings: allMappings.length,
-		activeMappings: activeMappingsCount,
-		inactiveMappings: allMappings.length - activeMappingsCount,
+		mappingsWithTraffic: activeMappingsCount,
+		mappingsWithoutTraffic: allMappings.length - activeMappingsCount,
 	};
 }
 
 /**
- * Backfill missing history entries for periods when the worker was down
+ * Backfill traffic-bearing minutes that the worker missed while it was down.
+ * Empty minutes are intentionally absent, so the candidate list must come from
+ * request logs rather than walking elapsed clock minutes from the last sparse
+ * history row.
  */
 export async function backfillHistoryIfNeeded() {
 	logger.info("Checking for missing history periods to backfill...");
@@ -775,101 +787,61 @@ export async function backfillHistoryIfNeeded() {
 		}
 
 		const previousMinute = getPreviousMinuteStart();
+		const initialBackfillMs = BACKFILL_DURATION_SECONDS * 1000;
+		const backfillStart = lastMinute
+			? new Date(lastMinute.getTime() + ONE_MINUTE_MS)
+			: roundToMinuteStart(new Date(Date.now() - initialBackfillMs));
 
-		if (!lastMinute) {
-			// No history exists, start from configured backfill duration ago
-			const backfillMs = BACKFILL_DURATION_SECONDS * 1000;
-			const backfillStart = new Date(Date.now() - backfillMs);
-			const backfillStartRounded = roundToMinuteStart(backfillStart);
-
+		if (backfillStart > previousMinute) {
 			logger.info(
-				`No existing history found. Starting backfill from ${backfillStartRounded.toISOString()} to ${previousMinute.toISOString()}`,
+				`History is up to date. Last entry: ${lastMinute?.toISOString() ?? "none"}`,
 			);
-
-			let minute = new Date(backfillStartRounded);
-			let iterationCount = 0;
-			// Dynamic safety limit based on backfill duration (with max of 1440 for 24 hours)
-			const maxIterations = Math.min(
-				Math.ceil(BACKFILL_DURATION_SECONDS / 60),
-				1440,
-			);
-
-			while (minute <= previousMinute && iterationCount < maxIterations) {
-				const mappingResult = await calculateHistoryForMinute(minute);
-				const modelResult = await calculateModelHistoryForMinute(minute);
-				logger.info(
-					`Backfilled ${mappingResult.totalMappings} mappings and ${modelResult.totalModels} models for ${minute.toISOString()}`,
-				);
-
-				const nextMinute = roundToMinuteStart(
-					new Date(minute.getTime() + ONE_MINUTE_MS),
-				);
-
-				// Safety check to prevent infinite loops
-				if (nextMinute.getTime() <= minute.getTime()) {
-					logger.error(
-						`Loop safety break: Time calculation error at ${minute.toISOString()}`,
-					);
-					break;
-				}
-
-				minute = nextMinute;
-				iterationCount++;
-			}
-
-			if (iterationCount >= maxIterations) {
-				logger.warn(
-					`Backfill stopped at iteration limit ${maxIterations} to prevent infinite loop`,
-				);
-			}
 			return;
 		}
 
-		// Check if we're missing recent minutes (more than 2 minutes behind indicates downtime)
-		const minutesBehind = Math.floor(
-			(previousMinute.getTime() - lastMinute.getTime()) / (60 * 1000),
+		const backfillEndExclusive = new Date(
+			previousMinute.getTime() + ONE_MINUTE_MS,
 		);
-
-		if (minutesBehind > 2) {
-			logger.info(
-				`Found gap of ${minutesBehind} minutes. Backfilling from ${lastMinute.toISOString()}`,
+		const trafficMinuteEpochMs =
+			sql<string>`extract(epoch from date_trunc('minute', ${log.createdAt})) * 1000`.as(
+				"traffic_minute_epoch_ms",
 			);
+		const maxTrafficMinutes = 1440;
+		const trafficMinutes = await database
+			.select({ minuteTimestampEpochMs: trafficMinuteEpochMs })
+			.from(log)
+			.innerJoin(model, eq(model.id, usedBaseModelSql))
+			.where(
+				and(
+					eq(model.status, "active"),
+					gte(log.createdAt, backfillStart),
+					lt(log.createdAt, backfillEndExclusive),
+					excludeRecoveredSameProviderRegionRetry(),
+				),
+			)
+			.groupBy(trafficMinuteEpochMs)
+			.orderBy(asc(trafficMinuteEpochMs))
+			.limit(maxTrafficMinutes);
 
-			let minute = new Date(lastMinute.getTime() + ONE_MINUTE_MS); // Start from the minute after the last recorded
-			let iterationCount = 0;
-			const maxIterations = 1440; // Safety limit for 24 hours of backfill
-
-			while (minute <= previousMinute && iterationCount < maxIterations) {
-				const mappingResult = await calculateHistoryForMinute(minute);
-				const modelResult = await calculateModelHistoryForMinute(minute);
-				logger.info(
-					`Backfilled ${mappingResult.totalMappings} mappings (${mappingResult.activeMappings} active) and ${modelResult.totalModels} models (${modelResult.activeModels} active) for ${minute.toISOString()}`,
-				);
-
-				const nextMinute = roundToMinuteStart(
-					new Date(minute.getTime() + ONE_MINUTE_MS),
-				);
-
-				// Safety check to prevent infinite loops
-				if (nextMinute.getTime() <= minute.getTime()) {
-					logger.error(
-						`Loop safety break: Time calculation error at ${minute.toISOString()}`,
-					);
-					break;
-				}
-
-				minute = nextMinute;
-				iterationCount++;
-			}
-
-			if (iterationCount >= maxIterations) {
-				logger.warn(
-					`Backfill stopped at iteration limit ${maxIterations} to prevent infinite loop`,
-				);
-			}
-		} else {
+		if (trafficMinutes.length === 0) {
 			logger.info(
-				`History is up to date. Last entry: ${lastMinute.toISOString()}`,
+				`No traffic-bearing minutes to backfill between ${backfillStart.toISOString()} and ${previousMinute.toISOString()}`,
+			);
+			return;
+		}
+
+		for (const { minuteTimestampEpochMs } of trafficMinutes) {
+			const minuteTimestamp = new Date(Number(minuteTimestampEpochMs));
+			const mappingResult = await calculateHistoryForMinute(minuteTimestamp);
+			const modelResult = await calculateModelHistoryForMinute(minuteTimestamp);
+			logger.info(
+				`Backfilled ${mappingResult.mappingsWithTraffic} mappings and ${modelResult.modelsWithTraffic} models with traffic for ${minuteTimestamp.toISOString()}`,
+			);
+		}
+
+		if (trafficMinutes.length >= maxTrafficMinutes) {
+			logger.warn(
+				`Backfill stopped after ${maxTrafficMinutes} traffic-bearing minutes; the next startup will continue from the latest persisted traffic row`,
 			);
 		}
 	} catch (error) {
@@ -879,8 +851,8 @@ export async function backfillHistoryIfNeeded() {
 }
 
 /**
- * Calculate and store 1-minute historical data for model-provider mappings and models
- * Now includes entries for inactive mappings and models and supports backfilling
+ * Calculate and store 1-minute historical data for model-provider mappings and
+ * models with traffic. Missing buckets represent zero traffic.
  */
 export async function calculateMinutelyHistory() {
 	const previousMinuteStart = getPreviousMinuteStart();
@@ -895,7 +867,7 @@ export async function calculateMinutelyHistory() {
 			await calculateModelHistoryForMinute(previousMinuteStart);
 
 		logger.debug(
-			`Recorded history for ${mappingResult.totalMappings} model-provider mappings (${mappingResult.activeMappings} active, ${mappingResult.inactiveMappings} inactive) and ${modelResult.totalModels} models (${modelResult.activeModels} active, ${modelResult.inactiveModels} inactive)`,
+			`Recorded history for ${mappingResult.mappingsWithTraffic}/${mappingResult.totalMappings} model-provider mappings and ${modelResult.modelsWithTraffic}/${modelResult.totalModels} models with traffic`,
 		);
 	} catch (error) {
 		logger.error("Error calculating minutely history:", error as Error);
@@ -917,7 +889,7 @@ export async function calculateCurrentMinuteHistory() {
 			await calculateModelHistoryForMinute(currentMinuteStart);
 
 		logger.debug(
-			`Updated current minute history for ${currentMinuteStart.toISOString()}: ${mappingResult.activeMappings} active mappings, ${modelResult.activeModels} active models`,
+			`Updated current minute history for ${currentMinuteStart.toISOString()}: ${mappingResult.mappingsWithTraffic} mappings and ${modelResult.modelsWithTraffic} models with traffic`,
 		);
 	} catch (error) {
 		logger.error("Error calculating current minute history:", error as Error);
@@ -1373,6 +1345,35 @@ export async function calculateAggregatedStatistics() {
 				.where(eq(provider.id, providerId));
 		}
 
+		const nonzeroProviderStats = or(
+			ne(provider.logsCount, 0),
+			ne(provider.errorsCount, 0),
+			ne(provider.clientErrorsCount, 0),
+			ne(provider.gatewayErrorsCount, 0),
+			ne(provider.upstreamErrorsCount, 0),
+			ne(provider.cachedCount, 0),
+		);
+		await database
+			.update(provider)
+			.set({
+				logsCount: 0,
+				errorsCount: 0,
+				clientErrorsCount: 0,
+				gatewayErrorsCount: 0,
+				upstreamErrorsCount: 0,
+				cachedCount: 0,
+				statsUpdatedAt: new Date(),
+				updatedAt: new Date(),
+			})
+			.where(
+				providerMap.size > 0
+					? and(
+							nonzeroProviderStats,
+							notInArray(provider.id, [...providerMap.keys()]),
+						)
+					: nonzeroProviderStats,
+			);
+
 		logger.debug(`Updated statistics for ${providerMap.size} providers`);
 
 		for (const [modelId, agg] of modelMap) {
@@ -1391,9 +1392,36 @@ export async function calculateAggregatedStatistics() {
 				.where(eq(model.id, modelId));
 		}
 
+		const nonzeroModelStats = or(
+			ne(model.logsCount, 0),
+			ne(model.errorsCount, 0),
+			ne(model.clientErrorsCount, 0),
+			ne(model.gatewayErrorsCount, 0),
+			ne(model.upstreamErrorsCount, 0),
+			ne(model.cachedCount, 0),
+		);
+		await database
+			.update(model)
+			.set({
+				logsCount: 0,
+				errorsCount: 0,
+				clientErrorsCount: 0,
+				gatewayErrorsCount: 0,
+				upstreamErrorsCount: 0,
+				cachedCount: 0,
+				statsUpdatedAt: new Date(),
+				updatedAt: new Date(),
+			})
+			.where(
+				modelMap.size > 0
+					? and(nonzeroModelStats, notInArray(model.id, [...modelMap.keys()]))
+					: nonzeroModelStats,
+			);
+
 		logger.debug(`Updated statistics for ${modelMap.size} models`);
 
 		let mappingUpdateCount = 0;
+		const mappingIdsWithTraffic: string[] = [];
 
 		for (const row of mappingAggregates) {
 			const mappingId = row.modelProviderMappingId;
@@ -1422,8 +1450,38 @@ export async function calculateAggregatedStatistics() {
 				})
 				.where(eq(modelProviderMapping.id, mappingId));
 
+			mappingIdsWithTraffic.push(mappingId);
 			mappingUpdateCount++;
 		}
+
+		const nonzeroMappingStats = or(
+			ne(modelProviderMapping.logsCount, 0),
+			ne(modelProviderMapping.errorsCount, 0),
+			ne(modelProviderMapping.clientErrorsCount, 0),
+			ne(modelProviderMapping.gatewayErrorsCount, 0),
+			ne(modelProviderMapping.upstreamErrorsCount, 0),
+			ne(modelProviderMapping.cachedCount, 0),
+		);
+		await database
+			.update(modelProviderMapping)
+			.set({
+				logsCount: 0,
+				errorsCount: 0,
+				clientErrorsCount: 0,
+				gatewayErrorsCount: 0,
+				upstreamErrorsCount: 0,
+				cachedCount: 0,
+				statsUpdatedAt: new Date(),
+				updatedAt: new Date(),
+			})
+			.where(
+				mappingIdsWithTraffic.length > 0
+					? and(
+							nonzeroMappingStats,
+							notInArray(modelProviderMapping.id, mappingIdsWithTraffic),
+						)
+					: nonzeroMappingStats,
+			);
 
 		logger.debug(
 			`Updated statistics for ${mappingUpdateCount} model-provider mappings`,

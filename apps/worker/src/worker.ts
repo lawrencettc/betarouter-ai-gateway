@@ -778,20 +778,20 @@ export async function cleanupExpiredLogData(): Promise<void> {
 }
 
 // Delete minute-level model/mapping history rows older than the retention
-// window. These tables gain one row per active model (and per mapping) every
-// minute and otherwise grow unbounded. The hourly rollups
+// window. These sparse tables gain rows only for models and mappings that
+// receive traffic. The hourly rollups
 // (model_history_hourly, model_provider_mapping_history_hourly) are kept
 // forever and now serve every window beyond 24h (7d/30d/90d public stats), so
-// the only readers of the minute tables are short windows (<=24h). 30 days
-// leaves a comfortable buffer over the largest minute-level reader.
-const MODEL_HISTORY_RETENTION_DAYS = 30;
+// the only readers of the minute tables are short windows (<=24h). Two days
+// leaves a full-day buffer while bounding the source data needed for backfill.
+const MODEL_HISTORY_RETENTION_DAYS = 2;
 const MODEL_HISTORY_CLEANUP_BATCH_SIZE = 10000;
 // Cap the work per run (per table) so a single cleanup reliably finishes well
 // within the lock TTL (LOCK_DURATION_MINUTES), even on a large initial backlog.
 // The loop runs hourly, so any remaining rows are drained over subsequent runs.
-// At steady state (~640 rows/min across both tables, i.e. a handful of batches
-// per hour) this cap is never approached; it only bounds the initial backlog
-// drain. Each table gets its own budget so neither starves the other.
+// At steady state this is a handful of batches per hour; the cap primarily
+// bounds an initial backlog drain. Each table gets its own budget so neither
+// starves the other.
 const MODEL_HISTORY_MAX_BATCHES_PER_RUN = 50;
 
 async function cleanupModelHistoryTable(
