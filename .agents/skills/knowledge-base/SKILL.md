@@ -1,6 +1,6 @@
 ---
 name: knowledge-base
-description: Write a new LLM Gateway docs Knowledge base page (apps/docs/content/learn) with light + dark dashboard screenshots. Use when the user says "knowledge base page", "KB page", "learn page", "document the <X> dashboard page", or asks for docs covering a dashboard or playground page with screenshots.
+description: Write a new betarouter docs Knowledge base page (apps/docs/content/learn) with light + dark dashboard screenshots. Use when the user says "knowledge base page", "KB page", "learn page", "document the <X> dashboard page", or asks for docs covering a dashboard or playground page with screenshots.
 ---
 
 # Knowledge Base Page
@@ -93,7 +93,7 @@ House style:
 
 - **One `<ThemedImage>` right after the intro** showing the whole page; more for dialogs/sub-views where they help.
 - **Use a table** for column/field references (Field | Description).
-- **Callouts**: `type="info"` for plan gating ("Available on the [**Enterprise plan**](https://llmgateway.io/enterprise)…"), `type="warning"` for one-time secrets or destructive actions.
+- **Callouts**: `type="info"` for plan gating ("Available on the [**Enterprise plan**](https://betarouter.com/enterprise)…"), `type="warning"` for one-time secrets or destructive actions.
 - **State real limits and behaviors** (exact counts, status codes, prefixes) taken from the code in Step 1.
 - **Cross-link** related Knowledge base pages (`/learn/<slug>`) and feature docs (`/features/<slug>`) where they exist.
 - No screenshots of raw JSON/API responses — show a `bash`/`curl` fenced block instead when the page has an API angle.

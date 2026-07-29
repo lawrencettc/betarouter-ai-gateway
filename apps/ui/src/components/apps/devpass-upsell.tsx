@@ -131,7 +131,7 @@ export function DevPassUpsell() {
 											{"https://api.betarouter.com"}
 										</span>
 										{"\nANTHROPIC_AUTH_TOKEN="}
-										<span className="text-blue-500">{"llmgdev_***"}</span>
+										<span className="text-blue-500">{"betadev_***"}</span>
 										{"\n\n"}
 										<span className="text-muted-foreground">
 											{"# Or any OpenAI-compatible tool\n"}

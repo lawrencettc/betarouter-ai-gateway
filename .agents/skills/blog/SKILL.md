@@ -1,11 +1,11 @@
 ---
 name: blog
-description: Write a new LLM Gateway blog post in the house style, draft the prose with the copywriting skill, and generate its OpenGraph image with gpt-image-2. Use when the user says "blog", "blog post", "write a blog post", "draft a blog", "add a blog post", "publish a blog", or "write an article" for the marketing site. For shipped-feature release notes use the `changelog` skill instead.
+description: Write a new betarouter blog post in the house style, draft the prose with the copywriting skill, and generate its OpenGraph image with gpt-image-2. Use when the user says "blog", "blog post", "write a blog post", "draft a blog", "add a blog post", "publish a blog", or "write an article" for the marketing site. For shipped-feature release notes use the `changelog` skill instead.
 ---
 
 # Blog
 
-Write a public blog post for LLM Gateway, in the house style, with the prose drafted/polished by the `copywriting` skill, and generate its OpenGraph image with **gpt-image-2**.
+Write a public blog post for betarouter, in the house style, with the prose drafted/polished by the `copywriting` skill, and generate its OpenGraph image with **gpt-image-2**.
 
 This skill is the blog counterpart of the `changelog` skill. The difference: blog posts are longer SEO/marketing content (guides, comparisons, announcements, engineering deep-dives) rather than short release notes, the prose is run through the `copywriting` skill, and the image is **generated** here (not just handed off as a prompt).
 
@@ -38,19 +38,19 @@ Before writing, understand the topic concretely. Never invent prices, limits, ca
 
 ## Step 2 — Draft the prose with the copywriting skill
 
-Invoke the **`copywriting`** skill (via the Skill tool) to draft and tighten the body copy. Give it: the topic, the primary keyword, the target reader, the key facts you gathered, and the LLM Gateway voice notes below. Iterate on its output, then drop the result into the markdown body.
+Invoke the **`copywriting`** skill (via the Skill tool) to draft and tighten the body copy. Give it: the topic, the primary keyword, the target reader, the key facts you gathered, and the betarouter voice notes below. Iterate on its output, then drop the result into the markdown body.
 
 Read the two or three most recent files in `apps/ui/src/content/blog/` before writing and mirror their structure and tone.
 
 ### House style (match existing posts)
 
-- **Lead with the problem, then the fix.** Open by naming the pain concretely; then state what LLM Gateway does about it. Bold the product name once: **LLM Gateway**.
+- **Lead with the problem, then the fix.** Open by naming the pain concretely; then state what betarouter does about it. Bold the product name once: **betarouter**.
 - **Benefits over features, specific over vague.** Real numbers, real endpoints, real provider names. No "seamless", "revolutionary", "streamline".
 - **Confident and plain.** Active voice, short paragraphs, no exclamation points, no "very/really/simply".
-- **Scannable structure.** `##` section headers (verb-led or outcome-led), bullets and tables for options/comparisons, fenced code blocks for any `curl`/JSON/diff example. Use `https://api.llmgateway.io/v1/...` and `$LLM_GATEWAY_API_KEY` in API examples.
+- **Scannable structure.** `##` section headers (verb-led or outcome-led), bullets and tables for options/comparisons, fenced code blocks for any `curl`/JSON/diff example. Use `https://api.betarouter.com/v1/...` and `$BETA_GATEWAY_API_KEY` in API examples.
 - **State plan gating explicitly** when a capability is gated.
-- **SEO conventions** (this is the main difference from changelog): work the primary keyword into the title, the `summary`, the first 1–2 paragraphs, and a header. Add a short **"Frequently Asked Questions"** section with 2–4 `###` question headers near the end (these target long-tail queries). Link to related internal posts/docs with root-relative links (e.g. `/blog/soc2-type-ii`, `https://docs.llmgateway.io/...`).
-- **Close with a CTA block**: 2–3 bullets linking to signup, the relevant docs, and one related post — e.g. `**[Try LLM Gateway free](https://llmgateway.io/signup)**`.
+- **SEO conventions** (this is the main difference from changelog): work the primary keyword into the title, the `summary`, the first 1–2 paragraphs, and a header. Add a short **"Frequently Asked Questions"** section with 2–4 `###` question headers near the end (these target long-tail queries). Link to related internal posts/docs with root-relative links (e.g. `/blog/soc2-type-ii`, `https://docs.betarouter.com/...`).
+- **Close with a CTA block**: 2–3 bullets linking to signup, the relevant docs, and one related post — e.g. `**[Try betarouter free](https://betarouter.com/signup)**`.
 - Plain Markdown only — **no MDX/JSX components**.
 
 ### Frontmatter
@@ -89,13 +89,13 @@ A 2–4 sentence prompt in the **house image style** — a glossy 3D-rendered ci
 - **Reserves the top-left corner**: include "the top-left corner is intentionally empty clean negative space, with no logo, no icon, no wordmark and no brand text there." The real logo is composited in afterward (see "Always composite the official logo" below), never drawn by the model.
 - **Ends with**: "no logos, no UI chrome. Wide 3:2 landscape composition, 1536×1024." (If you want a branded card, you may keep a short headline/subtitle in the prompt — gpt-image-2 renders short text well — but **never** the logo.)
 
-### Generate it (LLM Gateway Images API, gpt-image-2)
+### Generate it (betarouter Images API, gpt-image-2)
 
-Requires `LLM_GATEWAY_API_KEY` in the environment. Generate to a temp file first — the logo is composited in the next step:
+Requires `BETA_GATEWAY_API_KEY` in the environment. Generate to a temp file first — the logo is composited in the next step:
 
 ```bash
-curl -s https://api.llmgateway.io/v1/images/generations \
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+curl -s https://api.betarouter.com/v1/images/generations \
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"model":"gpt-image-2","size":"1536x1024","prompt":"<the prompt above, on one line>"}' \
 | jq -r '.data[0].b64_json' | base64 -d > /tmp/<slug>-bg.png
@@ -105,7 +105,7 @@ View `/tmp/<slug>-bg.png` to confirm it's on-brand and the top-left is clear; re
 
 ### Always composite the official logo (never let gpt-image-2 draw it)
 
-gpt-image-2 **cannot** reproduce the LLM Gateway logo — it hallucinates a wrong mark. So always overlay the real asset. Render the white wordmark lockup (`apps/ui/public/brand/logo-with-name-white.svg`) and composite it into the reserved top-left corner. Needs `rsvg-convert` and ImageMagick (`magick`):
+gpt-image-2 **cannot** reproduce the betarouter logo — it hallucinates a wrong mark. So always overlay the real asset. Render the white wordmark lockup (`apps/ui/public/brand/logo-with-name-white.svg`) and composite it into the reserved top-left corner. Needs `rsvg-convert` and ImageMagick (`magick`):
 
 ```bash
 rsvg-convert -h 84 apps/ui/public/brand/logo-with-name-white.svg -o /tmp/llmgw-logo.png

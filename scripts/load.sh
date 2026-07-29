@@ -137,8 +137,8 @@ else
 	exit 1
 fi
 
-if [[ -z "${LLM_GATEWAY_API_KEY:-}" ]]; then
-	echo "LLM_GATEWAY_API_KEY is required." >&2
+if [[ -z "${BETA_GATEWAY_API_KEY:-}" ]]; then
+	echo "BETA_GATEWAY_API_KEY is required." >&2
 	exit 1
 fi
 
@@ -232,7 +232,7 @@ while true; do
 		curl_args=(
 			-N "$REQUEST_URL" -s
 			-H "Content-Type: application/json"
-			-H "Authorization: Bearer ${LLM_GATEWAY_API_KEY}"
+			-H "Authorization: Bearer ${BETA_GATEWAY_API_KEY}"
 			-H "X-Debug: true"
 		)
 

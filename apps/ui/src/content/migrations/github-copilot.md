@@ -52,7 +52,7 @@ Each of these takes minutes to set up and works with every model on the gateway:
 
 ```bash
 export ANTHROPIC_BASE_URL=https://api.betarouter.com
-export ANTHROPIC_AUTH_TOKEN=llmgtwy_your_api_key_here
+export ANTHROPIC_AUTH_TOKEN=beta_your_api_key_here
 export ANTHROPIC_MODEL=gpt-5  # optional: any model from the catalog
 
 claude

@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Build, launch, and drive the LLM Gateway stack locally to verify a change end-to-end (API + DevPass dashboard + gateway), including Stripe webhook flows.
+description: Build, launch, and drive the betarouter stack locally to verify a change end-to-end (API + BetaPass dashboard + gateway), including Stripe webhook flows.
 ---
 
 # Verify a change by running the stack
@@ -25,7 +25,7 @@ cd apps/api && PORT=4102 API_URL=http://localhost:4102 CODE_URL=http://localhost
   node --enable-source-maps --env-file=../../.env dist/serve.js
 ```
 
-Terminal 2 — DevPass dashboard on :3104:
+Terminal 2 — BetaPass dashboard on :3104:
 
 ```bash
 cd apps/code && API_URL=http://localhost:4102 pnpm exec next dev --port 3104 --turbopack
@@ -38,8 +38,8 @@ cd apps/gateway && PORT=4101 node --enable-source-maps --env-file=../../.env dis
 ```
 
 If the DB is empty, seed with `pnpm --filter db seed`. Login: `admin@example.com` /
-password same as email (owns DevPass Pro org `test-personal-org-id`, API key
-`llmgdev_devpass_test_token`).
+password same as email (owns BetaPass Pro org `test-personal-org-id`, API key
+`betadev_betapass_test_token`).
 
 ## Gotchas
 

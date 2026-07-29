@@ -75,7 +75,7 @@ function escapeTomlString(str: string): string {
 function generateProviderToml(): string {
 	const lines: string[] = [];
 	lines.push(`name = "betarouter"`);
-	lines.push(`env = ["LLMGATEWAY_API_KEY"]`);
+	lines.push(`env = ["BETA_GATEWAY_API_KEY"]`);
 	lines.push(`npm = "@ai-sdk/openai-compatible"`);
 	lines.push(`doc = "https://betarouter.com/docs"`);
 	lines.push(`api = "https://api.betarouter.com/v1"`);

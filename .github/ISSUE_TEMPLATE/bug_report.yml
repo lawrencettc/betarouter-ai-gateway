@@ -1,5 +1,5 @@
 name: 🐛 Bug report
-description: Report a problem with the Gateway, DevPass, Chat Playground, Dashboard, or API.
+description: Report a problem with the Gateway, BetaPass, Chat Playground, Dashboard, or API.
 title: "[Bug]: "
 labels: ["bug"]
 body:
@@ -14,7 +14,7 @@ body:
       description: Which part of betarouter is affected?
       options:
         - "Gateway (API request routing)"
-        - "DevPass / Code"
+        - "BetaPass / Code"
         - "Chat Playground"
         - "Dashboard / UI"
         - "API (billing, analytics, management)"

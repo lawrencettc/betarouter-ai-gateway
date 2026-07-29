@@ -10,7 +10,7 @@ import { getChatPlanCreditsMultipliers } from "@betarouter/shared";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Pricing — LLMGateway Chat",
+	title: "Pricing — betarouter Chat",
 	description:
 		"Every frontier model in one subscription — Claude Opus, GPT-5, Gemini and Grok, from $19/mo. Start on fast models from $9/mo. Replaces ChatGPT Plus, Claude Pro and Gemini Advanced — with more usage than you pay for.",
 	alternates: {

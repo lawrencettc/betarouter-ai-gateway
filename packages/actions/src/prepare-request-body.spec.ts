@@ -1029,13 +1029,7 @@ describe("prepareRequestBody - Alibaba thinking", () => {
 	async function prepare(options: {
 		model: string;
 		reasoningEffort?:
-			| "none"
-			| "minimal"
-			| "low"
-			| "medium"
-			| "high"
-			| "xhigh"
-			| "max";
+			"none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
 		reasoningMaxTokens?: number;
 		maxTokens?: number;
 		supportsReasoning?: boolean;
@@ -1141,13 +1135,7 @@ describe("prepareRequestBody - MiniMax thinking", () => {
 	async function prepare(options: {
 		model: string;
 		reasoningEffort?:
-			| "none"
-			| "minimal"
-			| "low"
-			| "medium"
-			| "high"
-			| "xhigh"
-			| "max";
+			"none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
 	}) {
 		return (await prepareRequestBody(
 			"minimax",
@@ -1216,13 +1204,7 @@ describe("prepareRequestBody - Xiaomi thinking", () => {
 	async function prepare(options: {
 		model: string;
 		reasoningEffort?:
-			| "none"
-			| "minimal"
-			| "low"
-			| "medium"
-			| "high"
-			| "xhigh"
-			| "max";
+			"none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
 	}) {
 		return (await prepareRequestBody(
 			"xiaomi",

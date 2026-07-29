@@ -40,7 +40,7 @@ In the dashboard, go to **Organization → Master Keys**. From there you can:
 All programmatic endpoints live under `/v1/master/*` and require a master key in the `Authorization` header:
 
 ```
-Authorization: Bearer llmgmk_...
+Authorization: Bearer betamk_...
 ```
 
 A request with a missing, invalid, inactive, or non-enterprise master key receives a 401 / 403 response.
@@ -172,7 +172,7 @@ Response (200):
 			"status": "active",
 			"projectId": "proj_...",
 			"createdBy": "usr_...",
-			"maskedToken": "llmgtwy_...abcd",
+			"maskedToken": "beta_...abcd",
 			"usageLimit": "100.00",
 			"usage": "42.13",
 			"periodUsageLimit": "10.00",
@@ -224,7 +224,7 @@ Response (200):
 		"status": "active",
 		"projectId": "proj_...",
 		"createdBy": "usr_...",
-		"maskedToken": "llmgtwy_...abcd",
+		"maskedToken": "beta_...abcd",
 		"usageLimit": "100.00",
 		"usage": "42.13",
 		"periodUsageLimit": "10.00",
@@ -275,7 +275,7 @@ Response (201):
 {
 	"apiKey": {
 		"id": "ak_...",
-		"token": "llmgtwy_...",
+		"token": "beta_...",
 		"description": "Customer ACME — production key",
 		"status": "active",
 		"projectId": "proj_...",

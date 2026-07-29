@@ -9,10 +9,10 @@ CONTAINER_NAME="${CONTAINER_NAME:-llmgateway}"
 POSTGRES_VOLUME="${POSTGRES_VOLUME:-llmgateway_postgres}"
 REDIS_VOLUME="${REDIS_VOLUME:-llmgateway_redis}"
 
-if [ -z "${LLM_GATEWAY_SECRET:-}" ]; then
-    echo "LLM_GATEWAY_SECRET is not set." >&2
+if [ -z "${BETA_GATEWAY_SECRET:-}" ]; then
+    echo "BETA_GATEWAY_SECRET is not set." >&2
     echo "Export a strong secret first, for example:" >&2
-    echo "  export LLM_GATEWAY_SECRET=\"$(openssl rand -base64 32 | tr -d '\n')\"" >&2
+    echo "  export BETA_GATEWAY_SECRET=\"$(openssl rand -base64 32 | tr -d '\n')\"" >&2
     exit 1
 fi
 
@@ -43,7 +43,7 @@ docker run -d \
     -p 4002:4002 \
     -v "$POSTGRES_VOLUME:/var/lib/postgresql/data" \
     -v "$REDIS_VOLUME:/var/lib/redis" \
-    -e AUTH_SECRET="$LLM_GATEWAY_SECRET" \
+    -e AUTH_SECRET="$BETA_GATEWAY_SECRET" \
     -e GATEWAY_API_KEY_HASH_SECRET="$GATEWAY_API_KEY_HASH_SECRET" \
     ghcr.io/theopenco/llmgateway-unified:latest
 

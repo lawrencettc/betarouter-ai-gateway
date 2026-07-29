@@ -1409,7 +1409,7 @@ async function seed() {
 		createdBy: "test-user-id",
 	});
 
-	// Personal org for the test admin so DevPass Pro is available locally
+	// Personal org for the test admin so BetaPass Pro is available locally
 	await upsert(tables.organization, {
 		id: "test-personal-org-id",
 		name: "Test User's Workspace",
@@ -1441,13 +1441,13 @@ async function seed() {
 
 	await upsert(tables.apiKey, {
 		id: "test-devpass-api-key-id",
-		token: "llmgdev_devpass_test_token",
+		token: "betadev_betapass_test_token",
 		projectId: "test-personal-project-id",
 		description: "Dev Plan API Key",
 		createdBy: "test-user-id",
 	});
 
-	// Realistic per-agent activity for the DevPass dashboard and the public
+	// Realistic per-agent activity for the BetaPass dashboard and the public
 	// /apps page. Each agent has its own mix of models so per-agent charts show
 	// a breakdown across multiple models. Weights are renormalized internally
 	// so it's safe to add or reorder entries.
@@ -1858,7 +1858,7 @@ async function seed() {
 	await bulkInsert(tables.projectHourlyModelStats, devpassHourlyModelStats);
 
 	// Split each hourly bucket across coding-agent sources so the Agents
-	// dashboard and the DevPass "Top coding agents" breakdown have data.
+	// dashboard and the BetaPass "Top coding agents" breakdown have data.
 	const devpassHourlySourceStats: Array<Record<string, any>> = [];
 	for (const bucket of devpassHourlyStats) {
 		const splits = DEVPASS_AGENTS.map((a) => a.weight * randomFloat(0.5, 1.5));
@@ -2083,7 +2083,7 @@ async function seed() {
 		status: "completed",
 		stripePaymentIntentId: "pi_seed_devpass_renewal",
 		stripeInvoiceId: "in_seed_devpass_renewal",
-		description: "Seeded DevPass Pro renewal for admin dashboard",
+		description: "Seeded BetaPass Pro renewal for admin dashboard",
 	});
 
 	const devpassRefundCreatedAt = new Date();
@@ -2101,7 +2101,7 @@ async function seed() {
 		stripeRefundId: "re_seed_devpass_refund",
 		relatedTransactionId: "test-devpass-renewal-transaction-id",
 		refundReason: "requested_by_customer",
-		description: "Seeded DevPass refund for admin dashboard",
+		description: "Seeded BetaPass refund for admin dashboard",
 	});
 
 	// ── Bulk seed data for admin dashboard ──

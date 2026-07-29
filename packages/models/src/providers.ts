@@ -170,7 +170,7 @@ export const providers: ProviderDefinition[] = [
 			"betarouter is a framework for building and deploying large language models.",
 		env: {
 			required: {
-				apiKey: "LLM_LLMGATEWAY_API_KEY",
+				apiKey: "BETA_GATEWAY_API_KEY",
 			},
 		},
 		streaming: true,

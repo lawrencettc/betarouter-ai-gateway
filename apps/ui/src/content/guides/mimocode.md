@@ -43,7 +43,7 @@ Specify the default models you want to use and route the `anthropic` provider to
   "provider": {
     "anthropic": {
       "options": {
-        "apiKey": "llmgtwy_your_api_key_here",
+        "apiKey": "beta_your_api_key_here",
         "baseURL": "https://api.betarouter.com/v1"
       },
       "models": {
@@ -70,7 +70,7 @@ Specify the default models you want to use and route the `anthropic` provider to
 
 ![Configuring mimocode.json](https://docs.betarouter.com/guides/mimocode/0-config.png)
 
-_Replace `llmgtwy_your_api_key_here` with your actual betarouter API key from the dashboard._
+_Replace `beta_your_api_key_here` with your actual betarouter API key from the dashboard._
 
 ### Step 3: Run MiMo Code
 
@@ -100,7 +100,7 @@ To point MiMo Code to betarouter, you define the `baseURL` and `apiKey` inside t
 "provider": {
 	"anthropic": {
 		"options": {
-			"apiKey": "llmgtwy_your_api_key_here",
+			"apiKey": "beta_your_api_key_here",
 			"baseURL": "https://api.betarouter.com/v1"
 		}
 	}

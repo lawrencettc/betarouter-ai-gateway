@@ -33,7 +33,7 @@ Sign up at [betarouter.com/signup](/signup) and create an API key from your dash
 # OPENROUTER_API_KEY=sk-or-...
 
 # Add betarouter credentials
-BETA_GATEWAY_API_KEY=llmgtwy_your_key_here
+BETA_GATEWAY_API_KEY=beta_your_key_here
 ```
 
 ### 3. Update Your Code

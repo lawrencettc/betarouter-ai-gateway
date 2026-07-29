@@ -41,7 +41,7 @@ Open (or create) the Pi models configuration file at `~/.pi/agent/models.json` a
 		"betarouter": {
 			"baseUrl": "https://api.betarouter.com/v1",
 			"api": "openai-completions",
-			"apiKey": "llmgtwy_your_api_key_here",
+			"apiKey": "beta_your_api_key_here",
 			"models": [
 				{ "id": "gpt-5.5", "name": "GPT-5.5" },
 				{ "id": "claude-opus-4-7", "name": "Claude Opus 4.7" },
@@ -53,7 +53,7 @@ Open (or create) the Pi models configuration file at `~/.pi/agent/models.json` a
 }
 ```
 
-Replace `llmgtwy_your_api_key_here` with your actual API key from Step 1.
+Replace `beta_your_api_key_here` with your actual API key from Step 1.
 
 ![Pi models.json Configuration](/guides/pi/config.png)
 
@@ -101,7 +101,7 @@ You can add any model from the [betarouter models page](https://betarouter.com/m
 		"betarouter": {
 			"baseUrl": "https://api.betarouter.com/v1",
 			"api": "openai-completions",
-			"apiKey": "llmgtwy_your_api_key_here",
+			"apiKey": "beta_your_api_key_here",
 			"models": [
 				{ "id": "gpt-5.5", "name": "GPT-5.5" },
 				{ "id": "gpt-5.5-mini", "name": "GPT-5.5 Mini" },
@@ -141,7 +141,7 @@ Instead of hardcoding your key, you can reference an environment variable:
 Then set the variable in your shell profile:
 
 ```bash
-export BETA_GATEWAY_API_KEY=llmgtwy_your_api_key_here
+export BETA_GATEWAY_API_KEY=beta_your_api_key_here
 ```
 
 ## Troubleshooting

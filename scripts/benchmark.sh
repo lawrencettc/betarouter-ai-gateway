@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-API_KEY="${LLM_GATEWAY_API_KEY:-your-api-key-here}"
+API_KEY="${BETA_GATEWAY_API_KEY:-your-api-key-here}"
 BASE_URL="https://api.betarouter.com/v1"
 #MODELS=(
 #  "deepseek/deepseek-r1-0528"

@@ -4,11 +4,11 @@
 
 const API_URL =
 	process.env.API_URL || "https://api.betarouter.com/v1/chat/completions";
-const API_KEY = process.env.LLMGATEWAY_API_KEY;
+const API_KEY = process.env.BETA_GATEWAY_API_KEY;
 const MODEL = process.env.MODEL || "deepseek-v4-flash";
 
 if (!API_KEY) {
-	console.error("Missing LLMGATEWAY_API_KEY environment variable");
+	console.error("Missing BETA_GATEWAY_API_KEY environment variable");
 	process.exit(1);
 }
 

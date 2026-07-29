@@ -78,7 +78,7 @@ playground.openapi(ensureKey, async (c) => {
 
 	if (!key) {
 		const prefix =
-			process.env.NODE_ENV === "development" ? `llmgdev_` : "llmgtwy_";
+			process.env.NODE_ENV === "development" ? `betadev_` : "beta_";
 		const token = prefix + shortid(40);
 		[key] = await db
 			.insert(tables.apiKey)

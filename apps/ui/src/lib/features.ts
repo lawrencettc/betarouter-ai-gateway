@@ -88,7 +88,7 @@ export const features: FeatureDefinition[] = [
 
 const client = new OpenAI({
 	baseURL: "https://api.betarouter.com/v1",
-	apiKey: process.env.LLMGATEWAY_API_KEY,
+	apiKey: process.env.BETA_GATEWAY_API_KEY,
 });
 
 const completion = await client.chat.completions.create({

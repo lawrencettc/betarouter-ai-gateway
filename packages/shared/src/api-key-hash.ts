@@ -3,11 +3,11 @@ import { createHmac } from "node:crypto";
 const API_KEY_HASH_SECRET_ENV = "GATEWAY_API_KEY_HASH_SECRET";
 const DEV_API_KEY_HASH_SECRET = "llmgateway-dev-api-key-hash-secret";
 
-export const GATEWAY_API_KEY_PREFIX_PROD = "llmgtwy_";
-export const GATEWAY_API_KEY_PREFIX_DEV = "llmgdev_";
+export const GATEWAY_API_KEY_PREFIX_PROD = "beta_";
+export const GATEWAY_API_KEY_PREFIX_DEV = "betadev_";
 
-export const MASTER_KEY_PREFIX_PROD = "llmgmk_";
-export const MASTER_KEY_PREFIX_DEV = "llmgmkdev_";
+export const MASTER_KEY_PREFIX_PROD = "betamk_";
+export const MASTER_KEY_PREFIX_DEV = "betamkdev_";
 
 export function getApiKeyHashSecret(): string {
 	const configuredSecret = process.env[API_KEY_HASH_SECRET_ENV]?.trim();

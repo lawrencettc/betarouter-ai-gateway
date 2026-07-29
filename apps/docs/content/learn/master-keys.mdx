@@ -27,7 +27,7 @@ Click **Create Master Key**, give the key a descriptive name (for example, "Prov
 />
 
 <Callout type="warning">
-	The plain token (prefixed `llmgmk_`) is shown **only once** at creation time.
+	The plain token (prefixed `betamk_`) is shown **only once** at creation time.
 	Copy it immediately and store it securely — only an HMAC-SHA256 hash is kept
 	in the database.
 </Callout>
@@ -64,7 +64,7 @@ Master keys authenticate against the programmatic provisioning API:
 
 ```bash
 curl https://internal.betarouter.com/v1/master/projects \
-  -H "Authorization: Bearer llmgmk_..."
+  -H "Authorization: Bearer betamk_..."
 ```
 
 See the [Master Keys feature documentation](/features/master-keys) for the full endpoint reference, including project management, gateway API key provisioning, and IAM rules.
