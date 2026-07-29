@@ -48,7 +48,7 @@ export function ModelCodeExampleDialog({
 			language: "bash",
 			code: `curl -X POST https://api.betarouter.com/v1/chat/completions \\
   -H "Content-Type: application/json" \\
-  -H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \\
+  -H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \\
   -d '{
   "model": "${modelId}",
   "messages": [
@@ -62,7 +62,7 @@ export function ModelCodeExampleDialog({
 			code: `import OpenAI from "openai";
 
 const client = new OpenAI({
-  apiKey: process.env.LLM_GATEWAY_API_KEY, // or your API key string
+  apiKey: process.env.BETA_GATEWAY_API_KEY, // or your API key string
   baseURL: "https://api.betarouter.com/v1/"
 });
 
@@ -81,10 +81,10 @@ console.log(response.choices[0].message.content);`,
 			code: `import { createLLMGateway } from "@llmgateway/ai-sdk-provider";
 import { generateText } from "ai";
 
-const llmgateway = createLLMGateway({ apiKey: process.env.LLM_GATEWAY_API_KEY });
+const betarouter = createLLMGateway({ apiKey: process.env.BETA_GATEWAY_API_KEY });
 
 const { text } = await generateText({
-  model: llmgateway("${modelId}"),
+  model: betarouter("${modelId}"),
   prompt: "Write a vegetarian lasagna recipe for 4 people.",
 });`,
 		},

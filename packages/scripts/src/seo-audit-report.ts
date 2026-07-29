@@ -117,9 +117,9 @@ function nonEmpty(value: string | undefined): string | undefined {
 	return value.trim();
 }
 
-const LLMGATEWAY_API_URL =
-	nonEmpty(process.env.LLMGATEWAY_API_URL) ?? "https://api.betarouter.com";
-const LLMGATEWAY_API_KEY = nonEmpty(process.env.LLMGATEWAY_API_KEY);
+const BETA_GATEWAY_API_URL =
+	nonEmpty(process.env.BETA_GATEWAY_API_URL) ?? "https://api.betarouter.com";
+const BETA_GATEWAY_API_KEY = nonEmpty(process.env.BETA_GATEWAY_API_KEY);
 const AUDIT_MODEL = nonEmpty(process.env.SEO_AUDIT_MODEL) ?? "gpt-5.6-sol";
 const DISCORD_TRAFFIC_NOTIFICATION_URL = nonEmpty(
 	process.env.DISCORD_TRAFFIC_NOTIFICATION_URL,
@@ -600,16 +600,16 @@ async function runAudit(
 	systemPrompt: string,
 	evidence: Evidence,
 ): Promise<AuditResult> {
-	if (!LLMGATEWAY_API_KEY) {
+	if (!BETA_GATEWAY_API_KEY) {
 		throw new Error(
-			"LLMGATEWAY_API_KEY environment variable is required to run the audit.",
+			"BETA_GATEWAY_API_KEY environment variable is required to run the audit.",
 		);
 	}
 	console.log(`Running ${kind} audit via ${AUDIT_MODEL}...`);
-	const response = await fetch(`${LLMGATEWAY_API_URL}/v1/chat/completions`, {
+	const response = await fetch(`${BETA_GATEWAY_API_URL}/v1/chat/completions`, {
 		method: "POST",
 		headers: {
-			Authorization: `Bearer ${LLMGATEWAY_API_KEY}`,
+			Authorization: `Bearer ${BETA_GATEWAY_API_KEY}`,
 			"Content-Type": "application/json",
 		},
 		body: JSON.stringify({

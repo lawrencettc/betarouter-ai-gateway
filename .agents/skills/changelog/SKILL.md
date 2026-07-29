@@ -1,11 +1,11 @@
 ---
 name: changelog
-description: Write a new LLM Gateway changelog entry. Use when the user says "changelog", "changelog entry", "write a changelog", "add a changelog", "announce this feature", or asks to document a shipped feature for the public changelog. Produces the dated markdown file under apps/ui/src/content/changelog plus a gpt-image-2 prompt for the OpenGraph image.
+description: Write a new betarouter changelog entry. Use when the user says "changelog", "changelog entry", "write a changelog", "add a changelog", "announce this feature", or asks to document a shipped feature for the public changelog. Produces the dated markdown file under apps/ui/src/content/changelog plus a gpt-image-2 prompt for the OpenGraph image.
 ---
 
 # Changelog
 
-Write a public changelog entry for LLM Gateway, in the house style, and hand back a ready-to-run gpt-image-2 prompt for its OpenGraph image.
+Write a public changelog entry for betarouter, in the house style, and hand back a ready-to-run gpt-image-2 prompt for its OpenGraph image.
 
 ## What you need first
 
@@ -57,7 +57,7 @@ image:
 
 ---
 
-**[<Docs link> →](https://docs.llmgateway.io/...)** | **[<Secondary CTA> →](https://llmgateway.io/...)**
+**[<Docs link> →](https://docs.betarouter.com/...)** | **[<Secondary CTA> →](https://betarouter.com/...)**
 ```
 
 ### House style (match existing entries)
@@ -67,7 +67,7 @@ Read the two or three most recent files in `apps/ui/src/content/changelog/` befo
 - **Lead with the problem, then the fix.** First paragraph names the pain; the next sentence states what shipped.
 - **Benefits over features, specific over vague.** "about 50% cheaper", "rejected with `400` before any data leaves the gateway" — not "improved efficiency".
 - **Confident and plain.** Active voice. No exclamation points. No "very/really/simply". No buzzwords ("streamline", "seamless", "revolutionary").
-- **Show the API.** Include a realistic `curl` or JSON example when there's a request-level change. Use `https://api.llmgateway.io/v1/...` and `$LLM_GATEWAY_API_KEY`.
+- **Show the API.** Include a realistic `curl` or JSON example when there's a request-level change. Use `https://api.betarouter.com/v1/...` and `$BETA_GATEWAY_API_KEY`.
 - **Use a table** for fields, options, strategies, or tiers.
 - **State plan gating explicitly** (e.g. "Available on the **Enterprise plan**").
 - **Close with a footer link line**: a docs link and one secondary CTA, separated by ` | `, each as `**[Label →](url)**`.
@@ -106,7 +106,7 @@ words, no letters, no UI chrome.
 Save the result to: apps/ui/public/changelog/<slug>.png
 ````
 
-Generate the image with gpt-image-2 (LLM Gateway playground, the Images API, or any gpt-image-2 client), then drop the PNG at that path. The entry references it via `image.src`; until the file exists the entry builds fine but the image 404s.
+Generate the image with gpt-image-2 (betarouter playground, the Images API, or any gpt-image-2 client), then drop the PNG at that path. The entry references it via `image.src`; until the file exists the entry builds fine but the image 404s.
 
 ## Step 4 — Validate
 

@@ -18,7 +18,7 @@ Configure Pi to use betarouter by editing `~/.pi/agent/models.json`:
     "betarouter": {
       "baseUrl": "https://api.betarouter.com/v1",
       "api": "openai-completions",
-      "apiKey": "llmgtwy_your_api_key_here",
+      "apiKey": "beta_your_api_key_here",
       "models": [
         { "id": "gpt-5.5", "name": "GPT-5.5" },
         { "id": "claude-opus-4-7", "name": "Claude Opus 4.7" },
@@ -59,7 +59,7 @@ Reference an env var instead of hardcoding your key:
 ```
 
 ```bash
-export BETA_GATEWAY_API_KEY=llmgtwy_your_api_key_here
+export BETA_GATEWAY_API_KEY=beta_your_api_key_here
 ```
 
 ## Troubleshooting

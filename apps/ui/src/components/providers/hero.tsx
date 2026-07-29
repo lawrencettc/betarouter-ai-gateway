@@ -119,7 +119,7 @@ export function Hero({ providerId }: HeroProps) {
 						</Button>
 						<Button variant="ghost" asChild>
 							<a
-								href={`${provider.website}?utm_source=llmgateway-models`}
+								href={`${provider.website}?utm_source=betarouter-models`}
 								target="_blank"
 							>
 								Visit company

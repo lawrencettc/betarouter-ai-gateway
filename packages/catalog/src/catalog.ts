@@ -333,14 +333,14 @@ export function resolveEffectiveCatalog(
 
 		const displayable = Boolean(
 			sourceProvider?.status === "active" &&
-				sourceModel?.status === "active" &&
-				mapping.status === "active" &&
-				!dateReached(mapping.deactivatedAt, input.now) &&
-				providerPolicy?.visible &&
-				providerLifecycle.get(mapping.providerId) !== "retired" &&
-				modelPolicy?.visible &&
-				modelLifecycle.get(mapping.modelId) !== "retired" &&
-				mappingPolicy?.enabled,
+			sourceModel?.status === "active" &&
+			mapping.status === "active" &&
+			!dateReached(mapping.deactivatedAt, input.now) &&
+			providerPolicy?.visible &&
+			providerLifecycle.get(mapping.providerId) !== "retired" &&
+			modelPolicy?.visible &&
+			modelLifecycle.get(mapping.modelId) !== "retired" &&
+			mappingPolicy?.enabled,
 		);
 		const available = staticReasonCount === 0;
 		const probeOnly =

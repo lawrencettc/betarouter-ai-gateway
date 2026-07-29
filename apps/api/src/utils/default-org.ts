@@ -128,7 +128,7 @@ export async function getOrCreateDefaultOrganization(
 			.returning();
 
 		const prefix =
-			process.env.NODE_ENV === "development" ? `llmgdev_` : "llmgtwy_";
+			process.env.NODE_ENV === "development" ? `betadev_` : "beta_";
 		const token = prefix + shortid(40);
 
 		await tx.insert(tables.apiKey).values({

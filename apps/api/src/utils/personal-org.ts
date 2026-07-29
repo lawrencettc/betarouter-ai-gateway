@@ -5,7 +5,7 @@ interface PersonalOrgUser {
 	email: string;
 }
 
-// Get or create the personal organization for a user (DevPass).
+// Get or create the personal organization for a user (BetaPass).
 // Uses a transaction to ensure atomicity when creating org, membership, and project.
 export async function getOrCreatePersonalOrg(user: PersonalOrgUser) {
 	const userOrgs = await db.query.userOrganization.findMany({
@@ -29,10 +29,10 @@ export async function getOrCreatePersonalOrg(user: PersonalOrgUser) {
 		const [newOrg] = await tx
 			.insert(tables.organization)
 			.values({
-				name: "DevPass",
+				name: "BetaPass",
 				kind: "devpass",
 				billingEmail: user.email,
-				// DevPass orgs retain request/response data by default; users can
+				// BetaPass orgs retain request/response data by default; users can
 				// disable this from the data retention settings.
 				retentionLevel: "retain",
 			})
@@ -56,7 +56,7 @@ export async function getOrCreatePersonalOrg(user: PersonalOrgUser) {
 
 // Get or create the dedicated "Chat" organization for a user. This backs
 // chat.betarouter.com (apps/playground): the chat plan, pay-as-you-go top-ups,
-// and all playground billing live here, kept separate from the DevPass personal
+// and all playground billing live here, kept separate from the BetaPass personal
 // org used by the coding product.
 //
 // On first creation, any pay-as-you-go balance the user had on their personal

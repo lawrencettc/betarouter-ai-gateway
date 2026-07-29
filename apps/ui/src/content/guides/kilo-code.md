@@ -37,7 +37,7 @@ Click the **+** button next to betarouter.
 
 ### Step 4: Enter Your API Key
 
-Kilo Code will show the **Connect betarouter** dialog. Paste your betarouter API key (starts with `llmgtwy_`) and click **Submit**:
+Kilo Code will show the **Connect betarouter** dialog. Paste your betarouter API key (starts with `beta_`) and click **Submit**:
 
 ![Connect betarouter — enter API key](/images/guides/kilo-code/2-connect-api-key.png)
 
@@ -80,7 +80,7 @@ Click **Show more providers** at the bottom of the Providers page. In the search
 
 ### Authentication errors
 
-Make sure your API key starts with `llmgtwy_` and is active. Check your [dashboard](/dashboard) to confirm the key is valid.
+Make sure your API key starts with `beta_` and is active. Check your [dashboard](/dashboard) to confirm the key is valid.
 
 ### Model not found
 

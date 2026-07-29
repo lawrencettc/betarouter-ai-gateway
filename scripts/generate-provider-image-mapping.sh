@@ -3,7 +3,7 @@
 set -euo pipefail
 
 BASE_URL="http://localhost:4001"
-API_KEY="${LLM_GATEWAY_API_KEY:-test-token}"
+API_KEY="${BETA_GATEWAY_API_KEY:-test-token}"
 PROVIDER="glacier"
 MODEL="gemini-3.1-flash-image-preview"
 ASPECT_RATIO="1:1"

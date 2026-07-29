@@ -2,12 +2,12 @@
 id: portkey
 slug: portkey
 title: Migrate from Portkey
-description: Switch from Portkey to betarouter. Same OpenAI-compatible API, no virtual keys or special headers, fully open-source self-hosting.
+description: Switch from Portkey to betarouter. Same OpenAI-compatible API, no virtual keys or special headers.
 date: 2026-05-26
 fromProvider: Portkey
 ---
 
-Portkey wraps your provider calls in virtual keys, config IDs, and `x-portkey-*` headers. betarouter keeps the OpenAI-compatible interface but drops the extra ceremony: standard Bearer auth, provider keys managed in a dashboard, and the option to self-host the entire platform under AGPLv3. Migration is mostly a base URL change.
+Portkey wraps your provider calls in virtual keys, config IDs, and `x-portkey-*` headers. betarouter keeps the OpenAI-compatible interface but drops the extra ceremony: standard Bearer auth and provider keys managed in a dashboard. Migration is mostly a base URL change.
 
 ## Quick Migration
 
@@ -28,7 +28,6 @@ Both services are OpenAI-compatible, so the core change is the base URL and drop
 | ----------------------------- | ----------------------------- | ------------------------------------- |
 | OpenAI-compatible API         | Yes                           | Yes                                   |
 | Custom headers / virtual keys | Required for provider routing | Not needed                            |
-| Open-source self-hosting      | Gateway/router only (MIT)     | Full platform (AGPLv3)                |
 | Automatic provider routing    | Manual config                 | Live scoring, automatic               |
 | Response caching              | Simple + semantic             | Built-in, one toggle                  |
 | Image & video generation      | Limited                       | Same API as chat                      |
@@ -243,21 +242,6 @@ response = client.chat.completions.create(
 - **Automatic routing** — providers scored on live uptime, throughput, price, and latency instead of static configs
 - **Caching is one toggle** — no semantic-cache setup required to get repeat-request savings
 - **Generative media included** — image and video models through the same API and billing
-- **Fully open source** — self-host the entire platform, not just the router
-
-## Self-Hosting betarouter
-
-Prefer to run it yourself? Unlike Portkey, where only the gateway is open source, the entire betarouter platform is available under AGPLv3:
-
-```bash
-git clone https://github.com/theopenco/llmgateway
-cd betarouter
-pnpm install
-pnpm setup
-pnpm dev
-```
-
-See the [self-hosting guide](/blog/how-to-self-host-llm-gateway) for production deployment with a single Docker image.
 
 ## Full Comparison
 

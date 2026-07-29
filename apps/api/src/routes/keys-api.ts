@@ -1059,8 +1059,7 @@ export async function createApiKeyForProject(
 		}
 	}
 
-	const prefix =
-		process.env.NODE_ENV === "development" ? `llmgdev_` : "llmgtwy_";
+	const prefix = process.env.NODE_ENV === "development" ? `betadev_` : "beta_";
 	const token = prefix + shortid(40);
 
 	const [apiKey] = await cdb
@@ -1852,8 +1851,7 @@ keysApi.openapi(roll, async (c) => {
 		});
 	}
 
-	const prefix =
-		process.env.NODE_ENV === "development" ? `llmgdev_` : "llmgtwy_";
+	const prefix = process.env.NODE_ENV === "development" ? `betadev_` : "beta_";
 	const token = prefix + shortid(40);
 
 	// Roll through the cached client so its onMutate invalidates the gateway's

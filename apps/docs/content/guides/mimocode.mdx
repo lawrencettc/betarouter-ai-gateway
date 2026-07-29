@@ -49,7 +49,7 @@ Specify the default models you want to use and route the `anthropic` provider to
 	"provider": {
 		"anthropic": {
 			"options": {
-				"apiKey": "llmgtwy_your_api_key_here",
+				"apiKey": "beta_your_api_key_here",
 				"baseURL": "https://api.betarouter.com/v1"
 			},
 			"models": {
@@ -81,8 +81,8 @@ Specify the default models you want to use and route the `anthropic` provider to
 />
 
 <Callout type="info">
-	Replace `llmgtwy_your_api_key_here` with your actual betarouter API key from
-	the dashboard.
+	Replace `beta_your_api_key_here` with your actual betarouter API key from the
+	dashboard.
 </Callout>
 
 </Step>
@@ -93,7 +93,7 @@ Specify the default models you want to use and route the `anthropic` provider to
 If you prefer to configure the provider dynamically, you can export the standard Anthropic environment variables before starting MiMo Code:
 
 ```bash
-export ANTHROPIC_API_KEY=llmgtwy_your_api_key_here
+export ANTHROPIC_API_KEY=beta_your_api_key_here
 export ANTHROPIC_BASE_URL=https://api.betarouter.com/v1
 ```
 
@@ -135,7 +135,7 @@ To point MiMo Code to betarouter, you define the `baseURL` and `apiKey` inside t
 "provider": {
 	"anthropic": {
 		"options": {
-			"apiKey": "llmgtwy_your_api_key_here",
+			"apiKey": "beta_your_api_key_here",
 			"baseURL": "https://api.betarouter.com/v1"
 		}
 	}

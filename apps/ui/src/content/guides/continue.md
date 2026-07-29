@@ -28,7 +28,7 @@ npm install -g @continuedev/cli
 
 ### Step 2: Get Your API Key
 
-[Sign up](https://betarouter.com/signup) or log in to your betarouter dashboard. Navigate to **API Keys** and create a new key. Copy it — it starts with `llmgtwy_`.
+[Sign up](https://betarouter.com/signup) or log in to your betarouter dashboard. Navigate to **API Keys** and create a new key. Copy it — it starts with `beta_`.
 
 ### Step 3: Create a Config File
 
@@ -48,12 +48,12 @@ models:
     provider: openai
     model: claude-sonnet-4-6
     apiBase: https://api.betarouter.com/v1
-    apiKey: llmgtwy_your-api-key-here
+    apiKey: beta_your-api-key-here
 ```
 
 ![Editing config.yaml](/images/guides/continue/1-config.png)
 
-> Replace `llmgtwy_your-api-key-here` with your actual API key from the dashboard.
+> Replace `beta_your-api-key-here` with your actual API key from the dashboard.
 
 ### Step 4: Add More Models (Optional)
 
@@ -67,17 +67,17 @@ models:
     provider: openai
     model: claude-sonnet-4-6
     apiBase: https://api.betarouter.com/v1
-    apiKey: llmgtwy_your-api-key-here
+    apiKey: beta_your-api-key-here
   - name: gpt-5.5
     provider: openai
     model: gpt-5.5
     apiBase: https://api.betarouter.com/v1
-    apiKey: llmgtwy_your-api-key-here
+    apiKey: beta_your-api-key-here
   - name: gemini-3.1-pro
     provider: openai
     model: gemini-3.1-pro
     apiBase: https://api.betarouter.com/v1
-    apiKey: llmgtwy_your-api-key-here
+    apiKey: beta_your-api-key-here
 ```
 
 All models use `provider: openai` since betarouter exposes an OpenAI-compatible API.
@@ -121,7 +121,7 @@ models:
     provider: openai
     model: gpt-5.5
     apiBase: https://api.betarouter.com/v1
-    apiKey: llmgtwy_your-api-key-here
+    apiKey: beta_your-api-key-here
 ```
 
 ### Using with the --config Flag
@@ -146,7 +146,7 @@ models:
     provider: openai
     model: claude-sonnet-4-6
     apiBase: https://api.betarouter.com/v1
-    apiKey: llmgtwy_your-api-key-here
+    apiKey: beta_your-api-key-here
     requestOptions:
       headers:
         X-No-Fallback: "true"
@@ -187,7 +187,7 @@ Check that `apiBase` is set to `https://api.betarouter.com/v1` (note the `/v1` a
 
 ### Authentication errors
 
-Make sure your `apiKey` starts with `llmgtwy_` and is valid. Check your [dashboard](/dashboard) to confirm the key is active.
+Make sure your `apiKey` starts with `beta_` and is valid. Check your [dashboard](/dashboard) to confirm the key is active.
 
 ### Provider must be "openai"
 

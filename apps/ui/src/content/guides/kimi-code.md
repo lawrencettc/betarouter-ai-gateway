@@ -100,7 +100,7 @@ default_model = "betarouter/gpt-5.5"
 
 [providers.betarouter]
 type = "openai"
-api_key = "llmgtwy_your_api_key_here"
+api_key = "beta_your_api_key_here"
 base_url = "https://api.betarouter.com/v1"
 
 [models."betarouter/gpt-5.5"]

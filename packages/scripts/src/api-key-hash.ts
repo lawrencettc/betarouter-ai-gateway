@@ -9,7 +9,7 @@
  * Hash specific keys (run from repo root):
  *
  *   GATEWAY_API_KEY_HASH_SECRET='your-secret' \
- *     pnpm --filter @betarouter/scripts api-key-hash llmgtwy_abc llmgtwy_def
+ *     pnpm --filter @betarouter/scripts api-key-hash beta_abc beta_def
  *
  * Hash every API key in the local database:
  *

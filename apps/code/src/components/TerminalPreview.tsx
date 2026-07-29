@@ -71,7 +71,7 @@ const snippets: Record<
 			},
 			{
 				key: "ANTHROPIC_AUTH_TOKEN=",
-				value: "llmgtwy_your_key",
+				value: "beta_your_key",
 			},
 		],
 		command: "claude",
@@ -98,7 +98,7 @@ const snippets: Record<
 			},
 			{
 				key: "OPENAI_API_KEY=",
-				value: "llmgtwy_your_key",
+				value: "beta_your_key",
 			},
 		],
 		command: "autohand",
@@ -118,7 +118,7 @@ const snippets: Record<
 			},
 			{
 				key: "OPENAI_API_KEY=",
-				value: "llmgtwy_your_key",
+				value: "beta_your_key",
 			},
 		],
 		command: "cline",

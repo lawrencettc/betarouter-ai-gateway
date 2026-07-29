@@ -110,8 +110,7 @@ async function getOrCreatePersonalOrgApiKey(
 	}
 
 	// Create new API key
-	const prefix =
-		process.env.NODE_ENV === "development" ? `llmgdev_` : "llmgtwy_";
+	const prefix = process.env.NODE_ENV === "development" ? `betadev_` : "beta_";
 	const token = prefix + shortid(40);
 
 	await db.insert(tables.apiKey).values({
@@ -2495,7 +2494,7 @@ devPlans.openapi(rotateApiKey, async (c) => {
 	}
 
 	const newToken =
-		(process.env.NODE_ENV === "development" ? "llmgdev_" : "llmgtwy_") +
+		(process.env.NODE_ENV === "development" ? "betadev_" : "beta_") +
 		shortid(40);
 
 	await db.transaction(async (tx) => {

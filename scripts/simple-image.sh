@@ -4,7 +4,7 @@ set -eux
 
 curl -X POST --location "http://localhost:4001/v1/chat/completions" \
 	-H "Content-Type: application/json" \
-	-H "Authorization: Bearer $LLM_GATEWAY_API_KEY" \
+	-H "Authorization: Bearer $BETA_GATEWAY_API_KEY" \
 	-H "x-no-fallback: true" \
 	-d '{
 	"model": "avalanche/gemini-3-pro-image-preview",

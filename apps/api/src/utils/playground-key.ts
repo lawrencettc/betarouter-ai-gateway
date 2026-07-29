@@ -60,7 +60,7 @@ export async function resolvePlaygroundToken(
 	});
 	if (!key) {
 		const prefix =
-			process.env.NODE_ENV === "development" ? "llmgdev_" : "llmgtwy_";
+			process.env.NODE_ENV === "development" ? "betadev_" : "beta_";
 		[key] = await db
 			.insert(tables.apiKey)
 			.values({

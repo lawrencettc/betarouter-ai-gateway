@@ -20,7 +20,7 @@ Welcome to **betarouter**—a single drop‑in endpoint that lets you call today
 3. Export it in your shell (or a `.env` file):
 
 ```bash
-export BETA_GATEWAY_API_KEY="llmgtwy_XXXXXXXXXXXXXXXX"
+export BETA_GATEWAY_API_KEY="beta_XXXXXXXXXXXXXXXX"
 ```
 
 ---
@@ -398,12 +398,12 @@ puts result['choices'][0]['message']['content']
 ```ts title="vercel-ai-sdk.ts"
 import { createOpenAI } from "@ai-sdk/openai";
 
-const llmgateway = createOpenAI({
+const betarouter = createOpenAI({
 	baseURL: "https://api.betarouter.com/v1",
 	apiKey: process.env.BETA_GATEWAY_API_KEY!,
 });
 
-const completion = await llmgateway.chat({
+const completion = await betarouter.chat({
 	model: "gpt-4o",
 	messages: [{ role: "user", content: "Hello, how are you?" }],
 });

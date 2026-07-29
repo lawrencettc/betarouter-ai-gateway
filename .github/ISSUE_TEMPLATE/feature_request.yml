@@ -14,7 +14,7 @@ body:
       description: Which part of betarouter would this affect?
       options:
         - "Gateway (API request routing)"
-        - "DevPass / Code"
+        - "BetaPass / Code"
         - "Chat Playground"
         - "Dashboard / UI"
         - "API (billing, analytics, management)"

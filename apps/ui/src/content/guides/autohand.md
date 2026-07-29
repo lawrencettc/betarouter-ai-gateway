@@ -14,7 +14,7 @@ Configure Autohand Code to use betarouter by setting the base URL and API key:
 
 ```bash
 export OPENAI_BASE_URL=https://api.betarouter.com/v1
-export OPENAI_API_KEY=llmgtwy_your_api_key_here
+export OPENAI_API_KEY=beta_your_api_key_here
 ```
 
 Then start Autohand Code as usual:
@@ -34,7 +34,7 @@ You can also configure betarouter in Autohand Code's config file. Add or update 
   "provider": {
     "betarouter": {
       "baseUrl": "https://api.betarouter.com/v1",
-      "apiKey": "llmgtwy_your_api_key_here"
+      "apiKey": "beta_your_api_key_here"
     }
   },
   "model": "gpt-5"

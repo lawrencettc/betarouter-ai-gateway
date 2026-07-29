@@ -54,7 +54,7 @@ The wizard will ask you to configure your inference provider. Select **Custom Op
 API base URL: https://api.betarouter.com/v1
 ```
 
-Then paste your betarouter API key (starts with `llmgtwy_`):
+Then paste your betarouter API key (starts with `beta_`):
 
 ![Inference Provider Configuration](/images/guides/hermes-agent/1-inference-provider.png)
 
@@ -98,7 +98,7 @@ Once you press `Y`, Hermes launches a full agent session connected to betarouter
 
 ## Using Hermes with betarouter
 
-Once configured, all requests route through betarouter. You'll see the provider name (e.g., "LLMGATEWAY") in the Hermes status bar.
+Once configured, all requests route through betarouter. You'll see the provider name (e.g., "BETAROUTER") in the Hermes status bar.
 
 ### Switching Models at Runtime
 
@@ -180,7 +180,7 @@ Verify your `base_url` is set to `https://api.betarouter.com/v1` (note the `/v1`
 
 ### Authentication errors
 
-Make sure your `api_key` starts with `llmgtwy_` and is valid. Check your [dashboard](/dashboard) to confirm the key is active.
+Make sure your `api_key` starts with `beta_` and is valid. Check your [dashboard](/dashboard) to confirm the key is active.
 
 ### Diagnosing issues
 

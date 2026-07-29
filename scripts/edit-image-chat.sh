@@ -3,7 +3,7 @@
 set -eu
 
 BASE_URL="https://api.betarouter.com"
-API_KEY="${LLM_GATEWAY_API_KEY:-test-token}"
+API_KEY="${BETA_GATEWAY_API_KEY:-test-token}"
 
 POSITIONAL_ARGS=()
 while [[ $# -gt 0 ]]; do

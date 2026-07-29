@@ -56,7 +56,7 @@ When running curl commands against the local API, you can use `test-token` as au
 
 Every seeded account's password is its own email address (password == email). For example, log into the dashboard as `admin@example.com` with the password `admin@example.com`. This applies to all users created by `packages/db/src/seed.ts`, including:
 
-- `admin@example.com` — default test admin (owns "Test Organization" + a DevPass Pro workspace)
+- `admin@example.com` — default test admin (owns "Test Organization" + a BetaPass Pro workspace)
 - `enterprise@example.com` — owner of the enterprise org
 - `developer@example.com` — project-scoped developer in the enterprise org (RBAC testing)
 - the bulk demo users such as `alice.chen@techcorp.io`, `bob@startupinc.com`, etc.

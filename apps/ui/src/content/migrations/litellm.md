@@ -34,8 +34,6 @@ Both services use OpenAI-compatible endpoints, so migration is a two-line change
 | Provider key management  | Config file           | Web UI with rotation |
 | Uptime & scaling         | You handle it         | 99.9% SLA (Pro/Ent)  |
 
-Still want to self-host? betarouter is [open source under AGPLv3](/blog/how-to-self-host-llm-gateway)—same features, your infrastructure.
-
 For a detailed breakdown, see [betarouter vs LiteLLM](/compare/litellm).
 
 ## Migration Steps
@@ -269,20 +267,6 @@ After verifying betarouter works for your use case, you can decommission your Li
 - **Automatic caching** — Repeated requests hit cache, reducing your spend
 - **Web-based management** — No more editing YAML files for config changes
 - **New models immediately** — Access new releases within 48 hours, no deployment needed
-
-## Self-Hosting betarouter
-
-If you prefer self-hosting like LiteLLM, betarouter is available under AGPLv3:
-
-```bash
-git clone https://github.com/llmgateway/llmgateway
-cd betarouter
-pnpm install
-pnpm setup
-pnpm dev
-```
-
-This gives you the same benefits as LiteLLM's self-hosted proxy with betarouter's analytics and caching features.
 
 ## Full Comparison
 
