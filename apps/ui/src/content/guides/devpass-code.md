@@ -38,9 +38,9 @@ devpass-code auth login
 
 Choose how your usage is billed. Both providers hit `https://api.betarouter.com/v1` and expose the same models:
 
-| Provider               | Billing                                                                     |
-| ---------------------- | --------------------------------------------------------------------------- |
-| **betarouter**         | Pay-as-you-go with credits or your own API key                              |
+| Provider                | Billing                                                                      |
+| ----------------------- | ---------------------------------------------------------------------------- |
+| **betarouter**          | Pay-as-you-go with credits or your own API key                               |
 | **betarouter BetaPass** | The [BetaPass](/code) coding subscription — billing is handled automatically |
 
 ### Step 3: Log in with your browser

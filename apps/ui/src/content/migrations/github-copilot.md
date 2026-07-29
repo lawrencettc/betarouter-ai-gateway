@@ -31,11 +31,11 @@ Copilot is an IDE product, not an API, so migration means pointing each workflow
 
 | Copilot feature            | Gateway-backed replacement                                                                            |
 | -------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Copilot Chat               | Any chat-capable agent (BetaPass Code, Claude Code, Cline, Continue) with any of 200+ models           |
-| Agent mode                 | BetaPass Code, Claude Code, Cline, or Aider routed through betarouter                                  |
+| Copilot Chat               | Any chat-capable agent (BetaPass Code, Claude Code, Cline, Continue) with any of 200+ models          |
+| Agent mode                 | BetaPass Code, Claude Code, Cline, or Aider routed through betarouter                                 |
 | Inline completions         | Continue or Cline autocomplete — or keep a Copilot seat just for completions (they're still flat-fee) |
 | PR summaries & code review | Your CI calling the gateway's OpenAI-compatible API with any model                                    |
-| Copilot CLI                | Codex CLI, BetaPass Code, or Claude Code in the terminal                                               |
+| Copilot CLI                | Codex CLI, BetaPass Code, or Claude Code in the terminal                                              |
 
 ## Migration Steps
 
