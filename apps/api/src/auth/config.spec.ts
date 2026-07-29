@@ -174,7 +174,7 @@ describe("API auth hooks functionality", () => {
 		expect(project?.name).toBe("Default Project");
 	});
 
-	test("should create personal organization for DevPass (code app) signup", async () => {
+	test("should create personal organization for BetaPass (code app) signup", async () => {
 		const codeUrl = process.env.CODE_URL ?? "http://localhost:3004";
 		const email = `test-devpass-${Date.now()}@example.com`;
 		const password = "Password123!";
@@ -216,8 +216,8 @@ describe("API auth hooks functionality", () => {
 		});
 
 		expect(userOrganization).not.toBeNull();
-		// DevPass signups get a "DevPass" org, not the shared "Default Organization"
-		expect(userOrganization?.organization?.name).toBe("DevPass");
+		// BetaPass signups get a "BetaPass" org, not the shared "Default Organization"
+		expect(userOrganization?.organization?.name).toBe("BetaPass");
 		expect(userOrganization?.organization?.kind).toBe("devpass");
 
 		const project = await db.query.project.findFirst({
@@ -232,7 +232,7 @@ describe("API auth hooks functionality", () => {
 		expect(project?.mode).toBe("credits");
 	});
 
-	test("should create default organization when DevPass user signs in to main app", async () => {
+	test("should create default organization when BetaPass user signs in to main app", async () => {
 		const codeUrl = process.env.CODE_URL ?? "http://localhost:3004";
 		const uiUrl = process.env.UI_URL ?? "http://localhost:3002";
 		const email = `test-devpass-main-${Date.now()}@example.com`;
@@ -298,7 +298,7 @@ describe("API auth hooks functionality", () => {
 		expect(organizations).toHaveLength(2);
 		expect(
 			organizations.some(
-				(org) => org?.name === "DevPass" && org.kind === "devpass",
+				(org) => org?.name === "BetaPass" && org.kind === "devpass",
 			),
 		).toBe(true);
 		expect(
