@@ -27,7 +27,7 @@ export default function BillingDetailsDialog({
 				<DialogHeader>
 					<DialogTitle>Billing details</DialogTitle>
 					<DialogDescription>
-						Add the company and address details you want on your DevPass
+						Add the company and address details you want on your BetaPass
 						invoices. You can change these any time.
 					</DialogDescription>
 				</DialogHeader>

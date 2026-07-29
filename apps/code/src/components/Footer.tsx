@@ -119,7 +119,7 @@ export function Footer() {
 							<div className="flex h-7 w-7 items-center justify-center rounded-lg bg-foreground text-background">
 								<Logo className="h-4 w-4" />
 							</div>
-							<span className="font-semibold">DevPass</span>
+							<span className="font-semibold">BetaPass</span>
 						</Link>
 						<a
 							href={config.uiUrl}

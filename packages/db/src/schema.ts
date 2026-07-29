@@ -3560,7 +3560,9 @@ export interface TopicRestrictionRuleConfig {
 }
 
 export type CustomRuleConfig =
-	BlockedTermsRuleConfig | CustomRegexRuleConfig | TopicRestrictionRuleConfig;
+	| BlockedTermsRuleConfig
+	| CustomRegexRuleConfig
+	| TopicRestrictionRuleConfig;
 
 export const guardrailConfig = pgTable(
 	"guardrail_config",

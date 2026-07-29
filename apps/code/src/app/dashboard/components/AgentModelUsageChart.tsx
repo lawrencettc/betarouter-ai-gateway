@@ -287,7 +287,7 @@ export function AgentModelUsageChart({ projectId }: AgentModelUsageChartProps) {
 							: metric === "tokens"
 								? "tokens"
 								: "requests"}{" "}
-						across your DevPass project over {subtitleLabel}
+						across your BetaPass project over {subtitleLabel}
 					</p>
 				</div>
 				<div className="flex flex-wrap items-center gap-2">

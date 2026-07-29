@@ -470,7 +470,7 @@ export default async function DevpassPage({
 		<div className="mx-auto flex w-full max-w-[1920px] flex-col gap-6 px-4 py-8 md:px-8">
 			<header className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
 				<div className="space-y-2">
-					<h1 className="text-3xl font-semibold tracking-tight">DevPass</h1>
+					<h1 className="text-3xl font-semibold tracking-tight">BetaPass</h1>
 					<p className="text-sm text-muted-foreground">
 						Subscribers across Lite, Pro and Max — current cycle utilization,
 						real provider cost, and margin.

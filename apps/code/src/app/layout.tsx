@@ -30,10 +30,10 @@ const bricolage = Bricolage_Grotesque({
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-	metadataBase: new URL("https://devpass.betarouter.com"),
+	metadataBase: new URL("https://betapass.betarouter.com"),
 	title: {
-		default: "DevPass by betarouter - All-Access Dev Plans for AI Coding",
-		template: "%s | DevPass by betarouter",
+		default: "BetaPass by betarouter - All-Access Dev Plans for AI Coding",
+		template: "%s | BetaPass by betarouter",
 	},
 	description:
 		"One subscription, every coding model. Fixed-price dev plans for Claude Code, Cursor, Cline, and any OpenAI-compatible tool. 200+ models, one API key.",
@@ -52,18 +52,18 @@ export const metadata: Metadata = {
 		},
 	},
 	openGraph: {
-		title: "DevPass by betarouter - All-Access Dev Plans for AI Coding",
+		title: "BetaPass by betarouter - All-Access Dev Plans for AI Coding",
 		description:
 			"One subscription, every coding model. Fixed-price dev plans for Claude Code, Cursor, Cline, and any OpenAI-compatible tool.",
 		images: ["/opengraph.png?v=4"],
 		type: "website",
-		url: "https://devpass.betarouter.com",
-		siteName: "DevPass by betarouter",
+		url: "https://betapass.betarouter.com",
+		siteName: "BetaPass by betarouter",
 		locale: "en_US",
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "DevPass by betarouter - All-Access Dev Plans for AI Coding",
+		title: "BetaPass by betarouter - All-Access Dev Plans for AI Coding",
 		description:
 			"One subscription, every coding model. Fixed-price dev plans for Claude Code, Cursor, and 200+ models.",
 		images: ["/opengraph.png?v=4"],
@@ -74,8 +74,8 @@ export const metadata: Metadata = {
 const webSiteSchema = {
 	"@context": "https://schema.org",
 	"@type": "WebSite",
-	name: "DevPass by betarouter",
-	url: "https://devpass.betarouter.com",
+	name: "BetaPass by betarouter",
+	url: "https://betapass.betarouter.com",
 	description:
 		"Fixed-price dev plans for AI-powered coding with Claude Code, Cursor, Cline, and any OpenAI-compatible tool. One subscription, every model.",
 	publisher: {

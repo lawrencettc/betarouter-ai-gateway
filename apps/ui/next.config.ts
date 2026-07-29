@@ -135,12 +135,12 @@ const nextConfig: NextConfig = {
 			},
 			{
 				source: "/code",
-				destination: "https://devpass.betarouter.com",
+				destination: "https://betapass.betarouter.com",
 				permanent: true,
 			},
 			{
 				source: "/devpass",
-				destination: "https://devpass.betarouter.com",
+				destination: "https://betapass.betarouter.com",
 				permanent: true,
 			},
 			{

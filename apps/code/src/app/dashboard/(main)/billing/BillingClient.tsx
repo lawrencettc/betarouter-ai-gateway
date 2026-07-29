@@ -259,7 +259,7 @@ export default function BillingClient({
 			<div>
 				<h1 className="text-lg font-semibold tracking-tight">Billing</h1>
 				<p className="mt-0.5 text-sm text-muted-foreground">
-					Manage your DevPass subscription and plan.
+					Manage your BetaPass subscription and plan.
 				</p>
 			</div>
 
@@ -269,7 +269,7 @@ export default function BillingClient({
 					<div>
 						<div className="flex items-center gap-2">
 							<h2 className="font-semibold">
-								{currentPlanData?.name ?? "DevPass"} plan
+								{currentPlanData?.name ?? "BetaPass"} plan
 							</h2>
 							<span className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground capitalize">
 								{cycle}
@@ -365,10 +365,10 @@ export default function BillingClient({
 				<div className="mt-5 flex gap-3 rounded-lg border border-border/60 bg-muted/40 p-3.5">
 					<Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
 					<p className="text-xs leading-relaxed text-muted-foreground">
-						Your DevPass subscription is billed separately from betarouter
+						Your BetaPass subscription is billed separately from betarouter
 						pay-as-you-go credits, so it won&apos;t appear in the standard LLM
 						Gateway billing dashboard. Manage the plan and payment method for
-						DevPass right here.
+						BetaPass right here.
 					</p>
 				</div>
 			</div>

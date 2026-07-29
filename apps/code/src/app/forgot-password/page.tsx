@@ -102,7 +102,7 @@ export default function ForgotPassword() {
 						<div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1">
 							<div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
 							<span className="text-xs font-medium text-emerald-400">
-								DevPass
+								BetaPass
 							</span>
 						</div>
 						<h1 className="text-4xl font-bold leading-tight tracking-tight text-white xl:text-5xl">
@@ -150,7 +150,7 @@ export default function ForgotPassword() {
 						<div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1">
 							<div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
 							<span className="text-xs font-medium text-emerald-400">
-								DevPass
+								BetaPass
 							</span>
 						</div>
 					</div>

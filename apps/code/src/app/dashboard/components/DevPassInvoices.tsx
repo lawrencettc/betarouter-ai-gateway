@@ -119,7 +119,7 @@ const REFUND_INELIGIBILITY_COPY: Record<string, string> = {
 	window_expired: "Refunds are available for 14 days after purchase",
 	not_owner: "Only the organization owner can request a refund",
 	not_latest_purchase: "Only your most recent payment can be self-refunded",
-	plan_inactive: "Your DevPass is no longer active",
+	plan_inactive: "Your BetaPass is no longer active",
 	credits_frozen: "Refunds are unavailable while credits are frozen",
 	usage_exceeded: "More than 10% of this period's credits have been used",
 	pass_already_used: "This Reset Pass has already been redeemed",
@@ -147,7 +147,7 @@ function RefundButton({ invoice }: { invoice: Invoice }) {
 				toast.success(
 					isResetPass
 						? "Refund processing. The unused pass has been returned and the refund will arrive within a few business days."
-						: "Refund processing. Your DevPass has been cancelled and the refund will arrive within a few business days.",
+						: "Refund processing. Your BetaPass has been cancelled and the refund will arrive within a few business days.",
 				);
 				void queryClient.invalidateQueries({
 					predicate: (query) => {
@@ -208,13 +208,13 @@ function RefundButton({ invoice }: { invoice: Invoice }) {
 					</AlertDialogTitle>
 					<AlertDialogDescription>
 						{isResetPass
-							? `${formatAmount(invoice.amount, invoice.currency)} will be refunded to your payment method and the unused pass removed from your passport. Your DevPass plan is not affected. This cannot be undone.`
-							: `${formatAmount(invoice.amount, invoice.currency)} will be refunded to your payment method and your DevPass will be cancelled immediately. This cannot be undone.`}
+							? `${formatAmount(invoice.amount, invoice.currency)} will be refunded to your payment method and the unused pass removed from your passport. Your BetaPass plan is not affected. This cannot be undone.`
+							: `${formatAmount(invoice.amount, invoice.currency)} will be refunded to your payment method and your BetaPass will be cancelled immediately. This cannot be undone.`}
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
 					<AlertDialogCancel>
-						{isResetPass ? "Keep my pass" : "Keep my DevPass"}
+						{isResetPass ? "Keep my pass" : "Keep my BetaPass"}
 					</AlertDialogCancel>
 					<AlertDialogAction
 						onClick={() =>
@@ -286,7 +286,7 @@ export default function DevPassInvoices() {
 		<div>
 			<h2 className="mb-1 font-semibold">Invoices</h2>
 			<p className="mb-4 text-sm text-muted-foreground">
-				A record of every DevPass charge, including the amount debited and the
+				A record of every BetaPass charge, including the amount debited and the
 				usage credits granted for that billing period.
 			</p>
 

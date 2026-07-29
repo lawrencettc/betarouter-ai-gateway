@@ -27,7 +27,7 @@ Last updated: 2026-07-10
 
 ## Related products
 
-- DevPass — flat-price dev plans for AI coding tools: Lite $29/month ($87 model usage included), Pro $79/month ($237 included), Max $179/month ($537 included). https://devpass.betarouter.com
+- BetaPass — flat-price dev plans for AI coding tools: Lite $29/month ($87 model usage included), Pro $79/month ($237 included), Max $179/month ($537 included). https://betapass.betarouter.com
 - Chat — consumer AI chat plans, billed monthly: Starter $9, Plus $19, Pro $49. https://chat.betarouter.com
 
 ## Notes

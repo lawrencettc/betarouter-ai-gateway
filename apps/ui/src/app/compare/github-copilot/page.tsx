@@ -9,7 +9,7 @@ const copilotFaqs: CompareFaqItem[] = [
 	{
 		question: "Is betarouter a GitHub Copilot alternative?",
 		answer:
-			"Yes, for chat and agentic coding. betarouter routes any coding agent — Claude Code, Cline, Continue, Aider, or DevPass Code — to 200+ models with zero token markup, hard budget caps, and prompt caching. Copilot remains a fine choice for inline completions, which stay flat-fee.",
+			"Yes, for chat and agentic coding. betarouter routes any coding agent — Claude Code, Cline, Continue, Aider, or BetaPass Code — to 200+ models with zero token markup, hard budget caps, and prompt caching. Copilot remains a fine choice for inline completions, which stay flat-fee.",
 	},
 	{
 		question: "What changed with GitHub Copilot pricing in June 2026?",
@@ -30,12 +30,12 @@ const copilotFaqs: CompareFaqItem[] = [
 		question:
 			"Can I keep Copilot for completions and use betarouter for everything else?",
 		answer:
-			"Yes, that hybrid setup is common: keep a $10 Copilot Pro seat for inline completions, and route chat and agent workloads through betarouter with a flat DevPass plan (from $29/month) or pay-as-you-go usage. You get frontier models at pass-through prices with a hard cap on spend.",
+			"Yes, that hybrid setup is common: keep a $10 Copilot Pro seat for inline completions, and route chat and agent workloads through betarouter with a flat BetaPass plan (from $29/month) or pay-as-you-go usage. You get frontier models at pass-through prices with a hard cap on spend.",
 	},
 	{
 		question: "What are the best GitHub Copilot alternatives in 2026?",
 		answer:
-			"Teams leaving Copilot's usage billing typically evaluate betarouter with the coding agent of their choice (DevPass Code, Claude Code, Cline, Continue, or Aider), plus flat-fee IDE products like Cursor and Windsurf. The right pick depends on whether you want an editor, an agent, or infrastructure you control.",
+			"Teams leaving Copilot's usage billing typically evaluate betarouter with the coding agent of their choice (BetaPass Code, Claude Code, Cline, Continue, or Aider), plus flat-fee IDE products like Cursor and Windsurf. The right pick depends on whether you want an editor, an agent, or infrastructure you control.",
 	},
 ];
 

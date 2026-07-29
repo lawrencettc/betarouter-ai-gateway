@@ -86,7 +86,7 @@ const setupActivationCopy: Record<
 		description: "Loading secure payment confirmation.",
 	},
 	finalizing: {
-		title: "Activating DevPass",
+		title: "Activating BetaPass",
 		description: "Creating your subscription and checking payment status.",
 	},
 	authenticating: {
@@ -96,15 +96,15 @@ const setupActivationCopy: Record<
 	processing: {
 		title: "Payment is processing",
 		description:
-			"DevPass will activate as soon as Stripe confirms the payment.",
+			"BetaPass will activate as soon as Stripe confirms the payment.",
 	},
 	success: {
-		title: "DevPass activated",
+		title: "BetaPass activated",
 		description: "Refreshing your dashboard.",
 	},
 	error: {
 		title: "Activation failed",
-		description: "Refresh this page to retry DevPass activation.",
+		description: "Refresh this page to retry BetaPass activation.",
 	},
 };
 
@@ -300,7 +300,7 @@ export default function DashboardShell({
 				}
 				if (result?.status === "ok" || result?.status === "already_processed") {
 					setSetupActivationStatus("success");
-					toast.success("DevPass activated");
+					toast.success("BetaPass activated");
 					if (purchaseTrackedSession.current !== sessionId) {
 						purchaseTrackedSession.current = sessionId;
 						const tier = devPlanStatusRef.current?.devPlan;
@@ -325,7 +325,7 @@ export default function DashboardShell({
 				} else if (result?.status === "payment_pending") {
 					shouldClearSetupParam = false;
 					setSetupActivationStatus("processing");
-					toast.info("Payment is processing. DevPass will activate shortly.");
+					toast.info("Payment is processing. BetaPass will activate shortly.");
 				}
 			})
 			.catch((error: unknown) => {
@@ -344,7 +344,7 @@ export default function DashboardShell({
 					setDuplicateCardError(
 						typeof msg === "string" && msg.length > 0
 							? msg
-							: "This card is already associated with another DevPass account. Please use a different payment method.",
+							: "This card is already associated with another BetaPass account. Please use a different payment method.",
 					);
 				} else {
 					shouldClearSetupParam = false;
@@ -356,7 +356,7 @@ export default function DashboardShell({
 					toast.error(
 						typeof apiMessage === "string" && apiMessage.length > 0
 							? apiMessage
-							: "Failed to activate DevPass",
+							: "Failed to activate BetaPass",
 					);
 				}
 			})
@@ -445,7 +445,7 @@ export default function DashboardShell({
 						<AlertDialogTitle>Card already in use</AlertDialogTitle>
 						<AlertDialogDescription>
 							{duplicateCardError ??
-								"This card is already associated with another DevPass account."}
+								"This card is already associated with another BetaPass account."}
 							<br />
 							<br />
 							You were not charged. Please try again with a different payment
@@ -466,7 +466,7 @@ export default function DashboardShell({
 					<div className="flex items-center gap-6">
 						<Link href="/" className="flex items-center gap-2">
 							<Code className="h-5 w-5" />
-							<span className="font-semibold">DevPass</span>
+							<span className="font-semibold">BetaPass</span>
 						</Link>
 						{hasActivePlan && (
 							<span className="hidden sm:inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium">

@@ -114,10 +114,10 @@ export function DevpassTimeseriesChart({
 		<Card>
 			<CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
 				<div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6">
-					<CardTitle>DevPass revenue & usage</CardTitle>
+					<CardTitle>BetaPass revenue & usage</CardTitle>
 					<CardDescription>
-						Daily revenue from DevPass transactions (net of refunds), raw gross
-						revenue from DevPass subscriptions, real provider cost across
+						Daily revenue from BetaPass transactions (net of refunds), raw gross
+						revenue from BetaPass subscriptions, real provider cost across
 						current and former subscribers, and the resulting margin. Click the
 						totals to toggle series on the chart. Totals aggregate the selected
 						date range — note these will not match the KPI cards above, which
@@ -180,7 +180,7 @@ export function DevpassTimeseriesChart({
 				</div>
 				{isError ? (
 					<div className="flex h-[250px] items-center justify-center text-sm text-muted-foreground">
-						Failed to load DevPass timeseries.
+						Failed to load BetaPass timeseries.
 					</div>
 				) : isLoading ? (
 					<div className="flex h-[250px] items-center justify-center text-sm text-muted-foreground">

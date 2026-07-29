@@ -7,9 +7,9 @@ import { GuidesGrid } from "./GuidesGrid";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Guides — DevPass",
+	title: "Guides — BetaPass",
 	description:
-		"Setup guides for integrating DevPass with Claude Code, Cursor, Cline, n8n, OpenCode, and every other coding tool.",
+		"Setup guides for integrating BetaPass with Claude Code, Cursor, Cline, n8n, OpenCode, and every other coding tool.",
 	alternates: { canonical: "/guides" },
 };
 
@@ -27,7 +27,7 @@ export default function GuidesPage() {
 								Guides
 							</h1>
 							<p className="text-lg text-muted-foreground leading-relaxed">
-								Step-by-step tutorials to wire your DevPass API key into every
+								Step-by-step tutorials to wire your BetaPass API key into every
 								coding tool, terminal agent, and workflow.
 							</p>
 						</div>

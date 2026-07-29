@@ -10,27 +10,27 @@ import { fetchLeaderboard } from "@/lib/leaderboard";
 
 import type { Metadata } from "next";
 
-const BASE_URL = "https://devpass.betarouter.com";
+const BASE_URL = "https://betapass.betarouter.com";
 
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-	title: "DevPass Leaderboard — Developers ranked by tokens routed",
+	title: "BetaPass Leaderboard — Developers ranked by tokens routed",
 	description:
-		"See which developers route the most tokens through DevPass — one key, every model. Make your profile public to claim your spot.",
+		"See which developers route the most tokens through BetaPass — one key, every model. Make your profile public to claim your spot.",
 	alternates: { canonical: "/leaderboard" },
 	openGraph: {
-		title: "DevPass Leaderboard — Developers ranked by tokens routed",
+		title: "BetaPass Leaderboard — Developers ranked by tokens routed",
 		description:
-			"The developers routing the most tokens through DevPass. One key, every model.",
+			"The developers routing the most tokens through BetaPass. One key, every model.",
 		type: "website",
 		url: `${BASE_URL}/leaderboard`,
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "DevPass Leaderboard",
+		title: "BetaPass Leaderboard",
 		description:
-			"The developers routing the most tokens through DevPass. One key, every model.",
+			"The developers routing the most tokens through BetaPass. One key, every model.",
 	},
 };
 
@@ -51,7 +51,7 @@ export default async function LeaderboardPage() {
 							Live leaderboard
 						</div>
 						<h1 className="text-4xl font-bold tracking-tight text-balance sm:text-5xl">
-							The most prolific developers on DevPass
+							The most prolific developers on BetaPass
 						</h1>
 						<p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-pretty text-muted-foreground">
 							Ranked by tokens routed across every model in the last year. One

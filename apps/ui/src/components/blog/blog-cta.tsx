@@ -72,7 +72,7 @@ export function BlogCta({
 			<div className="p-6 sm:p-8">
 				<div className="flex flex-wrap items-baseline justify-between gap-2">
 					<div className="font-mono text-[10px] uppercase tracking-[0.35em] text-stone-500 dark:text-stone-400">
-						DevPass · Boarding pass
+						BetaPass · Boarding pass
 					</div>
 					<div className="font-mono text-[9px] tracking-[0.25em] text-stone-400 dark:text-stone-500">
 						No. DP-{post.slice(0, 6).toUpperCase()}
@@ -92,14 +92,14 @@ export function BlogCta({
 						className="bg-zinc-900 font-medium text-white hover:bg-zinc-700 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
 					>
 						<a
-							href={`https://devpass.betarouter.com/signup?utm_source=blog&utm_medium=cta&utm_campaign=${post}`}
+							href={`https://betapass.betarouter.com/signup?utm_source=blog&utm_medium=cta&utm_campaign=${post}`}
 							onClick={() => track("get_devpass")}
 						>
-							Get DevPass — from $29/mo
+							Get BetaPass — from $29/mo
 						</a>
 					</Button>
 					<a
-						href={`https://devpass.betarouter.com/pricing?utm_source=blog&utm_medium=cta&utm_campaign=${post}`}
+						href={`https://betapass.betarouter.com/pricing?utm_source=blog&utm_medium=cta&utm_campaign=${post}`}
 						onClick={() => track("compare_devpass_plans")}
 						className="text-sm text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground"
 					>

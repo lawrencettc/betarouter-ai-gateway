@@ -194,7 +194,7 @@ export function drawCoverOuter(): HTMLCanvasElement {
 	ctx.textAlign = "center";
 	ctx.font = `600 44px ${MONO}`;
 	ctx.letterSpacing = "18px";
-	ctx.fillText("DEVPASS", PAGE_W / 2, 220);
+	ctx.fillText("BETAPASS", PAGE_W / 2, 220);
 	ctx.letterSpacing = "0px";
 
 	drawEmblem(ctx, PAGE_W / 2, PAGE_H / 2 - 30, 130, COVER_GOLD);
@@ -220,7 +220,7 @@ export function drawCoverInner(): HTMLCanvasElement {
 	ctx.font = `500 22px ${MONO}`;
 	ctx.letterSpacing = "3px";
 	ctx.fillText("This passport records the bearer's", PAGE_W / 2, PAGE_H - 220);
-	ctx.fillText("AI coding travels on DevPass.", PAGE_W / 2, PAGE_H - 184);
+	ctx.fillText("AI coding travels on BetaPass.", PAGE_W / 2, PAGE_H - 184);
 	ctx.letterSpacing = "0px";
 	return ctx.canvas;
 }
@@ -280,7 +280,7 @@ export function drawVisaPage(data: PassportModel): HTMLCanvasElement {
 		ctx.textAlign = "center";
 		ctx.font = `600 26px ${MONO}`;
 		ctx.letterSpacing = "8px";
-		ctx.fillText("DEVPASS VISA", stickerMidX, vy + 58);
+		ctx.fillText("BETAPASS VISA", stickerMidX, vy + 58);
 		ctx.letterSpacing = "0px";
 
 		ctx.font = `700 92px ${MONO}`;
@@ -312,7 +312,7 @@ export function drawVisaPage(data: PassportModel): HTMLCanvasElement {
 		ctx.fillStyle = ink;
 		ctx.textAlign = "center";
 		ctx.font = `700 20px ${MONO}`;
-		ctx.fillText("DEVPASS", 0, -6);
+		ctx.fillText("BETAPASS", 0, -6);
 		ctx.font = `600 15px ${MONO}`;
 		ctx.fillText("IMMIGRATION", 0, 16);
 		ctx.restore();
@@ -332,7 +332,7 @@ export function drawVisaPage(data: PassportModel): HTMLCanvasElement {
 		ctx.fillText("NO ACTIVE VISA", emptyMidX, emptyMidY - 14);
 		ctx.font = `500 22px ${MONO}`;
 		ctx.letterSpacing = "2px";
-		ctx.fillText("APPLY AT DEVPASS.BETAROUTER.COM", emptyMidX, emptyMidY + 34);
+		ctx.fillText("APPLY AT BETAPASS.BETAROUTER.COM", emptyMidX, emptyMidY + 34);
 		ctx.letterSpacing = "0px";
 		ctx.restore();
 	}
@@ -346,7 +346,7 @@ export function drawVisaPage(data: PassportModel): HTMLCanvasElement {
 	const callsign = (data.username ?? "TRAVELLER")
 		.toUpperCase()
 		.replace(/[^A-Z0-9]/g, "");
-	const mrz1 = `P<DEVPASS<<${callsign}`.padEnd(34, "<").slice(0, 34);
+	const mrz1 = `P<BETAPASS<<${callsign}`.padEnd(34, "<").slice(0, 34);
 	const mrz2 = `${tier}<VISA<MULTIPLE<ENTRIES`.padEnd(34, "<").slice(0, 34);
 	ctx.fillText(mrz1, 58, PAGE_H - 120);
 	ctx.fillText(mrz2, 58, PAGE_H - 78);
@@ -567,8 +567,8 @@ export function drawEndorsementsPage(data: PassportModel): HTMLCanvasElement {
 		fitText(
 			ctx,
 			data.username
-				? `DEVPASS.BETAROUTER.COM/PROFILES/${data.username.toUpperCase()}`
-				: "DEVPASS.BETAROUTER.COM",
+				? `BETAPASS.BETAROUTER.COM/PROFILES/${data.username.toUpperCase()}`
+				: "BETAPASS.BETAROUTER.COM",
 			PAGE_W - 120,
 		),
 		PAGE_W / 2,

@@ -128,7 +128,11 @@ interface AllModelsProps {
 }
 
 type SortField =
-	"provider" | "name" | "inputPrice" | "outputPrice" | "cachedInputPrice";
+	| "provider"
+	| "name"
+	| "inputPrice"
+	| "outputPrice"
+	| "cachedInputPrice";
 type SortDirection = "asc" | "desc";
 
 // Capability icon type
@@ -380,7 +384,7 @@ const ModelTableRow = React.memo(
 									<TooltipContent>
 										<p className="text-xs">
 											Premium tier — $5+/M input or $15+/M output. Subject to
-											the weekly fair-use allowance on DevPass plans.
+											the weekly fair-use allowance on BetaPass plans.
 										</p>
 									</TooltipContent>
 								</Tooltip>
@@ -1590,7 +1594,7 @@ export function AllModels({
 								    for it when that select is hidden) to keep the filter
 								    grid on a single row */}
 								<div className="font-medium text-sm">
-									Pricing Tier (DevPass)
+									Pricing Tier (BetaPass)
 								</div>
 								<Select
 									value={filters.tier}

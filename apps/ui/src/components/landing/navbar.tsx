@@ -162,8 +162,8 @@ export const Navbar = ({
 				"hover:from-violet-500/20 hover:to-purple-600/30 hover:shadow-violet-500/10 group-hover/product:text-violet-500 dark:group-hover/product:text-violet-400",
 		},
 		{
-			title: "DevPass",
-			href: "https://devpass.betarouter.com",
+			title: "BetaPass",
+			href: "https://betapass.betarouter.com",
 			description:
 				"Fixed-price monthly plans for Claude Code, Cursor, and every coding tool.",
 			icon: Code,
@@ -392,11 +392,11 @@ export const Navbar = ({
 									<NavigationMenuItem>
 										<NavigationMenuLink asChild>
 											<a
-												href="https://devpass.betarouter.com"
+												href="https://betapass.betarouter.com"
 												onClick={() => trackNav("DevPass")}
 												className="text-muted-foreground hover:text-accent-foreground block duration-150 px-3 py-2 whitespace-nowrap"
 											>
-												DevPass
+												BetaPass
 											</a>
 										</NavigationMenuLink>
 									</NavigationMenuItem>
@@ -497,11 +497,11 @@ export const Navbar = ({
 								<ul className="text-base">
 									<li>
 										<a
-											href="https://devpass.betarouter.com"
+											href="https://betapass.betarouter.com"
 											onClick={() => trackNav("DevPass")}
 											className="text-muted-foreground hover:text-accent-foreground block py-2.5 duration-150"
 										>
-											DevPass
+											BetaPass
 										</a>
 									</li>
 									<li>

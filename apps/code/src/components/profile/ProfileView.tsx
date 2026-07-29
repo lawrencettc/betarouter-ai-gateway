@@ -134,7 +134,7 @@ function StatCard({
 
 export function ProfileView({ profile }: { profile: ProfileData }) {
 	const displayName =
-		profile.name?.trim() || profile.username || "DevPass user";
+		profile.name?.trim() || profile.username || "BetaPass user";
 	const topAgent =
 		profile.agents.length > 0 ? agentForSource(profile.agents[0].source) : null;
 	const { uiUrl } = useAppConfig();
@@ -355,7 +355,7 @@ export function ProfileView({ profile }: { profile: ProfileData }) {
 				<Link href="/" className="transition-colors hover:text-foreground">
 					Powered by{" "}
 					<span className="font-semibold text-emerald-600 dark:text-emerald-400">
-						DevPass
+						BetaPass
 					</span>{" "}
 					— one key, every model
 				</Link>

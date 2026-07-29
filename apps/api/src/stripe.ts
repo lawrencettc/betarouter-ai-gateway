@@ -482,7 +482,10 @@ async function getSubscriptionCardFingerprint(
 					expand: ["payment_intent"],
 				});
 				const paymentIntent = (invoice as any).payment_intent as
-					Stripe.PaymentIntent | string | null | undefined;
+					| Stripe.PaymentIntent
+					| string
+					| null
+					| undefined;
 				const pi =
 					typeof paymentIntent === "string"
 						? await getStripe().paymentIntents.retrieve(paymentIntent)
@@ -931,7 +934,7 @@ export async function finalizeDevPlanSetupSession(
 					await sendTransactionalEmail({
 						to: notifyEmail,
 						organizationId: organization.id,
-						subject: "DevPass activation failed — card already in use",
+						subject: "BetaPass activation failed — card already in use",
 						html: generateDevPlanDuplicateCardEmailHtml(organization.name),
 					});
 				} catch (err) {
@@ -2585,7 +2588,7 @@ export async function fulfillResetPassPurchase(
 				currency: "USD",
 				status: "completed",
 				stripePaymentIntentId: paymentIntent.id,
-				description: `DevPass Reset Pass (${tier.toUpperCase()})`,
+				description: `BetaPass Reset Pass (${tier.toUpperCase()})`,
 			})
 			.returning();
 
@@ -2614,7 +2617,7 @@ export async function fulfillResetPassPurchase(
 			...billingDetails,
 			lineItems: [
 				{
-					description: `DevPass Reset Pass (${tier.toUpperCase()}) — weekly premium allowance reset`,
+					description: `BetaPass Reset Pass (${tier.toUpperCase()}) — weekly premium allowance reset`,
 					amount: amountPaid,
 				},
 			],
@@ -3133,7 +3136,7 @@ function refundProductLabel(type: string): string {
 		return "Credits";
 	}
 	if (type.startsWith("dev_plan")) {
-		return "DevPass";
+		return "BetaPass";
 	}
 	if (type.startsWith("chat_plan")) {
 		return "Chat Plan";
@@ -3638,7 +3641,8 @@ export async function handleInvoicePaymentSucceeded(event: {
 	}
 	subscriptionMetadata ??= {};
 	const initialDevPlanTier = subscriptionMetadata.devPlan as
-		DevPlanTier | undefined;
+		| DevPlanTier
+		| undefined;
 	const initialDevPlanCycle: DevPlanCycle =
 		subscriptionMetadata.devPlanCycle === "annual" ? "annual" : "monthly";
 	const isInitialDevPlanSubscription =

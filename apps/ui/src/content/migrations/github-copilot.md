@@ -31,23 +31,23 @@ Copilot is an IDE product, not an API, so migration means pointing each workflow
 
 | Copilot feature            | Gateway-backed replacement                                                                            |
 | -------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Copilot Chat               | Any chat-capable agent (DevPass Code, Claude Code, Cline, Continue) with any of 200+ models           |
-| Agent mode                 | DevPass Code, Claude Code, Cline, or Aider routed through betarouter                                  |
+| Copilot Chat               | Any chat-capable agent (BetaPass Code, Claude Code, Cline, Continue) with any of 200+ models          |
+| Agent mode                 | BetaPass Code, Claude Code, Cline, or Aider routed through betarouter                                 |
 | Inline completions         | Continue or Cline autocomplete — or keep a Copilot seat just for completions (they're still flat-fee) |
 | PR summaries & code review | Your CI calling the gateway's OpenAI-compatible API with any model                                    |
-| Copilot CLI                | Codex CLI, DevPass Code, or Claude Code in the terminal                                               |
+| Copilot CLI                | Codex CLI, BetaPass Code, or Claude Code in the terminal                                              |
 
 ## Migration Steps
 
 ### 1. Get Your betarouter API Key
 
-Sign up at [betarouter.com/signup](/signup) and create an API key from your dashboard. Pay-as-you-go usage has no token markup — just a flat 5% platform fee on credits, or 0% when you bring your own provider keys. For predictable per-developer pricing, [DevPass](https://devpass.betarouter.com) plans start at $29/month.
+Sign up at [betarouter.com/signup](/signup) and create an API key from your dashboard. Pay-as-you-go usage has no token markup — just a flat 5% platform fee on credits, or 0% when you bring your own provider keys. For predictable per-developer pricing, [BetaPass](https://betapass.betarouter.com) plans start at $29/month.
 
 ### 2. Pick Your Coding Agent
 
 Each of these takes minutes to set up and works with every model on the gateway:
 
-- **[DevPass Code](/guides/devpass-code)** — open-source terminal agent built for betarouter. One browser login, no API keys to juggle.
+- **[BetaPass Code](/guides/devpass-code)** — open-source terminal agent built for betarouter. One browser login, no API keys to juggle.
 - **[Claude Code](/guides/claude-code)** — three environment variables point it at the gateway, and it can run GPT-5, Gemini, or any other model:
 
 ```bash
@@ -90,7 +90,7 @@ Many teams don't drop Copilot entirely — completions are still the best part o
 
 1. Keep Copilot Free (2,000 completions/month) or a $10 Pro seat for inline completions.
 2. Route all chat and agentic work through betarouter with the agent of your choice.
-3. Cap total spend with project budgets, or put developers on a flat DevPass plan.
+3. Cap total spend with project budgets, or put developers on a flat BetaPass plan.
 
 You keep the autocomplete experience and swap the unbounded metered part for pass-through token prices with a ceiling you set.
 

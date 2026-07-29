@@ -19,7 +19,7 @@ export function ProfileReadmeBadge({
 	const [copied, setCopied] = useState(false);
 
 	const profileUrl = `${baseUrl}/profiles/${username}`;
-	const badgeMarkdown = `[![Powered by DevPass](${baseUrl}/devpass-badge.svg)](${profileUrl})`;
+	const badgeMarkdown = `[![Powered by BetaPass](${baseUrl}/devpass-badge.svg)](${profileUrl})`;
 
 	const copy = async () => {
 		if (!navigator.clipboard?.writeText) {
@@ -39,7 +39,7 @@ export function ProfileReadmeBadge({
 			<div className="flex items-center gap-2">
 				<img
 					src={`${baseUrl}/devpass-badge.svg`}
-					alt="Powered by DevPass"
+					alt="Powered by BetaPass"
 					className="h-5"
 				/>
 				<p className="text-xs text-muted-foreground">

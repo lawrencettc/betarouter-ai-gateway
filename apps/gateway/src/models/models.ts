@@ -284,7 +284,12 @@ modelsApi.openapi(listModels, async (c) => {
 			// text only. These mirror the model catalog 1:1 (including "ocr") so
 			// third-party clients can reference the same modality taxonomy.
 			const outputModalities: (
-				"text" | "image" | "video" | "embedding" | "audio" | "ocr"
+				| "text"
+				| "image"
+				| "video"
+				| "embedding"
+				| "audio"
+				| "ocr"
 			)[] = model.output ?? ["text"];
 
 			// Source the model-level pricing from the cheapest provider mapping

@@ -34,7 +34,8 @@ interface OpenAIModerationTextPart {
 }
 
 type OpenAIModerationInputPart =
-	OpenAIModerationImagePart | OpenAIModerationTextPart;
+	| OpenAIModerationImagePart
+	| OpenAIModerationTextPart;
 
 type OpenAIModerationInput = string | OpenAIModerationInputPart[];
 

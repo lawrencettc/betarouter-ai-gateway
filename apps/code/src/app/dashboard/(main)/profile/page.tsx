@@ -13,7 +13,7 @@ type UserMeResponse =
 	paths["/user/me"]["get"]["responses"][200]["content"]["application/json"];
 
 export const metadata: Metadata = {
-	title: "Your Profile · DevPass",
+	title: "Your Profile · BetaPass",
 	robots: { index: false, follow: false },
 };
 

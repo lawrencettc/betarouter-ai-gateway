@@ -79,7 +79,7 @@ export default function AllowanceExhaustedCard({
 				) : (
 					<>
 						<p className="mt-2 max-w-md text-sm text-muted-foreground">
-							You&apos;re on the biggest DevPass plan and this cycle&apos;s
+							You&apos;re on the biggest BetaPass plan and this cycle&apos;s
 							allowance is fully used. Keep coding with pay-as-you-go credits on
 							betarouter — it works with the same coding agents you&apos;ve been
 							using. All it takes is swapping in a Gateway API key and buying

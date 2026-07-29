@@ -50,7 +50,8 @@ export function getValidationModel(
 
 	// Resolve the selected region from provider key options
 	const providerDef = providers.find((p) => p.id === provider) as
-		ProviderDefinition | undefined;
+		| ProviderDefinition
+		| undefined;
 	const regionKey = providerDef?.regionConfig?.optionsKey;
 	const selectedRegion = regionKey
 		? ((providerKeyOptions as Record<string, string | undefined> | undefined)?.[
@@ -222,7 +223,8 @@ export async function validateProviderKey(
 
 		// Resolve region from provider key options for region-aware providers
 		const providerDef = providers.find((p) => p.id === provider) as
-			ProviderDefinition | undefined;
+			| ProviderDefinition
+			| undefined;
 		const regionOptionsKey = providerDef?.regionConfig?.optionsKey;
 		const validationRegion = validationOverride
 			? (validationOverride.region ?? undefined)

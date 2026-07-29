@@ -170,7 +170,7 @@ export function PassportBook() {
 				tabIndex={0}
 				aria-expanded={open}
 				aria-label={
-					open ? "Close the DevPass passport" : "Open the DevPass passport"
+					open ? "Close the BetaPass passport" : "Open the BetaPass passport"
 				}
 				onKeyDown={(e) => {
 					if (e.key === "Enter" || e.key === " ") {
@@ -223,7 +223,7 @@ export function PassportBook() {
 									<DevPassCodeIcon className="h-6 w-6 sm:h-9 sm:w-9" />
 								</div>
 								<p className="font-display text-xl font-bold tracking-[0.18em] text-amber-100 sm:text-3xl">
-									DEVPASS
+									BETAPASS
 								</p>
 							</div>
 							<div className="text-center">
@@ -253,7 +253,7 @@ export function PassportBook() {
 							</div>
 							<div className="relative flex h-full flex-col p-3 sm:p-5">
 								<p className="font-mono text-[8px] uppercase tracking-[0.25em] text-stone-500 sm:text-[10px]">
-									betarouter · DevPass
+									betarouter · BetaPass
 								</p>
 								<div className="mt-2 flex gap-3 sm:mt-4 sm:gap-4">
 									<div className="flex h-16 w-14 shrink-0 items-center justify-center rounded-md border border-stone-400/70 bg-stone-200/60 text-stone-800 sm:h-24 sm:w-20">
@@ -262,7 +262,9 @@ export function PassportBook() {
 									<dl className="min-w-0 space-y-1 font-mono text-[7px] uppercase leading-relaxed text-stone-700 sm:space-y-1.5 sm:text-[9px]">
 										<div>
 											<dt className="text-stone-400">Bearer</dt>
-											<dd className="font-bold text-stone-900">DevPass Code</dd>
+											<dd className="font-bold text-stone-900">
+												BetaPass Code
+											</dd>
 										</div>
 										<div>
 											<dt className="text-stone-400">Type</dt>
@@ -287,7 +289,7 @@ export function PassportBook() {
 								</div>
 								<div className="mt-auto border-t border-stone-300 pt-1.5 font-mono text-[7px] leading-snug tracking-[0.12em] text-stone-500 sm:pt-2 sm:text-[9px]">
 									<p className="truncate">
-										P&lt;GTWDEVPASS&lt;CODE&lt;&lt;FIRST&lt;PARTY&lt;AGENT&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+										P&lt;GTWBETAPASS&lt;CODE&lt;&lt;FIRST&lt;PARTY&lt;AGENT&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
 									</p>
 									<p className="truncate">
 										LLMGTWY2026&lt;&lt;3X&lt;USAGE&lt;200&lt;MODELS&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;42
@@ -300,7 +302,7 @@ export function PassportBook() {
 			</div>
 			<p className="mt-6 font-mono text-xs text-muted-foreground">
 				{open
-					? "Every agent gets stamped in. DevPass Code is the bearer."
+					? "Every agent gets stamped in. BetaPass Code is the bearer."
 					: "Tap the passport to open it."}
 			</p>
 		</div>

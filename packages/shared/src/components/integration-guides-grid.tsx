@@ -36,7 +36,7 @@ export interface IntegrationGuide {
 
 export const DEFAULT_INTEGRATION_GUIDES: IntegrationGuide[] = [
 	{
-		name: "DevPass Code",
+		name: "BetaPass Code",
 		description:
 			"Our open-source terminal coding agent built for betarouter. One browser login, every model, no per-provider keys.",
 		href: "/guides/devpass-code",

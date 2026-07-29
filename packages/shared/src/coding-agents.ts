@@ -10,7 +10,7 @@ export interface CodingAgentDefinition {
 export const CODING_AGENTS: CodingAgentDefinition[] = [
 	{
 		id: "devpass-code",
-		label: "DevPass Code",
+		label: "BetaPass Code",
 		xSourceValues: ["devpass-code"],
 		userAgentPatterns: [/^devpass-code\//i, /\bdevpass-code\b/i],
 	},

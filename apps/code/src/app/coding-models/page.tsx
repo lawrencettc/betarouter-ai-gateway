@@ -105,7 +105,7 @@ export default function CodingModelsPage() {
 							Start coding with AI today
 						</h2>
 						<p className="text-muted-foreground mb-8">
-							Get your DevPass and access all coding models with a single API
+							Get your BetaPass and access all coding models with a single API
 							key.
 						</p>
 						<div className="flex gap-4 justify-center">

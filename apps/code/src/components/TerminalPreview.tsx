@@ -29,7 +29,7 @@ const tools: {
 }[] = [
 	{
 		id: "devpass-code",
-		name: "DevPass Code",
+		name: "BetaPass Code",
 		icon: DevPassCodeIcon,
 		highlight: "First-party",
 	},
@@ -82,13 +82,13 @@ const snippets: Record<
 		lines: [],
 		command: "empryo",
 		comment:
-			"# inside: /keys → paste your DevPass key (or: empryo --set-key llmgateway <key>)",
+			"# inside: /keys → paste your BetaPass key (or: empryo --set-key llmgateway <key>)",
 	},
 	soulforge: {
 		lines: [],
 		command: "soulforge",
 		comment:
-			"# inside: /keys → paste your DevPass key (or: soulforge --set-key llmgateway <key>)",
+			"# inside: /keys → paste your BetaPass key (or: soulforge --set-key llmgateway <key>)",
 	},
 	autohand: {
 		lines: [
@@ -169,7 +169,7 @@ export function TerminalPreview() {
 							<div className="h-2.5 w-2.5 rounded-full bg-emerald-500/70" />
 						</div>
 						<span className="ml-2 font-mono text-xs text-zinc-500">
-							~ devpass
+							~ betapass
 						</span>
 						<span className="ml-auto font-mono text-[10px] uppercase tracking-wider text-zinc-600">
 							bash

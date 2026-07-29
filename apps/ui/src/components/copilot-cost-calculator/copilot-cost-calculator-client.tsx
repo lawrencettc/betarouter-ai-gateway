@@ -429,7 +429,7 @@ export function CopilotCostCalculatorClient() {
 										Prefer a flat price per developer?
 									</h3>
 									<p className="mt-1 text-sm text-muted-foreground">
-										DevPass plans run {formatUsd(DEVPASS_PRICE_RANGE.min)}–
+										BetaPass plans run {formatUsd(DEVPASS_PRICE_RANGE.min)}–
 										{formatUsd(DEVPASS_PRICE_RANGE.max)} per developer per month
 										across coding agents. Your current inputs work out to about{" "}
 										{formatUsd(perDevGatewayUsage)} per developer in gateway
@@ -438,11 +438,11 @@ export function CopilotCostCalculatorClient() {
 								</div>
 								<Button asChild variant="outline" className="shrink-0">
 									<a
-										href="https://devpass.betarouter.com"
+										href="https://betapass.betarouter.com"
 										target="_blank"
 										rel="noopener noreferrer"
 									>
-										See DevPass Plans
+										See BetaPass Plans
 									</a>
 								</Button>
 							</CardContent>

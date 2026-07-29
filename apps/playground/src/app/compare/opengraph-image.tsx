@@ -24,110 +24,86 @@ function monogramOf(name: string): string {
 
 export default function CompareIndexOgImage() {
 	return new ImageResponse(
-		<div
-			style={{
-				width: "100%",
-				height: "100%",
-				display: "flex",
-				flexDirection: "column",
-				justifyContent: "space-between",
-				background: OG_BACKGROUND,
-				backgroundImage: OG_GRADIENT,
-				color: "white",
-				fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-				padding: 64,
-				boxSizing: "border-box",
-			}}
-		>
-			{/* Header */}
+		(
 			<div
 				style={{
-					display: "flex",
-					alignItems: "center",
-					justifyContent: "space-between",
 					width: "100%",
+					height: "100%",
+					display: "flex",
+					flexDirection: "column",
+					justifyContent: "space-between",
+					background: OG_BACKGROUND,
+					backgroundImage: OG_GRADIENT,
+					color: "white",
+					fontFamily:
+						"system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+					padding: 64,
+					boxSizing: "border-box",
 				}}
 			>
-				<div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-					<LgMark size={44} />
-					<div style={{ display: "flex", flexDirection: "column" }}>
-						<span style={{ fontSize: 26, fontWeight: 700 }}>betarouter</span>
-						<span
-							style={{
-								fontSize: 16,
-								color: "#A1A1AA",
-								letterSpacing: "0.02em",
-							}}
-						>
-							Comparisons
-						</span>
-					</div>
-				</div>
-				<Pill>{US.modelCount} models</Pill>
-			</div>
-
-			{/* Hero */}
-			<div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
-				<span
-					style={{
-						display: "flex",
-						fontSize: 74,
-						fontWeight: 800,
-						lineHeight: 1.03,
-						color: "#FAFAFA",
-					}}
-				>
-					Compare betarouter Chat
-				</span>
-				<span
-					style={{
-						display: "flex",
-						fontSize: 28,
-						lineHeight: 1.3,
-						color: "#A1A1AA",
-						maxWidth: 1010,
-					}}
-				>
-					Every frontier model on one subscription — see how it stacks up
-					against the chat apps you&apos;re evaluating.
-				</span>
-
-				{/* Logo line-up */}
+				{/* Header */}
 				<div
 					style={{
 						display: "flex",
 						alignItems: "center",
-						gap: 12,
-						marginTop: 8,
+						justifyContent: "space-between",
+						width: "100%",
 					}}
 				>
+					<div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+						<LgMark size={44} />
+						<div style={{ display: "flex", flexDirection: "column" }}>
+							<span style={{ fontSize: 26, fontWeight: 700 }}>betarouter</span>
+							<span
+								style={{
+									fontSize: 16,
+									color: "#A1A1AA",
+									letterSpacing: "0.02em",
+								}}
+							>
+								Comparisons
+							</span>
+						</div>
+					</div>
+					<Pill>{US.modelCount} models</Pill>
+				</div>
+
+				{/* Hero */}
+				<div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+					<span
+						style={{
+							display: "flex",
+							fontSize: 74,
+							fontWeight: 800,
+							lineHeight: 1.03,
+							color: "#FAFAFA",
+						}}
+					>
+						Compare betarouter Chat
+					</span>
+					<span
+						style={{
+							display: "flex",
+							fontSize: 28,
+							lineHeight: 1.3,
+							color: "#A1A1AA",
+							maxWidth: 1010,
+						}}
+					>
+						Every frontier model on one subscription — see how it stacks up
+						against the chat apps you&apos;re evaluating.
+					</span>
+
+					{/* Logo line-up */}
 					<div
 						style={{
 							display: "flex",
 							alignItems: "center",
-							justifyContent: "center",
-							width: 60,
-							height: 60,
-							borderRadius: 15,
-							background: "#ffffff",
+							gap: 12,
+							marginTop: 8,
 						}}
 					>
-						<LgMark size={27} color={OG_BACKGROUND} />
-					</div>
-					<span
-						style={{
-							fontSize: 18,
-							fontWeight: 800,
-							color: "#71717A",
-							letterSpacing: "0.16em",
-							padding: "0 4px",
-						}}
-					>
-						VS
-					</span>
-					{comparisons.map((c) => (
 						<div
-							key={c.slug}
 							style={{
 								display: "flex",
 								alignItems: "center",
@@ -135,40 +111,67 @@ export default function CompareIndexOgImage() {
 								width: 60,
 								height: 60,
 								borderRadius: 15,
-								background: "rgba(255,255,255,0.08)",
-								border: "1px solid rgba(255,255,255,0.14)",
-								fontSize: 23,
-								fontWeight: 800,
-								color: "#FAFAFA",
+								background: "#ffffff",
 							}}
 						>
-							{monogramOf(c.competitor)}
+							<LgMark size={27} color={OG_BACKGROUND} />
 						</div>
-					))}
+						<span
+							style={{
+								fontSize: 18,
+								fontWeight: 800,
+								color: "#71717A",
+								letterSpacing: "0.16em",
+								padding: "0 4px",
+							}}
+						>
+							VS
+						</span>
+						{comparisons.map((c) => (
+							<div
+								key={c.slug}
+								style={{
+									display: "flex",
+									alignItems: "center",
+									justifyContent: "center",
+									width: 60,
+									height: 60,
+									borderRadius: 15,
+									background: "rgba(255,255,255,0.08)",
+									border: "1px solid rgba(255,255,255,0.14)",
+									fontSize: 23,
+									fontWeight: 800,
+									color: "#FAFAFA",
+								}}
+							>
+								{monogramOf(c.competitor)}
+							</div>
+						))}
+					</div>
 				</div>
-			</div>
 
-			{/* Footer */}
-			<div
-				style={{
-					display: "flex",
-					alignItems: "center",
-					justifyContent: "space-between",
-					width: "100%",
-				}}
-			>
-				<div style={{ display: "flex", gap: 10 }}>
-					<Pill>ChatGPT</Pill>
-					<Pill>Claude</Pill>
-					<Pill>Gemini</Pill>
-					<Pill>Poe</Pill>
-					<Pill>Perplexity</Pill>
+				{/* Footer */}
+				<div
+					style={{
+						display: "flex",
+						alignItems: "center",
+						justifyContent: "space-between",
+						width: "100%",
+					}}
+				>
+					<div style={{ display: "flex", gap: 10 }}>
+						<Pill>ChatGPT</Pill>
+						<Pill>Claude</Pill>
+						<Pill>Gemini</Pill>
+						<Pill>Poe</Pill>
+						<Pill>Perplexity</Pill>
+					</div>
+					<span style={{ color: "#A1A1AA", fontSize: 21, fontWeight: 500 }}>
+						chat.betarouter.com
+					</span>
 				</div>
-				<span style={{ color: "#A1A1AA", fontSize: 21, fontWeight: 500 }}>
-					chat.betarouter.com
-				</span>
 			</div>
-		</div>,
+		),
 		size,
 	);
 }

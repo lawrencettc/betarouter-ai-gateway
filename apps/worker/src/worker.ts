@@ -1765,7 +1765,8 @@ export async function processLogQueue(): Promise<number> {
 		const selectMs = Date.now() - selectStart;
 
 		const processedLogData: (
-			LogInsertData | Omit<LogInsertData, "messages" | "content">
+			| LogInsertData
+			| Omit<LogInsertData, "messages" | "content">
 		)[] = logData.map((data) => {
 			if (retentionByOrg.get(data.organizationId) === "none") {
 				const {

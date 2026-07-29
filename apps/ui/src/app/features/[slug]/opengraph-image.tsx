@@ -176,14 +176,16 @@ export default async function FeatureOgImage({
 
 	if (!feature) {
 		return new ImageResponse(
-			<div
-				style={{
-					width: "100%",
-					height: "100%",
-					display: "flex",
-					background: "#000000",
-				}}
-			/>,
+			(
+				<div
+					style={{
+						width: "100%",
+						height: "100%",
+						display: "flex",
+						background: "#000000",
+					}}
+				/>
+			),
 			size,
 		);
 	}
@@ -191,145 +193,150 @@ export default async function FeatureOgImage({
 	const Icon = getIconForFeature(feature.slug);
 
 	return new ImageResponse(
-		<div
-			style={{
-				width: "100%",
-				height: "100%",
-				display: "flex",
-				flexDirection: "column",
-				justifyContent: "space-between",
-				alignItems: "stretch",
-				background: "#000000",
-				color: "white",
-				fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-				padding: 60,
-				boxSizing: "border-box",
-			}}
-		>
-			{/* Header with logo */}
+		(
 			<div
 				style={{
+					width: "100%",
+					height: "100%",
 					display: "flex",
-					flexDirection: "row",
-					alignItems: "center",
-					gap: 16,
+					flexDirection: "column",
+					justifyContent: "space-between",
+					alignItems: "stretch",
+					background: "#000000",
+					color: "white",
+					fontFamily:
+						"system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+					padding: 60,
+					boxSizing: "border-box",
 				}}
 			>
-				<svg
-					fill="none"
-					xmlns="http://www.w3.org/2000/svg"
-					viewBox="0 0 72 72"
-					width={48}
-					height={48}
-				>
-					<path
-						d="M14 20 L34 36 L14 52"
-						stroke="#e5e2e1"
-						strokeWidth={8}
-						strokeLinecap="round"
-						strokeLinejoin="round"
-					/>
-					<path
-						d="M38 20 L58 36 L38 52"
-						stroke="#08A84E"
-						strokeWidth={8}
-						strokeLinecap="round"
-						strokeLinejoin="round"
-					/>
-				</svg>
+				{/* Header with logo */}
 				<div
 					style={{
 						display: "flex",
 						flexDirection: "row",
 						alignItems: "center",
-						gap: 8,
-						fontSize: 24,
-						color: "#9CA3AF",
+						gap: 16,
 					}}
 				>
-					<span style={{ color: "#ffffff", fontWeight: 600 }}>betarouter</span>
-					<span style={{ opacity: 0.6 }}>•</span>
-					<span>Features</span>
+					<svg
+						fill="none"
+						xmlns="http://www.w3.org/2000/svg"
+						viewBox="0 0 72 72"
+						width={48}
+						height={48}
+					>
+						<path
+							d="M14 20 L34 36 L14 52"
+							stroke="#e5e2e1"
+							strokeWidth={8}
+							strokeLinecap="round"
+							strokeLinejoin="round"
+						/>
+						<path
+							d="M38 20 L58 36 L38 52"
+							stroke="#08A84E"
+							strokeWidth={8}
+							strokeLinecap="round"
+							strokeLinejoin="round"
+						/>
+					</svg>
+					<div
+						style={{
+							display: "flex",
+							flexDirection: "row",
+							alignItems: "center",
+							gap: 8,
+							fontSize: 24,
+							color: "#9CA3AF",
+						}}
+					>
+						<span style={{ color: "#ffffff", fontWeight: 600 }}>
+							betarouter
+						</span>
+						<span style={{ opacity: 0.6 }}>•</span>
+						<span>Features</span>
+					</div>
 				</div>
-			</div>
 
-			{/* Main content */}
-			<div
-				style={{
-					display: "flex",
-					flexDirection: "column",
-					alignItems: "center",
-					justifyContent: "center",
-					flex: 1,
-					gap: 40,
-				}}
-			>
-				{/* Feature icon */}
-				<div
-					style={{
-						width: 120,
-						height: 120,
-						borderRadius: 20,
-						backgroundColor: "#1a1a1a",
-						border: "2px solid rgba(255,255,255,0.1)",
-						display: "flex",
-						alignItems: "center",
-						justifyContent: "center",
-						color: "#ffffff",
-					}}
-				>
-					<Icon />
-				</div>
-
-				{/* Title and subtitle */}
+				{/* Main content */}
 				<div
 					style={{
 						display: "flex",
 						flexDirection: "column",
 						alignItems: "center",
-						gap: 20,
-						maxWidth: 1000,
+						justifyContent: "center",
+						flex: 1,
+						gap: 40,
 					}}
 				>
-					<h1
+					{/* Feature icon */}
+					<div
 						style={{
-							fontSize: 72,
-							fontWeight: 700,
-							margin: 0,
-							letterSpacing: "-0.03em",
-							textAlign: "center",
-							lineHeight: 1.1,
+							width: 120,
+							height: 120,
+							borderRadius: 20,
+							backgroundColor: "#1a1a1a",
+							border: "2px solid rgba(255,255,255,0.1)",
+							display: "flex",
+							alignItems: "center",
+							justifyContent: "center",
+							color: "#ffffff",
 						}}
 					>
-						{feature.title}
-					</h1>
-					<p
+						<Icon />
+					</div>
+
+					{/* Title and subtitle */}
+					<div
 						style={{
-							fontSize: 32,
-							color: "#9CA3AF",
-							margin: 0,
-							textAlign: "center",
-							lineHeight: 1.4,
+							display: "flex",
+							flexDirection: "column",
+							alignItems: "center",
+							gap: 20,
+							maxWidth: 1000,
 						}}
 					>
-						{feature.subtitle}
-					</p>
+						<h1
+							style={{
+								fontSize: 72,
+								fontWeight: 700,
+								margin: 0,
+								letterSpacing: "-0.03em",
+								textAlign: "center",
+								lineHeight: 1.1,
+							}}
+						>
+							{feature.title}
+						</h1>
+						<p
+							style={{
+								fontSize: 32,
+								color: "#9CA3AF",
+								margin: 0,
+								textAlign: "center",
+								lineHeight: 1.4,
+							}}
+						>
+							{feature.subtitle}
+						</p>
+					</div>
+				</div>
+
+				{/* Footer */}
+				<div
+					style={{
+						display: "flex",
+						flexDirection: "row",
+						justifyContent: "flex-end",
+						fontSize: 20,
+						color: "#9CA3AF",
+					}}
+				>
+					<span>betarouter.com</span>
 				</div>
 			</div>
-
-			{/* Footer */}
-			<div
-				style={{
-					display: "flex",
-					flexDirection: "row",
-					justifyContent: "flex-end",
-					fontSize: 20,
-					color: "#9CA3AF",
-				}}
-			>
-				<span>betarouter.com</span>
-			</div>
-		</div>,
+		),
 		size,
 	);
 }

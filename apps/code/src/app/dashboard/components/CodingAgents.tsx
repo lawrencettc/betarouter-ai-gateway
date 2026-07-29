@@ -85,7 +85,7 @@ function AgentsEmpty({ hadError = false }: { hadError?: boolean }) {
 				No agent activity yet
 			</h3>
 			<p className="mx-auto mt-1.5 max-w-md text-sm text-muted-foreground">
-				This view will fill in once you use your DevPass key with any of the
+				This view will fill in once you use your BetaPass key with any of the
 				supported coding agents. Set two env vars and run your tool.
 			</p>
 			<div className="mt-6 flex flex-wrap items-center justify-center gap-2">

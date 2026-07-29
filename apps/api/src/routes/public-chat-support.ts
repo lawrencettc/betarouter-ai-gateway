@@ -66,7 +66,7 @@ const MAX_CONTEXT_MESSAGES = 30;
 
 const DOCS_BASE_URL = "https://docs.betarouter.com";
 
-const BASE_SYSTEM_PROMPT = `You are the betarouter support assistant. You ONLY answer questions related to betarouter — the unified API gateway for multiple LLM providers — and its products (the dashboard at betarouter.com, DevPass at devpass.betarouter.com, the docs at docs.betarouter.com, and the chat app at chat.betarouter.com).
+const BASE_SYSTEM_PROMPT = `You are the betarouter support assistant. You ONLY answer questions related to betarouter — the unified API gateway for multiple LLM providers — and its products (the dashboard at betarouter.com, BetaPass at betapass.betarouter.com, the docs at docs.betarouter.com, and the chat app at chat.betarouter.com).
 
 Your knowledge covers:
 - Getting started, quick start, and setup
@@ -76,7 +76,7 @@ Your knowledge covers:
 - Integrations: AWS Bedrock, Azure
 - Migrations: from OpenRouter, LiteLLM, Vercel AI Gateway
 - Learning: dashboard, API keys, playground, billing, activity, usage metrics, model usage, transactions, team, org preferences, preferences, provider keys, referrals, security events, guardrails, audit logs, policies
-- DevPass subscription plans
+- BetaPass subscription plans
 - Self-hosting
 - Rate limits and resources
 
@@ -96,7 +96,7 @@ async function buildSystemPrompt(): Promise<string> {
 	const urlList = urls.map((u) => `- ${u}`).join("\n");
 	return `${BASE_SYSTEM_PROMPT}
 
-Available pages (sourced from the live sitemaps of betarouter.com, devpass.betarouter.com, docs.betarouter.com and chat.betarouter.com). Use these for accurate links and as targets for the \`fetchPage\` tool:
+Available pages (sourced from the live sitemaps of betarouter.com, betapass.betarouter.com, docs.betarouter.com and chat.betarouter.com). Use these for accurate links and as targets for the \`fetchPage\` tool:
 ${urlList}`;
 }
 
@@ -516,7 +516,7 @@ publicChatSupport.post("/", async (c) => {
 		tools: {
 			fetchPage: tool({
 				description:
-					"Fetch the readable text content of an betarouter page (betarouter.com, devpass/docs/chat.betarouter.com) to ground your answer in accurate, up-to-date information. Pass a full https URL from the available pages list.",
+					"Fetch the readable text content of an betarouter page (betarouter.com, betapass/docs/chat.betarouter.com) to ground your answer in accurate, up-to-date information. Pass a full https URL from the available pages list.",
 				inputSchema: z.object({
 					url: z
 						.string()

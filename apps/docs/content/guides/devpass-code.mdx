@@ -1,19 +1,19 @@
 ---
-title: DevPass Code
-description: DevPass Code is a terminal coding agent that talks only to betarouter. One-click browser login, ~190 models, and DevPass subscription billing handled automatically.
+title: BetaPass Code
+description: BetaPass Code is a terminal coding agent that talks only to betarouter. One-click browser login, ~190 models, and BetaPass subscription billing handled automatically.
 icon: DevPassCode
 ---
 
 import { Step, Steps } from "fumadocs-ui/components/steps";
 import { Callout } from "fumadocs-ui/components/callout";
 
-[DevPass Code](https://github.com/theopenco/devpass-code) is a terminal coding agent that talks **only** to betarouter. It's a rebranded fork of [opencode](https://github.com/anomalyco/opencode) (MIT), trimmed down to two providers that both point at betarouter's OpenAI-compatible API. Every request is tagged with `x-source: devpass-code`, so DevPass usage is attributed correctly and you get access to all ~190 text models betarouter offers.
+[BetaPass Code](https://github.com/theopenco/devpass-code) is a terminal coding agent that talks **only** to betarouter. It's a rebranded fork of [opencode](https://github.com/anomalyco/opencode) (MIT), trimmed down to two providers that both point at betarouter's OpenAI-compatible API. Every request is tagged with `x-source: devpass-code`, so BetaPass usage is attributed correctly and you get access to all ~190 text models betarouter offers.
 
 Log in once from your terminal with a single click in the browser — no copy-pasting API keys unless you want to.
 
 ## Install
 
-Install DevPass Code globally from npm:
+Install BetaPass Code globally from npm:
 
 ```bash
 npm i -g devpass-code
@@ -35,7 +35,7 @@ bun run packages/devpass-code/src/index.ts --help
 
 ## Authenticate
 
-DevPass Code supports one-click browser login, just like Claude Code. Start the login flow:
+BetaPass Code supports one-click browser login, just like Claude Code. Start the login flow:
 
 ```bash
 devpass-code auth login
@@ -45,14 +45,14 @@ devpass-code auth login
 <Step>
 ### Pick a provider
 
-Choose either **betarouter** (pay-as-you-go with your own API key) or **betarouter DevPass** (the DevPass coding subscription). See [Providers](#providers) below for the difference.
+Choose either **betarouter** (pay-as-you-go with your own API key) or **betarouter BetaPass** (the BetaPass coding subscription). See [Providers](#providers) below for the difference.
 
 </Step>
 
 <Step>
 ### Log in with browser
 
-Select **"Log in with browser."** DevPass Code opens [https://betarouter.com/connect/cli](https://betarouter.com/connect/cli) and starts a local loopback server.
+Select **"Log in with browser."** BetaPass Code opens [https://betarouter.com/connect/cli](https://betarouter.com/connect/cli) and starts a local loopback server.
 
 </Step>
 
@@ -80,12 +80,12 @@ Your credentials are saved to `~/.local/share/devpass-code/auth.json`. You're re
 
 ## Providers
 
-DevPass Code ships exactly two providers. Both hit `https://api.betarouter.com/v1` (OpenAI-compatible) and expose the same ~190 text models — the only difference is how usage is billed.
+BetaPass Code ships exactly two providers. Both hit `https://api.betarouter.com/v1` (OpenAI-compatible) and expose the same ~190 text models — the only difference is how usage is billed.
 
-| Provider               | Billing                                                                                                 |
-| ---------------------- | ------------------------------------------------------------------------------------------------------- |
-| **betarouter**         | Pay-as-you-go with your own API key                                                                     |
-| **betarouter DevPass** | The DevPass coding subscription — billing is handled automatically by the gateway based on your account |
+| Provider                | Billing                                                                                                  |
+| ----------------------- | -------------------------------------------------------------------------------------------------------- |
+| **betarouter**          | Pay-as-you-go with your own API key                                                                      |
+| **betarouter BetaPass** | The BetaPass coding subscription — billing is handled automatically by the gateway based on your account |
 
 <Callout type="info">
 	Both providers route through the same gateway, so you can switch between them
@@ -95,7 +95,7 @@ DevPass Code ships exactly two providers. Both hit `https://api.betarouter.com/v
 
 ## Use it
 
-Once authenticated, start DevPass Code in any project directory and describe what you want to build. All requests route through betarouter with `x-source: devpass-code`, so every prompt and its cost appear in your [dashboard](https://betarouter.com/dashboard).
+Once authenticated, start BetaPass Code in any project directory and describe what you want to build. All requests route through betarouter with `x-source: devpass-code`, so every prompt and its cost appear in your [dashboard](https://betarouter.com/dashboard).
 
 ## Configuration
 
@@ -103,11 +103,11 @@ Once authenticated, start DevPass Code in any project directory and describe wha
 - **`BETA_GATEWAY_API_KEY`** — Provide your betarouter API key without running the login flow.
 - **`DEVPASS_APP_URL`** — Override the app URL used for browser login (defaults to `https://betarouter.com`).
 
-## Why Use betarouter with DevPass Code
+## Why Use betarouter with BetaPass Code
 
 - **~190 text models** — GPT-5, Claude, Gemini, Llama, and more, all through one endpoint
 - **One-click login** — Approve in the browser, key delivered automatically
-- **DevPass billing** — The DevPass subscription is handled automatically by the gateway
+- **BetaPass billing** — The BetaPass subscription is handled automatically by the gateway
 - **Cost tracking** — See exactly what each coding session costs in your dashboard
 - **Response caching** — Repeated requests hit cache automatically
 

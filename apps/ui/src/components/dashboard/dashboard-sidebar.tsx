@@ -1016,8 +1016,8 @@ export function DashboardSidebar({
 				href:
 					process.env.NODE_ENV === "development"
 						? "http://localhost:3004"
-						: "https://devpass.betarouter.com",
-				label: "DevPass",
+						: "https://betapass.betarouter.com",
+				label: "BetaPass",
 				icon: AnimatedTerminal,
 				internal: false,
 			},

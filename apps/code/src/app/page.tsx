@@ -44,7 +44,7 @@ const modelCount = parseInt(MARKETING_STATS.models, 10);
 const providerCount = parseInt(MARKETING_STATS.providers, 10);
 
 const marqueeTools = [
-	{ name: "DevPass Code", icon: DevPassCodeIcon },
+	{ name: "BetaPass Code", icon: DevPassCodeIcon },
 	{ name: "Claude Code", icon: AnthropicIcon },
 	{ name: "OpenCode", icon: OpenCodeIcon },
 	{ name: "Empryo", icon: EmpryoIcon },
@@ -68,21 +68,21 @@ const featuredTools = [
 		name: "OpenCode",
 		icon: OpenCodeIcon,
 		description:
-			"betarouter is built into OpenCode. Run `opencode`, type `/connect`, paste your DevPass key. No env vars, no config files.",
+			"betarouter is built into OpenCode. Run `opencode`, type `/connect`, paste your BetaPass key. No env vars, no config files.",
 		setup: "/connect → betarouter",
 	},
 	{
 		name: "Empryo",
 		icon: EmpryoIcon,
 		description:
-			"The AI coding agent that edits symbols, not strings. Maps your repo on launch and edits by symbol name. Run `empryo`, type `/keys`, paste your DevPass key.",
+			"The AI coding agent that edits symbols, not strings. Maps your repo on launch and edits by symbol name. Run `empryo`, type `/keys`, paste your BetaPass key.",
 		setup: "/keys → paste your key",
 	},
 	{
 		name: "SoulForge",
 		icon: SoulForgeIcon,
 		description:
-			"Graph-powered coding agent. Maps your repo on launch and edits TypeScript by symbol name, not by find-and-replace. Run `soulforge`, type `/keys`, paste your DevPass key.",
+			"Graph-powered coding agent. Maps your repo on launch and edits TypeScript by symbol name, not by find-and-replace. Run `soulforge`, type `/keys`, paste your BetaPass key.",
 		setup: "/keys → paste your key",
 	},
 ];
@@ -92,7 +92,7 @@ const steps = [
 		step: "01",
 		title: "Pick a plan",
 		description:
-			"Choose Lite, Pro, or Max. Your DevPass key works everywhere — no separate keys per tool.",
+			"Choose Lite, Pro, or Max. Your BetaPass key works everywhere — no separate keys per tool.",
 	},
 	{
 		step: "02",
@@ -150,14 +150,14 @@ export default function LandingPage() {
 									</span>
 								</h1>
 								<p className="mb-8 max-w-lg text-lg leading-relaxed text-muted-foreground">
-									DevPass turns every dollar into{" "}
+									BetaPass turns every dollar into{" "}
 									<span className="font-mono font-semibold text-foreground">
 										$3
 									</span>{" "}
 									of model usage at provider rates — metered transparently, with
 									no token math and no lock-in. Best in{" "}
 									<span className="font-semibold text-foreground">
-										DevPass Code
+										BetaPass Code
 									</span>
 									, our first-party agent, and drop-in for every
 									OpenAI-compatible tool.
@@ -308,7 +308,7 @@ export default function LandingPage() {
 								</div>
 								<div className="border-t border-dashed" />
 								<div className="flex items-baseline justify-between gap-4">
-									<dt className="font-semibold">DevPass Lite</dt>
+									<dt className="font-semibold">BetaPass Lite</dt>
 									<dd className="text-right font-semibold tabular-nums">
 										$29/mo{" "}
 										<span className="font-normal text-[#08A84E]">
@@ -329,7 +329,7 @@ export default function LandingPage() {
 									className="mt-3 -ml-3"
 								>
 									<Link href="/compare/cursor">
-										See the full DevPass vs Cursor comparison
+										See the full BetaPass vs Cursor comparison
 										<ArrowRight className="h-3.5 w-3.5" />
 									</Link>
 								</Button>
@@ -350,7 +350,7 @@ export default function LandingPage() {
 							</h2>
 							<p className="text-muted-foreground">
 								<span className="font-semibold text-foreground">
-									DevPass Code
+									BetaPass Code
 								</span>{" "}
 								— our own terminal agent — is the bearer: one-click browser
 								login, no keys to copy. Claude Code, OpenCode, Empryo, and every

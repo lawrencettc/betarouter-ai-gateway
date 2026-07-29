@@ -55,7 +55,7 @@ const getLeaderboard = createRoute({
 				},
 			},
 			description:
-				"Public DevPass profiles ranked by total tokens routed over the last year.",
+				"Public BetaPass profiles ranked by total tokens routed over the last year.",
 		},
 	},
 });

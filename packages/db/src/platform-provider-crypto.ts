@@ -29,8 +29,8 @@ export function isPlatformProviderCryptoConfigured(
 ): boolean {
 	return Boolean(
 		env.PLATFORM_PROVIDER_ENCRYPTION_KEYS?.trim() &&
-		env.PLATFORM_PROVIDER_ENCRYPTION_CURRENT_VERSION?.trim() &&
-		env.PLATFORM_PROVIDER_FINGERPRINT_KEY?.trim(),
+			env.PLATFORM_PROVIDER_ENCRYPTION_CURRENT_VERSION?.trim() &&
+			env.PLATFORM_PROVIDER_FINGERPRINT_KEY?.trim(),
 	);
 }
 

@@ -517,7 +517,7 @@ const finalize = createRoute({
 					}),
 				},
 			},
-			description: "Card already in use by another DevPass account",
+			description: "Card already in use by another BetaPass account",
 		},
 	},
 });
@@ -591,7 +591,7 @@ devPlans.openapi(finalize, async (c) => {
 				{
 					error: "duplicate_card" as const,
 					message:
-						"This card is already associated with another DevPass account. Please use a different payment method.",
+						"This card is already associated with another BetaPass account. Please use a different payment method.",
 				},
 				409,
 			);
@@ -2000,7 +2000,7 @@ const getBillingDetails = createRoute({
 					}),
 				},
 			},
-			description: "DevPass billing details retrieved successfully",
+			description: "BetaPass billing details retrieved successfully",
 		},
 	},
 });
@@ -2058,7 +2058,7 @@ const updateBillingDetails = createRoute({
 					}),
 				},
 			},
-			description: "DevPass billing details updated successfully",
+			description: "BetaPass billing details updated successfully",
 		},
 	},
 });
@@ -2190,7 +2190,7 @@ const getInvoices = createRoute({
 					}),
 				},
 			},
-			description: "DevPass invoices retrieved successfully",
+			description: "BetaPass invoices retrieved successfully",
 		},
 	},
 });
@@ -2284,7 +2284,7 @@ const selfRefundInvoice = createRoute({
 				},
 			},
 			description:
-				"Refund created; bookkeeping is applied when Stripe confirms via webhook. A plan-payment refund cancels the DevPass immediately, a Reset Pass refund removes the unused pass and leaves the plan running",
+				"Refund created; bookkeeping is applied when Stripe confirms via webhook. A plan-payment refund cancels the BetaPass immediately, a Reset Pass refund removes the unused pass and leaves the plan running",
 		},
 	},
 });
@@ -2299,7 +2299,7 @@ devPlans.openapi(selfRefundInvoice, async (c) => {
 
 	const personalOrg = await findPersonalOrg(user.id);
 	if (!personalOrg) {
-		throw new HTTPException(404, { message: "No DevPass organization found" });
+		throw new HTTPException(404, { message: "No BetaPass organization found" });
 	}
 
 	const transactions = await db.query.transaction.findMany({
@@ -2546,7 +2546,7 @@ const getPaymentMethod = createRoute({
 					}),
 				},
 			},
-			description: "Current DevPass payment method retrieved",
+			description: "Current BetaPass payment method retrieved",
 		},
 	},
 });
@@ -2699,7 +2699,7 @@ const updatePaymentMethod = createRoute({
 					}),
 				},
 			},
-			description: "Card already in use by another DevPass account",
+			description: "Card already in use by another BetaPass account",
 		},
 		400: {
 			content: {
@@ -2785,7 +2785,7 @@ devPlans.openapi(updatePaymentMethod, async (c) => {
 				{
 					error: "duplicate_card" as const,
 					message:
-						"This card is already associated with another DevPass account. Please use a different payment method.",
+						"This card is already associated with another BetaPass account. Please use a different payment method.",
 				},
 				409,
 			);
@@ -2959,7 +2959,7 @@ devPlans.openapi(purchaseResetPass, async (c) => {
 			payment_method: paymentMethodId,
 			off_session: true,
 			confirm: true,
-			description: `DevPass Reset Pass (${tier.toUpperCase()})`,
+			description: `BetaPass Reset Pass (${tier.toUpperCase()})`,
 			metadata: {
 				organizationId: personalOrg.id,
 				kind: "dev_plan_reset_pass",

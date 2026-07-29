@@ -75,7 +75,8 @@ interface PlaygroundMetadataFinishStepPart {
 }
 
 type PlaygroundMetadataStreamPart =
-	PlaygroundMetadataFinishStepPart | { type: string };
+	| PlaygroundMetadataFinishStepPart
+	| { type: string };
 
 type GatewayResponseMetadata = Pick<
 	PlaygroundMessageMetadata,

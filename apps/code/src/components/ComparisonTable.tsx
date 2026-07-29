@@ -60,7 +60,9 @@ export function ComparisonTable({
 							<th className="px-5 py-4 font-medium">
 								<div className="flex items-center justify-center gap-2">
 									<BrandTile brand="devpass" size={26} radius={8} />
-									<span className="font-semibold text-foreground">DevPass</span>
+									<span className="font-semibold text-foreground">
+										BetaPass
+									</span>
 								</div>
 							</th>
 							<th className="px-5 py-4 font-medium">

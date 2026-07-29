@@ -18,11 +18,11 @@ import {
 
 import type { Metadata } from "next";
 
-const BASE_URL = "https://devpass.betarouter.com";
+const BASE_URL = "https://betapass.betarouter.com";
 const PAGE_PATH = "/claude-code-alternative";
 
 const TITLE = "Claude Code Alternative (2026): Keep the CLI, Skip the Caps";
-const DESCRIPTION = `Looking for a Claude Code alternative? DevPass keeps the Claude Code CLI and replaces the Max subscription: one key, 200+ models (Claude included) metered at provider rates, from $${DEV_PLAN_PRICES.lite}/mo. No weekly caps.`;
+const DESCRIPTION = `Looking for a Claude Code alternative? BetaPass keeps the Claude Code CLI and replaces the Max subscription: one key, 200+ models (Claude included) metered at provider rates, from $${DEV_PLAN_PRICES.lite}/mo. No weekly caps.`;
 
 export const metadata: Metadata = {
 	title: TITLE,
@@ -92,7 +92,7 @@ const comparisonFeatures = [
 		competitor: true,
 	},
 	{
-		label: "Works with DevPass Code, OpenCode, Cursor, Zed, Cline",
+		label: "Works with BetaPass Code, OpenCode, Cursor, Zed, Cline",
 		devpass: true,
 		competitor: false,
 	},
@@ -111,30 +111,30 @@ const comparisonFeatures = [
 const faqs = [
 	{
 		question: "What is the best Claude Code alternative?",
-		answer: `It depends on what you're trying to escape. If it's the Claude Max price, the weekly caps or the Anthropic-only catalog — but you like the Claude Code workflow — DevPass is built for exactly that: keep the CLI, point it at one key, and get 200+ models (Claude included) metered at provider rates from $${DEV_PLAN_PRICES.lite}/mo. If what you want is a different editor experience entirely, look at tools like Cursor instead.`,
+		answer: `It depends on what you're trying to escape. If it's the Claude Max price, the weekly caps or the Anthropic-only catalog — but you like the Claude Code workflow — BetaPass is built for exactly that: keep the CLI, point it at one key, and get 200+ models (Claude included) metered at provider rates from $${DEV_PLAN_PRICES.lite}/mo. If what you want is a different editor experience entirely, look at tools like Cursor instead.`,
 	},
 	{
-		question: "Can I keep using the Claude Code CLI with DevPass?",
+		question: "Can I keep using the Claude Code CLI with BetaPass?",
 		answer:
-			"Yes. Claude Code accepts a custom endpoint, so switching is two environment variables: set ANTHROPIC_BASE_URL to the DevPass endpoint and ANTHROPIC_AUTH_TOKEN to your DevPass key, then run claude as usual. No reinstall, no SDK changes — and you can flip ANTHROPIC_MODEL to run non-Anthropic models through the same CLI.",
+			"Yes. Claude Code accepts a custom endpoint, so switching is two environment variables: set ANTHROPIC_BASE_URL to the BetaPass endpoint and ANTHROPIC_AUTH_TOKEN to your BetaPass key, then run claude as usual. No reinstall, no SDK changes — and you can flip ANTHROPIC_MODEL to run non-Anthropic models through the same CLI.",
 	},
 	{
-		question: "How much cheaper is DevPass than Claude Max?",
-		answer: `Claude Max costs $100/mo (5×) or $200/mo (20×) of an unpublished usage quota, Anthropic models only. DevPass plans are $${DEV_PLAN_PRICES.lite} (Lite), $${DEV_PLAN_PRICES.pro} (Pro) and $${DEV_PLAN_PRICES.max} (Max), and each includes roughly 3× its price in metered model usage at the providers' published rates — about $${getDevPlanCreditsLimit("lite")}, $${getDevPlanCreditsLimit("pro")} and $${getDevPlanCreditsLimit("max")} respectively — across 200+ models. Whether that's cheaper for you depends on your usage, but you can read your burn in real dollars instead of guessing at a multiplier.`,
+		question: "How much cheaper is BetaPass than Claude Max?",
+		answer: `Claude Max costs $100/mo (5×) or $200/mo (20×) of an unpublished usage quota, Anthropic models only. BetaPass plans are $${DEV_PLAN_PRICES.lite} (Lite), $${DEV_PLAN_PRICES.pro} (Pro) and $${DEV_PLAN_PRICES.max} (Max), and each includes roughly 3× its price in metered model usage at the providers' published rates — about $${getDevPlanCreditsLimit("lite")}, $${getDevPlanCreditsLimit("pro")} and $${getDevPlanCreditsLimit("max")} respectively — across 200+ models. Whether that's cheaper for you depends on your usage, but you can read your burn in real dollars instead of guessing at a multiplier.`,
 	},
 	{
-		question: "Does DevPass include Claude models?",
+		question: "Does BetaPass include Claude models?",
 		answer:
-			"Yes. Claude Opus, Sonnet and Haiku are all available through DevPass at Anthropic's published per-token rates, next to GPT-5.5, Gemini 3.1 Pro and 200+ other frontier and open-weight models — all under the same key.",
+			"Yes. Claude Opus, Sonnet and Haiku are all available through BetaPass at Anthropic's published per-token rates, next to GPT-5.5, Gemini 3.1 Pro and 200+ other frontier and open-weight models — all under the same key.",
 	},
 	{
-		question: "Does DevPass have weekly usage limits like Claude Max?",
+		question: "Does BetaPass have weekly usage limits like Claude Max?",
 		answer:
 			"No. There are no 5-hour windows and no weekly caps. Each plan includes a monthly dollar allowance (about 3× the plan price) metered per request at provider rates. If you run through it, you can top up or move up a tier — you're never waiting for a timer to reset.",
 	},
 	{
 		question: "What about Claude Pro at $20/mo?",
-		answer: `Claude Pro includes Claude Code access, but with a small usage quota that serious daily coding work outgrows quickly — that's what the Max tiers are for. DevPass Lite at $${DEV_PLAN_PRICES.lite}/mo includes about $${getDevPlanCreditsLimit("lite")} of metered usage across every model, so it's the closer comparison for daily driving.`,
+		answer: `Claude Pro includes Claude Code access, but with a small usage quota that serious daily coding work outgrows quickly — that's what the Max tiers are for. BetaPass Lite at $${DEV_PLAN_PRICES.lite}/mo includes about $${getDevPlanCreditsLimit("lite")} of metered usage across every model, so it's the closer comparison for daily driving.`,
 	},
 ];
 
@@ -210,7 +210,7 @@ export default function ClaudeCodeAlternativePage() {
 						</h1>
 						<p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-pretty text-muted-foreground">
 							You don&apos;t have to give up the CLI to give up the $100–$200/mo
-							Max subscription. DevPass is one key that runs{" "}
+							Max subscription. BetaPass is one key that runs{" "}
 							{MARKETING_STATS.models} models — Claude included — through Claude
 							Code or any agent you like, metered at provider rates from $
 							{DEV_PLAN_PRICES.lite}/mo. No weekly caps.
@@ -270,11 +270,11 @@ export default function ClaudeCodeAlternativePage() {
 							<p className="text-lg leading-relaxed text-foreground">
 								Most people searching for a Claude Code alternative don&apos;t
 								want to lose Claude Code — they want to lose the bill and the
-								caps. DevPass does exactly that: point the CLI you already use
+								caps. BetaPass does exactly that: point the CLI you already use
 								at one key that meters {MARKETING_STATS.models} models, Claude
 								included, at the providers&apos; own published rates. Swap the
-								agent too if you want — <strong>DevPass Code</strong>, OpenCode,
-								Cursor, Zed and Cline all take the same key.
+								agent too if you want — <strong>BetaPass Code</strong>,
+								OpenCode, Cursor, Zed and Cline all take the same key.
 							</p>
 						</div>
 					</div>
@@ -284,7 +284,7 @@ export default function ClaudeCodeAlternativePage() {
 				<section className="px-4 pb-4">
 					<div className="container mx-auto max-w-4xl">
 						<h2 className="mb-2 text-2xl font-bold tracking-tight sm:text-3xl">
-							DevPass vs Claude Max at a glance
+							BetaPass vs Claude Max at a glance
 						</h2>
 						<p className="mb-6 text-sm text-muted-foreground">
 							Pricing and limits as of {FACTS_DATE} — always confirm current
@@ -306,7 +306,7 @@ export default function ClaudeCodeAlternativePage() {
 						</h2>
 						<p className="mb-8 max-w-3xl text-muted-foreground">
 							Claude Max sells multipliers of a quota Anthropic doesn&apos;t
-							publish. DevPass sells a number you can read: every plan includes
+							publish. BetaPass sells a number you can read: every plan includes
 							roughly 3× its price in model usage, metered per request at each
 							provider&apos;s published per-token rate. When Claude Opus is the
 							right tool you pay Anthropic&apos;s rate for it; when GLM or Qwen
@@ -373,7 +373,7 @@ export default function ClaudeCodeAlternativePage() {
 								<strong className="text-foreground">
 									You want zero setup.
 								</strong>{" "}
-								Claude Code works out of the box on a Max plan. DevPass needs
+								Claude Code works out of the box on a Max plan. BetaPass needs
 								two environment variables — small, but not zero.
 							</p>
 							<p>
@@ -381,7 +381,7 @@ export default function ClaudeCodeAlternativePage() {
 									You live in the claude.ai apps.
 								</strong>{" "}
 								Max usage covers Claude chat and Claude Code together under one
-								subscription. DevPass covers your coding tools; it doesn&apos;t
+								subscription. BetaPass covers your coding tools; it doesn&apos;t
 								replace a consumer chat plan.
 							</p>
 							<p>
@@ -390,7 +390,7 @@ export default function ClaudeCodeAlternativePage() {
 									href="/compare/cursor"
 									className="underline underline-offset-4 hover:text-foreground"
 								>
-									DevPass vs Cursor
+									BetaPass vs Cursor
 								</Link>{" "}
 								or{" "}
 								<Link

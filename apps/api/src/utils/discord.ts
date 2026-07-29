@@ -178,7 +178,7 @@ export async function notifyDevPlanSubscribed(
 	await sendDiscordNotification({
 		embeds: [
 			{
-				title: "DevPass Subscribed",
+				title: "BetaPass Subscribed",
 				color: 0x22c55e, // Green
 				fields: [
 					{
@@ -254,7 +254,7 @@ export async function notifyDevPlanCancelled(
 	await sendDiscordNotification({
 		embeds: [
 			{
-				title: "DevPass Cancelled",
+				title: "BetaPass Cancelled",
 				color: 0xef4444, // Red
 				fields: [
 					{
@@ -449,7 +449,7 @@ export async function notifyDevPlanRenewed(
 	await sendDiscordNotification({
 		embeds: [
 			{
-				title: "DevPass Renewed",
+				title: "BetaPass Renewed",
 				color: 0x8b5cf6, // Purple
 				fields: [
 					{

@@ -42,7 +42,7 @@ export function DevPassModelsDirectory({
 					asChild
 				>
 					<Link href="/signup">
-						Get DevPass
+						Get BetaPass
 						<ArrowRight className={iconClassName} />
 					</Link>
 				</Button>
