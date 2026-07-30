@@ -32,7 +32,16 @@ const modelSchema = z.object({
 	architecture: z.object({
 		input_modalities: z.array(z.enum(["text", "image", "video", "embedding"])),
 		output_modalities: z.array(
-			z.enum(["text", "image", "video", "embedding", "audio", "ocr"]),
+			z.enum([
+				"text",
+				"image",
+				"video",
+				"embedding",
+				"audio",
+				"ocr",
+				"transcription",
+				"rerank",
+			]),
 		),
 		tokenizer: z.string().optional(),
 	}),
@@ -284,7 +293,14 @@ modelsApi.openapi(listModels, async (c) => {
 			// text only. These mirror the model catalog 1:1 (including "ocr") so
 			// third-party clients can reference the same modality taxonomy.
 			const outputModalities: (
-				"text" | "image" | "video" | "embedding" | "audio" | "ocr"
+				| "text"
+				| "image"
+				| "video"
+				| "embedding"
+				| "audio"
+				| "ocr"
+				| "transcription"
+				| "rerank"
 			)[] = model.output ?? ["text"];
 
 			// Source the model-level pricing from the cheapest provider mapping
