@@ -402,8 +402,8 @@ describe("keys route", () => {
 			description: "IAM Cache Test Key",
 			createdBy: "test-user-id",
 		});
-		const readActiveIamRules = () =>
-			swrWrap(
+		const readActiveIamRules = async () => {
+			const rules = await swrWrap(
 				`iamRules:${apiKeyId}`,
 				[getTableName(tables.apiKeyIamRule)],
 				async () =>
@@ -417,6 +417,9 @@ describe("keys route", () => {
 							),
 						),
 			);
+			await waitForSwrMirrorWrites();
+			return rules;
+		};
 
 		// Prime both cache layers with the "no rules" result.
 		expect(await readActiveIamRules()).toHaveLength(0);
