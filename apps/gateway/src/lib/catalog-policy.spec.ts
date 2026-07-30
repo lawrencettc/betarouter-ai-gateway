@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	enforceCatalogRequest,
 	filterProviderMappingsByCatalog,
 	findCatalogMappingForProvider,
 	isCatalogOperationEnabled,
+	isTenantCustomProviderId,
 } from "./catalog-policy.js";
 
 import type {
@@ -165,5 +167,45 @@ describe("filterProviderMappingsByCatalog", () => {
 			tools: true,
 			externalId: "catalog-regional",
 		});
+	});
+});
+
+describe("tenant custom provider exemption", () => {
+	it("recognises the reserved tenant provider namespace", () => {
+		expect(isTenantCustomProviderId("custom")).toBe(true);
+		expect(isTenantCustomProviderId("custom/acme")).toBe(true);
+		expect(isTenantCustomProviderId("customer")).toBe(false);
+		expect(isTenantCustomProviderId("openai")).toBe(false);
+		expect(isTenantCustomProviderId(undefined)).toBe(false);
+	});
+
+	it("never enforces the catalogue on tenant custom providers", async () => {
+		await expect(
+			enforceCatalogRequest(
+				{ modelId: "an-org-private-model", providerId: "custom" },
+				{ operation: "chat" },
+			),
+		).resolves.toBeNull();
+	});
+
+	it("passes custom provider mappings through catalogue filtering", () => {
+		const providers = [
+			{ providerId: "custom", externalId: "byok-model", streaming: true },
+			{ providerId: "openai", externalId: "old", streaming: true },
+		] as ProviderModelMapping[];
+		const decision = {
+			allowed: true,
+			revision: 6,
+			mappingIds: [],
+			mappings: [],
+			deprecated: false,
+			deprecatedAt: null,
+			retireAt: null,
+			replacementModelId: null,
+		} satisfies Extract<CatalogRequestDecision, { allowed: true }>;
+
+		expect(filterProviderMappingsByCatalog(providers, decision)).toEqual([
+			expect.objectContaining({ providerId: "custom" }),
+		]);
 	});
 });

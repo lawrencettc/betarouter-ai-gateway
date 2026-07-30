@@ -1716,9 +1716,10 @@ chat.openapi(completions, async (c) => {
 	let catalogRequestDecision = await enforceCatalogRequest(
 		{
 			modelId: requestedModel,
+			// "custom" is forwarded verbatim so enforceCatalogRequest can exempt
+			// tenant-owned BYOK providers, which the platform catalogue never lists.
 			providerId:
-				parseResult.requestedProvider === "llmgateway" ||
-				parseResult.requestedProvider === "custom"
+				parseResult.requestedProvider === "llmgateway"
 					? undefined
 					: parseResult.requestedProvider,
 			region: requestedRegion,
