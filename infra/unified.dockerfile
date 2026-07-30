@@ -117,7 +117,10 @@ RUN mkdir -p /var/log/supervisor /var/log/postgresql /run/postgresql && \
     chown postgres:postgres /run/postgresql && \
     mkdir -p /var/lib/redis && \
     chown redis:redis /var/lib/redis && \
-    chmod 755 /var/lib/redis
+    chmod 755 /var/lib/redis && \
+    mkdir -p /var/lib/redis-storage && \
+    chown redis:redis /var/lib/redis-storage && \
+    chmod 755 /var/lib/redis-storage
 
 # Configure Supervisor
 COPY infra/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
@@ -127,7 +130,7 @@ COPY infra/start.sh /start.sh
 RUN chmod +x /start.sh
 
 # Expose ports
-EXPOSE 3002 3003 3004 3005 3006 4001 4002 5432 6379
+EXPOSE 3002 3003 3004 3005 3006 4001 4002 5432 6379 6380
 
 # Set environment variables
 ENV NODE_ENV=production

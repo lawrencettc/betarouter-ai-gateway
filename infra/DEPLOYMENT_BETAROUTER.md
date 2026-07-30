@@ -69,7 +69,8 @@ docker compose --env-file .env.production -f infra/docker-compose.betarouter.yml
 ```
 
 A small Droplet may need temporary swap while building the monorepo. Do not
-expose ports `3002-3006`, `4001-4002`, `5432`, or `6379` in the cloud firewall.
+expose ports `3002-3006`, `4001-4002`, `5432`, `6379`, or `6380` in the cloud
+firewall.
 Allow outbound TCP/UDP `7844` and outbound HTTPS for `cloudflared`.
 
 The current 2 GB Droplet is suitable for running the service but is tight for a
@@ -112,9 +113,137 @@ verification fails. Schema rollback is intentionally not automatic; migrations
 must remain backward compatible, and a database restore is a separate operator
 decision. Copy backups off the Droplet and test the restore procedure regularly.
 
-Redis is used for queue/cache state. The upstream unified startup currently
-disables Redis persistence, so queued work can be lost when the container is
-recreated even though a Redis volume is attached.
+Redis is used for queue/cache state. The unified startup runs TWO Redis
+instances: `redis` on 6379 (queue, rate limits, preferred-provider state, video
+jobs) with persistence deliberately disabled, so queued work can be lost when
+the container is recreated even though a Redis volume is attached; and
+`redis-storage` on 6380 (gateway response cache, Responses API state) with AOF
+persistence on the `redis_storage_data` volume. Back up
+`redis_storage_data` alongside `postgres_data`.
+
+## Deploy checklist for this release
+
+Three things changed that a deploy will NOT surface as an error, only as
+different behaviour:
+
+1. **CORS now defaults closed.** The gateway used to send
+   `Access-Control-Allow-Origin: *` to everyone; it now sends no CORS headers at
+   all unless `GATEWAY_CORS_ORIGINS` is set. Any browser-based client calling
+   `api.betarouter.com` directly breaks silently on the next deploy. Set the
+   allowlist BEFORE deploying if such clients exist:
+
+   ```sh
+   GATEWAY_CORS_ORIGINS=https://playground.betarouter.com,https://*.betarouter.com
+   ```
+
+   Entries are full origins and may use one leading wildcard label. Credentials
+   are never allowed — the API key travels in `Authorization`, never in cookies.
+   Server-to-server integrations (SDKs, curl, backends) are unaffected: CORS is
+   a browser mechanism only. Leave the variable empty to keep the API
+   browser-inaccessible, which is the intended posture.
+
+2. **A second Redis process starts.** `redis-storage` is a new supervisord
+   program, so the container healthcheck (which requires every supervisord
+   program to be `RUNNING`) now depends on it. The gateway `/` health endpoint
+   pings both instances; either one failing marks the gateway unhealthy. The
+   `redis_storage_data` volume is created automatically. Set
+   `STORAGE_REDIS_HOST`/`STORAGE_REDIS_PORT` (the compose file defaults them to
+   `localhost:6380`). The fallback to `REDIS_*` is all-or-nothing: setting any
+   one `STORAGE_REDIS_*` variable stops the rest being inherited, so a dedicated
+   passwordless instance never picks up the main instance's password. Setting
+   none of them keeps everything on the main Redis.
+
+   Migrating an existing deployment loses nothing: the response cache is
+   regenerated on demand, so the first requests after the switch simply miss.
+
+3. **One new migration.** `1785386011_colorful_sharon_carter` adds
+   `model_provider_mapping.input_audio_hour_price` and is `IF NOT EXISTS`
+   guarded. Its timestamp is above the ledger high-water mark, so drizzle will
+   apply it normally — unlike the two upstream migrations called out in the
+   Stage 2 ops note, which still need the manual treatment described there.
+
+## New environment variables
+
+| Variable                             | Default          | Notes                                                                       |
+| ------------------------------------ | ---------------- | --------------------------------------------------------------------------- |
+| `GATEWAY_CORS_ORIGINS`               | *empty*          | **Required for browser clients.** Comma-separated origin allowlist. Empty ⇒ no CORS headers at all. |
+| `STORAGE_REDIS_HOST`                 | `REDIS_HOST`     | Bulk-data Redis. Compose sets `localhost`.                                  |
+| `STORAGE_REDIS_PORT`                 | `REDIS_PORT`     | Compose sets `6380`.                                                        |
+| `STORAGE_REDIS_PASSWORD`             | `REDIS_PASSWORD` | Only inherited when NO `STORAGE_REDIS_*` variable is set.                    |
+| `RESPONSES_STORAGE_DRIVER`           | `redis`          | Reserved. This fork does not read it yet (upstream's responses-storage extraction is not merged); Responses state always uses Redis. |
+| `UPSTREAM_KEEPALIVE_TIMEOUT_MS`      | `60000`          | undici dispatcher keep-alive for provider connections (landed in Stage 3).   |
+| `REALTIME_INLINE`                    | `false`          | Attach the `/v1/realtime` WebSocket proxy to the gateway port. **The switch that actually turns realtime on.** |
+| `REALTIME_DISABLED`                  | *unset*          | Kill switch; `true` wins over `REALTIME_INLINE` and `REALTIME_ENABLED`. Compose sets `true`. |
+| `REALTIME_ENABLED`                   | *unset*          | Mint client secrets without an inline listener. Only for deployments where something else fronts `/v1/realtime`. Any value other than `false` enables. |
+| `REALTIME_MAX_SESSIONS_PER_ORG`      | `20`             | Concurrent-session lease cap per organization.                               |
+| `REALTIME_MAX_SESSIONS_PER_KEY`      | `10`             | Concurrent-session lease cap per API key.                                    |
+| `REALTIME_MAX_SESSION_SECONDS`       | `3600`           | Hard session-duration cap. Also feeds the shutdown drain budget.             |
+| `REALTIME_MAX_SESSION_SPEND_USD`     | `10`             | Per-session spend ceiling; the session closes when exceeded.                 |
+| `REALTIME_MAX_MESSAGE_BYTES`         | `8388608`        | Largest single WebSocket frame accepted (8 MiB).                             |
+| `REALTIME_MAX_BUFFERED_BYTES`        | `4194304`        | Backpressure threshold per socket (4 MiB).                                   |
+| `REALTIME_BACKPRESSURE_TIMEOUT_MS`   | `30000`          | How long a socket may stay over the buffer threshold before being closed.    |
+| `REALTIME_PING_INTERVAL_MS`          | `15000`          | Keep-alive ping cadence.                                                    |
+| `REALTIME_DRAIN_TIMEOUT_MS`          | `10000`          | Per-session drain budget on a normal disconnect (lets pending billing land). |
+| `REALTIME_UPSTREAM_HANDSHAKE_TIMEOUT_MS` | `10000`      | Upstream WebSocket handshake timeout.                                       |
+| `REALTIME_SHUTDOWN_GRACE_PERIOD_MS`  | `(MAX_SESSION_SECONDS + 60) * 1000` | Shutdown drain for live calls. **Must stay ≤ the container/pod termination grace period**, or the orchestrator SIGKILLs mid-call and the wait accomplishes nothing. `stop_grace_period` in the compose file is 2m, so raising `REALTIME_MAX_SESSION_SECONDS` above ~60s of drain means raising `stop_grace_period` too. |
+
+Client-secret TTL is not configurable: it is clamped in code to 10–300s
+(default 60s).
+
+## Enabling realtime
+
+`/v1/realtime` ships **dark**. With the shipped defaults the gateway attaches no
+WebSocket listener and `POST /v1/realtime/client_secrets` returns 404, so the
+merged code is inert. This differs from hosted upstream, where realtime is on.
+
+The frontend is dark independently: the playground Voice studio tile is hidden
+and `/realtime` returns 404 unless `NEXT_PUBLIC_REALTIME_ENABLED=true` is set at
+build time for `apps/playground`. Leave it off until the gateway side is proven.
+
+Preconditions before enabling anything:
+
+- `redis-storage` is `RUNNING` and the gateway health endpoint is green.
+- A provider credential exists for a mapping with `realtime: true` (currently
+  OpenAI), reachable in the project's mode (`credits` needs the env/platform
+  credential; `api-keys` needs a provider key with **no** custom base URL —
+  realtime rejects BYOK base-URL overrides because a proxy would break the
+  metering-critical event contract).
+- `REALTIME_MAX_SESSION_SPEND_USD` and the per-org/per-key lease caps are set to
+  values you are willing to be billed for. A realtime session bills continuously
+  and is not covered by the request-level usage limits.
+- `REALTIME_SHUTDOWN_GRACE_PERIOD_MS` ≤ `stop_grace_period`.
+
+Realtime also refuses, by design, to serve: end-user session tokens and platform
+keys (only regular developer API keys), and dev-plan or chat-plan organizations
+(regular pay-as-you-go credits or BYOK only).
+
+**Step 1 — per-organization pilot.** There is no per-org realtime flag, so scope
+the pilot with the tools that do exist rather than by flipping the global
+switch broadly:
+
+1. Set `REALTIME_INLINE=true` and remove `REALTIME_DISABLED` (or set it to
+   `false`) in `.env.production`, then `docker compose up -d`.
+2. Immediately restrict who can reach it: in the platform catalogue, keep the
+   `realtime`/`realtimeTranscription` mappings visible only to the pilot
+   organization's routing, or use per-key IAM rules (allowed models) so only the
+   pilot organization's keys can name a realtime model. Catalog admission and
+   IAM are both enforced on every session and on every ASR model an ASR-enabled
+   session tries to use.
+3. Watch `realtime_session` rows and the `log` rows they link to
+   (`realtime_session_id` is set) for cost, `close_reason`, and duplicate-event
+   handling. `unpriceable_usage:*` / `unbillable_transcription` close reasons
+   mean the gateway refused to deliver unbilled work — investigate the mapping's
+   prices rather than raising limits.
+4. Roll back instantly at any point with `REALTIME_DISABLED=true` and
+   `docker compose up -d`. In-flight sessions drain rather than being cut.
+
+**Step 2 — global.** Once the pilot's billing rows reconcile, widen catalogue
+visibility / IAM, and set `NEXT_PUBLIC_REALTIME_ENABLED=true` for the playground
+build so the Voice studio becomes reachable.
+
+Do not enable `REALTIME_ENABLED` without `REALTIME_INLINE` unless another
+process genuinely serves `/v1/realtime`: it makes the gateway mint client
+secrets for a WebSocket path nothing answers.
 
 ## GitHub Actions deployment
 
