@@ -7,7 +7,9 @@
 #                                                 which stays as-is: it's a real
 #                                                 third-party npm package)
 #   LLM Gateway              -> betarouter (brand is always lowercase)
-#   LLMGateway                -> betarouter
+#   LLMGateway                -> betarouter    (except createLLMGateway, the
+#                                                 factory exported by
+#                                                 @llmgateway/ai-sdk-provider)
 #   llmgateway.io              -> betarouter.com
 #   DevPass                    -> BetaPass   (ONLY with --include-devpass: "DevPass"
 #                                             is this repo's deliberate internal
@@ -73,6 +75,11 @@ done
 # unlikely to collide with real content.
 placeholder="__BETAROUTER_SWEEP_PROTECTED_AI_SDK_PROVIDER__"
 
+# `createLLMGateway` is the factory exported by the third-party
+# `@llmgateway/ai-sdk-provider` package. It is an API name, not brand copy, so
+# it must survive the LLMGateway -> betarouter rewrite.
+factory_placeholder="__BETAROUTER_SWEEP_PROTECTED_CREATE_FACTORY__"
+
 declare -a grep_patterns=(-e '@llmgateway/' -e 'LLM Gateway' -e 'LLMGateway' -e 'llmgateway\.io')
 [ "$include_devpass" -eq 1 ] && grep_patterns+=(-e 'DevPass')
 
@@ -90,6 +97,7 @@ apply_sed() {
 	local file="$1"
 	local -a sed_exprs=(
 		-e "s#@llmgateway/ai-sdk-provider#${placeholder}#g"
+		-e "s#createLLMGateway#${factory_placeholder}#g"
 		-e "s#@llmgateway/#@betarouter/#g"
 		-e "s#LLM Gateway#betarouter#g"
 		-e "s#LLMGateway#betarouter#g"
@@ -97,6 +105,7 @@ apply_sed() {
 	)
 	[ "$include_devpass" -eq 1 ] && sed_exprs+=(-e "s#DevPass#BetaPass#g")
 	sed_exprs+=(-e "s#${placeholder}#@llmgateway/ai-sdk-provider#g")
+	sed_exprs+=(-e "s#${factory_placeholder}#createLLMGateway#g")
 	sed -i "${sed_exprs[@]}" "$file"
 }
 
@@ -109,7 +118,8 @@ count_replacements() {
 	local n=0
 	n=$((n + $(printf '%s\n' "$stripped" | grep -o '@llmgateway/' | wc -l)))
 	n=$((n + $(grep -o 'LLM Gateway' "$file" | wc -l)))
-	n=$((n + $(grep -o 'LLMGateway' "$file" | wc -l)))
+	n=$((n + $(grep -o 'LLMGateway' "$file" | grep -cv '^$' || true)))
+	n=$((n - $(grep -o 'createLLMGateway' "$file" | grep -c . || true)))
 	n=$((n + $(grep -o 'llmgateway\.io' "$file" | wc -l)))
 	if [ "$include_devpass" -eq 1 ]; then
 		n=$((n + $(grep -o 'DevPass' "$file" | wc -l)))
