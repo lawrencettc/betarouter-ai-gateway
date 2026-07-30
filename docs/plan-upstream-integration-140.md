@@ -424,6 +424,26 @@ all upstream.
 Reconcile catalog policy rows against upstream's 19 mapping deactivations on a real DB;
 re-tune catalog health thresholds for the new TTFT semantics.
 
+### Stage 6 outcome — verification green (2026-07-30)
+
+Final verification at `dc5317db0` (103 commits over the base `360e400`):
+`pnpm lint` 18/18 (2 pre-existing warnings), full `pnpm build` 18/18,
+`pnpm test:unit` 223 files / 3472 tests passed (1 file + 3 tests skipped),
+`scripts/check-brand.sh` green, catalog-invariant suite 17/17. Grep gates:
+all 11 `calculateCosts` call sites (all in `chat.ts`) pass `pricingOverride`;
+`enforceCatalogRequest` present ≥2× in every billed module (chat, embeddings,
+speech, moderations, ocr, videos, rerank, transcriptions, realtime); the only
+`@llmgateway` references are the `ai-sdk-provider` package, the allowlisted
+worker contract comment, and the brand tooling itself. One fix fell out of
+verification: `dc5317db0` removed unsupported `size`/`iconBox` props on a
+`Wordmark` call introduced by `4b9aa14db`.
+
+**Still open (ops, not code):** scoped `TEST_MODELS` e2e for the new mappings
+(needs live provider keys); catalog-policy reconciliation against upstream's
+19 mapping deactivations on the production DB; migration-ledger backfill and
+`CREATE INDEX CONCURRENTLY` preps at deploy time; the Stage 4b human visual QA
+checklist; catalog health-threshold re-tune for the new TTFT semantics.
+
 ## Effort
 
 ~16–24 person-days total across 6 shippable increments. Stages 0–2 (4–6 pd) carry all
