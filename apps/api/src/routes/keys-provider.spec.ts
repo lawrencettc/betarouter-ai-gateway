@@ -3,7 +3,12 @@ import { expect, test, beforeEach, describe, afterEach } from "vitest";
 import { app } from "@/index.js";
 import { createTestUser, deleteAll } from "@/testing.js";
 
-import { redisClient, SWR_PREFIX, swrWrap } from "@betarouter/cache";
+import {
+	redisClient,
+	SWR_PREFIX,
+	swrWrap,
+	waitForSwrMirrorWrites,
+} from "@betarouter/cache";
 import { and, cdb, db, eq, getTableName, tables } from "@betarouter/db";
 
 describe("provider keys route", () => {
@@ -349,6 +354,9 @@ describe("provider keys route", () => {
 
 		// Prime both cache layers with the "no key" result.
 		expect(await readActiveProviderKeys(orgId, "anthropic")).toHaveLength(0);
+		// Mirror writes are detached from the request path, so wait for the
+		// bookkeeping to land before asserting the entry exists.
+		await waitForSwrMirrorWrites();
 		expect(
 			await redisClient.get(SWR_PREFIX + `providerKey:${orgId}:anthropic`),
 		).not.toBeNull();
@@ -386,6 +394,9 @@ describe("provider keys route", () => {
 
 		// Prime both cache layers with the key still active.
 		expect(await readActiveProviderKeys(orgId, "openai")).toHaveLength(1);
+		// Mirror writes are detached from the request path, so wait for the
+		// bookkeeping to land before asserting the entry exists.
+		await waitForSwrMirrorWrites();
 		expect(
 			await redisClient.get(SWR_PREFIX + `providerKey:${orgId}:openai`),
 		).not.toBeNull();

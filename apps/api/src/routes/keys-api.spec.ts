@@ -3,7 +3,12 @@ import { expect, test, beforeEach, describe, afterEach } from "vitest";
 import { app } from "@/index.js";
 import { createTestUser, deleteAll } from "@/testing.js";
 
-import { redisClient, SWR_PREFIX, swrWrap } from "@betarouter/cache";
+import {
+	redisClient,
+	SWR_PREFIX,
+	swrWrap,
+	waitForSwrMirrorWrites,
+} from "@betarouter/cache";
 import { and, cdb, db, eq, getTableName, tables } from "@betarouter/db";
 
 const ONE_MINUTE_MS = 60 * 1000;
@@ -363,6 +368,9 @@ describe("keys route", () => {
 		await swrWrap(swrCacheKey, [apiKeyTableName], async () => ({
 			token: "test-token",
 		}));
+		// Mirror writes are detached from the request path, so wait for the
+		// bookkeeping to land before asserting the entry exists.
+		await waitForSwrMirrorWrites();
 		expect(await redisClient.get(SWR_PREFIX + swrCacheKey)).not.toBeNull();
 
 		const res = await app.request("/keys/api/test-api-key-id/roll", {
@@ -412,6 +420,7 @@ describe("keys route", () => {
 
 		// Prime both cache layers with the "no rules" result.
 		expect(await readActiveIamRules()).toHaveLength(0);
+		await waitForSwrMirrorWrites();
 		expect(
 			await redisClient.get(SWR_PREFIX + `iamRules:${apiKeyId}`),
 		).not.toBeNull();
