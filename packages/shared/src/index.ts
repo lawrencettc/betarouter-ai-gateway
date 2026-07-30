@@ -139,7 +139,7 @@ export {
 	uniqueId,
 } from "./random.js";
 
-export { MARKETING_STATS } from "./marketing.js";
+export { MARKETING_STATS, RUNWARE_PROMO } from "./marketing.js";
 
 export { isContentFilterErrorText } from "./content-filter.js";
 

@@ -112,8 +112,8 @@ export const curatedCategoryModelIds: Record<
 	]),
 	translation: new Set([
 		"gemini-3.1-pro-preview",
-		"gemini-2.5-flash",
-		"gemini-2.5-flash-lite",
+		"gemini-3.6-flash",
+		"gemini-3.1-flash-lite",
 		"gpt-5.6-terra",
 		"gpt-5.6-luna",
 		"gpt-5.4",
@@ -159,6 +159,7 @@ export const OPEN_SOURCE_FAMILIES: ReadonlySet<string> = new Set([
 	"minimax",
 	"nousresearch",
 	"nvidia",
+	"openbmb",
 	"xiaomi",
 	"zai",
 ]);
@@ -214,7 +215,8 @@ export function isTextOutput(output: string[] | null | undefined): boolean {
 	return (
 		!output?.includes("image") &&
 		!output?.includes("video") &&
-		!output?.includes("embedding")
+		!output?.includes("embedding") &&
+		!output?.includes("rerank")
 	);
 }
 
