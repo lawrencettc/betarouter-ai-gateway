@@ -117,9 +117,11 @@ Decide whether tenant custom providers (`custom/<name>/<model>`) are exempt from
 `enforceCatalogRequest`, and ensure the `custom/` namespace cannot collide with
 catalog provider ids.
 
-**Open decision (product):** upstream renamed Chat → "Lounge" (~33 playground file
-conflicts). Recommendation: adopt the Lounge *feature* code (points, voice UI) but keep
-BetaRouter-brand product naming; final name needs a product decision before Stage 4.
+**Decision (2026-07-30, product owner):** keep betarouter naming — do NOT adopt the
+"Lounge" product name. Take the Lounge *feature* code (points, voice UI) but keep our
+existing product naming for the chat app. The betarouter brand name is always
+lowercase ("betarouter", never "BetaRouter"/"Betarouter") in user-facing copy; the
+BetaPass product name keeps its own casing.
 
 ### Stage 5 — Realtime + rerank + transcriptions (landed dark)
 

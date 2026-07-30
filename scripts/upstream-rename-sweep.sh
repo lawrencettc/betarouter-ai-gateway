@@ -6,8 +6,8 @@
 #   @llmgateway/            -> @betarouter/     (except @llmgateway/ai-sdk-provider,
 #                                                 which stays as-is: it's a real
 #                                                 third-party npm package)
-#   LLM Gateway              -> BetaRouter
-#   LLMGateway                -> BetaRouter
+#   LLM Gateway              -> betarouter (brand is always lowercase)
+#   LLMGateway                -> betarouter
 #   llmgateway.io              -> betarouter.com
 #   DevPass                    -> BetaPass   (ONLY with --include-devpass: "DevPass"
 #                                             is this repo's deliberate internal
@@ -91,8 +91,8 @@ apply_sed() {
 	local -a sed_exprs=(
 		-e "s#@llmgateway/ai-sdk-provider#${placeholder}#g"
 		-e "s#@llmgateway/#@betarouter/#g"
-		-e "s#LLM Gateway#BetaRouter#g"
-		-e "s#LLMGateway#BetaRouter#g"
+		-e "s#LLM Gateway#betarouter#g"
+		-e "s#LLMGateway#betarouter#g"
 		-e "s#llmgateway\\.io#betarouter.com#g"
 	)
 	[ "$include_devpass" -eq 1 ] && sed_exprs+=(-e "s#DevPass#BetaPass#g")
