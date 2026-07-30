@@ -27,6 +27,7 @@ import {
 	enforceCatalogRequest,
 	findCatalogMappingForProvider,
 } from "@/lib/catalog-policy.js";
+import { getClientIpFromRequest } from "@/lib/client-ip.js";
 import { assertProviderCompliant } from "@/lib/compliance.js";
 import {
 	applyEndUserSession,
@@ -34,12 +35,17 @@ import {
 } from "@/lib/end-user-session.js";
 import { buildOpenAIErrorBody } from "@/lib/error-response.js";
 import { extractApiToken } from "@/lib/extract-api-token.js";
+import { throwIamException, validateRequestModelAccess } from "@/lib/iam.js";
 import { calculateDataStorageCost, insertLog } from "@/lib/logs.js";
 import { createCombinedSignal, isTimeoutError } from "@/lib/timeout-config.js";
 
 import { getProviderHeaders } from "@betarouter/actions";
 import { shortid } from "@betarouter/db";
-import { getProviderEnvValue, models } from "@betarouter/models";
+import {
+	getOrganizationEnvVariant,
+	getProviderEnvValue,
+	models,
+} from "@betarouter/models";
 
 import type { ServerTypes } from "@/vars.js";
 import type { InferSelectModel, tables } from "@betarouter/db";
@@ -429,6 +435,43 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 		models.find((m) => m.id === moderationModelId),
 	);
 
+	// IAM rules (member-level ceiling + key rules) apply to moderation like any
+	// other endpoint, but only provider and IP rule types: the moderation model
+	// is a fixed pseudo-model outside the catalogue, so model/pricing allowlists
+	// can never name it and evaluating them would deny existing keys with no way
+	// to allowlist it. deny/allow_providers ["openai"] and IP CIDR rules still
+	// gate moderation. End-user sessions are exempt: their model allowlists
+	// target chat models and must not block the free moderation endpoint.
+	if (!apiKey.endUserSession) {
+		const iamValidation = await validateRequestModelAccess({
+			apiKey,
+			organizationId: project.organizationId,
+			requestedModel: "openai-moderation",
+			activeModelInfo: {
+				id: "openai-moderation",
+				family: "openai",
+				free: true,
+				providers: [
+					{
+						providerId: "openai",
+						externalId: upstreamModel,
+						streaming: false,
+					},
+				],
+			},
+			clientIp: getClientIpFromRequest(c),
+			applicableRuleTypes: [
+				"allow_providers",
+				"deny_providers",
+				"allow_ip_cidrs",
+				"deny_ip_cidrs",
+			],
+		});
+		if (!iamValidation.allowed) {
+			throwIamException(iamValidation.reason ?? "Model access denied");
+		}
+	}
+
 	// Enterprise provider compliance policy: moderation runs on OpenAI, so block
 	// before sending if the org's policy doesn't permit it.
 	await assertProviderCompliant(organization, "openai", {
@@ -439,6 +482,10 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 	});
 
 	const retentionLevel = organization.retentionLevel ?? "none";
+
+	// Which env-var variant (`__ENTERPRISE` / `__PLANS` overrides) applies to
+	// this org's env-credential reads. Undefined = base vars only.
+	const envVariant = getOrganizationEnvVariant(organization);
 
 	let providerKey: InferSelectModel<typeof tables.providerKey> | undefined;
 	let usedToken: string | undefined;
@@ -465,6 +512,7 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 			requiredCredentialId: catalogMapping?.platformCredentialId ?? undefined,
 			requiredCredentialProfile:
 				catalogMapping?.platformCredentialProfile ?? undefined,
+			variant: envVariant,
 		});
 		usedToken = envResult.token;
 		configIndex = envResult.configIndex;
@@ -484,6 +532,7 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 				requiredCredentialId: catalogMapping?.platformCredentialId ?? undefined,
 				requiredCredentialProfile:
 					catalogMapping?.platformCredentialProfile ?? undefined,
+				variant: envVariant,
 			});
 			usedToken = envResult.token;
 			configIndex = envResult.configIndex;
@@ -524,6 +573,7 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 		requestedProvider: "openai",
 		messages: normalizedMessages,
 		source,
+		apiOrigin: "moderations",
 		customHeaders,
 		debugMode,
 		userAgent,
@@ -553,6 +603,7 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 			const envResult = await getProviderEnv("openai", {
 				selectionScope: resolvedUpstreamModel,
 				excludedIndices: triedEnvIndices,
+				variant: envVariant,
 			});
 			usedToken = envResult.token;
 			configIndex = envResult.configIndex;
@@ -603,56 +654,60 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 				const isTimeout = isTimeoutError(error);
 				const willRetry = !isCanceled && (await rotateToNextEnvKey());
 
-				await insertLog({
-					...baseLogEntry,
-					duration,
-					timeToFirstToken: null,
-					timeToFirstReasoningToken: null,
-					responseSize: 0,
-					content: null,
-					reasoningContent: null,
-					finishReason: isCanceled ? "canceled" : "upstream_error",
-					promptTokens: null,
-					completionTokens: null,
-					totalTokens: null,
-					reasoningTokens: null,
-					cachedTokens: null,
-					hasError: !isCanceled,
-					streamed: false,
-					canceled: isCanceled,
-					errorDetails: isCanceled
-						? null
-						: {
-								statusCode: 0,
-								statusText: error instanceof Error ? error.name : "FetchError",
-								responseText:
-									error instanceof Error ? error.message : String(error),
-							},
-					inputCost: 0,
-					outputCost: 0,
-					cachedInputCost: 0,
-					requestCost: 0,
-					webSearchCost: 0,
-					imageInputTokens: null,
-					imageOutputTokens: null,
-					imageInputCost: null,
-					imageOutputCost: null,
-					cost: 0,
-					estimatedCost: false,
-					discount: null,
-					pricingTier: null,
-					dataStorageCost: calculateDataStorageCost(
-						null,
-						null,
-						null,
-						null,
-						retentionLevel,
-					),
-					cached: false,
-					toolResults: null,
-					retried: willRetry,
-					retriedByLogId: willRetry ? finalLogId : null,
-				});
+				await insertLog(
+					{
+						...baseLogEntry,
+						duration,
+						timeToFirstToken: null,
+						timeToFirstReasoningToken: null,
+						responseSize: 0,
+						content: null,
+						reasoningContent: null,
+						finishReason: isCanceled ? "canceled" : "upstream_error",
+						promptTokens: null,
+						completionTokens: null,
+						totalTokens: null,
+						reasoningTokens: null,
+						cachedTokens: null,
+						hasError: !isCanceled,
+						streamed: false,
+						canceled: isCanceled,
+						errorDetails: isCanceled
+							? null
+							: {
+									statusCode: 0,
+									statusText:
+										error instanceof Error ? error.name : "FetchError",
+									responseText:
+										error instanceof Error ? error.message : String(error),
+								},
+						inputCost: 0,
+						outputCost: 0,
+						cachedInputCost: 0,
+						requestCost: 0,
+						webSearchCost: 0,
+						imageInputTokens: null,
+						imageOutputTokens: null,
+						imageInputCost: null,
+						imageOutputCost: null,
+						cost: 0,
+						estimatedCost: false,
+						discount: null,
+						pricingTier: null,
+						dataStorageCost: calculateDataStorageCost(
+							null,
+							null,
+							null,
+							null,
+							retentionLevel,
+						),
+						cached: false,
+						toolResults: null,
+						retried: willRetry,
+						retriedByLogId: willRetry ? finalLogId : null,
+					},
+					{ retentionLevel },
+				);
 
 				if (willRetry) {
 					continue;
@@ -730,53 +785,56 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 						upstreamText,
 					) && (await rotateToNextEnvKey());
 
-				await insertLog({
-					...baseLogEntry,
-					duration,
-					timeToFirstToken: null,
-					timeToFirstReasoningToken: null,
-					responseSize,
-					content: getResponseContent(upstreamJson),
-					reasoningContent: null,
-					finishReason,
-					promptTokens: null,
-					completionTokens: null,
-					totalTokens: null,
-					reasoningTokens: null,
-					cachedTokens: null,
-					hasError: true,
-					streamed: false,
-					canceled: false,
-					errorDetails: {
-						statusCode: upstreamResponse.status,
-						statusText: upstreamResponse.statusText,
-						responseText: upstreamText,
+				await insertLog(
+					{
+						...baseLogEntry,
+						duration,
+						timeToFirstToken: null,
+						timeToFirstReasoningToken: null,
+						responseSize,
+						content: getResponseContent(upstreamJson),
+						reasoningContent: null,
+						finishReason,
+						promptTokens: null,
+						completionTokens: null,
+						totalTokens: null,
+						reasoningTokens: null,
+						cachedTokens: null,
+						hasError: true,
+						streamed: false,
+						canceled: false,
+						errorDetails: {
+							statusCode: upstreamResponse.status,
+							statusText: upstreamResponse.statusText,
+							responseText: upstreamText,
+						},
+						inputCost: 0,
+						outputCost: 0,
+						cachedInputCost: 0,
+						requestCost: 0,
+						webSearchCost: 0,
+						imageInputTokens: null,
+						imageOutputTokens: null,
+						imageInputCost: null,
+						imageOutputCost: null,
+						cost: 0,
+						estimatedCost: false,
+						discount: null,
+						pricingTier: null,
+						dataStorageCost: calculateDataStorageCost(
+							null,
+							null,
+							null,
+							null,
+							retentionLevel,
+						),
+						cached: false,
+						toolResults: null,
+						retried: willRetry,
+						retriedByLogId: willRetry ? finalLogId : null,
 					},
-					inputCost: 0,
-					outputCost: 0,
-					cachedInputCost: 0,
-					requestCost: 0,
-					webSearchCost: 0,
-					imageInputTokens: null,
-					imageOutputTokens: null,
-					imageInputCost: null,
-					imageOutputCost: null,
-					cost: 0,
-					estimatedCost: false,
-					discount: null,
-					pricingTier: null,
-					dataStorageCost: calculateDataStorageCost(
-						null,
-						null,
-						null,
-						null,
-						retentionLevel,
-					),
-					cached: false,
-					toolResults: null,
-					retried: willRetry,
-					retriedByLogId: willRetry ? finalLogId : null,
-				});
+					{ retentionLevel },
+				);
 
 				if (willRetry) {
 					continue;
@@ -805,48 +863,51 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 				reportTrackedKeySuccess(providerKey.id);
 			}
 
-			await insertLog({
-				...baseLogEntry,
-				id: finalLogId,
-				duration,
-				timeToFirstToken: null,
-				timeToFirstReasoningToken: null,
-				responseSize,
-				content: getResponseContent(upstreamJson),
-				reasoningContent: null,
-				finishReason: "stop",
-				promptTokens: null,
-				completionTokens: null,
-				totalTokens: null,
-				reasoningTokens: null,
-				cachedTokens: null,
-				hasError: false,
-				streamed: false,
-				canceled: false,
-				errorDetails: null,
-				inputCost: 0,
-				outputCost: 0,
-				cachedInputCost: 0,
-				requestCost: 0,
-				webSearchCost: 0,
-				imageInputTokens: null,
-				imageOutputTokens: null,
-				imageInputCost: null,
-				imageOutputCost: null,
-				cost: 0,
-				estimatedCost: false,
-				discount: null,
-				pricingTier: null,
-				dataStorageCost: calculateDataStorageCost(
-					null,
-					null,
-					null,
-					null,
-					retentionLevel,
-				),
-				cached: false,
-				toolResults: null,
-			});
+			await insertLog(
+				{
+					...baseLogEntry,
+					id: finalLogId,
+					duration,
+					timeToFirstToken: null,
+					timeToFirstReasoningToken: null,
+					responseSize,
+					content: getResponseContent(upstreamJson),
+					reasoningContent: null,
+					finishReason: "stop",
+					promptTokens: null,
+					completionTokens: null,
+					totalTokens: null,
+					reasoningTokens: null,
+					cachedTokens: null,
+					hasError: false,
+					streamed: false,
+					canceled: false,
+					errorDetails: null,
+					inputCost: 0,
+					outputCost: 0,
+					cachedInputCost: 0,
+					requestCost: 0,
+					webSearchCost: 0,
+					imageInputTokens: null,
+					imageOutputTokens: null,
+					imageInputCost: null,
+					imageOutputCost: null,
+					cost: 0,
+					estimatedCost: false,
+					discount: null,
+					pricingTier: null,
+					dataStorageCost: calculateDataStorageCost(
+						null,
+						null,
+						null,
+						null,
+						retentionLevel,
+					),
+					cached: false,
+					toolResults: null,
+				},
+				{ retentionLevel },
+			);
 
 			return c.json(upstreamJson as any);
 		}
