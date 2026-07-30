@@ -33,8 +33,8 @@ async function assertSwrCleared(key: string) {
 	expect(await redisClient.get(SWR_PREFIX + key)).toBeNull();
 }
 
-function readActiveIamRules(apiKeyId: string) {
-	return swrWrap(
+async function readActiveIamRules(apiKeyId: string) {
+	const rules = await swrWrap(
 		`iamRules:${apiKeyId}`,
 		[getTableName(tables.apiKeyIamRule)],
 		async () =>
@@ -48,6 +48,8 @@ function readActiveIamRules(apiKeyId: string) {
 					),
 				),
 	);
+	await waitForSwrMirrorWrites();
+	return rules;
 }
 
 describe("v1/master cache invalidation", () => {
