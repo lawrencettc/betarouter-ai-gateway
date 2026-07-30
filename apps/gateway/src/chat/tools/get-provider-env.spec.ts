@@ -306,6 +306,122 @@ describe("getProviderEnv", () => {
 	});
 });
 
+describe("variant env overrides", () => {
+	const originalOpenAIKey = process.env.LLM_OPENAI_API_KEY;
+	const originalEnterpriseKey = process.env.LLM_OPENAI_API_KEY__ENTERPRISE;
+	const originalPlansKey = process.env.LLM_OPENAI_API_KEY__PLANS;
+
+	beforeEach(() => {
+		resetRoundRobinCounters();
+		resetKeyHealth();
+		platformMocks.findCredentials.mockReset();
+		platformMocks.findCredentials.mockResolvedValue([]);
+		platformMocks.decryptToken.mockReset();
+		delete process.env.PLATFORM_PROVIDER_ENCRYPTION_KEYS;
+		delete process.env.PLATFORM_PROVIDER_ENCRYPTION_CURRENT_VERSION;
+		delete process.env.PLATFORM_PROVIDER_FINGERPRINT_KEY;
+		process.env.LLM_OPENAI_API_KEY = "sk-base-a,sk-base-b";
+		process.env.LLM_OPENAI_API_KEY__ENTERPRISE = "sk-ent-a,sk-ent-b,sk-ent-c";
+		process.env.LLM_OPENAI_API_KEY__PLANS = "sk-plans-a,sk-plans-b";
+	});
+
+	afterEach(() => {
+		if (originalOpenAIKey === undefined) {
+			delete process.env.LLM_OPENAI_API_KEY;
+		} else {
+			process.env.LLM_OPENAI_API_KEY = originalOpenAIKey;
+		}
+		if (originalEnterpriseKey === undefined) {
+			delete process.env.LLM_OPENAI_API_KEY__ENTERPRISE;
+		} else {
+			process.env.LLM_OPENAI_API_KEY__ENTERPRISE = originalEnterpriseKey;
+		}
+		if (originalPlansKey === undefined) {
+			delete process.env.LLM_OPENAI_API_KEY__PLANS;
+		} else {
+			process.env.LLM_OPENAI_API_KEY__PLANS = originalPlansKey;
+		}
+	});
+
+	it("uses the enterprise var for enterprise orgs when set", async () => {
+		const selection = await getProviderEnv("openai", { variant: "enterprise" });
+		expect(selection.token).toBe("sk-ent-a");
+		expect(selection.envVarName).toBe("LLM_OPENAI_API_KEY__ENTERPRISE");
+		expect(selection.configIndex).toBe(0);
+	});
+
+	it("uses the plans var for plan-based orgs when set", async () => {
+		const selection = await getProviderEnv("openai", { variant: "plans" });
+		expect(selection.token).toBe("sk-plans-a");
+		expect(selection.envVarName).toBe("LLM_OPENAI_API_KEY__PLANS");
+	});
+
+	it("falls back to the base var when the variant var is unset", async () => {
+		delete process.env.LLM_OPENAI_API_KEY__ENTERPRISE;
+		delete process.env.LLM_OPENAI_API_KEY__PLANS;
+		for (const variant of ["enterprise", "plans"] as const) {
+			const selection = await getProviderEnv("openai", { variant });
+			expect(selection.token).toBe("sk-base-a");
+			expect(selection.envVarName).toBe("LLM_OPENAI_API_KEY");
+		}
+	});
+
+	it("never uses variant vars without a variant", async () => {
+		const selection = await getProviderEnv("openai", {});
+		expect(selection.token).toBe("sk-base-a");
+		expect(selection.envVarName).toBe("LLM_OPENAI_API_KEY");
+	});
+
+	it("selects within the variant key list with exclusions", async () => {
+		const selection = await getProviderEnv("openai", {
+			variant: "enterprise",
+			excludedIndices: new Set([0, 1]),
+		});
+		expect(selection.token).toBe("sk-ent-c");
+		expect(selection.configIndex).toBe(2);
+	});
+
+	it("tracks key health independently per env var", async () => {
+		reportKeyError("LLM_OPENAI_API_KEY", 0, 500, undefined, "gpt-4");
+		reportKeyError("LLM_OPENAI_API_KEY", 0, 500, undefined, "gpt-4");
+		reportKeyError("LLM_OPENAI_API_KEY", 0, 500, undefined, "gpt-4");
+
+		const enterpriseSelection = await getProviderEnv("openai", {
+			variant: "enterprise",
+			selectionScope: "gpt-4",
+		});
+		const baseSelection = await getProviderEnv("openai", {
+			selectionScope: "gpt-4",
+		});
+
+		expect(enterpriseSelection.configIndex).toBe(0);
+		expect(baseSelection.configIndex).toBe(1);
+	});
+
+	it("works for variant orgs even when only the variant var is set", async () => {
+		delete process.env.LLM_OPENAI_API_KEY;
+		const selection = await getProviderEnv("openai", { variant: "enterprise" });
+		expect(selection.token).toBe("sk-ent-a");
+		await expect(getProviderEnv("openai")).rejects.toThrow();
+	});
+
+	it("prefers a platform credential over a variant env var", async () => {
+		process.env.PLATFORM_PROVIDER_ENCRYPTION_KEYS = "v1:configured";
+		process.env.PLATFORM_PROVIDER_ENCRYPTION_CURRENT_VERSION = "v1";
+		process.env.PLATFORM_PROVIDER_FINGERPRINT_KEY = "configured";
+		platformMocks.findCredentials.mockResolvedValue([
+			{ id: "platform-1", provider: "openai" },
+		]);
+		platformMocks.decryptToken.mockReturnValue("sk-platform");
+
+		const selection = await getProviderEnv("openai", { variant: "enterprise" });
+
+		expect(selection.token).toBe("sk-platform");
+		expect(selection.source).toBe("database");
+		expect(selection.envVarName).toBe("platform-provider:openai");
+	});
+});
+
 describe("getEnvKeyCount", () => {
 	const envVar = "LLM_TEST_ENV_KEY_COUNT";
 

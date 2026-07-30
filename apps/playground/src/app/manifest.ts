@@ -1,11 +1,13 @@
+import { BRAND } from "@/lib/brand";
+
 import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
 	return {
-		name: "betarouter Playground",
-		short_name: "betarouter",
+		name: BRAND.fullName,
+		short_name: BRAND.name,
 		description:
-			"Test and compare 200+ AI models in one playground. Chat, image, video, and group-chat across providers.",
+			"Chat with 200+ AI models, generate images, video and audio, and run multi-model group chats.",
 		start_url: "/",
 		display: "standalone",
 		background_color: "#ffffff",

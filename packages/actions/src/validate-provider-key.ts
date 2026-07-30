@@ -103,6 +103,7 @@ export function getValidationModel(
 				providerMapping.videoGenerations ||
 				providerMapping.embeddings ||
 				providerMapping.speechGenerations ||
+				providerMapping.transcriptions ||
 				providerMapping.ocr
 			) {
 				return [];
@@ -238,6 +239,7 @@ export async function validateProviderKey(
 			effectiveModelId, // Pass model ID for providers that need it in the URL (e.g., aws-bedrock, azure)
 			provider === "google-ai-studio" ||
 				provider === "glacier" ||
+				provider === "iceberg" ||
 				provider === "google-vertex" ||
 				provider === "quartz" ||
 				provider === "vertex-anthropic"

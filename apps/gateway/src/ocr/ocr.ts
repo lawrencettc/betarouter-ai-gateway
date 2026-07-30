@@ -50,6 +50,7 @@ import { getProviderHeaders } from "@betarouter/actions";
 import { shortid } from "@betarouter/db";
 import { logger } from "@betarouter/logger";
 import {
+	getOrganizationEnvVariant,
 	getProviderEnvValue,
 	models as modelDefinitions,
 } from "@betarouter/models";
@@ -546,13 +547,15 @@ ocr.openapi(createOcr, async (c): Promise<any> => {
 	}
 
 	const retentionLevel = organization.retentionLevel ?? "none";
-	const iamValidation = await validateRequestModelAccess(
+
+	const iamValidation = await validateRequestModelAccess({
 		apiKey,
-		modelDefId,
-		providerId,
-		modelDef,
-		getClientIpFromRequest(c),
-	);
+		organizationId: project.organizationId,
+		requestedModel: modelDefId,
+		requestedProvider: providerId,
+		activeModelInfo: modelDef,
+		clientIp: getClientIpFromRequest(c),
+	});
 	if (!iamValidation.allowed) {
 		throwIamException(iamValidation.reason ?? "Model access denied");
 	}
@@ -590,6 +593,10 @@ ocr.openapi(createOcr, async (c): Promise<any> => {
 		organizationId: project.organizationId,
 	};
 	const retryOrganization = organization;
+
+	// Which env-var variant (`__ENTERPRISE` / `__PLANS` overrides) applies to
+	// this org's env-credential reads. Undefined = base vars only.
+	const envVariant = getOrganizationEnvVariant(retryOrganization);
 
 	const upstreamRequestBody: Record<string, unknown> = {
 		...ocrParams,
@@ -648,6 +655,7 @@ ocr.openapi(createOcr, async (c): Promise<any> => {
 				requiredCredentialId: catalogMapping?.platformCredentialId ?? undefined,
 				requiredCredentialProfile:
 					catalogMapping?.platformCredentialProfile ?? undefined,
+				variant: envVariant,
 			});
 			usedToken = envResult.token;
 			configIndex = envResult.configIndex;
@@ -678,6 +686,7 @@ ocr.openapi(createOcr, async (c): Promise<any> => {
 						catalogMapping?.platformCredentialId ?? undefined,
 					requiredCredentialProfile:
 						catalogMapping?.platformCredentialProfile ?? undefined,
+					variant: envVariant,
 				});
 				usedToken = envResult.token;
 				configIndex = envResult.configIndex;
@@ -706,7 +715,13 @@ ocr.openapi(createOcr, async (c): Promise<any> => {
 			});
 		}
 
-		const envBaseUrl = getProviderEnvValue(providerId, "baseUrl", configIndex);
+		const envBaseUrl = getProviderEnvValue(
+			providerId,
+			"baseUrl",
+			configIndex,
+			undefined,
+			envVariant,
+		);
 		const resolvedBaseUrl =
 			providerKey?.baseUrl ??
 			platformProviderBaseUrl ??
@@ -772,6 +787,7 @@ ocr.openapi(createOcr, async (c): Promise<any> => {
 				requestedProvider: providerId,
 				messages: normalizedMessages,
 				source,
+				apiOrigin: "ocr",
 				customHeaders,
 				debugMode,
 				userAgent,
@@ -858,57 +874,60 @@ ocr.openapi(createOcr, async (c): Promise<any> => {
 					);
 				}
 
-				await insertLog({
-					...baseLogEntry,
-					id: willRetry ? attemptLogId : finalLogId,
-					routingMetadata: buildOcrRoutingMetadata(usedApiKeyHash),
-					duration,
-					timeToFirstToken: null,
-					timeToFirstReasoningToken: null,
-					responseSize: 0,
-					content: null,
-					reasoningContent: null,
-					finishReason: isCanceled ? "canceled" : "upstream_error",
-					promptTokens: null,
-					completionTokens: null,
-					totalTokens: null,
-					reasoningTokens: null,
-					cachedTokens: null,
-					hasError: !isCanceled,
-					streamed: false,
-					canceled: isCanceled,
-					errorDetails: isCanceled
-						? null
-						: {
-								statusCode: 0,
-								statusText: fetchError.name,
-								responseText: fetchError.message,
-							},
-					inputCost: 0,
-					outputCost: 0,
-					cachedInputCost: 0,
-					requestCost: 0,
-					webSearchCost: 0,
-					imageInputTokens: null,
-					imageOutputTokens: null,
-					imageInputCost: null,
-					imageOutputCost: null,
-					cost: 0,
-					estimatedCost: false,
-					discount: null,
-					pricingTier: null,
-					dataStorageCost: calculateDataStorageCost(
-						null,
-						null,
-						null,
-						null,
-						retentionLevel,
-					),
-					cached: false,
-					toolResults: null,
-					retried: willRetry,
-					retriedByLogId: willRetry ? finalLogId : null,
-				});
+				await insertLog(
+					{
+						...baseLogEntry,
+						id: willRetry ? attemptLogId : finalLogId,
+						routingMetadata: buildOcrRoutingMetadata(usedApiKeyHash),
+						duration,
+						timeToFirstToken: null,
+						timeToFirstReasoningToken: null,
+						responseSize: 0,
+						content: null,
+						reasoningContent: null,
+						finishReason: isCanceled ? "canceled" : "upstream_error",
+						promptTokens: null,
+						completionTokens: null,
+						totalTokens: null,
+						reasoningTokens: null,
+						cachedTokens: null,
+						hasError: !isCanceled,
+						streamed: false,
+						canceled: isCanceled,
+						errorDetails: isCanceled
+							? null
+							: {
+									statusCode: 0,
+									statusText: fetchError.name,
+									responseText: fetchError.message,
+								},
+						inputCost: 0,
+						outputCost: 0,
+						cachedInputCost: 0,
+						requestCost: 0,
+						webSearchCost: 0,
+						imageInputTokens: null,
+						imageOutputTokens: null,
+						imageInputCost: null,
+						imageOutputCost: null,
+						cost: 0,
+						estimatedCost: false,
+						discount: null,
+						pricingTier: null,
+						dataStorageCost: calculateDataStorageCost(
+							null,
+							null,
+							null,
+							null,
+							retentionLevel,
+						),
+						cached: false,
+						toolResults: null,
+						retried: willRetry,
+						retriedByLogId: willRetry ? finalLogId : null,
+					},
+					{ retentionLevel },
+				);
 
 				if (willRetry && nextAttempt) {
 					attempt = nextAttempt;
@@ -1001,55 +1020,58 @@ ocr.openapi(createOcr, async (c): Promise<any> => {
 					),
 				);
 
-				await insertLog({
-					...baseLogEntry,
-					id: willRetry ? attemptLogId : finalLogId,
-					routingMetadata: buildOcrRoutingMetadata(usedApiKeyHash),
-					duration,
-					timeToFirstToken: null,
-					timeToFirstReasoningToken: null,
-					responseSize,
-					content: getResponseContent(upstreamJson),
-					reasoningContent: null,
-					finishReason,
-					promptTokens: null,
-					completionTokens: null,
-					totalTokens: null,
-					reasoningTokens: null,
-					cachedTokens: null,
-					hasError: true,
-					streamed: false,
-					canceled: false,
-					errorDetails: {
-						statusCode: status,
-						statusText: upstreamResponse.statusText,
-						responseText: upstreamText,
+				await insertLog(
+					{
+						...baseLogEntry,
+						id: willRetry ? attemptLogId : finalLogId,
+						routingMetadata: buildOcrRoutingMetadata(usedApiKeyHash),
+						duration,
+						timeToFirstToken: null,
+						timeToFirstReasoningToken: null,
+						responseSize,
+						content: getResponseContent(upstreamJson),
+						reasoningContent: null,
+						finishReason,
+						promptTokens: null,
+						completionTokens: null,
+						totalTokens: null,
+						reasoningTokens: null,
+						cachedTokens: null,
+						hasError: true,
+						streamed: false,
+						canceled: false,
+						errorDetails: {
+							statusCode: status,
+							statusText: upstreamResponse.statusText,
+							responseText: upstreamText,
+						},
+						inputCost: 0,
+						outputCost: 0,
+						cachedInputCost: 0,
+						requestCost: 0,
+						webSearchCost: 0,
+						imageInputTokens: null,
+						imageOutputTokens: null,
+						imageInputCost: null,
+						imageOutputCost: null,
+						cost: 0,
+						estimatedCost: false,
+						discount: null,
+						pricingTier: null,
+						dataStorageCost: calculateDataStorageCost(
+							null,
+							null,
+							null,
+							null,
+							retentionLevel,
+						),
+						cached: false,
+						toolResults: null,
+						retried: willRetry,
+						retriedByLogId: willRetry ? finalLogId : null,
 					},
-					inputCost: 0,
-					outputCost: 0,
-					cachedInputCost: 0,
-					requestCost: 0,
-					webSearchCost: 0,
-					imageInputTokens: null,
-					imageOutputTokens: null,
-					imageInputCost: null,
-					imageOutputCost: null,
-					cost: 0,
-					estimatedCost: false,
-					discount: null,
-					pricingTier: null,
-					dataStorageCost: calculateDataStorageCost(
-						null,
-						null,
-						null,
-						null,
-						retentionLevel,
-					),
-					cached: false,
-					toolResults: null,
-					retried: willRetry,
-					retriedByLogId: willRetry ? finalLogId : null,
-				});
+					{ retentionLevel },
+				);
 
 				if (willRetry && nextAttempt) {
 					attempt = nextAttempt;
@@ -1125,49 +1147,52 @@ ocr.openapi(createOcr, async (c): Promise<any> => {
 				),
 			);
 
-			await insertLog({
-				...baseLogEntry,
-				id: finalLogId,
-				routingMetadata: buildOcrRoutingMetadata(usedApiKeyHash),
-				duration,
-				timeToFirstToken: null,
-				timeToFirstReasoningToken: null,
-				responseSize,
-				content: getResponseContent(upstreamJson),
-				reasoningContent: null,
-				finishReason: "stop",
-				promptTokens: null,
-				completionTokens: null,
-				totalTokens: null,
-				reasoningTokens: null,
-				cachedTokens: null,
-				hasError: false,
-				streamed: false,
-				canceled: false,
-				errorDetails: null,
-				inputCost: pageCost,
-				outputCost: 0,
-				cachedInputCost: 0,
-				requestCost,
-				webSearchCost: 0,
-				imageInputTokens: null,
-				imageOutputTokens: null,
-				imageInputCost: null,
-				imageOutputCost: null,
-				cost,
-				estimatedCost: pagesProcessed === null,
-				discount: null,
-				pricingTier: null,
-				dataStorageCost: calculateDataStorageCost(
-					null,
-					null,
-					null,
-					null,
-					retentionLevel,
-				),
-				cached: false,
-				toolResults: null,
-			});
+			await insertLog(
+				{
+					...baseLogEntry,
+					id: finalLogId,
+					routingMetadata: buildOcrRoutingMetadata(usedApiKeyHash),
+					duration,
+					timeToFirstToken: null,
+					timeToFirstReasoningToken: null,
+					responseSize,
+					content: getResponseContent(upstreamJson),
+					reasoningContent: null,
+					finishReason: "stop",
+					promptTokens: null,
+					completionTokens: null,
+					totalTokens: null,
+					reasoningTokens: null,
+					cachedTokens: null,
+					hasError: false,
+					streamed: false,
+					canceled: false,
+					errorDetails: null,
+					inputCost: pageCost,
+					outputCost: 0,
+					cachedInputCost: 0,
+					requestCost,
+					webSearchCost: 0,
+					imageInputTokens: null,
+					imageOutputTokens: null,
+					imageInputCost: null,
+					imageOutputCost: null,
+					cost,
+					estimatedCost: pagesProcessed === null,
+					discount: null,
+					pricingTier: null,
+					dataStorageCost: calculateDataStorageCost(
+						null,
+						null,
+						null,
+						null,
+						retentionLevel,
+					),
+					cached: false,
+					toolResults: null,
+				},
+				{ retentionLevel },
+			);
 
 			return c.json(upstreamJson as z.infer<typeof ocrResponseSchema>);
 		}

@@ -20,6 +20,23 @@ interface EnforceCatalogRequestOptions {
 	setHeader?: (name: string, value: string) => void;
 }
 
+// Tenant custom providers are org-owned BYOK endpoints (provider key rows with
+// provider "custom", addressed as `custom/<name>/<model>` or `<name>/<model>`).
+// They are the customer's own inventory, not operator inventory, so the
+// platform catalogue never lists them and must not gate them: enforcing here
+// would 404 every custom-provider request the moment catalog routing is
+// enabled. Operator-scoped platform providers remain fully governed.
+export const TENANT_CUSTOM_PROVIDER_ID = "custom";
+
+export function isTenantCustomProviderId(
+	providerId: string | undefined | null,
+): boolean {
+	return (
+		providerId === TENANT_CUSTOM_PROVIDER_ID ||
+		providerId?.startsWith(`${TENANT_CUSTOM_PROVIDER_ID}/`) === true
+	);
+}
+
 export function isCatalogOperationEnabled(
 	operation: EnforceCatalogRequestOptions["operation"],
 ): boolean {
@@ -137,6 +154,9 @@ export function applyCatalogCustomerPrices(
 		requestPrice: prices.request,
 		webSearchPrice: prices.webSearch,
 		ocrPagePrice: prices.ocrPage,
+		// Flat USD per hour of input audio, like requestPrice/ocrPagePrice: not
+		// divided by 1e6. Drives /v1/audio/transcriptions billing.
+		inputAudioHourPrice: prices.audioHour,
 		perSecondPrice: Object.fromEntries(
 			Object.entries(prices).flatMap(([unit, value]) =>
 				unit.startsWith("second:") && value !== undefined
@@ -156,6 +176,9 @@ export async function enforceCatalogRequest(
 		return null;
 	}
 	if (input.modelId === "auto" || input.modelId === "custom") {
+		return null;
+	}
+	if (isTenantCustomProviderId(input.providerId)) {
 		return null;
 	}
 	const flags = readCatalogFeatureFlags();
@@ -239,10 +262,19 @@ export function filterProviderMappingsByCatalog(
 	if (!decision) {
 		return providers;
 	}
-	return decision.mappings.flatMap((mapping) => {
-		const provider = findProviderMappingForCatalogMapping(providers, mapping);
-		return provider ? [applyCatalogCustomerPrices(provider, mapping)] : [];
-	});
+	// Tenant custom providers are never present in the catalogue snapshot (see
+	// isTenantCustomProviderId): pass their synthetic mappings through instead of
+	// dropping them when a catalogue decision is in play.
+	const tenantCustomProviders = providers.filter((provider) =>
+		isTenantCustomProviderId(provider.providerId),
+	);
+	return [
+		...tenantCustomProviders,
+		...decision.mappings.flatMap((mapping) => {
+			const provider = findProviderMappingForCatalogMapping(providers, mapping);
+			return provider ? [applyCatalogCustomerPrices(provider, mapping)] : [];
+		}),
+	];
 }
 
 export function findProviderMappingForCatalogMapping(

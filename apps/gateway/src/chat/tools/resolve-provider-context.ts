@@ -17,8 +17,9 @@ import {
 } from "@betarouter/actions";
 import {
 	type BaseMessage,
-	getRegionSpecificEnvValue,
-	getProviderEnvVar,
+	getOrganizationEnvVariant,
+	getRegionSpecificEnvVarName,
+	getVariantEnvVarNameFor,
 	hasMaxTokens,
 	type ModelDefinition,
 	type OpenAIRequestBody,
@@ -40,6 +41,7 @@ import {
 	isPremiumModel,
 } from "@betarouter/shared";
 
+import { clampTemperature } from "./clamp-temperature.js";
 import { getProviderEnv } from "./get-provider-env.js";
 
 import type {
@@ -161,6 +163,8 @@ interface ProjectInfo {
 interface OrgInfo {
 	id: string;
 	credits: string | null;
+	plan: string;
+	kind: string;
 	devPlan: string;
 	devPlanCreditsLimit: string | null;
 	devPlanCreditsUsed: string | null;
@@ -349,6 +353,10 @@ export async function resolveProviderContext(
 	let platformProviderOptions: ProviderKeyOptions | undefined;
 	let platformCredentialId: string | undefined;
 
+	// Which env-var variant (`__ENTERPRISE` / `__PLANS` overrides) applies to
+	// this org's env-credential reads. Undefined = base vars only.
+	const envVariant = getOrganizationEnvVariant(organization);
+
 	// Flex/Priority is only honored when the request reaches the provider's real
 	// upstream endpoint. Skip provider keys whose custom base URL (proxy) may
 	// silently drop the tier, so a compliant key (or the managed env credential)
@@ -393,6 +401,7 @@ export async function resolveProviderContext(
 			requireServiceTierSupport: Boolean(serviceTierKeyFilter),
 			requiredCredentialId: providerMapping.platformCredentialId,
 			requiredCredentialProfile: providerMapping.platformCredentialProfile,
+			variant: envVariant,
 		});
 		usedToken = envResult.token;
 		configIndex = envResult.configIndex;
@@ -428,6 +437,7 @@ export async function resolveProviderContext(
 				requireServiceTierSupport: Boolean(serviceTierKeyFilter),
 				requiredCredentialId: providerMapping.platformCredentialId,
 				requiredCredentialProfile: providerMapping.platformCredentialProfile,
+				variant: envVariant,
 			});
 			usedToken = envResult.token;
 			configIndex = envResult.configIndex;
@@ -470,20 +480,25 @@ export async function resolveProviderContext(
 		}
 	}
 
-	// Override token with region-specific env var if available (credits/hybrid mode)
+	// Override with region-specific env var if a non-default region is selected
+	// (credits/hybrid mode). Health attribution must follow the credential we
+	// actually send. A platform (DB) credential outranks a regional env var, so
+	// it is never overridden here.
 	if (usedRegion && !providerKey && !platformCredentialId) {
-		const regionToken = getRegionSpecificEnvValue(usedProvider, usedRegion);
-		if (regionToken) {
-			usedToken = regionToken;
-			platformProviderBaseUrl = undefined;
-			platformProviderOptions = undefined;
-			platformCredentialId = undefined;
-			// Update envVarName to reflect the regional env var
-			const baseEnvVar = getProviderEnvVar(usedProvider);
-			if (baseEnvVar) {
-				const regionSuffix = usedRegion.toUpperCase().replace(/-/g, "_");
-				const regionalEnvVar = `${baseEnvVar}__${regionSuffix}`;
-				envVarName = process.env[regionalEnvVar] ? regionalEnvVar : baseEnvVar;
+		const regionEnvVarName = getRegionSpecificEnvVarName(
+			usedProvider,
+			usedRegion,
+			envVariant,
+		);
+		if (regionEnvVarName) {
+			const regionToken = process.env[regionEnvVarName];
+			if (regionToken) {
+				usedToken = regionToken;
+				envVarName = regionEnvVarName;
+				configIndex = 0;
+				platformProviderBaseUrl = undefined;
+				platformProviderOptions = undefined;
+				platformCredentialId = undefined;
 			}
 		}
 	}
@@ -528,6 +543,7 @@ export async function resolveProviderContext(
 					providerKey?.options ?? platformProviderOptions,
 					configIndex,
 					isBYOK,
+					envVariant,
 				)
 			: undefined;
 	const url = getProviderEndpoint(
@@ -536,6 +552,7 @@ export async function resolveProviderContext(
 		upstreamModelName,
 		usedProvider === "google-ai-studio" ||
 			usedProvider === "glacier" ||
+			usedProvider === "iceberg" ||
 			usedProvider === "google-vertex" ||
 			usedProvider === "quartz" ||
 			usedProvider === "vertex-anthropic"
@@ -551,6 +568,7 @@ export async function resolveProviderContext(
 		isBYOK,
 		usedInternalModel,
 		vertexTokenType,
+		envVariant,
 	);
 
 	if (!url) {
@@ -608,6 +626,8 @@ export async function resolveProviderContext(
 			top_p = undefined;
 		}
 	}
+
+	temperature = clampTemperature(temperature, usedProvider);
 
 	// --- max_tokens validation ---
 	if (max_tokens !== undefined && providerMappingForSelected) {
@@ -722,9 +742,17 @@ export async function resolveProviderContext(
 			? usedToken
 			: platformCredentialId
 				? usedToken
-				: usedProvider === "vertex-openai"
-					? (process.env.LLM_VERTEX_OPENAI_SERVICE_ACCOUNT_JSON ?? "")
-					: (process.env.LLM_VERTEX_ANTHROPIC_SERVICE_ACCOUNT_JSON ?? "");
+				: (() => {
+						const saEnvVar =
+							usedProvider === "vertex-openai"
+								? "LLM_VERTEX_OPENAI_SERVICE_ACCOUNT_JSON"
+								: "LLM_VERTEX_ANTHROPIC_SERVICE_ACCOUNT_JSON";
+						return (
+							process.env[
+								getVariantEnvVarNameFor(saEnvVar, envVariant) ?? saEnvVar
+							] ?? ""
+						);
+					})();
 		usedToken = await getGcpServiceAccountAccessToken(fullSaJson);
 	}
 

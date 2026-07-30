@@ -86,6 +86,7 @@ export const googleModels = [
 				supportsN: true,
 				supportsNStreaming: false,
 				maxN: 8,
+				deactivatedAt: new Date("2026-10-16"),
 			},
 			{
 				providerId: "google-vertex",
@@ -127,6 +128,7 @@ export const googleModels = [
 				supportsN: true,
 				supportsNStreaming: false,
 				maxN: 8,
+				deactivatedAt: new Date("2026-10-16"),
 			},
 		],
 	},
@@ -456,6 +458,7 @@ export const googleModels = [
 				supportsN: true,
 				supportsNStreaming: false,
 				maxN: 8,
+				deactivatedAt: new Date("2026-10-16"),
 			},
 			{
 				providerId: "google-vertex",
@@ -483,6 +486,7 @@ export const googleModels = [
 				supportsN: true,
 				supportsNStreaming: false,
 				maxN: 8,
+				deactivatedAt: new Date("2026-10-16"),
 			},
 		],
 	},
@@ -516,6 +520,7 @@ export const googleModels = [
 				supportsN: true,
 				supportsNStreaming: false,
 				maxN: 8,
+				deactivatedAt: new Date("2026-10-16"),
 			},
 			{
 				providerId: "google-vertex",
@@ -539,6 +544,7 @@ export const googleModels = [
 				supportsN: true,
 				supportsNStreaming: false,
 				maxN: 8,
+				deactivatedAt: new Date("2026-10-16"),
 			},
 		],
 	},
@@ -1707,6 +1713,31 @@ export const googleModels = [
 			},
 			{
 				test: "skip",
+				providerId: "iceberg",
+				externalId: "gemini-3-pro-image-preview",
+				inputPrice: "2e-6",
+				outputPrice: "12e-6",
+				cachedInputPrice: "0.2e-6",
+				imageInputPrice: "2e-6",
+				imageInputTokensByResolution: { default: 560 },
+				imageOutputPrice: "120e-6",
+				imageOutputTokensByResolution: {
+					"1K": 1120,
+					"2K": 1120,
+					"4K": 2000,
+					default: 1120,
+				},
+				requestPrice: "0",
+				contextSize: 65536,
+				maxOutput: 32768,
+				streaming: true,
+				vision: true,
+				tools: false,
+				jsonOutput: true,
+				jsonOutputSchema: true,
+			},
+			{
+				test: "skip",
 				providerId: "google-vertex",
 				externalId: "gemini-3-pro-image-preview",
 				serviceTiers: ["flex"],
@@ -2187,17 +2218,21 @@ export const googleModels = [
 			{
 				providerId: "nebius",
 				externalId: "google/gemma-3-27b-it",
-				inputPrice: "0.27e-6",
-				outputPrice: "0.27e-6",
+				inputPrice: "0.1e-6",
+				outputPrice: "0.3e-6",
 				requestPrice: "0",
-				contextSize: 128000,
+				contextSize: 110000,
 				maxOutput: undefined,
 				quantization: "fp8",
 				streaming: true,
+				// Image input works despite the /v1/models modality claiming
+				// text-only (verified 2026-07-22).
 				vision: true,
+				// The catalogue advertises tools, but the deployment emits
+				// ```tool_code``` text instead of OpenAI tool_calls (verified
+				// 2026-07-22).
 				tools: false,
 				jsonOutput: false,
-				deactivatedAt: new Date("2026-04-30"),
 			},
 		],
 	},
@@ -2222,6 +2257,30 @@ export const googleModels = [
 				vision: false,
 				tools: true,
 				jsonOutput: true,
+			},
+			{
+				providerId: "runware",
+				externalId: "google-gemma-4-31b",
+				inputPrice: "0.102e-6",
+				outputPrice: "0.297e-6",
+				cachedInputPrice: "0.012e-6",
+				requestPrice: "0",
+				contextSize: 262144,
+				maxOutput: 65536,
+				streaming: true,
+				reasoning: true,
+				// Runware maps reasoning_effort onto its thinkingLevel setting and
+				// 400s minimal/low/medium for this model.
+				reasoningEfforts: ["none", "high", "xhigh", "max"],
+				vision: true,
+				tools: true,
+				// Runware rejects json_object for this model ("Missing required
+				// parameter: 'jsonSchema'") and its json_schema path hangs until the
+				// upstream inference timeout, so no structured-output mode is offered.
+				jsonOutput: false,
+				// Runware 400s ("a conversation cannot end on an assistant turn") when
+				// the last message is an assistant turn (verified 2026-07-28).
+				supportsAssistantPrefill: false,
 			},
 			{
 				providerId: "novita",
@@ -2276,6 +2335,21 @@ export const googleModels = [
 					"tool_choice",
 					"reasoning_effort",
 				],
+			},
+			{
+				providerId: "scx-ai",
+				externalId: "gemma-4-31B-it",
+				inputPrice: "0.30e-6",
+				outputPrice: "0.91e-6",
+				requestPrice: "0",
+				contextSize: 131072,
+				maxOutput: 8192,
+				quantization: "bf16",
+				streaming: true,
+				reasoning: false,
+				vision: false,
+				tools: true,
+				jsonOutput: true,
 			},
 		],
 	},

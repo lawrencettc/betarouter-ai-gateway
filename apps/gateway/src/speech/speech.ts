@@ -38,7 +38,7 @@ import { getClientIpFromRequest } from "@/lib/client-ip.js";
 import { assertProviderCompliant } from "@/lib/compliance.js";
 import { extractApiToken } from "@/lib/extract-api-token.js";
 import { createFailedKeyTracker } from "@/lib/failed-key-tracker.js";
-import { throwIamException, validateModelAccess } from "@/lib/iam.js";
+import { throwIamException, validateRequestModelAccess } from "@/lib/iam.js";
 import { calculateDataStorageCost, insertLog } from "@/lib/logs.js";
 import { createCombinedSignal, isTimeoutError } from "@/lib/timeout-config.js";
 
@@ -47,6 +47,7 @@ import { shortid } from "@betarouter/db";
 import { logger } from "@betarouter/logger";
 import {
 	ELEVENLABS_VOICE_IDS,
+	getOrganizationEnvVariant,
 	getProviderEnvValue,
 	models as modelDefinitions,
 	resolveVertexTokenType,
@@ -147,6 +148,19 @@ interface SpeechSseEvent {
 	error?: { message?: string };
 }
 
+/**
+ * Minimal shape of the Alibaba DashScope non-streaming TTS response. The
+ * synthesized audio is returned as a short-lived (24h) download URL.
+ */
+interface DashScopeTtsResponse {
+	output?: {
+		audio?: { url?: string };
+		finish_reason?: string;
+	};
+	message?: string;
+	code?: string;
+}
+
 function hasInlineAudio(
 	part: GeminiPart,
 ): part is GeminiPart & { inlineData: { data: string; mimeType?: string } } {
@@ -171,6 +185,7 @@ const PROVIDER_BASE_URL_DEFAULTS: Partial<Record<string, string>> = {
 	"google-vertex": "https://aiplatform.googleapis.com",
 	openai: "https://api.openai.com",
 	elevenlabs: "https://api.elevenlabs.io",
+	alibaba: "https://dashscope-intl.aliyuncs.com",
 };
 
 const SUPPORTED_PROVIDERS = new Set([
@@ -178,6 +193,7 @@ const SUPPORTED_PROVIDERS = new Set([
 	"google-vertex",
 	"openai",
 	"elevenlabs",
+	"alibaba",
 ]);
 
 // Response formats Gemini can satisfy. Gemini emits raw PCM, so the gateway can
@@ -219,6 +235,10 @@ const ELEVENLABS_OUTPUT_FORMATS: Record<string, string> = {
 	pcm: "pcm_32000",
 	opus: "opus_48000_128",
 };
+
+// Alibaba's non-streaming DashScope TTS endpoint returns a URL to a WAV file,
+// so the gateway can only serve WAV for Qwen TTS models.
+const ALIBABA_RESPONSE_FORMATS = new Set(["wav"]);
 
 /**
  * Wrap raw signed 16-bit little-endian PCM samples in a minimal WAV container
@@ -520,6 +540,7 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 	const providerId = mapping.providerId;
 	const isOpenAI = providerId === "openai";
 	const isElevenLabs = providerId === "elevenlabs";
+	const isAlibaba = providerId === "alibaba";
 	const isGoogleVertex = providerId === "google-vertex";
 	// OpenAI and ElevenLabs both return audio already encoded in the requested
 	// format and bill independently of Gemini's inline-PCM path.
@@ -552,7 +573,9 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 		? OPENAI_RESPONSE_FORMATS
 		: isElevenLabs
 			? ELEVENLABS_RESPONSE_FORMATS
-			: GOOGLE_RESPONSE_FORMATS;
+			: isAlibaba
+				? ALIBABA_RESPONSE_FORMATS
+				: GOOGLE_RESPONSE_FORMATS;
 	if (!allowedFormats.has(responseFormat)) {
 		return c.json(
 			{
@@ -561,7 +584,9 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 						? `Unsupported response_format '${responseFormat}'.`
 						: isElevenLabs
 							? `Unsupported response_format '${responseFormat}'. ElevenLabs supports 'mp3', 'wav', 'pcm' and 'opus'.`
-							: `Unsupported response_format '${responseFormat}'. Gemini speech models only support 'wav' and 'pcm'.`,
+							: isAlibaba
+								? `Unsupported response_format '${responseFormat}'. Qwen TTS models only support 'wav'.`
+								: `Unsupported response_format '${responseFormat}'. Gemini speech models only support 'wav' and 'pcm'.`,
 					type: "invalid_request_error",
 					param: "response_format",
 					code: "unsupported_response_format",
@@ -658,13 +683,15 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 	}
 
 	const retentionLevel = organization.retentionLevel ?? "none";
-	const iamValidation = await validateModelAccess(
-		apiKey.id,
-		modelDefId,
-		providerId,
-		modelDef,
-		getClientIpFromRequest(c),
-	);
+
+	const iamValidation = await validateRequestModelAccess({
+		apiKey,
+		organizationId: project.organizationId,
+		requestedModel: modelDefId,
+		requestedProvider: providerId,
+		activeModelInfo: modelDef,
+		clientIp: getClientIpFromRequest(c),
+	});
 	if (!iamValidation.allowed) {
 		throwIamException(iamValidation.reason ?? "Model access denied");
 	}
@@ -702,6 +729,10 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 	};
 	const retryOrganization = organization;
 
+	// Which env-var variant (`__ENTERPRISE` / `__PLANS` overrides) applies to
+	// this org's env-credential reads. Undefined = base vars only.
+	const envVariant = getOrganizationEnvVariant(retryOrganization);
+
 	const promptText = request.instructions
 		? `${request.instructions}: ${request.input}`
 		: request.input;
@@ -730,17 +761,31 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 						? { voice_settings: { speed: request.speed } }
 						: {}),
 				}
-			: {
-					contents: [{ role: "user", parts: [{ text: promptText }] }],
-					generationConfig: {
-						responseModalities: ["AUDIO"],
-						speechConfig: {
-							voiceConfig: {
-								prebuiltVoiceConfig: { voiceName: voice },
+			: isAlibaba
+				? {
+						// DashScope SpeechSynthesizer shape: format and sample rate live
+						// inside `input`. Language is auto-detected; `instructions` and
+						// `speed` have no upstream equivalent on Qwen-Audio-TTS, matching
+						// the tts-1 behavior of forwarding only what the model accepts.
+						model: upstreamModel,
+						input: {
+							text: request.input,
+							voice,
+							format: responseFormat,
+							sample_rate: 24000,
+						},
+					}
+				: {
+						contents: [{ role: "user", parts: [{ text: promptText }] }],
+						generationConfig: {
+							responseModalities: ["AUDIO"],
+							speechConfig: {
+								voiceConfig: {
+									prebuiltVoiceConfig: { voiceName: voice },
+								},
 							},
 						},
-					},
-				};
+					};
 
 	interface SpeechAttempt {
 		providerKey: InferSelectModel<typeof tables.providerKey> | undefined;
@@ -796,6 +841,7 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 				excludedIndices: excludedEnvKeyIndices,
 				requiredCredentialId: mapping.platformCredentialId,
 				requiredCredentialProfile: mapping.platformCredentialProfile,
+				variant: envVariant,
 			});
 			usedToken = envResult.token;
 			configIndex = envResult.configIndex;
@@ -826,6 +872,7 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 					excludedIndices: excludedEnvKeyIndices,
 					requiredCredentialId: mapping.platformCredentialId,
 					requiredCredentialProfile: mapping.platformCredentialProfile,
+					variant: envVariant,
 				});
 				usedToken = envResult.token;
 				configIndex = envResult.configIndex;
@@ -854,7 +901,13 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 			throw new HTTPException(500, { message: "No token" });
 		}
 
-		const envBaseUrl = getProviderEnvValue(providerId, "baseUrl", configIndex);
+		const envBaseUrl = getProviderEnvValue(
+			providerId,
+			"baseUrl",
+			configIndex,
+			undefined,
+			envVariant,
+		);
 		const resolvedBaseUrl =
 			providerKey?.baseUrl ??
 			platformProviderBaseUrl ??
@@ -875,11 +928,19 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 			upstreamUrl = `${resolvedBaseUrl}/v1/audio/speech`;
 		} else if (isElevenLabs) {
 			upstreamUrl = `${resolvedBaseUrl}/v1/text-to-speech/${encodeURIComponent(elevenLabsVoiceId)}?output_format=${elevenLabsOutputFormat}`;
+		} else if (isAlibaba) {
+			upstreamUrl = `${resolvedBaseUrl}/api/v1/services/audio/tts/SpeechSynthesizer`;
 		} else if (isGoogleVertex) {
 			const vertexProjectId =
 				providerKey?.options?.google_vertex_project_id ??
 				platformProviderOptions?.google_vertex_project_id ??
-				getProviderEnvValue("google-vertex", "project", configIndex);
+				getProviderEnvValue(
+					"google-vertex",
+					"project",
+					configIndex,
+					undefined,
+					envVariant,
+				);
 			if (!vertexProjectId) {
 				throw new HTTPException(500, {
 					message:
@@ -887,8 +948,13 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 				});
 			}
 			const vertexRegion =
-				getProviderEnvValue("google-vertex", "region", configIndex, "global") ??
-				"global";
+				getProviderEnvValue(
+					"google-vertex",
+					"region",
+					configIndex,
+					"global",
+					envVariant,
+				) ?? "global";
 			// OAuth tokens are sent via the Authorization header; only API keys go
 			// in the `?key=` query param. Resolve once so the header and the query
 			// param agree.
@@ -897,6 +963,7 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 				providerKey?.options ?? platformProviderOptions,
 				configIndex,
 				providerKey !== undefined || platformCredentialId !== undefined,
+				envVariant,
 			);
 			const vertexAuthQuery =
 				vertexTokenType === "oauth"
@@ -967,6 +1034,7 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 				requestedProvider: providerId,
 				messages: normalizedMessages,
 				source,
+				apiOrigin: "speech",
 				customHeaders,
 				debugMode,
 				userAgent,
@@ -1058,57 +1126,60 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 					);
 				}
 
-				await insertLog({
-					...baseLogEntry,
-					id: willRetry ? attemptLogId : finalLogId,
-					routingMetadata: buildSpeechRoutingMetadata(usedApiKeyHash),
-					duration,
-					timeToFirstToken: null,
-					timeToFirstReasoningToken: null,
-					responseSize: 0,
-					content: null,
-					reasoningContent: null,
-					finishReason: isCanceled ? "canceled" : "upstream_error",
-					promptTokens: null,
-					completionTokens: null,
-					totalTokens: null,
-					reasoningTokens: null,
-					cachedTokens: null,
-					hasError: !isCanceled,
-					streamed: false,
-					canceled: isCanceled,
-					errorDetails: isCanceled
-						? null
-						: {
-								statusCode: 0,
-								statusText: fetchError.name,
-								responseText: fetchError.message,
-							},
-					inputCost: 0,
-					outputCost: 0,
-					cachedInputCost: 0,
-					requestCost: 0,
-					webSearchCost: 0,
-					imageInputTokens: null,
-					imageOutputTokens: null,
-					imageInputCost: null,
-					imageOutputCost: null,
-					cost: 0,
-					estimatedCost: false,
-					discount: null,
-					pricingTier: null,
-					dataStorageCost: calculateDataStorageCost(
-						null,
-						null,
-						null,
-						null,
-						retentionLevel,
-					),
-					cached: false,
-					toolResults: null,
-					retried: willRetry,
-					retriedByLogId: willRetry ? finalLogId : null,
-				});
+				await insertLog(
+					{
+						...baseLogEntry,
+						id: willRetry ? attemptLogId : finalLogId,
+						routingMetadata: buildSpeechRoutingMetadata(usedApiKeyHash),
+						duration,
+						timeToFirstToken: null,
+						timeToFirstReasoningToken: null,
+						responseSize: 0,
+						content: null,
+						reasoningContent: null,
+						finishReason: isCanceled ? "canceled" : "upstream_error",
+						promptTokens: null,
+						completionTokens: null,
+						totalTokens: null,
+						reasoningTokens: null,
+						cachedTokens: null,
+						hasError: !isCanceled,
+						streamed: false,
+						canceled: isCanceled,
+						errorDetails: isCanceled
+							? null
+							: {
+									statusCode: 0,
+									statusText: fetchError.name,
+									responseText: fetchError.message,
+								},
+						inputCost: 0,
+						outputCost: 0,
+						cachedInputCost: 0,
+						requestCost: 0,
+						webSearchCost: 0,
+						imageInputTokens: null,
+						imageOutputTokens: null,
+						imageInputCost: null,
+						imageOutputCost: null,
+						cost: 0,
+						estimatedCost: false,
+						discount: null,
+						pricingTier: null,
+						dataStorageCost: calculateDataStorageCost(
+							null,
+							null,
+							null,
+							null,
+							retentionLevel,
+						),
+						cached: false,
+						toolResults: null,
+						retried: willRetry,
+						retriedByLogId: willRetry ? finalLogId : null,
+					},
+					{ retentionLevel },
+				);
 
 				if (willRetry && nextAttempt) {
 					attempt = nextAttempt;
@@ -1200,55 +1271,58 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 					),
 				);
 
-				await insertLog({
-					...baseLogEntry,
-					id: willRetry ? attemptLogId : finalLogId,
-					routingMetadata: buildSpeechRoutingMetadata(usedApiKeyHash),
-					duration,
-					timeToFirstToken: null,
-					timeToFirstReasoningToken: null,
-					responseSize,
-					content: null,
-					reasoningContent: null,
-					finishReason,
-					promptTokens: null,
-					completionTokens: null,
-					totalTokens: null,
-					reasoningTokens: null,
-					cachedTokens: null,
-					hasError: true,
-					streamed: false,
-					canceled: false,
-					errorDetails: {
-						statusCode: status,
-						statusText: upstreamResponse.statusText,
-						responseText: upstreamText,
+				await insertLog(
+					{
+						...baseLogEntry,
+						id: willRetry ? attemptLogId : finalLogId,
+						routingMetadata: buildSpeechRoutingMetadata(usedApiKeyHash),
+						duration,
+						timeToFirstToken: null,
+						timeToFirstReasoningToken: null,
+						responseSize,
+						content: null,
+						reasoningContent: null,
+						finishReason,
+						promptTokens: null,
+						completionTokens: null,
+						totalTokens: null,
+						reasoningTokens: null,
+						cachedTokens: null,
+						hasError: true,
+						streamed: false,
+						canceled: false,
+						errorDetails: {
+							statusCode: status,
+							statusText: upstreamResponse.statusText,
+							responseText: upstreamText,
+						},
+						inputCost: 0,
+						outputCost: 0,
+						cachedInputCost: 0,
+						requestCost: 0,
+						webSearchCost: 0,
+						imageInputTokens: null,
+						imageOutputTokens: null,
+						imageInputCost: null,
+						imageOutputCost: null,
+						cost: 0,
+						estimatedCost: false,
+						discount: null,
+						pricingTier: null,
+						dataStorageCost: calculateDataStorageCost(
+							null,
+							null,
+							null,
+							null,
+							retentionLevel,
+						),
+						cached: false,
+						toolResults: null,
+						retried: willRetry,
+						retriedByLogId: willRetry ? finalLogId : null,
 					},
-					inputCost: 0,
-					outputCost: 0,
-					cachedInputCost: 0,
-					requestCost: 0,
-					webSearchCost: 0,
-					imageInputTokens: null,
-					imageOutputTokens: null,
-					imageInputCost: null,
-					imageOutputCost: null,
-					cost: 0,
-					estimatedCost: false,
-					discount: null,
-					pricingTier: null,
-					dataStorageCost: calculateDataStorageCost(
-						null,
-						null,
-						null,
-						null,
-						retentionLevel,
-					),
-					cached: false,
-					toolResults: null,
-					retried: willRetry,
-					retriedByLogId: willRetry ? finalLogId : null,
-				});
+					{ retentionLevel },
+				);
 
 				if (willRetry && nextAttempt) {
 					attempt = nextAttempt;
@@ -1354,53 +1428,56 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 								{ apiKeyHash: usedApiKeyHash, logId: finalLogId },
 							),
 						);
-						await insertLog({
-							...baseLogEntry,
-							id: finalLogId,
-							routingMetadata: buildSpeechRoutingMetadata(usedApiKeyHash),
-							duration,
-							timeToFirstToken: null,
-							timeToFirstReasoningToken: null,
-							responseSize: sseText.length,
-							content: null,
-							reasoningContent: null,
-							finishReason: "upstream_error",
-							promptTokens: null,
-							completionTokens: null,
-							totalTokens: null,
-							reasoningTokens: null,
-							cachedTokens: null,
-							hasError: true,
-							streamed: false,
-							canceled: false,
-							errorDetails: {
-								statusCode: upstreamResponse.status,
-								statusText: "no_audio",
-								responseText: (sseErrorMessage ?? sseText).slice(0, 2000),
+						await insertLog(
+							{
+								...baseLogEntry,
+								id: finalLogId,
+								routingMetadata: buildSpeechRoutingMetadata(usedApiKeyHash),
+								duration,
+								timeToFirstToken: null,
+								timeToFirstReasoningToken: null,
+								responseSize: sseText.length,
+								content: null,
+								reasoningContent: null,
+								finishReason: "upstream_error",
+								promptTokens: null,
+								completionTokens: null,
+								totalTokens: null,
+								reasoningTokens: null,
+								cachedTokens: null,
+								hasError: true,
+								streamed: false,
+								canceled: false,
+								errorDetails: {
+									statusCode: upstreamResponse.status,
+									statusText: "no_audio",
+									responseText: (sseErrorMessage ?? sseText).slice(0, 2000),
+								},
+								inputCost: 0,
+								outputCost: 0,
+								cachedInputCost: 0,
+								requestCost: 0,
+								webSearchCost: 0,
+								imageInputTokens: null,
+								imageOutputTokens: null,
+								imageInputCost: null,
+								imageOutputCost: null,
+								cost: 0,
+								estimatedCost: false,
+								discount: null,
+								pricingTier: null,
+								dataStorageCost: calculateDataStorageCost(
+									null,
+									null,
+									null,
+									null,
+									retentionLevel,
+								),
+								cached: false,
+								toolResults: null,
 							},
-							inputCost: 0,
-							outputCost: 0,
-							cachedInputCost: 0,
-							requestCost: 0,
-							webSearchCost: 0,
-							imageInputTokens: null,
-							imageOutputTokens: null,
-							imageInputCost: null,
-							imageOutputCost: null,
-							cost: 0,
-							estimatedCost: false,
-							discount: null,
-							pricingTier: null,
-							dataStorageCost: calculateDataStorageCost(
-								null,
-								null,
-								null,
-								null,
-								retentionLevel,
-							),
-							cached: false,
-							toolResults: null,
-						});
+							{ retentionLevel },
+						);
 						return c.json(
 							{
 								error: {
@@ -1466,6 +1543,199 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 					),
 				);
 
+				await insertLog(
+					{
+						...baseLogEntry,
+						id: finalLogId,
+						routingMetadata: buildSpeechRoutingMetadata(usedApiKeyHash),
+						duration,
+						timeToFirstToken: null,
+						timeToFirstReasoningToken: null,
+						responseSize: out.length,
+						content: `[audio: ${out.length} bytes, ${contentType}]`,
+						reasoningContent: null,
+						finishReason: "stop",
+						promptTokens:
+							promptTokens !== null ? promptTokens.toString() : null,
+						completionTokens:
+							completionTokens !== null ? completionTokens.toString() : null,
+						totalTokens: totalTokens !== null ? totalTokens.toString() : null,
+						reasoningTokens: null,
+						cachedTokens: null,
+						hasError: false,
+						streamed: false,
+						canceled: false,
+						errorDetails: null,
+						inputCost,
+						outputCost,
+						cachedInputCost: 0,
+						requestCost,
+						webSearchCost: 0,
+						imageInputTokens: null,
+						imageOutputTokens: null,
+						imageInputCost: null,
+						imageOutputCost: null,
+						cost,
+						estimatedCost,
+						discount: null,
+						pricingTier: null,
+						dataStorageCost: calculateDataStorageCost(
+							promptTokens,
+							null,
+							completionTokens,
+							null,
+							retentionLevel,
+						),
+						cached: false,
+						toolResults: null,
+					},
+					{ retentionLevel },
+				);
+
+				return c.body(toArrayBuffer(out), 200, {
+					"Content-Type": contentType,
+					"Content-Length": String(out.length),
+					"x-request-id": requestId,
+				});
+			}
+
+			// Alibaba (DashScope): the non-streaming TTS response carries a
+			// short-lived URL to the synthesized WAV file, which the gateway
+			// downloads and returns as binary. Billed by input characters like the
+			// other character-priced TTS models.
+			if (isAlibaba) {
+				const upstreamText = await upstreamResponse.text();
+				let dashScopeJson: DashScopeTtsResponse = {};
+				if (upstreamText) {
+					try {
+						dashScopeJson = JSON.parse(upstreamText) as DashScopeTtsResponse;
+					} catch {
+						dashScopeJson = {};
+					}
+				}
+
+				const audioUrl = dashScopeJson.output?.audio?.url;
+				let out: Buffer | null = null;
+				let downloadError: string | null = null;
+				if (typeof audioUrl === "string" && audioUrl) {
+					try {
+						const audioResponse = await fetch(audioUrl, {
+							// The download URL is provider-issued; still never follow
+							// redirects so the response can't be bounced elsewhere.
+							redirect: "error",
+							signal: createCombinedSignal(controller),
+						});
+						if (audioResponse.ok) {
+							out = Buffer.from(await audioResponse.arrayBuffer());
+						} else {
+							downloadError = `Audio download failed with status ${audioResponse.status}`;
+						}
+					} catch (error) {
+						downloadError =
+							error instanceof Error ? error.message : String(error);
+					}
+				}
+
+				if (out === null || out.length === 0) {
+					logger.warn("Speech API - no audio in DashScope response", {
+						requestId,
+						model: upstreamModel,
+						downloadError,
+					});
+					routingAttempts.push(
+						buildRoutingAttempt(
+							providerId,
+							modelDefId,
+							upstreamResponse.status,
+							"upstream_error",
+							false,
+							{ apiKeyHash: usedApiKeyHash, logId: finalLogId },
+						),
+					);
+					await insertLog({
+						...baseLogEntry,
+						id: finalLogId,
+						routingMetadata: buildSpeechRoutingMetadata(usedApiKeyHash),
+						duration,
+						timeToFirstToken: null,
+						timeToFirstReasoningToken: null,
+						responseSize: upstreamText.length,
+						content: null,
+						reasoningContent: null,
+						finishReason: "upstream_error",
+						promptTokens: null,
+						completionTokens: null,
+						totalTokens: null,
+						reasoningTokens: null,
+						cachedTokens: null,
+						hasError: true,
+						streamed: false,
+						canceled: false,
+						errorDetails: {
+							statusCode: upstreamResponse.status,
+							statusText: "no_audio",
+							responseText: (downloadError ?? upstreamText).slice(0, 2000),
+						},
+						inputCost: 0,
+						outputCost: 0,
+						cachedInputCost: 0,
+						requestCost: 0,
+						webSearchCost: 0,
+						imageInputTokens: null,
+						imageOutputTokens: null,
+						imageInputCost: null,
+						imageOutputCost: null,
+						cost: 0,
+						estimatedCost: false,
+						discount: null,
+						pricingTier: null,
+						dataStorageCost: calculateDataStorageCost(
+							null,
+							null,
+							null,
+							null,
+							retentionLevel,
+						),
+						cached: false,
+						toolResults: null,
+					});
+					return c.json(
+						{
+							error: {
+								message:
+									downloadError !== null
+										? `Failed to download synthesized audio: ${downloadError}`
+										: (dashScopeJson.message ??
+											"The model did not return any audio. The content may have been filtered."),
+								type: "upstream_error",
+								param: null,
+								code: "no_audio",
+							},
+						} satisfies SpeechErrorBody,
+						502,
+					);
+				}
+
+				const characters = request.input.length;
+				const inputCharacterPrice = Number(mapping.inputCharacterPrice ?? "0");
+				const inputCost = characters * inputCharacterPrice;
+				const requestCost = Number(mapping.requestPrice ?? "0");
+				const cost = inputCost + requestCost;
+
+				routingAttempts.push(
+					buildRoutingAttempt(
+						providerId,
+						modelDefId,
+						upstreamResponse.status,
+						"none",
+						true,
+						{
+							apiKeyHash: usedApiKeyHash,
+							logId: finalLogId,
+						},
+					),
+				);
+
 				await insertLog({
 					...baseLogEntry,
 					id: finalLogId,
@@ -1474,13 +1744,12 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 					timeToFirstToken: null,
 					timeToFirstReasoningToken: null,
 					responseSize: out.length,
-					content: `[audio: ${out.length} bytes, ${contentType}]`,
+					content: `[audio: ${out.length} bytes, audio/wav]`,
 					reasoningContent: null,
 					finishReason: "stop",
-					promptTokens: promptTokens !== null ? promptTokens.toString() : null,
-					completionTokens:
-						completionTokens !== null ? completionTokens.toString() : null,
-					totalTokens: totalTokens !== null ? totalTokens.toString() : null,
+					promptTokens: null,
+					completionTokens: null,
+					totalTokens: null,
 					reasoningTokens: null,
 					cachedTokens: null,
 					hasError: false,
@@ -1488,7 +1757,7 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 					canceled: false,
 					errorDetails: null,
 					inputCost,
-					outputCost,
+					outputCost: 0,
 					cachedInputCost: 0,
 					requestCost,
 					webSearchCost: 0,
@@ -1497,13 +1766,13 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 					imageInputCost: null,
 					imageOutputCost: null,
 					cost,
-					estimatedCost,
+					estimatedCost: false,
 					discount: null,
 					pricingTier: null,
 					dataStorageCost: calculateDataStorageCost(
-						promptTokens,
 						null,
-						completionTokens,
+						null,
+						null,
 						null,
 						retentionLevel,
 					),
@@ -1512,7 +1781,7 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 				});
 
 				return c.body(toArrayBuffer(out), 200, {
-					"Content-Type": contentType,
+					"Content-Type": "audio/wav",
 					"Content-Length": String(out.length),
 					"x-request-id": requestId,
 				});
@@ -1560,53 +1829,56 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 					),
 				);
 
-				await insertLog({
-					...baseLogEntry,
-					id: finalLogId,
-					routingMetadata: buildSpeechRoutingMetadata(usedApiKeyHash),
-					duration,
-					timeToFirstToken: null,
-					timeToFirstReasoningToken: null,
-					responseSize,
-					content: null,
-					reasoningContent: null,
-					finishReason: "content_filter",
-					promptTokens: null,
-					completionTokens: null,
-					totalTokens: null,
-					reasoningTokens: null,
-					cachedTokens: null,
-					hasError: true,
-					streamed: false,
-					canceled: false,
-					errorDetails: {
-						statusCode: upstreamResponse.status,
-						statusText: "no_audio",
-						responseText: upstreamText.slice(0, 2000),
+				await insertLog(
+					{
+						...baseLogEntry,
+						id: finalLogId,
+						routingMetadata: buildSpeechRoutingMetadata(usedApiKeyHash),
+						duration,
+						timeToFirstToken: null,
+						timeToFirstReasoningToken: null,
+						responseSize,
+						content: null,
+						reasoningContent: null,
+						finishReason: "content_filter",
+						promptTokens: null,
+						completionTokens: null,
+						totalTokens: null,
+						reasoningTokens: null,
+						cachedTokens: null,
+						hasError: true,
+						streamed: false,
+						canceled: false,
+						errorDetails: {
+							statusCode: upstreamResponse.status,
+							statusText: "no_audio",
+							responseText: upstreamText.slice(0, 2000),
+						},
+						inputCost: 0,
+						outputCost: 0,
+						cachedInputCost: 0,
+						requestCost: 0,
+						webSearchCost: 0,
+						imageInputTokens: null,
+						imageOutputTokens: null,
+						imageInputCost: null,
+						imageOutputCost: null,
+						cost: 0,
+						estimatedCost: false,
+						discount: null,
+						pricingTier: null,
+						dataStorageCost: calculateDataStorageCost(
+							null,
+							null,
+							null,
+							null,
+							retentionLevel,
+						),
+						cached: false,
+						toolResults: null,
 					},
-					inputCost: 0,
-					outputCost: 0,
-					cachedInputCost: 0,
-					requestCost: 0,
-					webSearchCost: 0,
-					imageInputTokens: null,
-					imageOutputTokens: null,
-					imageInputCost: null,
-					imageOutputCost: null,
-					cost: 0,
-					estimatedCost: false,
-					discount: null,
-					pricingTier: null,
-					dataStorageCost: calculateDataStorageCost(
-						null,
-						null,
-						null,
-						null,
-						retentionLevel,
-					),
-					cached: false,
-					toolResults: null,
-				});
+					{ retentionLevel },
+				);
 
 				return c.json(
 					{
@@ -1665,50 +1937,53 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 				),
 			);
 
-			await insertLog({
-				...baseLogEntry,
-				id: finalLogId,
-				routingMetadata: buildSpeechRoutingMetadata(usedApiKeyHash),
-				duration,
-				timeToFirstToken: null,
-				timeToFirstReasoningToken: null,
-				responseSize: out.length,
-				content: `[audio: ${out.length} bytes, ${audioMimeType ?? "audio/wav"}]`,
-				reasoningContent: null,
-				finishReason: "stop",
-				promptTokens: promptTokens !== null ? promptTokens.toString() : null,
-				completionTokens:
-					audioOutputTokens !== null ? audioOutputTokens.toString() : null,
-				totalTokens: totalTokens !== null ? totalTokens.toString() : null,
-				reasoningTokens: null,
-				cachedTokens: null,
-				hasError: false,
-				streamed: false,
-				canceled: false,
-				errorDetails: null,
-				inputCost,
-				outputCost,
-				cachedInputCost: 0,
-				requestCost,
-				webSearchCost: 0,
-				imageInputTokens: null,
-				imageOutputTokens: null,
-				imageInputCost: null,
-				imageOutputCost: null,
-				cost,
-				estimatedCost: promptTokens === null || audioOutputTokens === null,
-				discount: null,
-				pricingTier: null,
-				dataStorageCost: calculateDataStorageCost(
-					promptTokens,
-					null,
-					audioOutputTokens,
-					null,
-					retentionLevel,
-				),
-				cached: false,
-				toolResults: null,
-			});
+			await insertLog(
+				{
+					...baseLogEntry,
+					id: finalLogId,
+					routingMetadata: buildSpeechRoutingMetadata(usedApiKeyHash),
+					duration,
+					timeToFirstToken: null,
+					timeToFirstReasoningToken: null,
+					responseSize: out.length,
+					content: `[audio: ${out.length} bytes, ${audioMimeType ?? "audio/wav"}]`,
+					reasoningContent: null,
+					finishReason: "stop",
+					promptTokens: promptTokens !== null ? promptTokens.toString() : null,
+					completionTokens:
+						audioOutputTokens !== null ? audioOutputTokens.toString() : null,
+					totalTokens: totalTokens !== null ? totalTokens.toString() : null,
+					reasoningTokens: null,
+					cachedTokens: null,
+					hasError: false,
+					streamed: false,
+					canceled: false,
+					errorDetails: null,
+					inputCost,
+					outputCost,
+					cachedInputCost: 0,
+					requestCost,
+					webSearchCost: 0,
+					imageInputTokens: null,
+					imageOutputTokens: null,
+					imageInputCost: null,
+					imageOutputCost: null,
+					cost,
+					estimatedCost: promptTokens === null || audioOutputTokens === null,
+					discount: null,
+					pricingTier: null,
+					dataStorageCost: calculateDataStorageCost(
+						promptTokens,
+						null,
+						audioOutputTokens,
+						null,
+						retentionLevel,
+					),
+					cached: false,
+					toolResults: null,
+				},
+				{ retentionLevel },
+			);
 
 			return c.body(toArrayBuffer(out), 200, {
 				"Content-Type": contentType,

@@ -17,6 +17,11 @@ export type PriceUnit =
 	| "cachedAudioInput"
 	| "ocrPage"
 	| "inputCharacters"
+	// Flat USD per hour of input audio (not a per-token rate): how
+	// speech-to-text mappings are billed. Kept as its own unit so a fixed
+	// price policy that omits it makes the mapping not-ready instead of
+	// silently falling back to the source cost.
+	| "audioHour"
 	| `second:${string}`;
 
 export type PriceMap = Partial<Record<PriceUnit, string>>;
@@ -53,6 +58,7 @@ export interface SourceMappingPriceFields {
 	outputAudioPrice?: string | null;
 	ocrPagePrice?: string | null;
 	inputCharacterPrice?: string | null;
+	inputAudioHourPrice?: string | null;
 	perSecondPrice?: Record<string, string> | null;
 }
 
@@ -70,6 +76,7 @@ export interface FixedPricesV1Input {
 	audioOutputPerMillionTokens?: string;
 	ocrPage?: string;
 	inputPerMillionCharacters?: string;
+	audioHour?: string;
 	perSecondByResolution?: Record<string, string>;
 }
 
@@ -157,6 +164,10 @@ export function sourceMappingPricesToPriceMap(
 		...(perMillion(mapping.inputCharacterPrice) !== undefined && {
 			inputCharacters: perMillion(mapping.inputCharacterPrice),
 		}),
+		...(mapping.inputAudioHourPrice !== null &&
+			mapping.inputAudioHourPrice !== undefined && {
+				audioHour: mapping.inputAudioHourPrice,
+			}),
 		...Object.fromEntries(
 			Object.entries(mapping.perSecondPrice ?? {}).map(([key, value]) => [
 				`second:${key}`,
@@ -198,6 +209,7 @@ export function fixedPricesV1ToPriceMap(fixed: FixedPricesV1Input): PriceMap {
 		...(fixed.inputPerMillionCharacters !== undefined && {
 			inputCharacters: fixed.inputPerMillionCharacters,
 		}),
+		...(fixed.audioHour !== undefined && { audioHour: fixed.audioHour }),
 		...Object.fromEntries(
 			Object.entries(fixed.perSecondByResolution ?? {}).map(([key, value]) => [
 				`second:${key}`,

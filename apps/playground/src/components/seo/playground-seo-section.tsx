@@ -47,7 +47,7 @@ const variants: Record<SeoVariant, VariantContent> = {
 		],
 	},
 	video: {
-		h1: "AI video generation — compare Veo, Wan, and more in one playground",
+		h1: "AI video generation — compare Veo, Wan, and more in one place",
 		intro:
 			"Generate short videos from text prompts using the newest AI video models. Preview results inline, compare providers, and download the output.",
 		bullets: [

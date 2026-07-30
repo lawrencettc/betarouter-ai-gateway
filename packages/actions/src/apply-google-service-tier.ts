@@ -10,6 +10,7 @@ import type { ProviderId, ProviderRequestBody } from "@betarouter/models";
 const BODY_TIER_PROVIDERS: ReadonlySet<ProviderId> = new Set<ProviderId>([
 	"google-ai-studio",
 	"glacier",
+	"iceberg",
 ]);
 
 /**

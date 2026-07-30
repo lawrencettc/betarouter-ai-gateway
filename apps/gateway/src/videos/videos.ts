@@ -31,6 +31,7 @@ import {
 	complianceBlockMessage,
 	filterCompliantProviders,
 	getActiveCompliancePolicy,
+	isModelIdCompliant,
 	isProviderIdCompliant,
 	logComplianceBlock,
 } from "@/lib/compliance.js";
@@ -67,6 +68,8 @@ import {
 } from "@betarouter/db";
 import { logger, toError } from "@betarouter/logger";
 import {
+	type EnvVarVariant,
+	getOrganizationEnvVariant,
 	getProviderEnvValue,
 	getProviderEnvVar,
 	models,
@@ -640,6 +643,7 @@ function resolveVideoVertexTokenType(
 	configIndex: number | null,
 	platformOptions?: ProviderKeyOptions,
 	isPlatformCredential = false,
+	variant?: EnvVarVariant,
 ): VertexTokenType | undefined {
 	if (providerId !== "google-vertex") {
 		return undefined;
@@ -656,6 +660,7 @@ function resolveVideoVertexTokenType(
 				undefined,
 				configIndex ?? undefined,
 				false,
+				variant,
 			);
 }
 
@@ -1449,6 +1454,11 @@ async function resolveProviderContext(
 			"us-central1")
 		: undefined;
 
+	// Which env-var variant (`__ENTERPRISE` / `__PLANS` overrides) applies to
+	// this org's env-credential reads. Undefined = base vars only.
+	const organization = await findOrganizationById(organizationId);
+	const envVariant = getOrganizationEnvVariant(organization);
+
 	if (project.mode === "api-keys") {
 		const providerKey = await findProviderKey(
 			organizationId,
@@ -1506,10 +1516,17 @@ async function resolveProviderContext(
 		const env = await getProviderEnv(providerId, {
 			excludedIndices: getVideoExcludedConfigIndices(providerId),
 			selectionScope,
+			variant: envVariant,
 		});
 		const baseUrl =
 			env.baseUrl ??
-			getProviderEnvValue(providerId, "baseUrl", env.configIndex) ??
+			getProviderEnvValue(
+				providerId,
+				"baseUrl",
+				env.configIndex,
+				undefined,
+				envVariant,
+			) ??
 			defaultBaseUrl;
 		if (!baseUrl) {
 			throw new HTTPException(500, {
@@ -1519,7 +1536,13 @@ async function resolveProviderContext(
 
 		const vertexProjectId = isGoogleVertexVideoProvider(providerId)
 			? (env.options?.google_vertex_project_id ??
-				getProviderEnvValue(providerId, "project", env.configIndex))
+				getProviderEnvValue(
+					providerId,
+					"project",
+					env.configIndex,
+					undefined,
+					envVariant,
+				))
 			: undefined;
 		const vertexRegion = isGoogleVertexVideoProvider(providerId)
 			? (getProviderEnvValue(
@@ -1527,6 +1550,7 @@ async function resolveProviderContext(
 					"region",
 					env.configIndex,
 					"us-central1",
+					envVariant,
 				) ?? "us-central1")
 			: undefined;
 
@@ -1552,6 +1576,7 @@ async function resolveProviderContext(
 				env.configIndex,
 				env.options,
 				env.credentialId !== undefined,
+				envVariant,
 			),
 			uploadBaseUrl:
 				providerId === "avalanche"
@@ -1559,6 +1584,8 @@ async function resolveProviderContext(
 							providerId,
 							"fileUploadBaseUrl",
 							env.configIndex,
+							undefined,
+							envVariant,
 						)
 					: undefined,
 		};
@@ -1615,10 +1642,17 @@ async function resolveProviderContext(
 
 	const env = await getProviderEnv(providerId, {
 		excludedIndices: getVideoExcludedConfigIndices(providerId),
+		variant: envVariant,
 	});
 	const baseUrl =
 		env.baseUrl ??
-		getProviderEnvValue(providerId, "baseUrl", env.configIndex) ??
+		getProviderEnvValue(
+			providerId,
+			"baseUrl",
+			env.configIndex,
+			undefined,
+			envVariant,
+		) ??
 		defaultBaseUrl;
 	if (!baseUrl) {
 		throw new HTTPException(500, {
@@ -1628,7 +1662,13 @@ async function resolveProviderContext(
 
 	const vertexProjectId = isGoogleVertexVideoProvider(providerId)
 		? (env.options?.google_vertex_project_id ??
-			getProviderEnvValue(providerId, "project", env.configIndex))
+			getProviderEnvValue(
+				providerId,
+				"project",
+				env.configIndex,
+				undefined,
+				envVariant,
+			))
 		: undefined;
 	const vertexRegion = isGoogleVertexVideoProvider(providerId)
 		? (getProviderEnvValue(
@@ -1636,6 +1676,7 @@ async function resolveProviderContext(
 				"region",
 				env.configIndex,
 				"us-central1",
+				envVariant,
 			) ?? "us-central1")
 		: undefined;
 
@@ -1664,7 +1705,13 @@ async function resolveProviderContext(
 		),
 		uploadBaseUrl:
 			providerId === "avalanche"
-				? getProviderEnvValue(providerId, "fileUploadBaseUrl", env.configIndex)
+				? getProviderEnvValue(
+						providerId,
+						"fileUploadBaseUrl",
+						env.configIndex,
+						undefined,
+						envVariant,
+					)
 				: undefined,
 	};
 
@@ -2626,13 +2673,27 @@ async function resolveVideoJobProviderContext(job: VideoJobRecord): Promise<{
 		};
 	}
 
+	// Polls/content retrieval must use the same credential class as job
+	// creation: some providers scope job visibility to the creating API key,
+	// so a job created with a platform credential is polled with that exact
+	// credential (handled above), and an enterprise/plan org's job created
+	// with a variant env override must also be polled with it.
+	const organization = await findOrganizationById(job.organizationId);
+	const envVariant = getOrganizationEnvVariant(organization);
 	const env = await getProviderEnv(providerId, {
 		excludedIndices: getVideoExcludedConfigIndices(providerId),
 		selectionScope: job.usedModel,
+		variant: envVariant,
 	});
 	const baseUrl =
 		env.baseUrl ??
-		getProviderEnvValue(providerId, "baseUrl", env.configIndex) ??
+		getProviderEnvValue(
+			providerId,
+			"baseUrl",
+			env.configIndex,
+			undefined,
+			envVariant,
+		) ??
 		defaultBaseUrl;
 	if (!baseUrl) {
 		throw new HTTPException(500, {
@@ -4217,6 +4278,7 @@ async function insertVideoClientErrorLog(options: {
 	const responseText = options.message;
 	await db.insert(tables.log).values({
 		requestId: options.requestId,
+		apiOrigin: "videos",
 		organizationId: options.organization.id,
 		projectId: options.project.id,
 		apiKeyId: options.apiKey.id,
@@ -4446,13 +4508,14 @@ videos.openapi(createVideo, async (c) => {
 		request.seconds,
 	);
 
-	const iamValidation = await validateRequestModelAccess(
+	const iamValidation = await validateRequestModelAccess({
 		apiKey,
-		normalizedModel,
+		organizationId: project.organizationId,
+		requestedModel: normalizedModel,
 		requestedProvider,
-		modelInfo,
-		getClientIpFromRequest(c),
-	);
+		activeModelInfo: modelInfo,
+		clientIp: getClientIpFromRequest(c),
+	});
 
 	if (!iamValidation.allowed) {
 		throw new HTTPException(403, {
@@ -4470,11 +4533,16 @@ videos.openapi(createVideo, async (c) => {
 		const pinnedBlocked =
 			requestedProvider !== undefined &&
 			!isProviderIdCompliant(requestedProvider, videoCompliancePolicy);
+		// The policy's model lists block the model outright.
+		const modelBlocked = !isModelIdCompliant(
+			modelInfo.id,
+			videoCompliancePolicy,
+		);
 		const compliantProviders = filterCompliantProviders(
 			catalogModelInfo.providers as ProviderModelMapping[],
 			videoCompliancePolicy,
 		);
-		if (pinnedBlocked || compliantProviders.length === 0) {
+		if (pinnedBlocked || modelBlocked || compliantProviders.length === 0) {
 			await logComplianceBlock(project.organizationId, {
 				apiKeyId: apiKey.id,
 				model: normalizedModel,

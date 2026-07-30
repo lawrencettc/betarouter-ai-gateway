@@ -17,6 +17,7 @@ import {
 	type PromptCacheOptions,
 	type PromptCacheRetention,
 	type ProviderRequestBody,
+	type ReasoningDetail,
 	supportsOpenAIExplicitPromptCache,
 	supportsOpenAIExtendedPromptCache,
 	supportsServiceTier,
@@ -322,9 +323,21 @@ function convertOpenAISchemaToGoogle(schema: any): any {
 
 	const converted: any = {};
 
-	// Convert type to uppercase
+	// Convert type to uppercase. JSON Schema allows `type` to be an array
+	// (e.g. ["string", "null"] for nullable fields); Google expects a single
+	// uppercase type plus a `nullable` flag instead.
 	if (schema.type) {
-		converted.type = schema.type.toUpperCase();
+		if (Array.isArray(schema.type)) {
+			const nonNullTypes = schema.type.filter((t: unknown) => t !== "null");
+			if (nonNullTypes.length !== schema.type.length) {
+				converted.nullable = true;
+			}
+			if (typeof nonNullTypes[0] === "string") {
+				converted.type = nonNullTypes[0].toUpperCase();
+			}
+		} else if (typeof schema.type === "string") {
+			converted.type = schema.type.toUpperCase();
+		}
 	}
 
 	// Copy description if present
@@ -843,6 +856,58 @@ function transformContentForResponsesApi(content: any, role: string): any {
  * is still unmatched. Ambiguous cases throw rather than risk attaching a result
  * to the wrong call.
  */
+/**
+ * Extract encrypted reasoning payloads carried on an assistant message
+ * (`reasoning_details` entries of type "reasoning.encrypted") back into
+ * Responses API `reasoning` input items. Clients receive these payloads on
+ * prior responses (store:false + include:["reasoning.encrypted_content"]) and
+ * replay them to preserve reasoning across calls without stored responses.
+ * Only OpenAI-Responses-shaped payloads are forwarded — opaque blobs from a
+ * different provider/format would be rejected upstream.
+ */
+interface OpenAIResponsesReasoningItem {
+	type: "reasoning";
+	id?: string;
+	summary: unknown[];
+	encrypted_content: string;
+}
+
+function isEncryptedReasoningDetail(
+	detail: ReasoningDetail,
+): detail is ReasoningDetail & { data: string } {
+	return (
+		detail !== null &&
+		typeof detail === "object" &&
+		detail.type === "reasoning.encrypted" &&
+		typeof detail.data === "string" &&
+		detail.data.length > 0 &&
+		// Require the explicit provenance tag the gateway stamps on every
+		// payload it emits — an untagged blob could be a foreign format that
+		// must not be relabeled as OpenAI encrypted reasoning.
+		detail.format === "openai-responses-v1"
+	);
+}
+
+function extractEncryptedReasoningItems(
+	msg: BaseMessage,
+): OpenAIResponsesReasoningItem[] {
+	if (msg.role !== "assistant" || !Array.isArray(msg.reasoning_details)) {
+		return [];
+	}
+	const items: OpenAIResponsesReasoningItem[] = [];
+	for (const detail of msg.reasoning_details) {
+		if (isEncryptedReasoningDetail(detail)) {
+			items.push({
+				type: "reasoning",
+				...(typeof detail.id === "string" && { id: detail.id }),
+				summary: [],
+				encrypted_content: detail.data,
+			});
+		}
+	}
+	return items;
+}
+
 function transformMessagesForResponsesApi(messages: any[]): any[] {
 	const items: any[] = [];
 
@@ -905,22 +970,79 @@ function transformMessagesForResponsesApi(messages: any[]): any[] {
 			continue;
 		}
 
-		// Assistant messages with tool_calls: emit the message, then function_call items
+		// Replay encrypted reasoning from prior turns ahead of the assistant
+		// items it preceded, mirroring the item order the Responses API emits.
+		if (msg.role === "assistant") {
+			const reasoningItems = extractEncryptedReasoningItems(msg);
+			items.push(...reasoningItems);
+			// A reasoning-only carrier (a prior turn that ended before emitting a
+			// message, e.g. on max_output_tokens) has no message to emit — the
+			// reasoning items above are the whole turn.
+			if (
+				reasoningItems.length > 0 &&
+				(msg.content === null || msg.content === undefined) &&
+				(!msg.tool_calls || msg.tool_calls.length === 0)
+			) {
+				continue;
+			}
+		}
+
+		// Assistant messages with tool_calls: emit function_call items and the
+		// message(s) in the provider's original order. Separate phased message
+		// items (message_items) are replayed individually, interleaved with the
+		// calls per their preceding_tool_calls position; otherwise the single
+		// message follows the function calls by default (matching the order the
+		// Responses API emits and convertResponsesInputToMessages folded from),
+		// with pre-tool commentary marked via content_before_tool_calls going
+		// first.
 		if (
 			msg.role === "assistant" &&
 			msg.tool_calls &&
 			msg.tool_calls.length > 0
 		) {
-			// Emit assistant message content if present (preserve empty strings)
-			if (msg.content !== null && msg.content !== undefined) {
-				items.push({
-					role: "assistant",
-					content: transformContentForResponsesApi(msg.content, "assistant"),
+			const toolCallCount = msg.tool_calls.length;
+			const messageItems: Array<{
+				precedingToolCalls: number;
+				item: Record<string, unknown>;
+			}> = [];
+			if (Array.isArray(msg.message_items) && msg.message_items.length > 0) {
+				for (const item of msg.message_items) {
+					messageItems.push({
+						precedingToolCalls: item.preceding_tool_calls ?? toolCallCount,
+						item: {
+							role: "assistant",
+							content: transformContentForResponsesApi(item.text, "assistant"),
+							...(item.phase ? { phase: item.phase } : {}),
+						},
+					});
+				}
+			} else if (msg.content !== null && msg.content !== undefined) {
+				// Single assistant message content (preserve empty strings)
+				messageItems.push({
+					precedingToolCalls: msg.content_before_tool_calls ? 0 : toolCallCount,
+					item: {
+						role: "assistant",
+						content: transformContentForResponsesApi(msg.content, "assistant"),
+						...(msg.phase ? { phase: msg.phase } : {}),
+					},
 				});
 			}
 
-			// Emit each tool call as a separate function_call item
-			for (const toolCall of msg.tool_calls) {
+			let nextMessage = 0;
+			const emitMessagesUpTo = (callsEmitted: number) => {
+				while (
+					nextMessage < messageItems.length &&
+					messageItems[nextMessage]!.precedingToolCalls <= callsEmitted
+				) {
+					items.push(messageItems[nextMessage]!.item);
+					nextMessage++;
+				}
+			};
+
+			// Emit each tool call as a separate function_call item, with any
+			// message items restored to their original positions between them.
+			msg.tool_calls.forEach((toolCall: any, callIndex: number) => {
+				emitMessagesUpTo(callIndex);
 				items.push({
 					type: "function_call",
 					call_id: toolCall.id,
@@ -930,6 +1052,24 @@ function transformMessagesForResponsesApi(messages: any[]): any[] {
 				pendingCalls.push({
 					callId: toolCall.id,
 					name: toolCall.function?.name,
+				});
+			});
+			emitMessagesUpTo(Number.MAX_SAFE_INTEGER);
+			continue;
+		}
+
+		// Assistant messages carrying separate phased message items but no tool
+		// calls: replay each item individually.
+		if (
+			msg.role === "assistant" &&
+			Array.isArray(msg.message_items) &&
+			msg.message_items.length > 0
+		) {
+			for (const item of msg.message_items) {
+				items.push({
+					role: "assistant",
+					content: transformContentForResponsesApi(item.text, "assistant"),
+					...(item.phase ? { phase: item.phase } : {}),
 				});
 			}
 			continue;
@@ -943,6 +1083,7 @@ function transformMessagesForResponsesApi(messages: any[]): any[] {
 		items.push({
 			role: msg.role,
 			content: transformContentForResponsesApi(msg.content, msg.role),
+			...(msg.role === "assistant" && msg.phase ? { phase: msg.phase } : {}),
 		});
 	}
 
@@ -1003,6 +1144,7 @@ export async function prepareRequestBody(
 	verbosity?: "low" | "medium" | "high",
 	prompt_cache_options?: PromptCacheOptions,
 	session_id?: string,
+	reasoning_context?: "auto" | "current_turn" | "all_turns",
 ): Promise<ProviderRequestBody | FormData> {
 	tools = normalizeToolParameters(tools);
 	const modelDef = models.find((m) => m.id === usedInternalModel);
@@ -1024,22 +1166,27 @@ export async function prepareRequestBody(
 
 	// `none` reasoning effort is handled natively by a few providers:
 	// OpenAI/Azure forward it (their newer models accept it to turn reasoning
-	// off), and Google, Moonshot, Alibaba, MiniMax, and Xiaomi reason by
-	// default so they must explicitly disable thinking when asked. Every other
-	// provider treats the absence of reasoning_effort as "off" already, so
-	// normalize `none` away for them to avoid forwarding an unsupported enum
-	// value.
+	// off), and Google, Moonshot, Alibaba, MiniMax, Xiaomi, DeepSeek, Fireworks,
+	// and Z.ai reason by default so they must explicitly disable thinking when
+	// asked. Every other provider treats the absence of reasoning_effort as
+	// "off" already, so normalize `none` away for them to avoid forwarding an
+	// unsupported enum value.
 	const handlesNoneNatively =
 		usedProvider === "openai" ||
 		usedProvider === "azure" ||
+		usedProvider === "aws-mantle" ||
 		usedProvider === "google-ai-studio" ||
 		usedProvider === "glacier" ||
+		usedProvider === "iceberg" ||
 		usedProvider === "google-vertex" ||
 		usedProvider === "quartz" ||
 		usedProvider === "moonshot" ||
 		usedProvider === "alibaba" ||
 		usedProvider === "minimax" ||
 		usedProvider === "xiaomi" ||
+		usedProvider === "deepseek" ||
+		usedProvider === "fireworks" ||
+		usedProvider === "zai" ||
 		providerMappingForOptions?.apiFormat === "openai-chat-completions";
 	if (reasoning_effort === "none" && !handlesNoneNatively) {
 		reasoning_effort = undefined;
@@ -1558,6 +1705,65 @@ export async function prepareRequestBody(
 		});
 	}
 
+	// Keep a pre-strip reference for the OpenAI Responses API path below, which
+	// converts `reasoning_details` entries back into `reasoning` input items.
+	const messagesWithReasoningDetails = processedMessages;
+
+	// `reasoning_details` is the gateway's carrier for opaque reasoning payloads
+	// (e.g. OpenAI encrypted reasoning); `phase` and `content_before_tool_calls`
+	// are OpenAI Responses assistant-message markers. No chat-completions
+	// upstream understands them, and strict providers reject unknown message
+	// fields, so strip them from every path except the Responses API transform
+	// above. An assistant message that carried only reasoning (no
+	// content/tool_calls — an incomplete prior turn replayed for the Responses
+	// API) becomes empty here, so drop it.
+	processedMessages = processedMessages.flatMap((m) => {
+		if (
+			m.reasoning_details === undefined &&
+			m.phase === undefined &&
+			m.content_before_tool_calls === undefined &&
+			m.message_items === undefined
+		) {
+			return [m];
+		}
+		const {
+			reasoning_details: reasoningDetails,
+			phase: _phase,
+			content_before_tool_calls: _contentBeforeToolCalls,
+			message_items: _messageItems,
+			...rest
+		} = m;
+		if (
+			reasoningDetails !== undefined &&
+			m.role === "assistant" &&
+			(m.content === null || m.content === undefined) &&
+			(!m.tool_calls || m.tool_calls.length === 0)
+		) {
+			return [];
+		}
+		return [rest];
+	});
+
+	// The OpenAI-style `reasoning` field on replayed assistant turns is tolerated
+	// (and ignored) by most OpenAI-compatible upstreams, but Fireworks validates
+	// the message schema strictly and rejects it with "Extra inputs are not
+	// permitted, field: 'messages[N].reasoning'". This breaks every multi-turn
+	// continuation of a reasoning model. The providers that actually consume the
+	// field translate it to `reasoning_content` above, so dropping it here costs
+	// nothing. Do not "rescue" the text into `reasoning_content` instead:
+	// Fireworks accepts that field but silently discards it, so replaying an
+	// ~800-token `reasoning_content` leaves prompt_tokens byte-identical to
+	// omitting it. Any existing `reasoning_content` is left untouched below.
+	if (usedProvider === "fireworks") {
+		processedMessages = processedMessages.map((m) => {
+			if (m.reasoning === undefined) {
+				return m;
+			}
+			const { reasoning: _reasoning, ...rest } = m;
+			return rest;
+		});
+	}
+
 	// Start with a base structure that can be modified for each provider
 	const requestBody: any = {
 		model: usedExternalId,
@@ -1648,6 +1854,7 @@ export async function prepareRequestBody(
 		case "azure":
 		case "sakana":
 		case "meta":
+		case "aws-mantle":
 		case "openai": {
 			// Determine whether to use Responses API format.
 			// If useResponsesApi is explicitly passed (derived from endpoint URL), use it.
@@ -1674,8 +1881,36 @@ export async function prepareRequestBody(
 				// - Convert content types (text -> input_text/output_text, image_url -> input_image)
 				// - Convert assistant tool_calls to function_call items
 				// - Convert tool role messages to function_call_output items
-				const transformedMessages =
-					transformMessagesForResponsesApi(processedMessages);
+				const transformedMessages = transformMessagesForResponsesApi(
+					messagesWithReasoningDetails,
+				);
+
+				// Bedrock Mantle only accepts `data:` (or `s3://`) image URLs and
+				// rejects remote http(s) references outright, so fetch user-supplied
+				// image URLs (SSRF-guarded) and inline them as data URLs upstream.
+				if (usedProvider === "aws-mantle") {
+					for (const item of transformedMessages) {
+						if (!Array.isArray(item?.content)) {
+							continue;
+						}
+						for (const part of item.content) {
+							if (
+								part?.type === "input_image" &&
+								typeof part.image_url === "string" &&
+								(part.image_url.startsWith("http://") ||
+									part.image_url.startsWith("https://"))
+							) {
+								const { data, mimeType } = await processImageUrl(
+									part.image_url,
+									isProd,
+									maxImageSizeMB,
+									userPlan,
+								);
+								part.image_url = `data:${mimeType};base64,${data}`;
+							}
+						}
+					}
+				}
 
 				// Fugu always reasons and only accepts "high"/"xhigh" effort — it has
 				// no off switch and rejects none/minimal/low/medium — so every tier at
@@ -1704,8 +1939,33 @@ export async function prepareRequestBody(
 							: {
 									effort: responsesReasoningEffort,
 									summary: "detailed",
+									// reasoning.context is only documented on OpenAI's
+									// Responses API surface; other providers reject
+									// unknown reasoning fields.
+									...(reasoning_context !== undefined &&
+										(usedProvider === "openai" || usedProvider === "azure") && {
+											context: reasoning_context,
+										}),
 								},
 				};
+
+				// Run stateless upstream and ask for encrypted reasoning payloads so
+				// reasoning can be replayed on later turns (the gateway never uses
+				// upstream response storage — conversations are always resent in
+				// full). Only OpenAI and Azure document store/include on their
+				// Responses API surface.
+				if (usedProvider === "openai" || usedProvider === "azure") {
+					responsesBody.store = false;
+					responsesBody.include = ["reasoning.encrypted_content"];
+				}
+
+				if (usedProvider === "aws-mantle") {
+					// Mantle stores responses for 30 days by default (store: true).
+					// The gateway reconstructs conversations itself and never reads
+					// provider-stored responses, so opt out to keep the provider's
+					// zero-retention data policy accurate.
+					responsesBody.store = false;
+				}
 
 				if (usedProvider === "openai") {
 					if (supportedServiceTier) {
@@ -1734,13 +1994,15 @@ export async function prepareRequestBody(
 
 				// prompt_cache_key influences upstream cache-shard routing; only
 				// OpenAI, Azure (v1 surface — the Responses API path is always v1),
-				// and Meta support it. Sakana does not document the field. Prefer
-				// the caller's explicit key, then the salted hash of the caller's
-				// session id, then (Meta only, where the key is required for hits
-				// at all) a key derived from the conversation prefix.
+				// Bedrock Mantle, and Meta support it. Sakana does not document the
+				// field. Prefer the caller's explicit key, then the salted hash of
+				// the caller's session id, then (Meta only, where the key is
+				// required for hits at all) a key derived from the conversation
+				// prefix.
 				if (
 					usedProvider === "openai" ||
 					usedProvider === "azure" ||
+					usedProvider === "aws-mantle" ||
 					usedProvider === "meta"
 				) {
 					const upstreamCacheKey =
@@ -2022,19 +2284,24 @@ export async function prepareRequestBody(
 			}
 			// ZAI/GLM models use a `thinking` parameter instead of `reasoning_effort`.
 			// Mirror the OpenAI/Anthropic/Google contract: thinking is opt-in via
-			// `reasoning_effort`. Unset or `minimal` => disabled, anything else => enabled.
-			// Exception: disabling thinking corrupts GLM structured output
-			// (verified live: glm-4.5 emits tool calls as raw <tool_call> text,
-			// glm-4.6v-flashx appends a stray "End" token after JSON output), so
-			// for requests with tools or a response_format leave the provider
-			// default (enabled) rather than disabling.
+			// `reasoning_effort`. "none" explicitly disables thinking, "minimal" and
+			// unset also disable, anything else enables. Exception: disabling
+			// thinking corrupts GLM structured output (verified live: glm-4.5 emits
+			// tool calls as raw <tool_call> text, glm-4.6v-flashx appends a stray
+			// "End" token after JSON output), so for requests with tools or a
+			// response_format leave the provider default rather than disabling —
+			// unless the caller explicitly asked for "none".
 			if (supportsReasoning) {
-				const wantsThinking =
-					reasoning_effort !== undefined && reasoning_effort !== "minimal";
-				if (wantsThinking || (!requestBody.tools && !response_format)) {
-					requestBody.thinking = {
-						type: wantsThinking ? "enabled" : "disabled",
-					};
+				if (reasoning_effort === "none") {
+					requestBody.thinking = { type: "disabled" };
+				} else {
+					const wantsThinking =
+						reasoning_effort !== undefined && reasoning_effort !== "minimal";
+					if (wantsThinking || (!requestBody.tools && !response_format)) {
+						requestBody.thinking = {
+							type: wantsThinking ? "enabled" : "disabled",
+						};
+					}
 				}
 			}
 			// Add sensitive_word_check if provided (Z.ai specific)
@@ -3218,6 +3485,7 @@ export async function prepareRequestBody(
 		}
 		case "google-ai-studio":
 		case "glacier":
+		case "iceberg":
 		case "google-vertex":
 		case "quartz": {
 			delete requestBody.model; // Not used in body
@@ -3287,6 +3555,22 @@ export async function prepareRequestBody(
 			if (webSearchTool) {
 				requestBody.tools ??= [];
 				requestBody.tools.push({ google_search: {} });
+				// Gemini 3+ rejects a request that mixes a built-in tool with
+				// function declarations unless server-side tool invocation is opted
+				// into: "Please enable tool_config.include_server_side_tool_invocations
+				// to use Built-in tools with Function calling." Agentic clients send
+				// both (Codex CLI always includes web_search alongside its function
+				// tools), so opt in whenever the combination occurs rather than
+				// dropping either capability.
+				const hasFunctionDeclarations = requestBody.tools.some(
+					(tool: Record<string, unknown>) => "functionDeclarations" in tool,
+				);
+				if (hasFunctionDeclarations) {
+					requestBody.toolConfig = {
+						...requestBody.toolConfig,
+						includeServerSideToolInvocations: true,
+					};
+				}
 			}
 
 			requestBody.generationConfig = {};
@@ -3600,6 +3884,52 @@ export async function prepareRequestBody(
 			}
 			break;
 		}
+
+		case "deepseek": {
+			if (stream) {
+				requestBody.stream_options = {
+					include_usage: true,
+				};
+			}
+			if (response_format) {
+				requestBody.response_format = response_format;
+			}
+
+			// Add optional parameters if they are provided
+			if (temperature !== undefined) {
+				requestBody.temperature = temperature;
+			}
+			if (max_tokens !== undefined) {
+				requestBody.max_tokens = max_tokens;
+			}
+			if (top_p !== undefined) {
+				requestBody.top_p = top_p;
+			}
+			if (frequency_penalty !== undefined) {
+				requestBody.frequency_penalty = frequency_penalty;
+			}
+			if (presence_penalty !== undefined) {
+				requestBody.presence_penalty = presence_penalty;
+			}
+
+			// DeepSeek V4 models think by default. Translate reasoning_effort "none"
+			// to the documented binary disable (thinking: { type: "disabled" },
+			// verified to zero out reasoning tokens). Mappings that can turn thinking
+			// off declare none in reasoningEfforts; elsewhere none sends
+			// nothing and the provider default is kept.
+			if (reasoning_effort === "none") {
+				const canDisableThinking =
+					providerMappingForOptions?.reasoningEfforts?.includes("none") ??
+					false;
+				if (supportsReasoning && canDisableThinking) {
+					requestBody.thinking = { type: "disabled" };
+				}
+			} else if (reasoning_effort !== undefined) {
+				requestBody.reasoning_effort = reasoning_effort;
+			}
+			break;
+		}
+
 		default: {
 			if (stream) {
 				requestBody.stream_options = {

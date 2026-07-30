@@ -34,6 +34,7 @@ import {
 	filterProviderMappingsByCatalog,
 	findCatalogMappingForProvider,
 } from "@/lib/catalog-policy.js";
+import { raceClientAbort } from "@/lib/client-abort.js";
 import { getClientIpFromRequest } from "@/lib/client-ip.js";
 import { assertProviderCompliant } from "@/lib/compliance.js";
 import {
@@ -51,10 +52,14 @@ import {
 } from "@/lib/stealth-provider-errors.js";
 import { createCombinedSignal, isTimeoutError } from "@/lib/timeout-config.js";
 
-import { getProviderHeaders } from "@betarouter/actions";
+import {
+	getProviderDefaultBaseUrl,
+	getProviderHeaders,
+} from "@betarouter/actions";
 import { shortid } from "@betarouter/db";
 import { logger } from "@betarouter/logger";
 import {
+	getOrganizationEnvVariant,
 	getProviderEnvValue,
 	models as modelDefinitions,
 	resolveVertexTokenType,
@@ -97,7 +102,7 @@ const embeddingRequestSchema = z.object({
 	}),
 	dimensions: z.number().int().positive().optional().openapi({
 		description:
-			"Number of dimensions for the output embeddings. Only supported on `text-embedding-3-*` models.",
+			"Number of dimensions for the output embeddings. Only supported by models that allow shortening output (e.g. `text-embedding-3-*`, `gemini-embedding-*`, `qwen3-embedding-8b`).",
 		example: 1536,
 	}),
 	user: z.string().optional().openapi({
@@ -654,13 +659,15 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 	}
 
 	const retentionLevel = organization.retentionLevel ?? "none";
-	const iamValidation = await validateRequestModelAccess(
+
+	const iamValidation = await validateRequestModelAccess({
 		apiKey,
-		modelDefId,
-		providerId,
-		modelDef,
-		getClientIpFromRequest(c),
-	);
+		organizationId: project.organizationId,
+		requestedModel: modelDefId,
+		requestedProvider: providerId,
+		activeModelInfo: modelDef,
+		clientIp: getClientIpFromRequest(c),
+	});
 	if (!iamValidation.allowed) {
 		throwIamException(iamValidation.reason ?? "Model access denied");
 	}
@@ -704,20 +711,19 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 	};
 	const retryOrganization = organization;
 
+	// Which env-var variant (`__ENTERPRISE` / `__PLANS` overrides) applies to
+	// this org's env-credential reads. Undefined = base vars only.
+	const envVariant = getOrganizationEnvVariant(retryOrganization);
+
 	const isGoogleAiStudio = providerId === "google-ai-studio";
 	const isGoogleVertex = providerId === "google-vertex";
+	const isDeepInfra = providerId === "deepinfra";
 	const googleInputs: string[] =
 		isGoogleAiStudio || isGoogleVertex
 			? Array.isArray(input)
 				? (input as string[])
 				: [input as string]
 			: [];
-
-	const providerBaseUrlDefaults: Partial<Record<string, string>> = {
-		openai: "https://api.openai.com",
-		"google-ai-studio": "https://generativelanguage.googleapis.com",
-		"google-vertex": "https://aiplatform.googleapis.com",
-	};
 
 	interface EmbeddingAttempt {
 		providerKey: InferSelectModel<typeof tables.providerKey> | undefined;
@@ -786,6 +792,7 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 				excludedIndices: excludedEnvKeyIndices,
 				requiredCredentialId: mapping.platformCredentialId,
 				requiredCredentialProfile: mapping.platformCredentialProfile,
+				variant: envVariant,
 			});
 			usedToken = envResult.token;
 			configIndex = envResult.configIndex;
@@ -816,6 +823,7 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 					excludedIndices: excludedEnvKeyIndices,
 					requiredCredentialId: mapping.platformCredentialId,
 					requiredCredentialProfile: mapping.platformCredentialProfile,
+					variant: envVariant,
 				});
 				usedToken = envResult.token;
 				configIndex = envResult.configIndex;
@@ -853,12 +861,18 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 		// that don't declare a baseUrl env in packages/models/src/providers.ts,
 		// so the ?? chain falls through safely. providerKey.baseUrl still wins
 		// when set, so BYOK callers can opt out by configuring their own.
-		const envBaseUrl = getProviderEnvValue(providerId, "baseUrl", configIndex);
+		const envBaseUrl = getProviderEnvValue(
+			providerId,
+			"baseUrl",
+			configIndex,
+			undefined,
+			envVariant,
+		);
 		const resolvedBaseUrl =
 			providerKey?.baseUrl ??
 			platformProviderBaseUrl ??
 			envBaseUrl ??
-			providerBaseUrlDefaults[providerId] ??
+			getProviderDefaultBaseUrl(providerId) ??
 			"https://api.openai.com";
 
 		let upstreamUrl: string;
@@ -914,7 +928,13 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 			const vertexProjectId =
 				providerKey?.options?.google_vertex_project_id ??
 				platformProviderOptions?.google_vertex_project_id ??
-				getProviderEnvValue("google-vertex", "project", configIndex);
+				getProviderEnvValue(
+					"google-vertex",
+					"project",
+					configIndex,
+					undefined,
+					envVariant,
+				);
 			if (!vertexProjectId) {
 				return {
 					kind: "json_error",
@@ -931,8 +951,13 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 				};
 			}
 			const vertexRegion =
-				getProviderEnvValue("google-vertex", "region", configIndex, "global") ??
-				"global";
+				getProviderEnvValue(
+					"google-vertex",
+					"region",
+					configIndex,
+					"global",
+					envVariant,
+				) ?? "global";
 
 			// OAuth tokens are sent via the Authorization header (below); only API
 			// keys go in the `?key=` query param. Resolve once so the header and
@@ -943,6 +968,7 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 				providerKey?.options ?? platformProviderOptions,
 				configIndex,
 				providerKey !== undefined || platformCredentialId !== undefined,
+				envVariant,
 			);
 			const vertexAuthQuery =
 				vertexTokenType === "oauth"
@@ -954,6 +980,24 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 			};
 			if (dimensions !== undefined) {
 				requestBody.parameters = { outputDimensionality: dimensions };
+			}
+		} else if (isDeepInfra) {
+			// DeepInfra's base URL is https://api.deepinfra.com/v1/openai so the
+			// embeddings path is /embeddings (not /v1/embeddings, which would
+			// double up to /v1/openai/v1/embeddings and 404).
+			upstreamUrl = `${resolvedBaseUrl}/embeddings`;
+			requestBody = {
+				input,
+				model: upstreamModel,
+			};
+			if (encoding_format !== undefined) {
+				requestBody.encoding_format = encoding_format;
+			}
+			if (dimensions !== undefined) {
+				requestBody.dimensions = dimensions;
+			}
+			if (user !== undefined) {
+				requestBody.user = user;
 			}
 		} else {
 			upstreamUrl = `${resolvedBaseUrl}/v1/embeddings`;
@@ -1048,6 +1092,7 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 				requestedProvider: providerId,
 				messages: normalizedMessages,
 				source,
+				apiOrigin: "embeddings",
 				customHeaders,
 				debugMode,
 				userAgent,
@@ -1056,6 +1101,7 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 			});
 
 			let upstreamResponse: Response;
+			let upstreamText = "";
 			let fetchError: Error | null = null;
 			try {
 				const fetchSignal = createCombinedSignal(controller);
@@ -1075,9 +1121,22 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 					body: JSON.stringify(attempt.requestBody),
 					signal: fetchSignal,
 				});
+				// Settle the body read immediately on a client disconnect instead of
+				// relying on the fetch AbortSignal to propagate into undici's
+				// in-flight body machinery, where a late abort can be missed.
+				upstreamText = await raceClientAbort(
+					upstreamResponse.text(),
+					c.req.raw.signal,
+					controller,
+				);
 			} catch (error) {
+				// The abort can also surface as a generic failure (undici
+				// "terminated" TypeError, or a TimeoutError when the abort never
+				// reached the read), so any failure after the client already
+				// disconnected counts as canceled too.
 				const isCanceled =
-					error instanceof Error && error.name === "AbortError";
+					error instanceof Error &&
+					(error.name === "AbortError" || c.req.raw.signal.aborted);
 				const isTimeout = isTimeoutError(error);
 				const isNetworkError = error instanceof TypeError;
 				if (!isCanceled && !isTimeout && !isNetworkError) {
@@ -1088,7 +1147,8 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 			}
 
 			if (fetchError !== null) {
-				const isCanceled = fetchError.name === "AbortError";
+				const isCanceled =
+					fetchError.name === "AbortError" || c.req.raw.signal.aborted;
 				const isTimeout = isTimeoutError(fetchError);
 
 				const duration = Date.now() - startedAt;
@@ -1135,57 +1195,60 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 					);
 				}
 
-				await insertLog({
-					...baseLogEntry,
-					id: willRetry ? attemptLogId : finalLogId,
-					routingMetadata: buildEmbeddingRoutingMetadata(usedApiKeyHash),
-					duration,
-					timeToFirstToken: null,
-					timeToFirstReasoningToken: null,
-					responseSize: 0,
-					content: null,
-					reasoningContent: null,
-					finishReason: isCanceled ? "canceled" : "upstream_error",
-					promptTokens: null,
-					completionTokens: null,
-					totalTokens: null,
-					reasoningTokens: null,
-					cachedTokens: null,
-					hasError: !isCanceled,
-					streamed: false,
-					canceled: isCanceled,
-					errorDetails: isCanceled
-						? null
-						: {
-								statusCode: 0,
-								statusText: fetchError.name,
-								responseText: fetchError.message,
-							},
-					inputCost: 0,
-					outputCost: 0,
-					cachedInputCost: 0,
-					requestCost: 0,
-					webSearchCost: 0,
-					imageInputTokens: null,
-					imageOutputTokens: null,
-					imageInputCost: null,
-					imageOutputCost: null,
-					cost: 0,
-					estimatedCost: false,
-					discount: null,
-					pricingTier: null,
-					dataStorageCost: calculateDataStorageCost(
-						null,
-						null,
-						null,
-						null,
-						retentionLevel,
-					),
-					cached: false,
-					toolResults: null,
-					retried: willRetry,
-					retriedByLogId: willRetry ? finalLogId : null,
-				});
+				await insertLog(
+					{
+						...baseLogEntry,
+						id: willRetry ? attemptLogId : finalLogId,
+						routingMetadata: buildEmbeddingRoutingMetadata(usedApiKeyHash),
+						duration,
+						timeToFirstToken: null,
+						timeToFirstReasoningToken: null,
+						responseSize: 0,
+						content: null,
+						reasoningContent: null,
+						finishReason: isCanceled ? "canceled" : "upstream_error",
+						promptTokens: null,
+						completionTokens: null,
+						totalTokens: null,
+						reasoningTokens: null,
+						cachedTokens: null,
+						hasError: !isCanceled,
+						streamed: false,
+						canceled: isCanceled,
+						errorDetails: isCanceled
+							? null
+							: {
+									statusCode: 0,
+									statusText: fetchError.name,
+									responseText: fetchError.message,
+								},
+						inputCost: 0,
+						outputCost: 0,
+						cachedInputCost: 0,
+						requestCost: 0,
+						webSearchCost: 0,
+						imageInputTokens: null,
+						imageOutputTokens: null,
+						imageInputCost: null,
+						imageOutputCost: null,
+						cost: 0,
+						estimatedCost: false,
+						discount: null,
+						pricingTier: null,
+						dataStorageCost: calculateDataStorageCost(
+							null,
+							null,
+							null,
+							null,
+							retentionLevel,
+						),
+						cached: false,
+						toolResults: null,
+						retried: willRetry,
+						retriedByLogId: willRetry ? finalLogId : null,
+					},
+					{ retentionLevel },
+				);
 
 				if (willRetry && nextAttempt) {
 					attempt = nextAttempt;
@@ -1225,7 +1288,6 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 				);
 			}
 
-			const upstreamText = await upstreamResponse.text();
 			const duration = Date.now() - startedAt;
 			const responseSize = upstreamText.length;
 
@@ -1282,55 +1344,58 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 					),
 				);
 
-				await insertLog({
-					...baseLogEntry,
-					id: willRetry ? attemptLogId : finalLogId,
-					routingMetadata: buildEmbeddingRoutingMetadata(usedApiKeyHash),
-					duration,
-					timeToFirstToken: null,
-					timeToFirstReasoningToken: null,
-					responseSize,
-					content: getResponseContent(upstreamJson),
-					reasoningContent: null,
-					finishReason,
-					promptTokens: null,
-					completionTokens: null,
-					totalTokens: null,
-					reasoningTokens: null,
-					cachedTokens: null,
-					hasError: true,
-					streamed: false,
-					canceled: false,
-					errorDetails: {
-						statusCode: status,
-						statusText: upstreamResponse.statusText,
-						responseText: upstreamText,
+				await insertLog(
+					{
+						...baseLogEntry,
+						id: willRetry ? attemptLogId : finalLogId,
+						routingMetadata: buildEmbeddingRoutingMetadata(usedApiKeyHash),
+						duration,
+						timeToFirstToken: null,
+						timeToFirstReasoningToken: null,
+						responseSize,
+						content: getResponseContent(upstreamJson),
+						reasoningContent: null,
+						finishReason,
+						promptTokens: null,
+						completionTokens: null,
+						totalTokens: null,
+						reasoningTokens: null,
+						cachedTokens: null,
+						hasError: true,
+						streamed: false,
+						canceled: false,
+						errorDetails: {
+							statusCode: status,
+							statusText: upstreamResponse.statusText,
+							responseText: upstreamText,
+						},
+						inputCost: 0,
+						outputCost: 0,
+						cachedInputCost: 0,
+						requestCost: 0,
+						webSearchCost: 0,
+						imageInputTokens: null,
+						imageOutputTokens: null,
+						imageInputCost: null,
+						imageOutputCost: null,
+						cost: 0,
+						estimatedCost: false,
+						discount: null,
+						pricingTier: null,
+						dataStorageCost: calculateDataStorageCost(
+							null,
+							null,
+							null,
+							null,
+							retentionLevel,
+						),
+						cached: false,
+						toolResults: null,
+						retried: willRetry,
+						retriedByLogId: willRetry ? finalLogId : null,
 					},
-					inputCost: 0,
-					outputCost: 0,
-					cachedInputCost: 0,
-					requestCost: 0,
-					webSearchCost: 0,
-					imageInputTokens: null,
-					imageOutputTokens: null,
-					imageInputCost: null,
-					imageOutputCost: null,
-					cost: 0,
-					estimatedCost: false,
-					discount: null,
-					pricingTier: null,
-					dataStorageCost: calculateDataStorageCost(
-						null,
-						null,
-						null,
-						null,
-						retentionLevel,
-					),
-					cached: false,
-					toolResults: null,
-					retried: willRetry,
-					retriedByLogId: willRetry ? finalLogId : null,
-				});
+					{ retentionLevel },
+				);
 
 				if (willRetry && nextAttempt) {
 					attempt = nextAttempt;
@@ -1542,49 +1607,52 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 				),
 			);
 
-			await insertLog({
-				...baseLogEntry,
-				id: finalLogId,
-				routingMetadata: buildEmbeddingRoutingMetadata(usedApiKeyHash),
-				duration,
-				timeToFirstToken: null,
-				timeToFirstReasoningToken: null,
-				responseSize,
-				content: getResponseContent(normalizedResponse),
-				reasoningContent: null,
-				finishReason: "stop",
-				promptTokens: promptTokens !== null ? promptTokens.toString() : null,
-				completionTokens: null,
-				totalTokens: totalTokens !== null ? totalTokens.toString() : null,
-				reasoningTokens: null,
-				cachedTokens: null,
-				hasError: false,
-				streamed: false,
-				canceled: false,
-				errorDetails: null,
-				inputCost,
-				outputCost: 0,
-				cachedInputCost: 0,
-				requestCost,
-				webSearchCost: 0,
-				imageInputTokens: null,
-				imageOutputTokens: null,
-				imageInputCost: null,
-				imageOutputCost: null,
-				cost,
-				estimatedCost: estimatedUsage,
-				discount: null,
-				pricingTier: null,
-				dataStorageCost: calculateDataStorageCost(
-					promptTokens,
-					null,
-					null,
-					null,
-					retentionLevel,
-				),
-				cached: false,
-				toolResults: null,
-			});
+			await insertLog(
+				{
+					...baseLogEntry,
+					id: finalLogId,
+					routingMetadata: buildEmbeddingRoutingMetadata(usedApiKeyHash),
+					duration,
+					timeToFirstToken: null,
+					timeToFirstReasoningToken: null,
+					responseSize,
+					content: getResponseContent(normalizedResponse),
+					reasoningContent: null,
+					finishReason: "stop",
+					promptTokens: promptTokens !== null ? promptTokens.toString() : null,
+					completionTokens: null,
+					totalTokens: totalTokens !== null ? totalTokens.toString() : null,
+					reasoningTokens: null,
+					cachedTokens: null,
+					hasError: false,
+					streamed: false,
+					canceled: false,
+					errorDetails: null,
+					inputCost,
+					outputCost: 0,
+					cachedInputCost: 0,
+					requestCost,
+					webSearchCost: 0,
+					imageInputTokens: null,
+					imageOutputTokens: null,
+					imageInputCost: null,
+					imageOutputCost: null,
+					cost,
+					estimatedCost: estimatedUsage,
+					discount: null,
+					pricingTier: null,
+					dataStorageCost: calculateDataStorageCost(
+						promptTokens,
+						null,
+						null,
+						null,
+						retentionLevel,
+					),
+					cached: false,
+					toolResults: null,
+				},
+				{ retentionLevel },
+			);
 
 			return c.json(normalizedResponse);
 		}

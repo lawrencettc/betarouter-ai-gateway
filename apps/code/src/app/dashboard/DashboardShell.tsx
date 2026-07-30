@@ -9,15 +9,18 @@ import {
 	Loader2,
 	LogOut,
 	Settings,
+	Stamp,
 	UserRound,
 } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { usePostHog } from "posthog-js/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import SurveyReminderDialog from "@/app/dashboard/components/SurveyReminderDialog";
 import { EmailVerificationBanner } from "@/components/EmailVerificationBanner";
 import {
 	AlertDialog,
@@ -61,9 +64,10 @@ const navItems: Array<{ label: string; href: Route; icon: typeof BarChart3 }> =
 		{ label: "Settings", href: "/dashboard/settings" as Route, icon: Settings },
 	];
 
-// Pages that live on the DevPass site but outside the dashboard shell, so
+// Pages that live on the BetaPass site but outside the dashboard shell, so
 // they're rendered in their own subtle nav section with a link-out marker.
-const resourceNavItems: Array<{
+// The census link is appended per render so its year stays current.
+const staticResourceNavItems: Array<{
 	label: string;
 	href: Route;
 	icon: typeof BarChart3;
@@ -99,8 +103,8 @@ const setupActivationCopy: Record<
 			"BetaPass will activate as soon as Stripe confirms the payment.",
 	},
 	success: {
-		title: "BetaPass activated",
-		description: "Refreshing your dashboard.",
+		title: "Welcome aboard",
+		description: "Loading your dashboard.",
 	},
 	error: {
 		title: "Activation failed",
@@ -135,6 +139,17 @@ export default function DashboardShell({
 	initialUser?: UserMe | null;
 	initialDevPlanStatus?: DevPlanStatus | null;
 }) {
+	const resourceNavItems = useMemo(
+		() => [
+			...staticResourceNavItems,
+			{
+				label: "Model census",
+				href: `/data/${new Date().getUTCFullYear()}` as Route,
+				icon: Stamp,
+			},
+		],
+		[],
+	);
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
@@ -203,6 +218,7 @@ export default function DashboardShell({
 	);
 	const [setupActivationStatus, setSetupActivationStatus] =
 		useState<SetupActivationStatus | null>(null);
+	const reduceMotion = useReducedMotion();
 	const activeSetupSession = useRef<string | null>(null);
 	const finalizeDevPlanRef = useRef(finalizeMutation.mutateAsync);
 	const purchaseTrackedSession = useRef<string | null>(null);
@@ -294,13 +310,12 @@ export default function DashboardShell({
 		};
 
 		finalizeDevPlan()
-			.then((result) => {
+			.then(async (result) => {
 				if (signal.aborted) {
 					return;
 				}
 				if (result?.status === "ok" || result?.status === "already_processed") {
 					setSetupActivationStatus("success");
-					toast.success("BetaPass activated");
 					if (purchaseTrackedSession.current !== sessionId) {
 						purchaseTrackedSession.current = sessionId;
 						const tier = devPlanStatusRef.current?.devPlan;
@@ -322,6 +337,9 @@ export default function DashboardShell({
 							return Array.isArray(key) && key[1] === "/dev-plans/status";
 						},
 					});
+					// Hold the success screen long enough for the stamp to land and
+					// be read before the setup param is cleared and the card unmounts.
+					await wait(1600, signal);
 				} else if (result?.status === "payment_pending") {
 					shouldClearSetupParam = false;
 					setSetupActivationStatus("processing");
@@ -460,6 +478,8 @@ export default function DashboardShell({
 				</AlertDialogContent>
 			</AlertDialog>
 
+			<SurveyReminderDialog active={Boolean(hasActivePlan)} />
+
 			{/* Header */}
 			<header className="border-b border-border/50">
 				<div className="container mx-auto flex items-center justify-between px-4 py-3">
@@ -496,14 +516,41 @@ export default function DashboardShell({
 			{activeSetupActivationCopy ? (
 				<main className="container mx-auto flex min-h-[calc(100vh-120px)] max-w-3xl items-center justify-center px-4 py-12">
 					<div className="w-full rounded-xl border bg-background p-8 text-center shadow-sm sm:p-12">
-						<div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted">
-							<Loader2
-								className={cn(
-									"h-10 w-10 text-foreground",
-									activeSetupActivationStatus !== "error" && "animate-spin",
-								)}
-							/>
-						</div>
+						{activeSetupActivationStatus === "success" ? (
+							<motion.div
+								initial={
+									reduceMotion
+										? { opacity: 0 }
+										: { opacity: 0, scale: 2.4, rotate: -18 }
+								}
+								animate={
+									reduceMotion
+										? { opacity: 1 }
+										: { opacity: 1, scale: 1, rotate: -8 }
+								}
+								transition={{ type: "spring", duration: 0.4 }}
+								className="mx-auto mb-6 flex justify-center"
+							>
+								<div className="rounded-md border-4 border-double border-emerald-700/80 px-6 py-3 text-center font-mono uppercase text-emerald-800 mix-blend-multiply dark:border-emerald-400/80 dark:text-emerald-300 dark:mix-blend-screen">
+									<div className="flex items-center justify-center gap-2 text-base font-bold tracking-[0.3em]">
+										<Stamp className="h-4 w-4" />
+										BetaPass activated
+									</div>
+									<div className="mt-0.5 text-[9px] tracking-[0.2em]">
+										Visa granted · welcome aboard
+									</div>
+								</div>
+							</motion.div>
+						) : (
+							<div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted">
+								<Loader2
+									className={cn(
+										"h-10 w-10 text-foreground",
+										activeSetupActivationStatus !== "error" && "animate-spin",
+									)}
+								/>
+							</div>
+						)}
 						<h1 className="text-2xl font-semibold sm:text-3xl">
 							{activeSetupActivationCopy.title}
 						</h1>

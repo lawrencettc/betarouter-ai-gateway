@@ -6,6 +6,7 @@ import {
 	computeSelfRefundEligibility,
 	executeSelfRefund,
 	isSelfRefundCandidateType,
+	refundFeedbackBodySchema,
 } from "@/lib/self-refund.js";
 import {
 	getUserProjectIds,
@@ -33,8 +34,11 @@ import {
 	tables,
 	projectHourlyStats,
 } from "@betarouter/db";
-import { getProviderCountries } from "@betarouter/models";
-import { CREDIT_TOP_UP_MAX_AMOUNT } from "@betarouter/shared";
+import { getProviderCountries, models, providers } from "@betarouter/models";
+import {
+	CREDIT_TOP_UP_MAX_AMOUNT,
+	CUSTOM_PROVIDER_NAME_REGEX,
+} from "@betarouter/shared";
 
 import type { ServerTypes } from "@/vars.js";
 
@@ -45,6 +49,39 @@ export const organization = new OpenAPIHono<ServerTypes>();
 const providerCountryCodes = new Set(
 	getProviderCountries().map((country) => country.code),
 );
+
+// Closed sets for the compliance policy's fine-grained restriction lists.
+// Custom providers are addressed as `custom:<name>` and their models as
+// `<name>/<model>`; the names are only format-validated because provider keys
+// can be created/renamed independently of the stored policy.
+const catalogueProviderIds = new Set<string>(
+	providers.map((provider) => provider.id),
+);
+const catalogueModelIds = new Set<string>(models.map((model) => model.id));
+const customProviderRefRegex = new RegExp(
+	`^custom:${CUSTOM_PROVIDER_NAME_REGEX.source.slice(1, -1)}$`,
+);
+const customModelRefRegex = new RegExp(
+	`^${CUSTOM_PROVIDER_NAME_REGEX.source.slice(1, -1)}/.+$`,
+);
+
+const complianceProviderRefSchema = z
+	.string()
+	.max(256)
+	.refine(
+		(ref) => catalogueProviderIds.has(ref) || customProviderRefRegex.test(ref),
+		{ message: "Unknown provider" },
+	);
+
+const complianceModelRefSchema = z
+	.string()
+	.max(256)
+	.refine(
+		(ref) => catalogueModelIds.has(ref) || customModelRefRegex.test(ref),
+		{
+			message: "Unknown model",
+		},
+	);
 
 // Define schemas directly with Zod instead of using createSelectSchema
 const providerCompliancePolicySchema = z.object({
@@ -63,6 +100,10 @@ const providerCompliancePolicySchema = z.object({
 			}),
 		)
 		.optional(),
+	blockedProviders: z.array(complianceProviderRefSchema).max(500).optional(),
+	allowedProviders: z.array(complianceProviderRefSchema).max(500).optional(),
+	blockedModels: z.array(complianceModelRefSchema).max(500).optional(),
+	allowedModels: z.array(complianceModelRefSchema).max(500).optional(),
 });
 
 const organizationSchema = z.object({
@@ -215,13 +256,17 @@ const transactionSchema = z.object({
 		"dev_plan_upgrade",
 		"dev_plan_downgrade",
 		"dev_plan_cancel",
+		"dev_plan_resume",
 		"dev_plan_end",
 		"dev_plan_renewal",
 		"dev_plan_reset_pass",
+		"dev_plan_reset_pass_reward",
+		"dev_plan_reset_pass_gift",
 		"chat_plan_start",
 		"chat_plan_upgrade",
 		"chat_plan_downgrade",
 		"chat_plan_cancel",
+		"chat_plan_resume",
 		"chat_plan_end",
 		"chat_plan_renewal",
 		"end_user_topup",
@@ -587,6 +632,17 @@ organization.openapi(updateOrganization, async (c) => {
 	if (isBillingOrPolicyUpdate && userOrganization.role !== "owner") {
 		throw new HTTPException(403, {
 			message: "Only owners can update billing and policy settings",
+		});
+	}
+
+	// DevPass and Chat organizations never retain request/response payloads, and
+	// the products expose no setting for it. Reject attempts to turn it on.
+	if (
+		retentionLevel !== undefined &&
+		userOrganization.organization?.kind !== "default"
+	) {
+		throw new HTTPException(400, {
+			message: "Data retention is not available for this organization",
 		});
 	}
 
@@ -1042,6 +1098,13 @@ const selfRefundTransaction = createRoute({
 			id: z.string(),
 			transactionId: z.string(),
 		}),
+		body: {
+			content: {
+				"application/json": {
+					schema: refundFeedbackBodySchema,
+				},
+			},
+		},
 	},
 	responses: {
 		200: {
@@ -1068,6 +1131,7 @@ organization.openapi(selfRefundTransaction, async (c) => {
 	}
 
 	const { id, transactionId } = c.req.param();
+	const { reason, comments } = c.req.valid("json");
 
 	const userOrganization = await db.query.userOrganization.findFirst({
 		where: {
@@ -1117,6 +1181,8 @@ organization.openapi(selfRefundTransaction, async (c) => {
 		organization: userOrganization.organization,
 		transaction,
 		userId: user.id,
+		reason,
+		comments,
 	});
 
 	return c.json({

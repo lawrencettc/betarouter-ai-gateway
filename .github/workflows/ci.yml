@@ -7,6 +7,10 @@ on:
   merge_group:
     branches:
       - main
+
+permissions:
+  contents: read
+
 jobs:
   quality:
     if: github.event_name == 'pull_request' && github.head_ref != 'main'
@@ -20,6 +24,9 @@ jobs:
 
       - name: Ensure at most one new migration
         run: bash scripts/check-new-migrations.sh "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
+
+      - name: Check brand references
+        run: bash scripts/check-brand.sh
 
   lint:
     uses: ./.github/workflows/run.yml

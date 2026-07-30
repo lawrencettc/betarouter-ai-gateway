@@ -45,6 +45,7 @@ import { cn } from "@/lib/utils";
 
 import { MARKETING_STATS } from "@betarouter/shared";
 
+import { RunwarePromoBanner } from "./runware-promo-banner";
 import { ThemeToggle } from "./theme-toggle";
 
 import type { ApiModel, ApiProvider } from "@/lib/fetch-models";
@@ -155,7 +156,7 @@ export const Navbar = ({
 	}> = [
 		{
 			title: "AI Gateway",
-			href: "/features/unified-api-interface",
+			href: "/products/ai-gateway",
 			description: `Route requests to ${MARKETING_STATS.models} LLMs through a single, unified API endpoint.`,
 			icon: Network,
 			gradient:
@@ -163,27 +164,25 @@ export const Navbar = ({
 		},
 		{
 			title: "BetaPass",
-			href: "https://betapass.betarouter.com",
+			href: "/products/devpass",
 			description:
 				"Fixed-price monthly plans for Claude Code, Cursor, and every coding tool.",
 			icon: Code,
 			gradient:
 				"hover:from-indigo-500/20 hover:to-blue-600/30 hover:shadow-indigo-500/10 group-hover/product:text-indigo-500 dark:group-hover/product:text-indigo-400",
-			external: true,
 		},
 		{
-			title: "Chat Playground",
-			href: config.playgroundUrl ?? "#",
+			title: "Playground",
+			href: "/products/playground",
 			description:
-				"Test prompts and compare model responses side by side, instantly.",
+				"Every frontier model in one chat — plus image, video and audio studios.",
 			icon: MessagesSquare,
 			gradient:
 				"hover:from-blue-500/20 hover:to-cyan-600/30 hover:shadow-blue-500/10 group-hover/product:text-blue-500 dark:group-hover/product:text-blue-400",
-			external: true,
 		},
 		{
 			title: "Observability",
-			href: "/features/performance-monitoring",
+			href: "/products/observability",
 			description:
 				"Monitor usage, costs, and latency with real-time analytics dashboards.",
 			icon: Activity,
@@ -350,6 +349,7 @@ export const Navbar = ({
 				data-state={menuState && "active"}
 				className={cn("z-20 w-full px-2 group", sticky && "fixed")}
 			>
+				<RunwarePromoBanner collapsed={isScrolled} />
 				<div
 					className={cn(
 						"mt-2 mx-auto max-w-[1400px] px-6 transition-all duration-300",
@@ -408,7 +408,7 @@ export const Navbar = ({
 												onClick={() => trackNav("Chat")}
 												className="text-muted-foreground hover:text-accent-foreground block duration-150 px-3 py-2 whitespace-nowrap"
 											>
-												Chat
+												Playground
 											</a>
 										</NavigationMenuLink>
 									</NavigationMenuItem>
@@ -510,7 +510,7 @@ export const Navbar = ({
 											onClick={() => trackNav("Chat")}
 											className="text-muted-foreground hover:text-accent-foreground block py-2.5 duration-150"
 										>
-											Chat
+											Playground
 										</a>
 									</li>
 									<li>

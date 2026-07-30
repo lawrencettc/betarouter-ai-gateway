@@ -591,6 +591,50 @@ async function loadCatalogView(): Promise<{
 
 type CatalogView = Awaited<ReturnType<typeof loadCatalogView>>;
 
+// `custom` is the reserved namespace for tenant-owned BYOK providers
+// (provider_key rows with provider "custom", routed as `custom/<name>/<model>`).
+// Those endpoints belong to the organization, not the operator, and the gateway
+// deliberately exempts them from catalogue enforcement. Letting an operator
+// attach platform catalogue policy to the `custom` provider id would silently
+// govern every tenant's private providers, so it is rejected outright.
+const RESERVED_TENANT_PROVIDER_ID = "custom";
+
+function reservedNamespaceBlockers(
+	view: CatalogView,
+	operations: CatalogOperationV1[],
+): Array<{ entityId: string; reasons: string[] }> {
+	const reservedMappingIds = new Set(
+		view.sourceMappings
+			.filter((item) => item.providerId === RESERVED_TENANT_PROVIDER_ID)
+			.map((item) => item.id),
+	);
+	const offending = operations.flatMap((operation) => {
+		switch (operation.type) {
+			case "provider.set_policy":
+				return operation.providerId === RESERVED_TENANT_PROVIDER_ID
+					? [operation.providerId]
+					: [];
+			case "model.set_policy":
+				return [];
+			case "entity.archive_policy":
+				return (operation.entityType === "provider" &&
+					operation.entityId === RESERVED_TENANT_PROVIDER_ID) ||
+					(operation.entityType === "mapping" &&
+						reservedMappingIds.has(operation.entityId))
+					? [operation.entityId]
+					: [];
+			default:
+				return reservedMappingIds.has(operation.mappingId)
+					? [operation.mappingId]
+					: [];
+		}
+	});
+	return [...new Set(offending)].map((entityId) => ({
+		entityId,
+		reasons: ["reserved_tenant_provider_namespace"],
+	}));
+}
+
 function missingOperationBlockers(
 	view: CatalogView,
 	operations: CatalogOperationV1[],
@@ -2441,6 +2485,7 @@ platformCatalog.openapi(
 			);
 			const blockers = [
 				...missingOperationBlockers(view, input.operations),
+				...reservedNamespaceBlockers(view, input.operations),
 				...mappingBlockers,
 				...entityBlockers,
 				...fallbackLosses.map((entityId) => ({
@@ -2660,6 +2705,14 @@ platformCatalog.openapi(
 							.join(", ")}`,
 					});
 				}
+				const reserved = reservedNamespaceBlockers(view, operations);
+				if (reserved.length > 0) {
+					throw new HTTPException(400, {
+						message: `Catalog policy cannot target the reserved tenant provider namespace: ${reserved
+							.map((item) => item.entityId)
+							.join(", ")}`,
+					});
+				}
 				const updatedAt = new Date().toISOString();
 				const applied = applyCatalogOperations({
 					state: policyStateFromView(view),
@@ -2809,7 +2862,10 @@ platformCatalog.openapi(
 		const operations = catalogChangeSetInputSchema.shape.operations.parse(
 			normalizePersistedInverseOperations(original.inverseOperations),
 		);
-		const missing = missingOperationBlockers(view, operations);
+		const missing = [
+			...missingOperationBlockers(view, operations),
+			...reservedNamespaceBlockers(view, operations),
+		];
 		const applied = applyCatalogOperations({
 			state: policyStateFromView(view),
 			operations,
@@ -2991,10 +3047,13 @@ platformCatalog.openapi(
 				const operations = catalogChangeSetInputSchema.shape.operations.parse(
 					normalizePersistedInverseOperations(original.inverseOperations),
 				);
-				const missing = missingOperationBlockers(view, operations);
+				const missing = [
+					...missingOperationBlockers(view, operations),
+					...reservedNamespaceBlockers(view, operations),
+				];
 				if (missing.length > 0) {
 					throw new HTTPException(409, {
-						message: `Rollback source entities no longer exist: ${missing
+						message: `Rollback source entities no longer exist or target a reserved namespace: ${missing
 							.map((item) => item.entityId)
 							.join(", ")}`,
 					});

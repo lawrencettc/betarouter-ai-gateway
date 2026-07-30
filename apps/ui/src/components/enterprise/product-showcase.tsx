@@ -14,7 +14,7 @@ const screenshots = [
 		alt: "betarouter Chat Playground",
 		title: "Chat Playground",
 		description:
-			"Interactive testing environment with model comparison, prompt engineering, and conversation management.",
+			"The members' lounge for AI — every frontier model in one chat, with projects, group chat, and media studios.",
 	},
 	{
 		slug: "image-studio",
@@ -61,7 +61,7 @@ export function ProductShowcase() {
 						One platform for your entire LLM stack
 					</h2>
 					<p className="text-lg text-muted-foreground text-balance leading-relaxed">
-						From analytics dashboards to chat playgrounds, image generation to
+						From analytics dashboards to chat apps, image generation to
 						developer docs — everything works together out of the box.
 					</p>
 				</div>

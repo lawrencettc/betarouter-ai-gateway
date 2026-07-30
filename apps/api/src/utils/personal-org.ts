@@ -32,9 +32,9 @@ export async function getOrCreatePersonalOrg(user: PersonalOrgUser) {
 				name: "BetaPass",
 				kind: "devpass",
 				billingEmail: user.email,
-				// BetaPass orgs retain request/response data by default; users can
-				// disable this from the data retention settings.
-				retentionLevel: "retain",
+				// BetaPass never retains request/response payloads — only metadata.
+				// There is no setting to opt in.
+				retentionLevel: "none",
 			})
 			.returning();
 
@@ -94,7 +94,7 @@ export async function getOrCreateChatOrg(user: PersonalOrgUser) {
 				name: "Chat",
 				kind: "chat",
 				billingEmail: user.email,
-				retentionLevel: "retain",
+				retentionLevel: "none",
 				...(migratedCredits ? { credits: migratedCredits } : {}),
 			})
 			.returning();

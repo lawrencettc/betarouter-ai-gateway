@@ -1,6 +1,7 @@
 import { alibabaModels } from "./models/alibaba.js";
 import { anthropicModels } from "./models/anthropic.js";
 import { atlascloudModels } from "./models/atlascloud.js";
+import { baaiModels } from "./models/baai.js";
 import { bytedanceModels } from "./models/bytedance.js";
 import { deepseekModels } from "./models/deepseek.js";
 import { elevenlabsModels } from "./models/elevenlabs.js";
@@ -14,6 +15,7 @@ import { moonshotModels } from "./models/moonshot.js";
 import { nousresearchModels } from "./models/nousresearch.js";
 import { nvidiaModels } from "./models/nvidia.js";
 import { openaiModels } from "./models/openai.js";
+import { openbmbModels } from "./models/openbmb.js";
 import { perplexityModels } from "./models/perplexity.js";
 import { reveModels } from "./models/reve.js";
 import { sakanaModels } from "./models/sakana.js";
@@ -211,6 +213,13 @@ export interface ProviderModelMapping {
 	 * the OpenAI speech endpoint returns audio bytes without token usage.
 	 */
 	inputCharacterPrice?: Price;
+	/**
+	 * Price per hour of input audio in USD. Used by transcription
+	 * (speech-to-text) models that bill on audio duration rather than tokens
+	 * (e.g. xAI STT at $0.10/hour). Cost is computed against the `duration`
+	 * (seconds) reported by the upstream transcription response.
+	 */
+	inputAudioHourPrice?: Price;
 	/**
 	 * Price per image output token in USD (for models with separate text/image output pricing)
 	 */
@@ -507,6 +516,14 @@ export interface ProviderModelMapping {
 	 */
 	supportsDeveloperRole?: boolean;
 	/**
+	 * Whether this mapping's upstream accepts a conversation whose last message is
+	 * an assistant turn (assistant prefill / continuation). Defaults to `true`
+	 * (assumed supported). When set to `false`, routing skips this mapping for
+	 * requests that end on an assistant message, since the upstream rejects them
+	 * with a 400 ("a conversation cannot end on an assistant turn").
+	 */
+	supportsAssistantPrefill?: boolean;
+	/**
 	 * Test skip/only functionality
 	 */
 	test?: "skip" | "only";
@@ -544,12 +561,44 @@ export interface ProviderModelMapping {
 	 */
 	speechGenerations?: boolean;
 	/**
+	 * Whether this model uses the dedicated realtime WebSocket API.
+	 * When true, sessions are served by the gateway's /v1/realtime endpoint
+	 * (server-to-server WebSocket proxy) rather than /v1/chat/completions.
+	 * Pricing uses the modality-specific token prices on this mapping
+	 * (inputPrice/cachedInputPrice/outputPrice for text, inputAudioPrice/
+	 * cachedInputAudioPrice/outputAudioPrice for audio, imageInputPrice/
+	 * cachedImageInputPrice for image input).
+	 */
+	realtime?: boolean;
+	/**
+	 * Whether this mapping can transcribe input audio for realtime sessions.
+	 * When true, the gateway's /v1/realtime proxy allows this mapping as the
+	 * `input_audio_transcription.model` of a realtime session and bills each
+	 * `conversation.item.input_audio_transcription.completed` event against
+	 * this mapping's token prices (inputPrice for text tokens, inputAudioPrice
+	 * for audio tokens, outputPrice for output tokens). Only token-metered ASR
+	 * mappings may set this; duration-billed models are not priceable here.
+	 */
+	realtimeTranscription?: boolean;
+	/**
+	 * Whether this model uses a dedicated transcription (speech-to-text) API.
+	 * When true, requests are routed to the gateway's /v1/audio/transcriptions
+	 * endpoint, which turns audio into text rather than returning a chat
+	 * completion. Billed on audio duration via inputAudioHourPrice.
+	 */
+	transcriptions?: boolean;
+	/**
 	 * Whether this model uses a dedicated OCR (optical character recognition)
 	 * API. When true, requests are routed to the gateway's /v1/ocr endpoint,
 	 * which extracts text/markdown from documents and images rather than
 	 * returning a chat completion. Billed per page processed via ocrPagePrice.
 	 */
 	ocr?: boolean;
+	/**
+	 * Whether this model uses a dedicated rerank API.
+	 * When true, requests are routed to the gateway's /v1/rerank endpoint.
+	 */
+	rerank?: boolean;
 	/**
 	 * Prebuilt voices supported for speech generation models. The first entry is
 	 * used as the default when the caller does not specify a `voice`.
@@ -636,7 +685,16 @@ export interface ModelDefinition {
 	/**
 	 * Output formats supported by the model (defaults to ['text'] if not specified)
 	 */
-	output?: ("text" | "image" | "video" | "embedding" | "audio" | "ocr")[];
+	output?: (
+		| "text"
+		| "image"
+		| "video"
+		| "embedding"
+		| "audio"
+		| "ocr"
+		| "transcription"
+		| "rerank"
+	)[];
 	/**
 	 * Whether this model requires an image input to function (e.g. image editing models).
 	 */
@@ -683,11 +741,13 @@ export const models = [
 	...moonshotModels,
 	...alibabaModels,
 	...atlascloudModels,
+	...baaiModels,
 	...bytedanceModels,
 	...nousresearchModels,
 	...reveModels,
 	...sakanaModels,
 	...nvidiaModels,
+	...openbmbModels,
 	...zaiModels,
 	...elevenlabsModels,
 ] as const satisfies ModelDefinition[];

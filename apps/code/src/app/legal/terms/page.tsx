@@ -16,7 +16,7 @@ export default function TermsPage() {
 			<p>
 				<strong>Effective Date:</strong> April 26, 2026
 				<br />
-				<strong>Last Updated:</strong> July 19, 2026
+				<strong>Last Updated:</strong> July 22, 2026
 			</p>
 			<p>
 				<strong>BetaPass</strong> is a service operated by{" "}

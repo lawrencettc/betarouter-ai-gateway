@@ -57,6 +57,8 @@ interface StoredImagePart {
 
 const MIN_USER_PROMPT_CHARS = 30;
 const MIN_ASSISTANT_RESPONSE_CHARS = 80;
+const FALLBACK_SHARE_DESCRIPTION =
+	"A shared snapshot of a betarouter chat — open it to see the full conversation.";
 
 function deriveShareDescription(messages: SharedMessage[]): {
 	description: string;
@@ -88,8 +90,7 @@ function deriveShareDescription(messages: SharedMessage[]): {
 		};
 	}
 	return {
-		description:
-			"A shared snapshot of an betarouter chat — open it to see the full conversation.",
+		description: FALLBACK_SHARE_DESCRIPTION,
 		source: "fallback",
 	};
 }
@@ -128,8 +129,7 @@ export async function generateMetadata({
 	const config = getConfig();
 
 	let title = "Shared Chat";
-	let description =
-		"A shared snapshot of an betarouter chat — open it to see the full conversation.";
+	let description = FALLBACK_SHARE_DESCRIPTION;
 	let indexable = true;
 
 	try {
