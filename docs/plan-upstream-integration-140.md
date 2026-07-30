@@ -22,7 +22,7 @@ security fixes (they are unreleased) while still paying ~70% of the conflict cos
 1. **Silent billing defect**: upstream extracted the chat cancel path into
    `respondCanceledStreaming`, whose `calculateCosts` call lacks our `pricingOverride`.
    Merged tree shows 12 `calculateCosts` sites but only 11 with `pricingOverride` — the
-   missing one is in a *cleanly merged* region. Every upstream helper extraction in
+   missing one is in a _cleanly merged_ region. Every upstream helper extraction in
    `chat.ts` (800 changed lines, only 6 conflicts) is a candidate for silently dropping
    catalog hooks.
 2. **Catalog governance bypass**: new upstream surfaces `/v1/realtime`, `/v1/rerank`,
@@ -44,7 +44,7 @@ security fixes (they are unreleased) while still paying ~70% of the conflict cos
    type with precedence: **platform credential → variant env → plain env**; propagate to
    `resolve-provider-context.ts`, `chat.ts`, `video-jobs.ts`, and the five non-chat
    endpoints. The video-job poller must use the same credential class as job creation.
-5. **Dependency direction**: we are *ahead* of upstream on `better-auth` (1.6.25 vs
+5. **Dependency direction**: we are _ahead_ of upstream on `better-auth` (1.6.25 vs
    1.6.23) and several security overrides. `package.json` conflicts resolve as a
    **union taking the max/strictest** — never blind "theirs".
 6. **Brand leakage**: 221 new upstream files, 54 importing `@llmgateway/*` (loud build
@@ -118,7 +118,7 @@ Decide whether tenant custom providers (`custom/<name>/<model>`) are exempt from
 catalog provider ids.
 
 **Decision (2026-07-30, product owner):** keep betarouter naming — do NOT adopt the
-"Lounge" product name. Take the Lounge *feature* code (points, voice UI) but keep our
+"Lounge" product name. Take the Lounge _feature_ code (points, voice UI) but keep our
 existing product naming for the chat app. The betarouter brand name is always
 lowercase ("betarouter", never "BetaRouter"/"Betarouter") in user-facing copy; the
 BetaPass product name keeps its own casing.
@@ -152,7 +152,7 @@ untouched by the range. Notes carried forward to the UI stage (4b):
   descriptions, error messages) stays "Chat Plan"/"BetaPass". Stage 4b must not
   reintroduce "Lounge" as a rendered product name.
 - **Deferred to Stage 5**: nothing from `apps/api` — the range adds no realtime
-  session or client-secret route. Playground realtime *history* endpoints are
+  session or client-secret route. Playground realtime _history_ endpoints are
   included (their tables landed in Stage 2) but are inert while the gateway
   `/v1/realtime` surface stays dark.
 
@@ -183,6 +183,7 @@ rotation/renaming, GitHub Copilot guide, Cursor agent-mode correction, Gemini
 `learn/playground-audio.mdx`, product-grouped learn index.
 
 **Naming reverts applied** (no "Lounge" as a rendered product name):
+
 - `apps/ui/src/app/products/lounge` → `products/playground`; sitemap, navbar and
   footer links follow. Copy rewritten to Playground/plan wording.
 - `apps/playground/src/lib/brand.ts` rewritten to the betarouter Playground
@@ -202,6 +203,7 @@ rotation/renaming, GitHub Copilot guide, Cursor agent-mode correction, Gemini
   was never run repo-wide with `--include-devpass`.
 
 **Skipped (deliberate).**
+
 - All new `apps/ui` blog posts (openrouter-alternatives cluster, performance
   benchmark, generate-*-api set) and their images; all new changelog entries and
   images — LLMGateway-authored marketing, we maintain our own.
@@ -222,6 +224,7 @@ rotation/renaming, GitHub Copilot guide, Cursor agent-mode correction, Gemini
   `lounge-nav-gamification.pw.ts` and `apps/code/e2e/census.pw.ts` are kept.
 
 **Deferred to Stage 5.**
+
 - Playground realtime voice UI ships **dark**: `REALTIME_ENABLED` in
   `studio-nav.tsx` reads `NEXT_PUBLIC_REALTIME_ENABLED` (default off), hides the
   Voice studio tile, and `/realtime` `notFound()`s. The components
@@ -253,7 +256,7 @@ and mobile widths; the points pill / leaderboard / profile pages (gold accent
 against our green sidebar ring); the 13 regenerated OG cards (logo placement was
 scripted, not eyeballed); the `/start` page and `/data/[year]` census registry.
 
-### Stage 5 — Realtime + rerank + transcriptions (landed dark)
+### Stage 5 — Realtime + rerank + transcriptions (landed dark) — DONE
 
 Land code with `/v1/realtime` disabled by default (upstream had a revert/re-land cycle;
 index fix `d95d3b8ae` is unreleased). Before enabling: add `redis-storage` service to
@@ -262,6 +265,156 @@ populate the 15 `REALTIME_*` vars, `STORAGE_REDIS_*`, `RESPONSES_STORAGE_DRIVER`
 `GATEWAY_CORS_ORIGINS` (CORS now defaults **closed** — deploy checklist item),
 `UPSTREAM_KEEPALIVE_TIMEOUT_MS`; extend catalog enforcement to all three new surfaces.
 Enable per-org, then globally.
+
+### Stage 5 outcome — realtime + rerank + transcriptions landed dark (2026-07-30)
+
+Commits: `d6bc62f1a` (surfaces), `cbcddd3b4` (audio-hour catalog pricing),
+`64e4aa80d` (infra + deploy docs), `75876ab88` (docs pages).
+
+**Landed.** `apps/gateway/src/realtime/**` (17 files), `rerank/**`,
+`transcriptions/**`, their `app.ts`/`serve.ts` registrations (realtime attach +
+explicit WebSocket drain), `middleware/cors.ts` (+ spec),
+`packages/cache/src/storage-redis.ts` with the `storageRedisClient` export, the
+dual-Redis gateway health check, `closeStorageRedisClient()` in the worker, and
+the storage-Redis quit in `packages/db/src/seed.ts`. `cache.ts` now stores the
+gateway response cache on the storage instance. `chat-helpers.e2e.ts` gained
+`rerankModels` / `transcriptionModels` and the matching `filteredModels`
+exclusions; `rerank.e2e.ts` and `transcriptions.e2e.ts` came with them.
+`ws` + `@types/ws` added to `apps/gateway`. `d4c497783` needed no cherry-pick:
+`upstream/main`'s `preflight.ts` already contains the tenant-derived
+`deriveSafetyIdentifier`.
+
+Not taken (out of Stage 5 scope, deliberate): upstream's
+`@hono/node-server` v2 bump, the `swr.ts` in-flight coalescing / detached
+mirror-write perf work, `redis.ts` `enableAutoPipelining`, and
+`responses/tools/response-storage.ts` (a responses-module extraction). Because
+that last one is absent, `RESPONSES_STORAGE_DRIVER` is documented as reserved
+and inert.
+
+**Gating defaults.** Realtime is DARK, and upstream's own gating already
+defaults off, so no default was flipped: `isRealtimeEnabled()` requires
+`REALTIME_INLINE=true` (or an explicit `REALTIME_ENABLED`), `REALTIME_DISABLED`
+is an overriding kill switch, and `serve.ts` only attaches the WebSocket
+listener under `REALTIME_INLINE`. The compose file pins
+`REALTIME_INLINE=false` + `REALTIME_DISABLED=true`. Frontend
+`NEXT_PUBLIC_REALTIME_ENABLED` was not touched (still default-off from 4b).
+`/v1/rerank` and `/v1/audio/transcriptions` ship ENABLED: they are catalog-
+governed on exactly the same terms as the other non-chat surfaces
+(`operation: "deferred_non_chat"`), so a separate flag would have been a
+different, weaker control than the catalogue.
+
+**Hazard 2 closed — how each surface is hooked.**
+
+- _rerank_: `findRerankMapping` now only resolves the requested model id; the
+  mapping that is served and priced comes from `enforceCatalogRequest` +
+  `filterProviderMappingsByCatalog` over the `rerank: true` mappings of the
+  model definition. `503` when the catalogue admits none. `inputPrice` /
+  `requestPrice` are therefore the catalogue's customer prices. The log row
+  carries `modelProviderMappingId` + `catalogRevisionId`.
+- _transcriptions_: identical shape over `transcriptions: true` mappings.
+- _realtime_: new `admitRealtimeMapping()` in `realtime/catalog.ts` runs
+  admission and returns the catalog-adjusted `RealtimeMappingMatch`. Preflight
+  applies it to the session model (fails closed with a `503`
+  `model_unavailable` `RealtimeConnectError`) and to every candidate from
+  `listRealtimeTranscriptionMappings`, storing the results in a new
+  `allowedTranscriptionMatches` map. `session.ts` and `server.ts` now bill
+  against that map instead of re-resolving the static mapping, so
+  `buildRealtimePriceSnapshot` / `buildTranscriptionPriceSnapshot` see
+  catalogue prices. A catalogue rejection of an ASR candidate only drops that
+  candidate; it does not fail the connection.
+- All three also thread `requiredCredentialId` / `requiredCredentialProfile`
+  from the admitted mapping plus the org env variant into the now-`await`ed
+  `getProviderEnv`, and honour `envResult.baseUrl` — i.e. they use the Stage 3
+  credential precedence (platform credential → variant env → plain env)
+  instead of upstream's plain-env-only call.
+
+**Pricing gap found and closed.** `/v1/audio/transcriptions` bills on
+`mapping.inputAudioHourPrice`, a unit the catalogue did not model, so admission
+alone would still have billed source cost under a markup/fixed policy.
+`audioHour` is now a first-class `PriceUnit`: new
+`model_provider_mapping.input_audio_hour_price` column (migration
+`1785386011_colorful_sharon_carter`, `IF NOT EXISTS`-guarded, timestamp above
+the ledger high-water mark so drizzle applies it normally),
+`sourceMappingPricesToPriceMap`, `fixedPricesV1ToPriceMap` + its contract
+schema, worker model sync, and `applyCatalogCustomerPrices` (flat USD, like
+`requestPrice`/`ocrPagePrice` — never `/1e6`). Side benefit: because
+`resolveMappingPrice` now sees the unit, a fixed policy that omits `audioHour`
+makes the mapping not-ready rather than under-billing. **Remaining**: the admin
+catalogue UI has no input for the `audioHour` fixed price yet, so a fixed
+policy for the xAI STT mapping must be set through the API.
+
+**Invariant suite — final state (no allowlisting).**
+
+- Discovery is now MODULE-level, not per-file. `realtime/` bills in
+  `billing.ts`/`preflight.ts` but routes only in `client-secrets-route.ts`, so
+  the old per-file conjunction silently missed it — the exact failure mode the
+  suite exists to prevent.
+- `BILLED_PATH_SIGNALS` gained `.insert(log)` (realtime writes log rows
+  directly, bypassing `insertLog`).
+- `ROUTE_REGISTRATION_SIGNALS` narrowed to `createRoute(`, `new OpenAPIHono`,
+  `.openapi(` — module-level discovery made bare `.get(`/`.post(` match `lib/`
+  (Maps, Redis clients).
+- `EXPECTED_BILLED_GATEWAY_MODULES` (pinned, 10): `chat`, `embeddings`,
+  `images`, `moderations`, `ocr`, `realtime`, `rerank`, `speech`,
+  `transcriptions`, `videos`. `CATALOG_ADMISSION_ALLOWLIST` unchanged (only
+  `images`, which delegates to `/v1/chat/completions`).
+- `EXPECTED_CALCULATE_COSTS_CENSUS` **unchanged** at
+  `{ "apps/gateway/src/chat/chat.ts": 11 }`. The new surfaces do not call
+  `calculateCosts` at all — they price inline from the mapping's price fields.
+- New **invariant 4** covers exactly that blind spot: `embeddings`, `ocr`,
+  `realtime`, `rerank`, `speech`, `transcriptions`, `videos` must each
+  reference `filterProviderMappingsByCatalog(`, which is their equivalent of
+  `pricingOverride`. 17 tests, all green.
+
+**Infra.** `redis-storage` runs as a second in-container Redis (supervisord
+program, port 6380, AOF on `/var/lib/redis-storage`), so the container
+healthcheck — which requires every supervisord program to be `RUNNING` — now
+depends on it, as does the gateway `/` endpoint (it pings both instances).
+`unified.dockerfile` creates the data dir and exposes 6380;
+`docker-compose.betarouter.yml` mounts a `redis_storage_data` volume and sets
+`STORAGE_REDIS_HOST/PORT`, `GATEWAY_CORS_ORIGINS`, and the realtime switches;
+the root `docker-compose.yml` gained upstream's dev `redis-storage` service.
+Low-memory/serialized-build customizations untouched.
+
+**Ops checklist before enablement** (full version in
+`infra/DEPLOYMENT_BETAROUTER.md`):
+
+1. Set `GATEWAY_CORS_ORIGINS` **before** deploying if any browser client calls
+   `api.betarouter.com` directly — CORS now defaults closed and the breakage is
+   silent. Server-to-server clients are unaffected.
+2. Confirm `redis-storage` is `RUNNING` and gateway health is green; add
+   `redis_storage_data` to the backup set.
+3. Apply migration `1785386011`; the two upstream migrations from the Stage 2
+   ops note still need their manual treatment.
+4. Set `REALTIME_MAX_SESSION_SPEND_USD` and the per-org/per-key lease caps —
+   realtime bills continuously and is not covered by request-level usage
+   limits. Ensure `REALTIME_SHUTDOWN_GRACE_PERIOD_MS` ≤ the compose
+   `stop_grace_period` (2m today).
+5. Pilot: `REALTIME_INLINE=true` + drop `REALTIME_DISABLED`, and scope access
+   with catalogue visibility / per-key IAM (there is no per-org realtime flag).
+   Watch `realtime_session` rows and their linked `log` rows;
+   `unpriceable_usage:*` / `unbillable_transcription` close reasons mean the
+   gateway refused to deliver unbilled work — fix the mapping's prices, do not
+   raise limits. Roll back with `REALTIME_DISABLED=true`.
+6. Global: widen catalogue/IAM, then build `apps/playground` with
+   `NEXT_PUBLIC_REALTIME_ENABLED=true`.
+7. Add the `audioHour` fixed-price field to the admin catalogue UI before
+   moving the xAI STT mapping to a fixed pricing policy.
+
+**Verification.** `turbo run build --filter=gateway --filter=api
+--filter=worker --filter=docs` green (14 tasks). `vitest run
+--no-file-parallelism apps/gateway/src apps/worker packages/cache packages/db`:
+**110 files, 1987 passed, 2 skipped, 0 failed** — including all 69 upstream
+realtime specs and the 17 catalog invariants. `scripts/check-brand.sh` PASSED.
+`pnpm format` clean (only pre-existing `ui`/`playground` warnings). Both local
+databases (`db` and `test`) needed `pnpm --filter db push` for the new column
+before the worker `sync-models` specs passed. No realtime spec needed a live
+redis-storage instance; only `postgres` + `redis` were running locally.
+
+**Deferred.** Scoped `TEST_MODELS` e2e for the new mappings
+(`xai/grok-stt-1.0`, the alibaba rerank mappings, the OpenAI realtime mappings)
+was not run — it needs live provider credentials. Realtime has no `.e2e.ts` at
+all upstream.
 
 ### Stage 6 — Verification
 
