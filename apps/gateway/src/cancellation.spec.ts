@@ -9,6 +9,7 @@ import {
 } from "vitest";
 
 import { db, tables } from "@betarouter/db";
+import { randomToken } from "@betarouter/shared/random";
 
 import { app } from "./app.js";
 import {
@@ -180,7 +181,7 @@ describe("client cancellation logging", () => {
 			// fixed sleep against slow CI runners.
 			const upstreamRequestReceived = waitForMockCheckpoint("TRIGGER_TIMEOUT");
 			const requestPromise = postChat(
-				`TRIGGER_TIMEOUT_5000 ${Math.random()}`,
+				`TRIGGER_TIMEOUT_5000 ${randomToken()}`,
 				controller.signal,
 				requestId,
 			);
@@ -207,7 +208,7 @@ describe("client cancellation logging", () => {
 			// abort fires.
 			const partialBodyFlushed = waitForMockCheckpoint("TRIGGER_BODY_HANG");
 			const requestPromise = postChat(
-				`TRIGGER_BODY_HANG ${Math.random()}`,
+				`TRIGGER_BODY_HANG ${randomToken()}`,
 				controller.signal,
 				requestId,
 			);
@@ -235,7 +236,7 @@ describe("client cancellation logging", () => {
 			// the abort fires.
 			const partialBodyFlushed = waitForMockCheckpoint("TRIGGER_5XX_BODY_HANG");
 			const requestPromise = postChat(
-				`TRIGGER_5XX_BODY_HANG ${Math.random()}`,
+				`TRIGGER_5XX_BODY_HANG ${randomToken()}`,
 				controller.signal,
 				requestId,
 			);

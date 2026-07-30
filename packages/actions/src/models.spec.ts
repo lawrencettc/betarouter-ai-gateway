@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { metricsKey } from "@betarouter/db";
 import {
@@ -1086,10 +1086,13 @@ describe("getCheapestFromAvailableProviders", () => {
 			throw new Error("Missing Veo provider test fixtures");
 		}
 
-		const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0);
+		// An exploration rate of 1 always trips the epsilon-greedy branch, so the
+		// test does not depend on the value the secure RNG happens to produce.
+		const originalExplorationRate = process.env.EXPLORATION_RATE;
 		const originalArgv = process.argv;
 		const originalNodeEnv = process.env.NODE_ENV;
 		const originalVitest = process.env.VITEST;
+		process.env.EXPLORATION_RATE = "1";
 		delete process.env.NODE_ENV;
 		delete process.env.VITEST;
 		process.argv = ["node", "/tmp/vitest.mjs"];
@@ -1138,7 +1141,11 @@ describe("getCheapestFromAvailableProviders", () => {
 			expect(result?.provider.providerId).toBe("google-vertex");
 			expect(result?.metadata.selectionReason).toBe("weighted-score");
 		} finally {
-			randomSpy.mockRestore();
+			if (originalExplorationRate !== undefined) {
+				process.env.EXPLORATION_RATE = originalExplorationRate;
+			} else {
+				delete process.env.EXPLORATION_RATE;
+			}
 			process.argv = originalArgv;
 			if (originalNodeEnv !== undefined) {
 				process.env.NODE_ENV = originalNodeEnv;
@@ -1173,13 +1180,13 @@ describe("getCheapestFromAvailableProviders", () => {
 			throw new Error("Missing Veo provider test fixtures");
 		}
 
-		const randomSpy = vi
-			.spyOn(Math, "random")
-			.mockReturnValueOnce(0)
-			.mockReturnValueOnce(0);
+		// An exploration rate of 1 always trips the epsilon-greedy branch, so the
+		// test does not depend on the value the secure RNG happens to produce.
+		const originalExplorationRate = process.env.EXPLORATION_RATE;
 		const originalArgv = process.argv;
 		const originalNodeEnv = process.env.NODE_ENV;
 		const originalVitest = process.env.VITEST;
+		process.env.EXPLORATION_RATE = "1";
 		delete process.env.NODE_ENV;
 		delete process.env.VITEST;
 		process.argv = ["node", "/tmp/not-a-test-run.mjs"];
@@ -1231,7 +1238,11 @@ describe("getCheapestFromAvailableProviders", () => {
 				expect.arrayContaining(["avalanche", "google-vertex"]),
 			);
 		} finally {
-			randomSpy.mockRestore();
+			if (originalExplorationRate !== undefined) {
+				process.env.EXPLORATION_RATE = originalExplorationRate;
+			} else {
+				delete process.env.EXPLORATION_RATE;
+			}
 			process.argv = originalArgv;
 			if (originalNodeEnv !== undefined) {
 				process.env.NODE_ENV = originalNodeEnv;
