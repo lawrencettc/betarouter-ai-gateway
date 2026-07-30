@@ -156,6 +156,103 @@ untouched by the range. Notes carried forward to the UI stage (4b):
   included (their tables landed in Stage 2) but are inert while the gateway
   `/v1/realtime` surface stays dark.
 
+### Stage 4b outcome — frontends + docs merged (2026-07-30)
+
+All `apps/ui`, `apps/playground`, `apps/code`, `apps/docs`, `ee/admin` and the
+remaining `packages/shared` changes in `57ad9fc04..upstream/main` are merged
+(427 upstream file changes: 62 taken verbatim, 232 three-way merged, 130 new,
+1 deletion accepted). Commits: `2dab76ea9` (shared), `2312ff145` (ui),
+`4b9aa14db` (playground), `c98dad79a` (code + ee/admin), `8b5754bad` (docs),
+plus `build: ship pcm-recorder worklet past js ignores`.
+
+**Landed.** Product-page redesign (`/products/ai-gateway`, `/products/playground`,
+`/products/devpass`, `/products/observability`) + `product-sections.tsx`; nav and
+footer redesign; motion polish; member-level IAM rules editor; custom-provider
+rename dialog, `useCustomProviders`, compliance-attestation card; API-origin in
+log metadata (`API_ORIGIN_LABELS`); provider/model discount and TTFT
+display fixes (`provider-stats.ts` + spec); `deactivation.ts` model-hiding;
+`SelectableProviderOption` refactor of `MultiProviderSelector`; `RUNWARE_PROMO`,
+refund-reason fieldset, `use-countdown`, provider icons. Playground: shared
+`StudioNav`, points pill / leaderboard / profile, unified media sidebars,
+`call-history`, `realtime-audio`, pcm-recorder worklet. Code: `/start` landing
+page, quarterly model census (survey form, reminder dialog, public
+`/data/[year]` registry), agent time ranges + CSV export. Admin: gift reset
+passes, project chart source breakdown, manage-org rename. Docs: API-key
+rotation/renaming, GitHub Copilot guide, Cursor agent-mode correction, Gemini
+2.5 migration, `developers/` AI SDK section, `features/timeouts.mdx`,
+`learn/playground-audio.mdx`, product-grouped learn index.
+
+**Naming reverts applied** (no "Lounge" as a rendered product name):
+- `apps/ui/src/app/products/lounge` → `products/playground`; sitemap, navbar and
+  footer links follow. Copy rewritten to Playground/plan wording.
+- `apps/playground/src/lib/brand.ts` rewritten to the betarouter Playground
+  identity; `brand.spec.ts` asserts it. `manifest.ts` and `layout.tsx` consume
+  `BRAND`.
+- Sidebar/auth lockups keep OUR `Logo` + `Wordmark` + `Chat` badge instead of
+  upstream's bundled `Wordmark size="sm" iconBox`; `wordmark.tsx` is ours
+  (add/add). Upstream's Fraunces/Geist font swap rejected (our Bricolage
+  `--font-display` drives the wordmark); `--lounge-gold` adopted as a bare CSS
+  variable alongside our `--sidebar-ring`.
+- "membership" → "plan" across pricing, billing-history, upsell and profile
+  copy. `Lounge` survives only as identifiers (`useLoungePoints`,
+  `SidebarLoungePoints`, `/lounge/points/me`, `--lounge-gold`, file paths).
+- `DevPass` → `BetaPass` in every rendered string in `apps/code` and
+  `apps/docs`; component/route identifiers (`GetDevPassButton`,
+  `DevPassInvoices`, `/products/devpass`, `devpass-code`) unchanged. The sweep
+  was never run repo-wide with `--include-devpass`.
+
+**Skipped (deliberate).**
+- All new `apps/ui` blog posts (openrouter-alternatives cluster, performance
+  benchmark, generate-*-api set) and their images; all new changelog entries and
+  images — LLMGateway-authored marketing, we maintain our own.
+- Upstream edits to blog posts / self-host docs / `guides/cli.mdx` we had
+  deleted: those files stay deleted (9 modify/delete cases, all resolved "keep
+  our deletion").
+- The `self-host` entry upstream re-added to `apps/docs/content/meta.json`
+  (that docs section is deleted in our tree), and the dead
+  `self-hosted-or-cloud` feature icon in the features OG image.
+- `apps/ui/src/app/open-source` and its sitemap entry; the "Self-Hosted"
+  enterprise pricing tier; the "Cloud or self-hosted" ai-gateway product feature
+  (replaced with a compliance-controls entry) and the self-host line in the
+  ai-gateway closing CTA.
+- Upstream's "no team or company use" DevPass policy in
+  `apps/code/src/app/legal/terms/page.tsx` and `Faq.tsx` — our fork offers team
+  plans, so our copy is kept.
+- `apps/playground/e2e/lounge-rebrand.pw.ts` (asserts the Lounge identity).
+  `lounge-nav-gamification.pw.ts` and `apps/code/e2e/census.pw.ts` are kept.
+
+**Deferred to Stage 5.**
+- Playground realtime voice UI ships **dark**: `REALTIME_ENABLED` in
+  `studio-nav.tsx` reads `NEXT_PUBLIC_REALTIME_ENABLED` (default off), hides the
+  Voice studio tile, and `/realtime` `notFound()`s. The components
+  (`realtime-page-client`, `realtime-sidebar`, `use-realtime-call`,
+  `realtime-audio`, `call-history-list`, `voice-activity-indicator`,
+  `/api/realtime/session`) compile and are committed, but the gateway
+  `/v1/realtime` WebSocket surface does not exist yet. Flip the env var when
+  Stage 5 lands.
+- Docs for surfaces that do not exist in this tree were **not imported**:
+  `features/realtime.mdx`, `features/rerank.mdx`, `features/transcription.mdx`,
+  `learn/playground-realtime.mdx` (+ its 4 screenshots). Cross-links from
+  `learn/index.mdx`, `learn/meta.json`, `features/embeddings.mdx` and
+  `developers/ai-sdk-images.mdx` were pruned accordingly — restore all of these
+  in Stage 5.
+
+**Merge hazards hit.** `git merge-file` duplicated whole JSX blocks in the
+opengraph-image files (both sides had applied the prettier 3.9.6 JSX-paren
+reformat). Those 13 files were re-derived from upstream and re-branded
+programmatically (`viewBox="0 0 218 232"` logo → our chevron mark,
+`LLMGatewayIcon` → `BrandIcon`) rather than hand-merged. Separately, taking
+"ours" for the sidebar wordmark hunks dropped upstream's now-unused `Logo`/
+`Badge` imports; `next build` did **not** catch it (no typecheck), only
+`eslint`'s `jsx-no-undef` did — run per-app `pnpm exec eslint src` after any
+future ours/theirs hunk mixing.
+
+**Needs human visual QA.** The four new product pages; the redesigned navbar
+products dropdown and footer; the playground StudioNav tile grid at collapsed
+and mobile widths; the points pill / leaderboard / profile pages (gold accent
+against our green sidebar ring); the 13 regenerated OG cards (logo placement was
+scripted, not eyeballed); the `/start` page and `/data/[year]` census registry.
+
 ### Stage 5 — Realtime + rerank + transcriptions (landed dark)
 
 Land code with `/v1/realtime` disabled by default (upstream had a revert/re-land cycle;
