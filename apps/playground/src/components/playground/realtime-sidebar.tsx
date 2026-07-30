@@ -169,7 +169,7 @@ export function RealtimeSidebar({
 					<SidebarMenuItem>
 						<SidebarMenuButton size="lg" asChild tooltip="betarouter">
 							<Link href={withOrg("/")} prefetch={true}>
-								<Wordmark size="sm" iconBox />
+								<Wordmark />
 							</Link>
 						</SidebarMenuButton>
 					</SidebarMenuItem>
