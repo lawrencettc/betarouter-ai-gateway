@@ -123,6 +123,39 @@ existing product naming for the chat app. The betarouter brand name is always
 lowercase ("betarouter", never "BetaRouter"/"Betarouter") in user-facing copy; the
 BetaPass product name keeps its own casing.
 
+### Stage 4a outcome — apps/api merged (2026-07-30)
+
+All 41 `apps/api` commits in `57ad9fc04..upstream/main` are merged. `ee/audit` was
+untouched by the range. Notes carried forward to the UI stage (4b):
+
+- **Custom-provider catalogue exemption (decided + implemented).** Tenant custom
+  providers are org-owned BYOK inventory, so `enforceCatalogRequest` returns `null`
+  for the reserved `custom` namespace and `filterProviderMappingsByCatalog` passes
+  their synthetic mappings through. `chat.ts` now forwards `"custom"` as the
+  providerId instead of `undefined` so the exemption can fire — without this every
+  custom-provider request would 404 once `CATALOG_ROUTING_ENABLED` flips on.
+- **Namespace collision closed from both directions.** `platform-providers.ts`
+  already rejected `provider: "custom"`; `platform-catalog.ts` now rejects change-set
+  operations targeting the `custom` provider id or its mappings, and
+  `assertCustomProviderNameAvailable` rejects tenant provider names that collide with
+  any catalogue provider id (such a provider would be created permanently unroutable,
+  since `parseModelInput` resolves `<name>/<model>` against the catalogue first).
+- **Reconciliations.** `gateway/src/lib/iam.ts` and `packages/models` compliance
+  helpers were already fully merged by Stages 1/3 — only the missing endpoint specs
+  were added. `keys-provider.ts` kept the Stage-1 crypto-random pick and gained
+  upstream's `CUSTOM_PROVIDER_NAME_REGEX` / `ProviderKeyComplianceAttestation`.
+- **packages/shared partially merged**: `custom-providers.ts`, `refunds.ts`, `csv.ts`
+  and their index exports only. `RUNWARE_PROMO` and the React components
+  (refund-reason fieldset, provider icons, `use-countdown`) are left for Stage 4b.
+- **Naming**: `Lounge` survives only as internal identifiers, route paths and level
+  titles. All user-facing copy the API emits (transaction descriptions, OpenAPI
+  descriptions, error messages) stays "Chat Plan"/"BetaPass". Stage 4b must not
+  reintroduce "Lounge" as a rendered product name.
+- **Deferred to Stage 5**: nothing from `apps/api` — the range adds no realtime
+  session or client-secret route. Playground realtime *history* endpoints are
+  included (their tables landed in Stage 2) but are inert while the gateway
+  `/v1/realtime` surface stays dark.
+
 ### Stage 5 — Realtime + rerank + transcriptions (landed dark)
 
 Land code with `/v1/realtime` disabled by default (upstream had a revert/re-land cycle;
