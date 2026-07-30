@@ -202,6 +202,11 @@ export async function syncProvidersAndModels() {
 										mapping.ocrPagePrice !== undefined
 											? mapping.ocrPagePrice.toString()
 											: null,
+									inputAudioHourPrice:
+										"inputAudioHourPrice" in mapping &&
+										mapping.inputAudioHourPrice !== undefined
+											? mapping.inputAudioHourPrice.toString()
+											: null,
 									perSecondPrice:
 										"perSecondPrice" in mapping && mapping.perSecondPrice
 											? Object.fromEntries(
@@ -339,6 +344,11 @@ export async function syncProvidersAndModels() {
 									"ocrPagePrice" in mapping &&
 									mapping.ocrPagePrice !== undefined
 										? mapping.ocrPagePrice.toString()
+										: undefined,
+								inputAudioHourPrice:
+									"inputAudioHourPrice" in mapping &&
+									mapping.inputAudioHourPrice !== undefined
+										? mapping.inputAudioHourPrice.toString()
 										: undefined,
 								perSecondPrice:
 									"perSecondPrice" in mapping && mapping.perSecondPrice

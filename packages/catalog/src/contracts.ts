@@ -23,6 +23,7 @@ export const fixedPricesV1Schema = z
 		audioOutputPerMillionTokens: decimalStringSchema.optional(),
 		ocrPage: decimalStringSchema.optional(),
 		inputPerMillionCharacters: decimalStringSchema.optional(),
+		audioHour: decimalStringSchema.optional(),
 		perSecondByResolution: z.record(idSchema, decimalStringSchema).optional(),
 	})
 	.strict();

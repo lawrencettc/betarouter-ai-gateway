@@ -2966,6 +2966,7 @@ export const modelProviderMapping = pgTable(
 		outputAudioPrice: decimal(),
 		inputCharacterPrice: decimal(),
 		ocrPagePrice: decimal(),
+		inputAudioHourPrice: decimal(),
 		perSecondPrice: jsonb().$type<Record<string, string>>(),
 		requestPrice: decimal(),
 		contextSize: integer(),

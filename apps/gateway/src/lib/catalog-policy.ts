@@ -154,6 +154,9 @@ export function applyCatalogCustomerPrices(
 		requestPrice: prices.request,
 		webSearchPrice: prices.webSearch,
 		ocrPagePrice: prices.ocrPage,
+		// Flat USD per hour of input audio, like requestPrice/ocrPagePrice: not
+		// divided by 1e6. Drives /v1/audio/transcriptions billing.
+		inputAudioHourPrice: prices.audioHour,
 		perSecondPrice: Object.fromEntries(
 			Object.entries(prices).flatMap(([unit, value]) =>
 				unit.startsWith("second:") && value !== undefined

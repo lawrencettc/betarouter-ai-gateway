@@ -1,0 +1,1 @@
+ALTER TABLE "model_provider_mapping" ADD COLUMN IF NOT EXISTS "input_audio_hour_price" numeric;
