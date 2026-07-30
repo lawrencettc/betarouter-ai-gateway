@@ -202,7 +202,7 @@ function findProviderMapping<P extends ModelWithPricing["providers"][number]>(
 	);
 }
 
-function providerSupportsCaching(
+export function providerSupportsCaching(
 	providerInfo:
 		| {
 				cachedInputPrice?: string;

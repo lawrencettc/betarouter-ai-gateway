@@ -2,7 +2,11 @@ import { trace } from "@opentelemetry/api";
 
 import type { GatewayApiKey } from "@/lib/cached-queries.js";
 import type { RoutingMetadata } from "@betarouter/actions";
-import type { GatewayContentFilterResponse, Project } from "@betarouter/db";
+import type {
+	ApiOrigin,
+	GatewayContentFilterResponse,
+	Project,
+} from "@betarouter/db";
 import type { OpenAIToolInput } from "@betarouter/models";
 
 export interface PluginResults {
@@ -38,6 +42,7 @@ export interface CreateLogEntryOptions {
 	tools?: OpenAIToolInput[];
 	toolChoice?: any;
 	source?: string;
+	apiOrigin?: ApiOrigin;
 	customHeaders: Record<string, string>;
 	debugMode: boolean;
 	userAgent?: string;
@@ -96,6 +101,7 @@ function buildLogEntry(options: CreateLogEntryOptions) {
 		tools: options.tools ?? null,
 		toolChoice: options.toolChoice ?? null,
 		mode: options.project.mode,
+		apiOrigin: options.apiOrigin ?? null,
 		source: options.source ?? null,
 		customHeaders:
 			Object.keys(options.customHeaders).length > 0
