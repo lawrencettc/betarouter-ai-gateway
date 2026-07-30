@@ -1,7 +1,0 @@
-ALTER TABLE "platform_catalog_change_set" ADD CONSTRAINT "platform_catalog_change_set_state_check" CHECK ("state" IN ('draft', 'scheduled', 'applying', 'applied', 'failed', 'cancelled', 'rolled_back'));--> statement-breakpoint
-ALTER TABLE "platform_mapping_health_summary" ADD CONSTRAINT "platform_mapping_health_summary_breaker_state_check" CHECK ("breaker_state" IN ('closed', 'open', 'half_open'));--> statement-breakpoint
-ALTER TABLE "platform_mapping_price_policy" ADD CONSTRAINT "platform_mapping_price_policy_currency_check" CHECK ("currency" = 'USD');--> statement-breakpoint
-ALTER TABLE "platform_mapping_price_policy" ADD CONSTRAINT "platform_mapping_price_policy_mode_check" CHECK ("mode" IN ('source_cost', 'markup', 'fixed'));--> statement-breakpoint
-ALTER TABLE "platform_mapping_test_run" ADD CONSTRAINT "platform_mapping_test_run_status_check" CHECK ("status" IN ('running', 'passed', 'failed', 'error'));--> statement-breakpoint
-ALTER TABLE "platform_model_policy" ADD CONSTRAINT "platform_model_policy_lifecycle_check" CHECK ("lifecycle" IN ('draft', 'active', 'deprecated', 'retired'));--> statement-breakpoint
-ALTER TABLE "platform_provider_policy" ADD CONSTRAINT "platform_provider_policy_lifecycle_check" CHECK ("lifecycle" IN ('draft', 'active', 'deprecated', 'retired'));

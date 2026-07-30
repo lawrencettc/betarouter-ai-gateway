@@ -1,1 +1,0 @@
-ALTER TABLE "platform_catalog_change_set" ADD COLUMN "inverse_operations" jsonb;
