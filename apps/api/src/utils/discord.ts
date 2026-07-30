@@ -55,6 +55,13 @@ async function sendDiscordNotification(
 	}
 }
 
+function formatAmount(amount: number, currency: string): string {
+	const normalized = currency.toUpperCase();
+	return normalized === "USD"
+		? `$${amount.toFixed(2)}`
+		: `${amount.toFixed(2)} ${normalized}`;
+}
+
 export async function notifyUserSignup(
 	email: string,
 	name: string | null | undefined,
@@ -172,6 +179,8 @@ export async function notifyDevPlanSubscribed(
 	name: string | null | undefined,
 	devPlan: string,
 	cycle: string,
+	amount: number,
+	currency: string,
 ): Promise<void> {
 	const displayName = name ?? "Unknown";
 
@@ -179,7 +188,7 @@ export async function notifyDevPlanSubscribed(
 		embeds: [
 			{
 				title: "BetaPass Subscribed",
-				color: 0x22c55e, // Green
+				color: 0x3b82f6, // Blue
 				fields: [
 					{
 						name: "Email",
@@ -194,6 +203,11 @@ export async function notifyDevPlanSubscribed(
 					{
 						name: "Plan",
 						value: `${devPlan.toUpperCase()} (${cycle})`,
+						inline: true,
+					},
+					{
+						name: "Amount",
+						value: formatAmount(amount, currency),
 						inline: true,
 					},
 				],
@@ -256,6 +270,41 @@ export async function notifyDevPlanCancelled(
 			{
 				title: "BetaPass Cancelled",
 				color: 0xef4444, // Red
+				fields: [
+					{
+						name: "Email",
+						value: email,
+						inline: true,
+					},
+					{
+						name: "Name",
+						value: displayName,
+						inline: true,
+					},
+					{
+						name: "Plan",
+						value: devPlan.toUpperCase(),
+						inline: true,
+					},
+				],
+				timestamp: new Date().toISOString(),
+			},
+		],
+	});
+}
+
+export async function notifyDevPlanResumed(
+	email: string,
+	name: string | null | undefined,
+	devPlan: string,
+): Promise<void> {
+	const displayName = name ?? "Unknown";
+
+	await sendDiscordNotification({
+		embeds: [
+			{
+				title: "DevPass Resumed",
+				color: 0x10b981, // Emerald
 				fields: [
 					{
 						name: "Email",
@@ -525,6 +574,29 @@ export async function notifyChatPlanCancelled(
 	});
 }
 
+export async function notifyChatPlanResumed(
+	email: string,
+	name: string | null | undefined,
+	chatPlan: string,
+): Promise<void> {
+	const displayName = name ?? "Unknown";
+
+	await sendDiscordNotification({
+		embeds: [
+			{
+				title: "Chat Plan Resumed",
+				color: 0x10b981,
+				fields: [
+					{ name: "Email", value: email, inline: true },
+					{ name: "Name", value: displayName, inline: true },
+					{ name: "Plan", value: chatPlan.toUpperCase(), inline: true },
+				],
+				timestamp: new Date().toISOString(),
+			},
+		],
+	});
+}
+
 export async function notifyChatPlanRenewed(
 	email: string,
 	name: string | null | undefined,
@@ -541,6 +613,27 @@ export async function notifyChatPlanRenewed(
 					{ name: "Email", value: email, inline: true },
 					{ name: "Name", value: displayName, inline: true },
 					{ name: "Plan", value: chatPlan.toUpperCase(), inline: true },
+				],
+				timestamp: new Date().toISOString(),
+			},
+		],
+	});
+}
+
+export async function notifyUserAccountDeleted(
+	email: string,
+	name: string | null | undefined,
+): Promise<void> {
+	const displayName = name ?? "Unknown";
+
+	await sendDiscordNotification({
+		embeds: [
+			{
+				title: "Account Deleted",
+				color: 0xef4444, // Red
+				fields: [
+					{ name: "Email", value: email, inline: true },
+					{ name: "Name", value: displayName, inline: true },
 				],
 				timestamp: new Date().toISOString(),
 			},
