@@ -203,19 +203,28 @@ const CATALOG_ADMISSION_ENTRYPOINTS = [
 /**
  * Signals that a module handles billed requests: it prices a request, resolves
  * provider credentials, or writes a usage log.
+ *
+ * `.insert(log)` catches surfaces that bypass the shared `insertLog` helper and
+ * write the `log` table directly (the realtime session/transcription billing
+ * writes do this, inside a transaction with the session aggregate update).
  */
 const BILLED_PATH_SIGNALS = [
 	"calculateCosts(",
 	"getProviderEnv(",
 	"insertLog(",
+	".insert(log)",
 ] as const;
 
-/** Signals that a file registers HTTP routes. */
+/**
+ * Signals that a file registers HTTP routes. Deliberately narrow (OpenAPI route
+ * definitions and Hono app construction) rather than bare `.get(`/`.post(`:
+ * discovery became module-level below, and helper modules such as `lib/` are
+ * full of unrelated `.get(`/`.post(` calls on Maps and Redis clients.
+ */
 const ROUTE_REGISTRATION_SIGNALS = [
 	"createRoute(",
+	"new OpenAPIHono",
 	".openapi(",
-	".post(",
-	".get(",
 ] as const;
 
 /**
@@ -256,14 +265,20 @@ function containsAny(source: string, needles: readonly string[]): boolean {
 	return needles.some((needle) => source.includes(needle));
 }
 
+/**
+ * Discovery is MODULE-level, not file-level: a module counts as billed when
+ * some file in it bills and some file in it registers a route, even when those
+ * are different files. `realtime/` is exactly that shape — `preflight.ts`
+ * resolves provider credentials and `billing.ts` writes the log rows, while
+ * only `client-secrets-route.ts` registers HTTP routes. A file-level
+ * conjunction silently missed it.
+ */
 function isBilledRouteModule(module: GatewayModule): boolean {
-	return module.files.some((file) => {
-		const source = read(file);
-		return (
-			containsAny(source, BILLED_PATH_SIGNALS) &&
-			containsAny(source, ROUTE_REGISTRATION_SIGNALS)
-		);
-	});
+	const sources = module.files.map(read);
+	return (
+		sources.some((source) => containsAny(source, BILLED_PATH_SIGNALS)) &&
+		sources.some((source) => containsAny(source, ROUTE_REGISTRATION_SIGNALS))
+	);
 }
 
 function hasCatalogAdmission(module: GatewayModule): boolean {
@@ -275,6 +290,32 @@ function hasCatalogAdmission(module: GatewayModule): boolean {
 function delegatesToChatCompletions(module: GatewayModule): boolean {
 	return module.files.some((file) => read(file).includes(DELEGATION_MARKER));
 }
+
+/**
+ * Invariant 4 — inline-priced surfaces must take their billing mapping from the
+ * catalog filter.
+ *
+ * These modules never call `calculateCosts`: they multiply token/duration counts
+ * by the price fields of the resolved `ProviderModelMapping` directly (e.g.
+ * `Number(mapping.inputPrice) * promptTokens`, or
+ * `buildRealtimePriceSnapshot(mapping)`), so invariant 1 cannot see them. Their
+ * equivalent of `pricingOverride` is obtaining that mapping from
+ * `filterProviderMappingsByCatalog`, which returns
+ * `applyCatalogCustomerPrices()`-adjusted mappings and drops
+ * operator-deactivated ones. Reverting to the static `packages/models` mapping
+ * would silently bill at source cost and serve retired mappings.
+ */
+const INLINE_PRICED_MODULES_REQUIRING_CATALOG_FILTER = [
+	"embeddings",
+	"ocr",
+	"realtime",
+	"rerank",
+	"speech",
+	"transcriptions",
+	"videos",
+] as const;
+
+const CATALOG_MAPPING_FILTER = "filterProviderMappingsByCatalog(";
 
 const gatewayModules = listGatewayModules();
 const billedGatewayModules = gatewayModules.filter(isBilledRouteModule);
@@ -295,7 +336,10 @@ const EXPECTED_BILLED_GATEWAY_MODULES = [
 	"images",
 	"moderations",
 	"ocr",
+	"realtime",
+	"rerank",
 	"speech",
+	"transcriptions",
 	"videos",
 ] as const;
 
@@ -416,6 +460,33 @@ describe("catalog invariants (static source analysis)", () => {
 			expect(chatSource).toContain("filterProviderMappingsByCatalog(");
 			expect(chatSource).toContain("filterAutoCandidateByCatalog(");
 		});
+	});
+
+	describe("invariant 4: inline-priced surfaces use the catalog mapping filter", () => {
+		test.each([...INLINE_PRICED_MODULES_REQUIRING_CATALOG_FILTER])(
+			"%s resolves its billing mapping through filterProviderMappingsByCatalog",
+			(name) => {
+				const module = gatewayModules.find((m) => m.name === name);
+				expect(
+					module,
+					`gateway module "${name}" no longer exists`,
+				).toBeDefined();
+				if (!module) {
+					return;
+				}
+				const source = module.files.map(read).join("\n");
+				expect(
+					source.includes(CATALOG_MAPPING_FILTER),
+					[
+						`Module "${name}" prices requests inline from the mapping's price`,
+						"fields but no longer calls filterProviderMappingsByCatalog().",
+						"Without it the mapping is the static packages/models entry, so",
+						"catalog customer prices are ignored and operator-deactivated",
+						"mappings stay servable.",
+					].join(" "),
+				).toBe(true);
+			},
+		);
 	});
 
 	describe("invariant 3: pinned calculateCosts census", () => {
