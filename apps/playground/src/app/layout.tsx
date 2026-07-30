@@ -1,6 +1,7 @@
 import { Inter, JetBrains_Mono, Bricolage_Grotesque } from "next/font/google";
 
 import { Providers } from "@/components/providers";
+import { BRAND } from "@/lib/brand";
 import { getConfig } from "@/lib/config-server";
 
 import "./globals.css";
@@ -52,7 +53,7 @@ export const metadata: Metadata = {
 		},
 	},
 	openGraph: {
-		title: "AI Playground — Chat with 200+ Models (GPT, Claude, Gemini)",
+		title: `${BRAND.fullName} — Chat with 200+ AI Models (GPT, Claude, Gemini)`,
 		description:
 			"Test and compare 200+ AI models from one account. Chat, generate images and videos, and run multi-model group chats — pay-as-you-go.",
 		images: ["/opengraph.png?v=4"],
@@ -63,7 +64,7 @@ export const metadata: Metadata = {
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "AI Playground — Chat with 200+ Models (GPT, Claude, Gemini)",
+		title: `${BRAND.fullName} — Chat with 200+ AI Models (GPT, Claude, Gemini)`,
 		description:
 			"Test and compare 200+ AI models from one account. Chat, generate images and videos, and run multi-model group chats — pay-as-you-go.",
 		images: ["/opengraph.png?v=4"],
@@ -77,7 +78,7 @@ const webSiteSchema = {
 	name: "betarouter Playground",
 	url: "https://chat.betarouter.com",
 	description:
-		"Test and compare 200+ AI models in one playground. Chat, generate images and videos, and run multi-model group chats.",
+		"Chat with 200+ AI models, generate images and videos, and run multi-model group chats.",
 	publisher: {
 		"@type": "Organization",
 		name: "betarouter",
@@ -93,7 +94,7 @@ const softwareApplicationSchema = {
 	applicationCategory: "DeveloperApplication",
 	operatingSystem: "Web",
 	description:
-		"Web playground to chat with 200+ AI models including GPT, Claude, Gemini, plus image and video generation. Pay-as-you-go from a single credit balance.",
+		"Chat with 200+ AI models including GPT, Claude, and Gemini, plus image and video generation — one plan, every frontier model.",
 	publisher: {
 		"@type": "Organization",
 		name: "betarouter",
