@@ -87,6 +87,18 @@ the migrator. Verify `pnpm migrations` is a no-op afterwards. Lands: `user_iam_r
 `refund_feedback`, `model_survey_response`, `log.api_origin`, TTFT counters,
 `provider_key.compliance_attestation`, realtime tables, `provider_stats_v2` indexes.
 
+### Stage 2 outcome — ops prerequisite (MIGRATOR LEDGER)
+
+Stage 2 landed as one regenerated migration (`1785376241_lively_starbolt`, journal
+idx 216, fully `IF NOT EXISTS`-guarded). **Deploy hazard for databases that already
+applied our old 8 migrations** (high-water mark `1784934282664`): drizzle's migrator
+skips migrations with older timestamps, so upstream's `1784722021_pretty_bromley`
+(user_iam_rule) and `1784752643_loose_rocket_racer` (model_survey_response) would be
+**silently skipped**. Ops must apply those two by hand (both are simple CREATE TABLE)
+or adjust the `__drizzle_migrations` ledger before the next deploy — in addition to
+the pre-existing requirement to run the `CREATE INDEX CONCURRENTLY` preps from
+`1785105737`/`1785190561` before the migrator. Fresh databases are unaffected.
+
 ### Stage 3 — Credential keystone (single senior-owned PR)
 
 Resolve hazard 4. Land with it: temperature clamping, client-abort handling,
