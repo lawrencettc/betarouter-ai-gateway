@@ -13,6 +13,7 @@ Configure these public hostnames on the remotely managed Cloudflare tunnel:
 | `betarouter.com`              | `http://betarouter:3002` |
 | `api.betarouter.com`          | `http://betarouter:4001` |
 | `platform-api.betarouter.com` | `http://betarouter:4002` |
+| `chat.betarouter.com`         | `http://betarouter:3003` |
 | `playground.betarouter.com`   | `http://betarouter:3003` |
 | `code.betarouter.com`         | `http://betarouter:3004` |
 | `betapass.betarouter.com`     | `http://betarouter:3004` |
@@ -23,12 +24,30 @@ Cloudflare creates and proxies the required DNS records when each public
 hostname is saved. The application, PostgreSQL, and Redis ports are not bound
 to the Droplet's public interface.
 
-`betapass.betarouter.com` is the public domain of the BetaPass product (the
-`code` app); it shares the same tunnel service as `code.betarouter.com`. After
-adding the hostname, add `https://betapass.betarouter.com/` to the
-"Verify public routes" step in `.github/workflows/deploy-production.yml` so
-deploys check it — do not add the check before the hostname exists, or every
-deploy will fail verification.
+`chat.betarouter.com` is the canonical public domain of the Playground (the
+`playground` app) and shares the tunnel service with
+`playground.betarouter.com`. The app's own metadata treats `chat.` as canonical
+— `metadataBase`, `sitemap.ts`, `robots.ts`, and every OpenGraph/canonical URL
+point there — so `PLAYGROUND_URL` must be `https://chat.betarouter.com` and
+`chat.betarouter.com` must appear in `ORIGIN_URLS` and `GATEWAY_CORS_ORIGINS`.
+`playground.betarouter.com` is kept as an alias so existing links keep working.
+
+`betapass.betarouter.com` is the canonical public domain of the BetaPass product
+(the `code` app) and shares the tunnel service with `code.betarouter.com`. Its
+metadata treats `betapass.` as canonical the same way, and `betarouter.com/code`
+permanently redirects there — so `CODE_URL` must be
+`https://betapass.betarouter.com`. `code.betarouter.com` is kept as an alias.
+
+`CODE_URL` is not only a link target: `apps/api/src/auth/config.ts` uses it in
+`isCodeAppOrigin`/`resolveCallbackBaseUrl` to decide where an auth callback
+returns to. Only the origin matching `CODE_URL` is treated as the code app, so
+requests arriving on the alias fall back to `UI_URL`. Keep BOTH
+`betapass.betarouter.com` and `code.betarouter.com` in `ORIGIN_URLS`, which is
+what better-auth uses for `trustedOrigins`.
+
+Both hostnames now exist, so `https://chat.betarouter.com/` and
+`https://betapass.betarouter.com/` can be added to the "Verify public routes"
+step in `.github/workflows/deploy-production.yml`.
 
 Create a Cloudflare Access self-hosted application for
 `admin.betarouter.com` before sharing the admin URL. Tunnel transport protects
@@ -133,7 +152,7 @@ different behaviour:
    allowlist BEFORE deploying if such clients exist:
 
    ```sh
-   GATEWAY_CORS_ORIGINS=https://playground.betarouter.com,https://*.betarouter.com
+   GATEWAY_CORS_ORIGINS=https://chat.betarouter.com,https://playground.betarouter.com,https://*.betarouter.com
    ```
 
    Entries are full origins and may use one leading wildcard label. Credentials
