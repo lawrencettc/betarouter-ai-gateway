@@ -140,7 +140,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 			suppressHydrationWarning
 		>
 			<head>
-				<link rel="preconnect" href="https://internal.betarouter.com" />
+				<link rel="preconnect" href="https://platform-api.betarouter.com" />
 				<link rel="preconnect" href="https://docs.betarouter.com" />
 				<script
 					type="application/ld+json"
