@@ -14152,9 +14152,15 @@ const promoBannerSchema = z.object({
 	discountPercent: z.number(),
 	message: z.string(),
 	linkPath: z.string(),
+	backgroundColor: z.string(),
+	textColor: z.string(),
 	endsAt: z.string(),
 	updatedAt: z.string(),
 });
+
+const hexColorSchema = z
+	.string()
+	.regex(/^#[0-9a-fA-F]{6}$/, "Color must be a 6-digit hex value like #a8f399");
 
 const updatePromoBannerBodySchema = z.object({
 	enabled: z.boolean(),
@@ -14168,6 +14174,8 @@ const updatePromoBannerBodySchema = z.object({
 	linkPath: z
 		.string()
 		.regex(/^\//, "Link path must be relative and start with /"),
+	backgroundColor: hexColorSchema,
+	textColor: hexColorSchema,
 	endsAt: z.string().min(1, "End date is required"),
 });
 
@@ -14223,6 +14231,8 @@ function formatPromoBanner(banner: typeof tables.promoBanner.$inferSelect) {
 		discountPercent: banner.discountPercent,
 		message: banner.message,
 		linkPath: banner.linkPath,
+		backgroundColor: banner.backgroundColor,
+		textColor: banner.textColor,
 		endsAt: banner.endsAt.toISOString(),
 		updatedAt: banner.updatedAt.toISOString(),
 	};
@@ -14247,6 +14257,8 @@ admin.openapi(updatePromoBanner, async (c) => {
 		discountPercent: body.discountPercent,
 		message: body.message,
 		linkPath: body.linkPath,
+		backgroundColor: body.backgroundColor,
+		textColor: body.textColor,
 		endsAt,
 	};
 

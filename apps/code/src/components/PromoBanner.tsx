@@ -29,7 +29,11 @@ export function PromoBanner() {
 			href={`https://betarouter.com${banner.linkPath}`}
 			target="_blank"
 			rel="noopener noreferrer"
-			className="group block bg-[#a8f399] text-[#0c1a08]"
+			className="group block"
+			style={{
+				backgroundColor: banner.backgroundColor,
+				color: banner.textColor,
+			}}
 		>
 			<div className="container mx-auto flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 px-4 py-2 text-[13px] font-medium leading-tight">
 				{banner.brandName.toLowerCase() === "runware" ? (
@@ -54,7 +58,9 @@ export function PromoBanner() {
 				</span>
 				<span
 					suppressHydrationWarning
-					className="rounded bg-[#0c1a08]/10 px-1.5 py-0.5 font-mono text-[11px] font-semibold tabular-nums"
+					className="rounded px-1.5 py-0.5 font-mono text-[11px] font-semibold tabular-nums"
+					// 10% opacity pill over the banner background ("1a" hex alpha).
+					style={{ backgroundColor: `${banner.textColor}1a` }}
 				>
 					ends in {formatCountdown(countdown)}
 				</span>

@@ -1374,6 +1374,8 @@ async function seed() {
 		discountPercent: 30,
 		message: "open-source models",
 		linkPath: "/providers/runware",
+		backgroundColor: "#a8f399",
+		textColor: "#0c1a08",
 		endsAt: new Date("2026-08-26T23:59:59Z"),
 	});
 

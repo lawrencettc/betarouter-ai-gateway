@@ -15,8 +15,15 @@ export interface PromoBannerData {
 	discountPercent: number;
 	message: string;
 	linkPath: string;
+	backgroundColor: string;
+	textColor: string;
 	endsAt: string;
 }
+
+const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
+
+const DEFAULT_BACKGROUND_COLOR = "#a8f399";
+const DEFAULT_TEXT_COLOR = "#0c1a08";
 
 interface PromoBannerFormProps {
 	banner: PromoBannerData | null;
@@ -45,6 +52,12 @@ export function PromoBannerForm({ banner, onSubmit }: PromoBannerFormProps) {
 	);
 	const [message, setMessage] = useState(banner?.message ?? "");
 	const [linkPath, setLinkPath] = useState(banner?.linkPath ?? "/providers/");
+	const [backgroundColor, setBackgroundColor] = useState(
+		banner?.backgroundColor ?? DEFAULT_BACKGROUND_COLOR,
+	);
+	const [textColor, setTextColor] = useState(
+		banner?.textColor ?? DEFAULT_TEXT_COLOR,
+	);
 	const [endsAt, setEndsAt] = useState(
 		banner ? toDatetimeLocal(banner.endsAt) : "",
 	);
@@ -79,6 +92,14 @@ export function PromoBannerForm({ banner, onSubmit }: PromoBannerFormProps) {
 			setError("Link path must be relative and start with /");
 			return;
 		}
+		if (!HEX_COLOR_PATTERN.test(backgroundColor)) {
+			setError("Background color must be a 6-digit hex value like #a8f399");
+			return;
+		}
+		if (!HEX_COLOR_PATTERN.test(textColor)) {
+			setError("Text color must be a 6-digit hex value like #0c1a08");
+			return;
+		}
 		const endsAtDate = new Date(endsAt);
 		if (!endsAt || Number.isNaN(endsAtDate.getTime())) {
 			setError("A valid end date is required");
@@ -93,6 +114,8 @@ export function PromoBannerForm({ banner, onSubmit }: PromoBannerFormProps) {
 				discountPercent: percent,
 				message: message.trim(),
 				linkPath: linkPath.trim(),
+				backgroundColor: backgroundColor.toLowerCase(),
+				textColor: textColor.toLowerCase(),
 				endsAt: endsAtDate.toISOString(),
 			});
 
@@ -198,6 +221,89 @@ export function PromoBannerForm({ banner, onSubmit }: PromoBannerFormProps) {
 						The banner hides itself automatically after this time (your local
 						timezone).
 					</p>
+				</div>
+			</div>
+
+			<div className="grid gap-4 sm:grid-cols-2">
+				<div className="space-y-2">
+					<Label htmlFor="promo-bg-color">Background color</Label>
+					<div className="flex items-center gap-2">
+						<input
+							id="promo-bg-color"
+							type="color"
+							value={
+								HEX_COLOR_PATTERN.test(backgroundColor)
+									? backgroundColor
+									: DEFAULT_BACKGROUND_COLOR
+							}
+							onChange={(e) => setBackgroundColor(e.target.value)}
+							className="h-9 w-12 cursor-pointer rounded-md border border-input bg-transparent p-1"
+						/>
+						<Input
+							value={backgroundColor}
+							onChange={(e) => setBackgroundColor(e.target.value)}
+							placeholder={DEFAULT_BACKGROUND_COLOR}
+							className="font-mono"
+						/>
+					</div>
+				</div>
+				<div className="space-y-2">
+					<Label htmlFor="promo-text-color">Text color</Label>
+					<div className="flex items-center gap-2">
+						<input
+							id="promo-text-color"
+							type="color"
+							value={
+								HEX_COLOR_PATTERN.test(textColor)
+									? textColor
+									: DEFAULT_TEXT_COLOR
+							}
+							onChange={(e) => setTextColor(e.target.value)}
+							className="h-9 w-12 cursor-pointer rounded-md border border-input bg-transparent p-1"
+						/>
+						<Input
+							value={textColor}
+							onChange={(e) => setTextColor(e.target.value)}
+							placeholder={DEFAULT_TEXT_COLOR}
+							className="font-mono"
+						/>
+					</div>
+				</div>
+			</div>
+
+			<div className="space-y-2">
+				<Label>Preview</Label>
+				<div
+					className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 rounded-2xl px-4 py-2 text-[13px] font-medium leading-tight"
+					style={{
+						backgroundColor: HEX_COLOR_PATTERN.test(backgroundColor)
+							? backgroundColor
+							: DEFAULT_BACKGROUND_COLOR,
+						color: HEX_COLOR_PATTERN.test(textColor)
+							? textColor
+							: DEFAULT_TEXT_COLOR,
+					}}
+				>
+					<span className="font-semibold">{brandName || "Brand"}</span>
+					<span>
+						is now on betarouter —{" "}
+						{Number(discountPercent) > 0 && (
+							<span className="font-semibold">{discountPercent}% off </span>
+						)}
+						{message || "your message"}
+					</span>
+					<span
+						className="rounded-full px-2 py-0.5 font-mono text-[11px] font-semibold tabular-nums leading-tight"
+						style={{
+							backgroundColor: `${
+								HEX_COLOR_PATTERN.test(textColor)
+									? textColor
+									: DEFAULT_TEXT_COLOR
+							}1a`,
+						}}
+					>
+						ends in 26d 12:00:00
+					</span>
 				</div>
 			</div>
 

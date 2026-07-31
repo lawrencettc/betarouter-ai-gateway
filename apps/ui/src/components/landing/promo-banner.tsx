@@ -44,7 +44,11 @@ export function PromoBanner({ collapsed = false }: PromoBannerProps) {
 					<Link
 						href={banner.linkPath}
 						prefetch={true}
-						className="group/promo flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 rounded-2xl bg-[#a8f399] px-4 py-2 text-[#0c1a08]"
+						className="group/promo flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 rounded-2xl px-4 py-2"
+						style={{
+							backgroundColor: banner.backgroundColor,
+							color: banner.textColor,
+						}}
 					>
 						{banner.brandName.toLowerCase() === "runware" ? (
 							<RunwareWordmarkIcon
@@ -70,7 +74,9 @@ export function PromoBanner({ collapsed = false }: PromoBannerProps) {
 						</span>
 						<span
 							suppressHydrationWarning
-							className="rounded-full bg-[#0c1a08]/10 px-2 py-0.5 font-mono text-[11px] font-semibold tabular-nums leading-tight"
+							className="rounded-full px-2 py-0.5 font-mono text-[11px] font-semibold tabular-nums leading-tight"
+							// 10% opacity pill over the banner background ("1a" hex alpha).
+							style={{ backgroundColor: `${banner.textColor}1a` }}
 						>
 							ends in {formatCountdown(countdown)}
 						</span>

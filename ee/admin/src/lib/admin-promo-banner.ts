@@ -14,6 +14,8 @@ export async function updatePromoBanner(body: {
 	discountPercent: number;
 	message: string;
 	linkPath: string;
+	backgroundColor: string;
+	textColor: string;
 	endsAt: string;
 }) {
 	const $api = await createServerApiClient();

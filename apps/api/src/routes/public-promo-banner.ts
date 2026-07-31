@@ -17,6 +17,8 @@ const publicPromoBannerSchema = z.object({
 	discountPercent: z.number(),
 	message: z.string(),
 	linkPath: z.string(),
+	backgroundColor: z.string(),
+	textColor: z.string(),
 	endsAt: z.string(),
 });
 
@@ -50,6 +52,8 @@ publicPromoBanner.openapi(getPromoBanner, async (c) => {
 			discountPercent: banner.discountPercent,
 			message: banner.message,
 			linkPath: banner.linkPath,
+			backgroundColor: banner.backgroundColor,
+			textColor: banner.textColor,
 			endsAt: banner.endsAt.toISOString(),
 		},
 	});

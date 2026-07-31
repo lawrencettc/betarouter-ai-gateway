@@ -4248,6 +4248,9 @@ export const promoBanner = pgTable("promo_banner", {
 	message: text().notNull(),
 	// Link target relative to the betarouter.com root (e.g. "/providers/runware").
 	linkPath: text().notNull(),
+	// Banner colors as 6-digit hex; defaults are the Runware launch green.
+	backgroundColor: text().notNull().default("#a8f399"),
+	textColor: text().notNull().default("#0c1a08"),
 	endsAt: timestamp().notNull(),
 });
 
