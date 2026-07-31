@@ -45,7 +45,7 @@ import { cn } from "@/lib/utils";
 
 import { MARKETING_STATS } from "@betarouter/shared";
 
-import { RunwarePromoBanner } from "./runware-promo-banner";
+import { PromoBanner } from "./promo-banner";
 import { ThemeToggle } from "./theme-toggle";
 
 import type { ApiModel, ApiProvider } from "@/lib/fetch-models";
@@ -349,7 +349,7 @@ export const Navbar = ({
 				data-state={menuState && "active"}
 				className={cn("z-20 w-full px-2 group", sticky && "fixed")}
 			>
-				<RunwarePromoBanner collapsed={isScrolled} />
+				<PromoBanner collapsed={isScrolled} />
 				<div
 					className={cn(
 						"mt-2 mx-auto max-w-[1400px] px-6 transition-all duration-300",
