@@ -16,42 +16,9 @@ betarouter is an open-source API gateway for Large Language Models (LLMs). It ac
 
 ## Getting Started
 
-You can use betarouter in two ways:
+betarouter is offered as a hosted service. Visit [betarouter.com](https://betarouter.com) to create an account and get an API key.
 
-- **Hosted Version**: For immediate use without setup, visit [betarouter.com](https://betarouter.com) to create an account and get an API key.
-- **Self-Hosted**: Deploy betarouter on your own infrastructure for complete control over your data and configuration.
-
-### Self-Hosted With Docker
-
-Use Docker-managed volumes for the unified image. Do not bind-mount a host directory directly to `/var/lib/postgresql/data`, because PostgreSQL initialization inside the container needs to set permissions on that directory and that can fail depending on the host filesystem and ownership.
-
-```bash
-export BETA_GATEWAY_SECRET="$(openssl rand -base64 32 | tr -d '\n')"
-export GATEWAY_API_KEY_HASH_SECRET="$(openssl rand -base64 32 | tr -d '\n')"
-./scripts/run-unified-container.sh
-```
-
-If you prefer a one-off `docker run`, use named volumes instead of `~/some-host-dir`:
-
-```bash
-docker volume create llmgateway_postgres
-docker volume create llmgateway_redis
-
-docker run -d \
-  --name llmgateway \
-  --restart unless-stopped \
-  -p 3002:3002 \
-  -p 3003:3003 \
-  -p 3005:3005 \
-  -p 3006:3006 \
-  -p 4001:4001 \
-  -p 4002:4002 \
-  -v llmgateway_postgres:/var/lib/postgresql/data \
-  -v llmgateway_redis:/var/lib/redis \
-  -e AUTH_SECRET="$BETA_GATEWAY_SECRET" \
-  -e GATEWAY_API_KEY_HASH_SECRET="$GATEWAY_API_KEY_HASH_SECRET" \
-  ghcr.io/theopenco/llmgateway-unified:latest
-```
+Self-hosted deployment is not supported at this time. Managed deployment for enterprise customers is planned — for enquiries, contact contact@betarouter.com.
 
 ### Using betarouter API
 
@@ -98,10 +65,16 @@ curl -X POST https://api.betarouter.com/v1/chat/completions \
 - `apps/api`: Hono backend
 - `apps/gateway`: API gateway for routing LLM requests
 - `apps/docs`: Documentation site
-- `apps/admin`: Internal admin dashboard
+- `apps/worker`: Background job runner (retention cleanup, async jobs)
 - `packages/db`: Drizzle ORM schema and migrations
 - `packages/models`: Model and provider definitions
+- `packages/catalog`: Runtime catalogue activation/enforcement and provider circuit breakers
 - `packages/shared`: Shared types and utilities
+- `packages/actions`: Routing/pricing helpers shared by gateway and API
+- `packages/cache`, `packages/logger`, `packages/instrumentation`: Redis cache, logging, and metrics/tracing
+- `packages/scripts`: Operational and analysis scripts
+- `ee/admin`: Internal admin dashboard (Enterprise license)
+- `ee/audit`, `ee/guardrails`: Enterprise audit log and guardrails (Enterprise license)
 
 ## License
 
