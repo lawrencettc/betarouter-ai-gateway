@@ -18,6 +18,7 @@ import { HealthChecker } from "@betarouter/shared";
 
 import { redisClient } from "./auth/config.js";
 import { authHandler } from "./auth/handler.js";
+import { getApiBaseUrl } from "./lib/api-url.js";
 import { tracingMiddleware } from "./middleware/tracing.js";
 import { beacon } from "./routes/beacon.js";
 import { routes } from "./routes/index.js";
@@ -53,13 +54,13 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 export const config = {
 	servers: [
 		{
-			url: "http://localhost:4002",
+			url: getApiBaseUrl(),
 		},
 	],
 	openapi: "3.0.0",
 	info: {
 		version: "1.0.0",
-		title: "My API",
+		title: "betarouter Management API",
 	},
 };
 

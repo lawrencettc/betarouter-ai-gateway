@@ -84,10 +84,10 @@ Because Entra needs betarouter's URLs and betarouter needs Entra's Login URL and
 
 In betarouter (**Organization → SSO → Add a connection**), set **Identity provider** to **Microsoft Entra ID**, then pick a **connection slug** (lowercase letters, numbers, hyphens; `^[a-z0-9-]+$`, up to 64 chars). We recommend the format `<your-org-slug>-<provider>`, e.g. `acme-entra` — the form pre-fills this from your organization name and the selected provider, so you can accept it or edit it. It must be unique across all betarouter organizations, and each organization has exactly one SSO connection. Keep it stable: your SP URLs are built from it.
 
-As soon as the slug is set, the form shows your two SP URLs (with the hosted default `https://internal.betarouter.com`) — copy them from there:
+As soon as the slug is set, the form shows your two SP URLs (with the hosted default `https://platform-api.betarouter.com`) — copy them from there:
 
-- **Identifier (Entity ID):** `https://internal.betarouter.com/auth/sso/saml2/sp/metadata?providerId=acme-entra`
-- **Reply URL (ACS):** `https://internal.betarouter.com/auth/sso/saml2/sp/acs/acme-entra`
+- **Identifier (Entity ID):** `https://platform-api.betarouter.com/auth/sso/saml2/sp/metadata?providerId=acme-entra`
+- **Reply URL (ACS):** `https://platform-api.betarouter.com/auth/sso/saml2/sp/acs/acme-entra`
 
 You'll paste these into Entra next — no need to create the connection yet.
 
@@ -182,7 +182,7 @@ SSO only signs people in. SCIM is what actually adds members to the organization
 <Step>
 ### Generate a SCIM token
 
-In betarouter, on **Organization → SSO → Directory sync (SCIM)**, click **Generate SCIM token** and copy it (shown once). The SCIM base URL is shown in the same card — it's `https://internal.betarouter.com/scim/v2` on the hosted default.
+In betarouter, on **Organization → SSO → Directory sync (SCIM)**, click **Generate SCIM token** and copy it (shown once). The SCIM base URL is shown in the same card — it's `https://platform-api.betarouter.com/scim/v2` on the hosted default.
 
 </Step>
 
@@ -192,7 +192,7 @@ In betarouter, on **Organization → SSO → Directory sync (SCIM)**, click **Ge
 In Entra, on your Enterprise App → **Provisioning → Automatic → Admin Credentials**:
 
 - **Authentication method:** choose the token option — labelled **"Long-lived bearer token"** (or **"Secret token"**). **Do not** pick "OAuth 2.0 code grant flow": betarouter's SCIM endpoint authenticates a plain static bearer token (`Authorization: Bearer <token>`), not an OAuth code exchange. The presence of a **Tenant URL + Secret token** pair on the form confirms you're on the right method.
-- **Tenant URL:** the SCIM base URL, e.g. `https://internal.betarouter.com/scim/v2`
+- **Tenant URL:** the SCIM base URL, e.g. `https://platform-api.betarouter.com/scim/v2`
 - **Secret Token:** the token from the previous step
 - Click **Test Connection** (Entra calls `/ServiceProviderConfig` with the bearer token), then **Save**.
 

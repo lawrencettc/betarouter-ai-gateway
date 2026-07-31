@@ -59,7 +59,7 @@ dashboard using a [master key](/features/master-keys) — useful when you provis
 a key per customer or per environment from your own backend:
 
 ```bash
-curl -X POST https://internal.betarouter.com/v1/master/keys \
+curl -X POST https://platform-api.betarouter.com/v1/master/keys \
   -H "Authorization: Bearer $MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{

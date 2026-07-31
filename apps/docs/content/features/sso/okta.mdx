@@ -27,10 +27,10 @@ You'll create a custom SAML 2.0 app integration in the Okta Admin Console to rep
 
 In betarouter (**Organization → SSO → Add a connection**), set **Identity provider** to **Okta**, then pick a **connection slug** (lowercase letters, numbers, hyphens; `^[a-z0-9-]+$`, up to 64 chars). We recommend the format `<your-org-slug>-<provider>`, e.g. `acme-okta` — the form pre-fills this from your organization name and the selected provider. It must be unique across all betarouter organizations, and each organization has exactly one SSO connection. Keep it stable: your SP URLs are built from it.
 
-As soon as the slug is set, the form shows your two SP URLs (with the hosted default `https://internal.betarouter.com`) — copy them from there:
+As soon as the slug is set, the form shows your two SP URLs (with the hosted default `https://platform-api.betarouter.com`) — copy them from there:
 
-- **Audience URI (SP Entity ID):** `https://internal.betarouter.com/auth/sso/saml2/sp/metadata?providerId=acme-okta`
-- **Single sign-on URL (ACS):** `https://internal.betarouter.com/auth/sso/saml2/sp/acs/acme-okta`
+- **Audience URI (SP Entity ID):** `https://platform-api.betarouter.com/auth/sso/saml2/sp/metadata?providerId=acme-okta`
+- **Single sign-on URL (ACS):** `https://platform-api.betarouter.com/auth/sso/saml2/sp/acs/acme-okta`
 
 You'll paste these into Okta next — no need to create the connection yet.
 
@@ -145,7 +145,7 @@ SSO only signs people in. SCIM is what actually adds members to the organization
 <Step>
 ### Generate a SCIM token
 
-In betarouter, on **Organization → SSO → Directory sync (SCIM)**, click **Generate SCIM token** and copy it (shown once). The SCIM base URL is shown in the same card — it's `https://internal.betarouter.com/scim/v2` on the hosted default.
+In betarouter, on **Organization → SSO → Directory sync (SCIM)**, click **Generate SCIM token** and copy it (shown once). The SCIM base URL is shown in the same card — it's `https://platform-api.betarouter.com/scim/v2` on the hosted default.
 
 </Step>
 
@@ -161,7 +161,7 @@ On the app's **General** tab → **App Settings** → **Edit**, set **Provisioni
 
 On **Provisioning → Integration** → **Edit**:
 
-- **SCIM connector base URL:** the SCIM base URL, e.g. `https://internal.betarouter.com/scim/v2`
+- **SCIM connector base URL:** the SCIM base URL, e.g. `https://platform-api.betarouter.com/scim/v2`
 - **Unique identifier field for users:** `userName`
 - **Supported provisioning actions:** check **Push New Users**, **Push Profile Updates**, and **Push Groups** (leave the two _Import_ options unchecked — betarouter doesn't support importing users into Okta)
 - **Authentication Mode:** **HTTP Header** — Okta then shows an **Authorization: Bearer** field; paste the SCIM token there. **Do not** pick Basic Auth or OAuth 2: betarouter's SCIM endpoint authenticates a plain static bearer token.

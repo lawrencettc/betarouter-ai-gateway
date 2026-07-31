@@ -46,7 +46,7 @@ password same as email (owns BetaPass Pro org `test-personal-org-id`, API key
 - Session auth via curl: POST `/auth/sign-in/email` with `Origin:` header from
   ORIGIN_URLS, save cookies (`-c cookies.txt`), reuse with `-b`.
 - Dev-plan API keys reject `provider/model` ids on the gateway — use the root
-  model id (`Codex-opus-4-8`, not `anthropic/Codex-opus-4-8`).
+  model id (`claude-opus-4-8`, not `anthropic/claude-opus-4-8`).
 - Stripe end-to-end: `stripe listen --api-key $STRIPE_SECRET_KEY --print-secret`
   (key from root .env; the CLI's own login is expired), restart the API with
   `STRIPE_WEBHOOK_SECRET_TEST=<whsec>`, then `stripe listen --api-key ... --forward-to

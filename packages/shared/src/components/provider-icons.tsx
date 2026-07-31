@@ -1635,6 +1635,8 @@ export const providerLogoUrls: Partial<
 	gonka24: ProviderIcons.gonka24,
 	fireworks: ProviderIcons.fireworks,
 	runware: ProviderIcons.runware,
+	llmgateway: Logo,
+	custom: Logo,
 };
 
 export const getProviderLogoDarkModeClasses = () => {
@@ -1687,8 +1689,8 @@ export const ModelFamilyIcons: Record<
 	zai: ZaiIcon,
 };
 
-// Helper function to get an icon by a model's family, falling back to the LLM
-// Gateway logo for families without a dedicated brand icon.
+// Helper function to get an icon by a model's family, falling back to the
+// betarouter logo for families without a dedicated brand icon.
 export const getModelFamilyIcon = (
 	family: string,
 ): React.FC<React.SVGProps<SVGSVGElement>> => {

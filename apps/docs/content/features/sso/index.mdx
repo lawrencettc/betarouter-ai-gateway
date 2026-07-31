@@ -32,7 +32,7 @@ betarouter supports per-organization **SAML 2.0 single sign-on (SSO)** and **SCI
 
 ## The URLs betarouter gives your IdP
 
-Everything your identity provider needs is derived from the **management API base URL** and a **Connection ID** you choose. The base URL defaults to `https://internal.betarouter.com`.
+Everything your identity provider needs is derived from the **management API base URL** and a **Connection ID** you choose. The base URL defaults to `https://platform-api.betarouter.com`.
 
 <Callout type="warn">
 	The management API base URL is **not** `api.betarouter.com` — that host serves
@@ -42,13 +42,13 @@ Everything your identity provider needs is derived from the **management API bas
 	each connection card.
 </Callout>
 
-With `API_URL = https://internal.betarouter.com` and a connection slug of `acme-entra`:
+With `API_URL = https://platform-api.betarouter.com` and a connection slug of `acme-entra`:
 
-| Value                             | URL                                                                                |
-| --------------------------------- | ---------------------------------------------------------------------------------- |
-| Identifier (Entity ID) / Audience | `https://internal.betarouter.com/auth/sso/saml2/sp/metadata?providerId=acme-entra` |
-| Reply URL (ACS)                   | `https://internal.betarouter.com/auth/sso/saml2/sp/acs/acme-entra`                 |
-| SCIM Tenant URL                   | `https://internal.betarouter.com/scim/v2`                                          |
+| Value                             | URL                                                                                    |
+| --------------------------------- | -------------------------------------------------------------------------------------- |
+| Identifier (Entity ID) / Audience | `https://platform-api.betarouter.com/auth/sso/saml2/sp/metadata?providerId=acme-entra` |
+| Reply URL (ACS)                   | `https://platform-api.betarouter.com/auth/sso/saml2/sp/acs/acme-entra`                 |
+| SCIM Tenant URL                   | `https://platform-api.betarouter.com/scim/v2`                                          |
 
 ## SCIM authentication
 
