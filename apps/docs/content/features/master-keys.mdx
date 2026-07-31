@@ -54,7 +54,7 @@ A request with a missing, invalid, inactive, or non-enterprise master key receiv
 Returns all non-deleted projects in the master key's organization.
 
 ```bash
-curl https://internal.betarouter.com/v1/master/projects \
+curl https://platform-api.betarouter.com/v1/master/projects \
   -H "Authorization: Bearer $MASTER_KEY"
 ```
 
@@ -83,7 +83,7 @@ Response (200):
 `POST /v1/master/projects`
 
 ```bash
-curl -X POST https://internal.betarouter.com/v1/master/projects \
+curl -X POST https://platform-api.betarouter.com/v1/master/projects \
   -H "Authorization: Bearer $MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -111,7 +111,7 @@ Response (201): the created project.
 Updates a project owned by the master key's organization. All body fields are optional; provide only the ones you want to change.
 
 ```bash
-curl -X PATCH https://internal.betarouter.com/v1/master/projects/proj_... \
+curl -X PATCH https://platform-api.betarouter.com/v1/master/projects/proj_... \
   -H "Authorization: Bearer $MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -140,7 +140,7 @@ Response (200): the updated project.
 Soft-deletes a project (sets `status` to `"deleted"`). Cascades to its API keys.
 
 ```bash
-curl -X DELETE https://internal.betarouter.com/v1/master/projects/proj_... \
+curl -X DELETE https://platform-api.betarouter.com/v1/master/projects/proj_... \
   -H "Authorization: Bearer $MASTER_KEY"
 ```
 
@@ -157,7 +157,7 @@ Response (200):
 Returns the developer-created gateway API keys in the master key's organization, each with its configured limits, the usage consumed so far, and — when a windowed limit is set — the time the current period resets. Pass an optional `projectId` query parameter to scope the list to a single project.
 
 ```bash
-curl "https://internal.betarouter.com/v1/master/keys?projectId=proj_..." \
+curl "https://platform-api.betarouter.com/v1/master/keys?projectId=proj_..." \
   -H "Authorization: Bearer $MASTER_KEY"
 ```
 
@@ -210,7 +210,7 @@ The plain token is never returned by this endpoint — only a masked form for id
 Returns a single gateway API key in the master key's organization, with the same limit, usage, and reset-time fields as the list endpoint.
 
 ```bash
-curl https://internal.betarouter.com/v1/master/keys/ak_... \
+curl https://platform-api.betarouter.com/v1/master/keys/ak_... \
   -H "Authorization: Bearer $MASTER_KEY"
 ```
 
@@ -244,7 +244,7 @@ Response (200):
 `POST /v1/master/keys`
 
 ```bash
-curl -X POST https://internal.betarouter.com/v1/master/keys \
+curl -X POST https://platform-api.betarouter.com/v1/master/keys \
   -H "Authorization: Bearer $MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -293,7 +293,7 @@ Response (201):
 Updates an API key in a project owned by the master key's organization. All body fields are optional; provide only the ones you want to change.
 
 ```bash
-curl -X PATCH https://internal.betarouter.com/v1/master/keys/ak_... \
+curl -X PATCH https://platform-api.betarouter.com/v1/master/keys/ak_... \
   -H "Authorization: Bearer $MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -330,7 +330,7 @@ Response (200): the updated API key, including its configured limits, consumed `
 Soft-deletes the API key (sets `status` to `"deleted"`). Any in-flight requests using the key will be rejected immediately on next auth check.
 
 ```bash
-curl -X DELETE https://internal.betarouter.com/v1/master/keys/ak_... \
+curl -X DELETE https://platform-api.betarouter.com/v1/master/keys/ak_... \
   -H "Authorization: Bearer $MASTER_KEY"
 ```
 
@@ -390,7 +390,7 @@ All endpoints scope by the master key's organization: a `404` is returned if the
 `GET /v1/master/keys/{id}/iam`
 
 ```bash
-curl https://internal.betarouter.com/v1/master/keys/ak_.../iam \
+curl https://platform-api.betarouter.com/v1/master/keys/ak_.../iam \
   -H "Authorization: Bearer $MASTER_KEY"
 ```
 
@@ -419,7 +419,7 @@ Response (200):
 `POST /v1/master/keys/{id}/iam`
 
 ```bash
-curl -X POST https://internal.betarouter.com/v1/master/keys/ak_.../iam \
+curl -X POST https://platform-api.betarouter.com/v1/master/keys/ak_.../iam \
   -H "Authorization: Bearer $MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -441,7 +441,7 @@ Body parameters:
 Restricting by source IP:
 
 ```bash
-curl -X POST https://internal.betarouter.com/v1/master/keys/ak_.../iam \
+curl -X POST https://platform-api.betarouter.com/v1/master/keys/ak_.../iam \
   -H "Authorization: Bearer $MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -461,7 +461,7 @@ Response (201): the created IAM rule.
 All body fields are optional; provide only the ones you want to change.
 
 ```bash
-curl -X PATCH https://internal.betarouter.com/v1/master/keys/ak_.../iam/iam_... \
+curl -X PATCH https://platform-api.betarouter.com/v1/master/keys/ak_.../iam/iam_... \
   -H "Authorization: Bearer $MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -486,7 +486,7 @@ Response (200): the updated IAM rule.
 Permanently removes an IAM rule from the API key.
 
 ```bash
-curl -X DELETE https://internal.betarouter.com/v1/master/keys/ak_.../iam/iam_... \
+curl -X DELETE https://platform-api.betarouter.com/v1/master/keys/ak_.../iam/iam_... \
   -H "Authorization: Bearer $MASTER_KEY"
 ```
 
@@ -509,7 +509,7 @@ The `ruleType`, `ruleValue`, and `status` fields are identical to the per-key IA
 `GET /v1/master/members/{member}/iam`
 
 ```bash
-curl https://internal.betarouter.com/v1/master/members/jane@example.com/iam \
+curl https://platform-api.betarouter.com/v1/master/members/jane@example.com/iam \
   -H "Authorization: Bearer $MASTER_KEY"
 ```
 
@@ -538,7 +538,7 @@ Response (200):
 `POST /v1/master/members/{member}/iam`
 
 ```bash
-curl -X POST https://internal.betarouter.com/v1/master/members/jane@example.com/iam \
+curl -X POST https://platform-api.betarouter.com/v1/master/members/jane@example.com/iam \
   -H "Authorization: Bearer $MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -558,7 +558,7 @@ Response (201): the created member IAM rule.
 All body fields are optional; provide only the ones you want to change.
 
 ```bash
-curl -X PATCH https://internal.betarouter.com/v1/master/members/uo_.../iam/iam_... \
+curl -X PATCH https://platform-api.betarouter.com/v1/master/members/uo_.../iam/iam_... \
   -H "Authorization: Bearer $MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -573,7 +573,7 @@ Response (200): the updated member IAM rule.
 `DELETE /v1/master/members/{member}/iam/{ruleId}`
 
 ```bash
-curl -X DELETE https://internal.betarouter.com/v1/master/members/uo_.../iam/iam_... \
+curl -X DELETE https://platform-api.betarouter.com/v1/master/members/uo_.../iam/iam_... \
   -H "Authorization: Bearer $MASTER_KEY"
 ```
 
@@ -601,7 +601,7 @@ All endpoints scope by the master key's organization: a `404` is returned if the
 `GET /v1/master/custom-providers`
 
 ```bash
-curl https://internal.betarouter.com/v1/master/custom-providers \
+curl https://platform-api.betarouter.com/v1/master/custom-providers \
   -H "Authorization: Bearer $MASTER_KEY"
 ```
 
@@ -638,7 +638,7 @@ Returns a single custom provider in the master key's organization.
 `POST /v1/master/custom-providers`
 
 ```bash
-curl -X POST https://internal.betarouter.com/v1/master/custom-providers \
+curl -X POST https://platform-api.betarouter.com/v1/master/custom-providers \
   -H "Authorization: Bearer $MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -668,7 +668,7 @@ Response (201): the created custom provider.
 All body fields are optional; provide only the ones you want to change.
 
 ```bash
-curl -X PATCH https://internal.betarouter.com/v1/master/custom-providers/pk_... \
+curl -X PATCH https://platform-api.betarouter.com/v1/master/custom-providers/pk_... \
   -H "Authorization: Bearer $MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -721,7 +721,7 @@ Query these endpoints to read the full catalogue you have registered — includi
 Returns the non-deleted custom models in the master key's organization. Pass an optional `providerKeyId` query parameter to scope the list to a single custom provider.
 
 ```bash
-curl "https://internal.betarouter.com/v1/master/custom-models?providerKeyId=pk_..." \
+curl "https://platform-api.betarouter.com/v1/master/custom-models?providerKeyId=pk_..." \
   -H "Authorization: Bearer $MASTER_KEY"
 ```
 
@@ -766,7 +766,7 @@ Returns a single custom model in the master key's organization.
 `POST /v1/master/custom-models`
 
 ```bash
-curl -X POST https://internal.betarouter.com/v1/master/custom-models \
+curl -X POST https://platform-api.betarouter.com/v1/master/custom-models \
   -H "Authorization: Bearer $MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -818,7 +818,7 @@ Response (201): the created custom model.
 Accepts the same fields as create (except `providerKeyId`), all optional — provide only the ones you want to change. Renaming to a `modelName` already used by another model on the same provider returns a `400`.
 
 ```bash
-curl -X PATCH https://internal.betarouter.com/v1/master/custom-models/cm_... \
+curl -X PATCH https://platform-api.betarouter.com/v1/master/custom-models/cm_... \
   -H "Authorization: Bearer $MASTER_KEY" \
   -H "Content-Type: application/json" \
   -d '{ "contextSize": 400000, "outputPrice": "12.0e-6" }'
