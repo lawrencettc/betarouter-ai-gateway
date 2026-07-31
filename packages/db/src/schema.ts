@@ -4228,6 +4228,29 @@ export const ignoredErrorMatcher = pgTable(
 	],
 );
 
+// Promo Banner - Admin-configurable marketing banner shown above the landing
+// navbar (apps/ui) and the Code app header. Singleton row; the banner renders
+// only while `enabled` is true and `endsAt` is in the future.
+export const promoBanner = pgTable("promo_banner", {
+	id: text().primaryKey().notNull().default("singleton"),
+	createdAt: timestamp().notNull().defaultNow(),
+	updatedAt: timestamp()
+		.notNull()
+		.defaultNow()
+		.$onUpdate(() => new Date()),
+	enabled: boolean().notNull().default(false),
+	// Brand shown at the start of the banner (e.g. "Runware"). Rendered as the
+	// provider wordmark icon when one exists for the name, plain text otherwise.
+	brandName: text().notNull(),
+	// Percentage highlighted in the banner copy (0 hides the "% off" fragment).
+	discountPercent: integer().notNull().default(0),
+	// Copy after the discount fragment (e.g. "open-source models").
+	message: text().notNull(),
+	// Link target relative to the betarouter.com root (e.g. "/providers/runware").
+	linkPath: text().notNull(),
+	endsAt: timestamp().notNull(),
+});
+
 // Project hourly statistics aggregation - used for fast dashboard queries
 export const projectHourlyStats = pgTable(
 	"project_hourly_stats",

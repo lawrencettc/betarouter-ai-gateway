@@ -14144,4 +14144,122 @@ admin.openapi(getChatPlansSubscriber, async (c) => {
 	});
 });
 
+// --- Promo Banner ---
+
+const promoBannerSchema = z.object({
+	enabled: z.boolean(),
+	brandName: z.string(),
+	discountPercent: z.number(),
+	message: z.string(),
+	linkPath: z.string(),
+	endsAt: z.string(),
+	updatedAt: z.string(),
+});
+
+const updatePromoBannerBodySchema = z.object({
+	enabled: z.boolean(),
+	brandName: z.string().min(1, "Brand name is required"),
+	discountPercent: z.coerce
+		.number()
+		.int("Discount must be a whole number")
+		.min(0, "Discount must be at least 0%")
+		.max(100, "Discount cannot exceed 100%"),
+	message: z.string().min(1, "Message is required"),
+	linkPath: z
+		.string()
+		.regex(/^\//, "Link path must be relative and start with /"),
+	endsAt: z.string().min(1, "End date is required"),
+});
+
+const getPromoBanner = createRoute({
+	method: "get",
+	path: "/promo-banner",
+	request: {},
+	responses: {
+		200: {
+			content: {
+				"application/json": {
+					schema: z
+						.object({ banner: promoBannerSchema.nullable() })
+						.openapi({}),
+				},
+			},
+			description: "The promo banner configuration, or null if never set.",
+		},
+	},
+});
+
+const updatePromoBanner = createRoute({
+	method: "put",
+	path: "/promo-banner",
+	request: {
+		body: {
+			content: {
+				"application/json": {
+					schema: updatePromoBannerBodySchema.openapi({}),
+				},
+			},
+		},
+	},
+	responses: {
+		200: {
+			content: {
+				"application/json": {
+					schema: promoBannerSchema.openapi({}),
+				},
+			},
+			description: "Updated promo banner configuration.",
+		},
+		400: {
+			description: "Invalid promo banner data.",
+		},
+	},
+});
+
+function formatPromoBanner(banner: typeof tables.promoBanner.$inferSelect) {
+	return {
+		enabled: banner.enabled,
+		brandName: banner.brandName,
+		discountPercent: banner.discountPercent,
+		message: banner.message,
+		linkPath: banner.linkPath,
+		endsAt: banner.endsAt.toISOString(),
+		updatedAt: banner.updatedAt.toISOString(),
+	};
+}
+
+admin.openapi(getPromoBanner, async (c) => {
+	const banner = await db.query.promoBanner.findFirst();
+	return c.json({ banner: banner ? formatPromoBanner(banner) : null });
+});
+
+admin.openapi(updatePromoBanner, async (c) => {
+	const body = c.req.valid("json");
+
+	const endsAt = new Date(body.endsAt);
+	if (Number.isNaN(endsAt.getTime())) {
+		throw new HTTPException(400, { message: "Invalid end date" });
+	}
+
+	const values = {
+		enabled: body.enabled,
+		brandName: body.brandName,
+		discountPercent: body.discountPercent,
+		message: body.message,
+		linkPath: body.linkPath,
+		endsAt,
+	};
+
+	const [saved] = await db
+		.insert(tables.promoBanner)
+		.values({ id: "singleton", ...values })
+		.onConflictDoUpdate({
+			target: tables.promoBanner.id,
+			set: { ...values, updatedAt: new Date() },
+		})
+		.returning();
+
+	return c.json(formatPromoBanner(saved));
+});
+
 export default admin;

@@ -3,26 +3,31 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
+import { useApi } from "@/lib/fetch-client";
 import { cn } from "@/lib/utils";
 
-import { RUNWARE_PROMO } from "@betarouter/shared";
 import {
 	formatCountdown,
 	RunwareWordmarkIcon,
 	useCountdown,
 } from "@betarouter/shared/components";
 
-interface RunwarePromoBannerProps {
+// Sentinel passed to useCountdown while no banner is loaded so the hook can
+// stay unconditional; it reads as expired, which keeps the banner hidden.
+const EXPIRED = "1970-01-01T00:00:00Z";
+
+interface PromoBannerProps {
 	// Collapses the banner once the floating navbar pill takes over on scroll.
 	collapsed?: boolean;
 }
 
-export function RunwarePromoBanner({
-	collapsed = false,
-}: RunwarePromoBannerProps) {
-	const countdown = useCountdown(RUNWARE_PROMO.endsAt);
+export function PromoBanner({ collapsed = false }: PromoBannerProps) {
+	const api = useApi();
+	const { data } = api.useQuery("get", "/public/promo-banner", {});
+	const banner = data?.banner ?? null;
+	const countdown = useCountdown(banner?.endsAt ?? EXPIRED);
 
-	if (countdown.expired) {
+	if (!banner || countdown.expired) {
 		return null;
 	}
 
@@ -37,21 +42,31 @@ export function RunwarePromoBanner({
 			<div className="min-h-0 overflow-hidden">
 				<div className="mx-auto max-w-[1400px] pt-2">
 					<Link
-						href={RUNWARE_PROMO.providerPath}
+						href={banner.linkPath}
 						prefetch={true}
 						className="group/promo flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 rounded-2xl bg-[#a8f399] px-4 py-2 text-[#0c1a08]"
 					>
-						<RunwareWordmarkIcon
-							className="h-3 w-auto shrink-0"
-							aria-label="Runware"
-							role="img"
-						/>
+						{banner.brandName.toLowerCase() === "runware" ? (
+							<RunwareWordmarkIcon
+								className="h-3 w-auto shrink-0"
+								aria-label="Runware"
+								role="img"
+							/>
+						) : (
+							<span className="text-[13px] font-semibold leading-tight">
+								{banner.brandName}
+							</span>
+						)}
 						<span className="text-[13px] font-medium leading-tight">
 							<span className="hidden sm:inline">is now on betarouter — </span>
-							<span className="font-semibold">
-								{RUNWARE_PROMO.discountPercent}% off
-							</span>{" "}
-							open-source models
+							{banner.discountPercent > 0 && (
+								<>
+									<span className="font-semibold">
+										{banner.discountPercent}% off
+									</span>{" "}
+								</>
+							)}
+							{banner.message}
 						</span>
 						<span
 							suppressHydrationWarning

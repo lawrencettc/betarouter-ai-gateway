@@ -13,6 +13,7 @@ import {
 	LibraryBig,
 	LogOut,
 	Mail,
+	Megaphone,
 	Menu,
 	MessageCircle,
 	MessageSquare,
@@ -93,6 +94,7 @@ export function AdminShell({ children }: AdminShellProps) {
 	const isGlobalStats = pathname.startsWith("/global-stats");
 	const isDiscounts = pathname === "/discounts";
 	const isRateLimits = pathname === "/rate-limits";
+	const isPromoBanner = pathname === "/promo-banner";
 	const isProviders = pathname === "/providers";
 	const isPlatformProviders = pathname.startsWith("/platform-providers");
 	const isCatalog = pathname.startsWith("/catalog");
@@ -193,6 +195,14 @@ export function AdminShell({ children }: AdminShellProps) {
 									<SidebarMenuButton isActive={isRateLimits} size="lg">
 										<Gauge className="h-4 w-4" />
 										<span>Global Rate Limits</span>
+									</SidebarMenuButton>
+								</Link>
+							</SidebarMenuItem>
+							<SidebarMenuItem>
+								<Link href="/promo-banner" className="block">
+									<SidebarMenuButton isActive={isPromoBanner} size="lg">
+										<Megaphone className="h-4 w-4" />
+										<span>Promo Banner</span>
 									</SidebarMenuButton>
 								</Link>
 							</SidebarMenuItem>

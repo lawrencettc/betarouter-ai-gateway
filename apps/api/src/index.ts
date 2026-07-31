@@ -40,6 +40,7 @@ import { publicModelRatings } from "./routes/public-model-ratings.js";
 import { publicModelSurvey } from "./routes/public-model-survey.js";
 import { publicNewsletter } from "./routes/public-newsletter.js";
 import { publicProfile } from "./routes/public-profile.js";
+import { publicPromoBanner } from "./routes/public-promo-banner.js";
 import { publicProvidersStats } from "./routes/public-providers-stats.js";
 import { referral } from "./routes/referral.js";
 import { scim } from "./routes/scim.js";
@@ -315,6 +316,7 @@ app.route("/public/profile", publicProfile);
 app.route("/public/leaderboard", publicLeaderboard);
 app.route("/public/lounge-leaderboard", publicLoungeLeaderboard);
 app.route("/public/providers/stats", publicProvidersStats);
+app.route("/public/promo-banner", publicPromoBanner);
 app.route("/public/model-ratings", publicModelRatings);
 app.route("/public/model-survey", publicModelSurvey);
 

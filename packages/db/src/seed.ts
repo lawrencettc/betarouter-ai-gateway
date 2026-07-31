@@ -1365,6 +1365,18 @@ async function seed() {
 		mode: "hybrid",
 	});
 
+	// Default promo banner matching the Runware launch promo so the landing
+	// banner is visible locally and editable from the admin dashboard.
+	await upsert(tables.promoBanner, {
+		id: "singleton",
+		enabled: true,
+		brandName: "Runware",
+		discountPercent: 30,
+		message: "open-source models",
+		linkPath: "/providers/runware",
+		endsAt: new Date("2026-08-26T23:59:59Z"),
+	});
+
 	await upsert(tables.apiKey, {
 		id: "test-api-key-id",
 		token: "test-token",
