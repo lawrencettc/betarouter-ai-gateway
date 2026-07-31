@@ -7,6 +7,8 @@ CREATE TABLE "promo_banner" (
 	"discount_percent" integer DEFAULT 0 NOT NULL,
 	"message" text NOT NULL,
 	"link_path" text NOT NULL,
+	"background_color" text DEFAULT '#a8f399' NOT NULL,
+	"text_color" text DEFAULT '#0c1a08' NOT NULL,
 	"ends_at" timestamp NOT NULL
 );
 --> statement-breakpoint
