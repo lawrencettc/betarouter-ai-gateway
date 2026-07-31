@@ -14,7 +14,7 @@ This file provides guidance to AI agents when working with code in this reposito
 
 NOTE: these commands can only be run in the root directory of the repository, not in individual app directories.
 
-- `pnpm dev` - Start all development servers (UI on :3002, Playground on :3003, Code on :3004, API on :4002, Gateway on :4001, Docs on :3005, Admin on :3006)
+- `pnpm dev` - Start all development servers (UI on :3002, Playground on :3003, Code on :3004, API on :4002, Gateway on :4001, Docs on :3005, Admin on :3006). This also starts `apps/worker`, the background job runner (no port) that handles data-retention cleanup, video jobs, and other async work — if a scheduled/async side effect never happens locally, check that the worker is running.
 - `pnpm build` - Build all applications for production. ALWAYS run this after finishing work on a feature. ALWAYS run a full build to make sure things fork.
 - `pnpm clean` - Clean build artifacts and cache directories
 
@@ -30,6 +30,7 @@ ALWAYS run `pnpm format` before committing code. Run `pnpm build` if API routes 
 
 - `pnpm format` - Format code and fix linting issues. ALWAYS run this before committing code.
 - `pnpm lint` - Check linting and formatting (without fixing)
+- `scripts/check-brand.sh` - Brand gate, run by CI (`.github/workflows/ci.yml`). This repo is a rebrand of upstream `theopenco/llmgateway`, so old-brand strings leak in easily when porting upstream code, and this gate FAILS the build on them. It checks scoped old-brand package references repo-wide across `ts/tsx/js/mjs/json/md/mdx/yml/yaml`, plus old-brand display strings in user-facing source (`apps/*/src`, `packages/shared/src`, `ee/*/src`); read the script's header for the exact patterns rather than reproducing them in docs (writing them out can itself trip the gate). Genuine exceptions go in `scripts/check-brand-allowlist.conf` with a justification comment — never weaken the script itself. NOTE: the script needs bash 4+ (`mapfile`); stock macOS bash 3.2 fails with `mapfile: command not found`, so on macOS either run it under a newer bash or rely on CI.
 
 ### Writing code
 
@@ -73,49 +74,9 @@ Without `x-no-fallback`, a failing pinned provider falls back to the next health
 
 Caveat: if you run multiple git worktrees (e.g. conductor workspaces), only one `pnpm dev` can own port :4001 — confirm which working tree is actually serving it (`lsof -a -p <pid> -d cwd -Fn`) before assuming your local edits are live, or launch your own build on a different `PORT`.
 
-#### Running the dev stack on alternate ports (avoiding worktree conflicts)
+To run the dev stack on alternate ports (when another worktree owns the defaults), use the local `alt-ports` skill.
 
-When another worktree already owns the default ports, run your stack on an offset range instead of fighting for :4002/:3002/etc. The wiring is driven entirely by env vars — no code changes needed:
-
-- **API port**: `PORT` (default `4002`). The API's own base URL is `API_URL`.
-- **Frontends → API**: every frontend resolves the backend from `API_URL` (default `http://localhost:4002`), read server-side in `apps/*/src/lib/config-server.ts`. Set it to your relocated API for each frontend process.
-- **Auth + CORS**: the API reads `ORIGIN_URLS` (comma-separated CORS/better-auth trusted-origins allowlist; defaults to `localhost:3002..3006,4002`) and `UI_URL`. If you relocate a frontend you MUST add its new origin to `ORIGIN_URLS` or login/API calls fail CORS. Login itself works across ports because the better-auth session cookie is host-only for `localhost` (shared across all ports) — no `COOKIE_DOMAIN` change needed.
-
-Two gotchas:
-
-- The `ui`/`playground`/`code` `dev` scripts hard-code `--port` in `package.json`, so overriding `PORT` alone won't move them — run `next dev --port <n>` directly.
-- The API `dev` script loads `../../.env` via `node --env-file`; Node does NOT override already-exported process env, so vars you `export`/prefix on the command line win over `.env`.
-
-Example: API on :4102, UI on :3102, Playground on :3103 (run from repo root, backgrounded):
-
-```bash
-ORIGINS="http://localhost:3102,http://localhost:3103,http://localhost:4102"
-( cd apps/api && PORT=4102 API_URL=http://localhost:4102 UI_URL=http://localhost:3102 ORIGIN_URLS="$ORIGINS" \
-    node --enable-source-maps --env-file=../../.env dist/serve.js )        # build first: turbo run build --filter=api
-( cd apps/ui         && API_URL=http://localhost:4102 pnpm exec next dev --port 3102 --turbopack )
-( cd apps/playground && API_URL=http://localhost:4102 pnpm exec next dev --port 3103 --turbopack )
-```
-
-Running the built `dist/serve.js` gives no watch (rebuild + restart the API after code changes); swap in the `api` package's `dev` script if you want tsc-watch. All apps share the one Postgres/Redis on the default ports, so the relocated stack sees the same seeded DB.
-
-#### E2E Test Options
-
-- `TEST_MODELS` - Run tests only for specific models (comma-separated list of `provider/model-id` pairs)
-  Example: `TEST_MODELS="openai/gpt-4o-mini,anthropic/claude-3-5-sonnet-20241022" pnpm test:e2e`
-  This is useful for quick testing as the full e2e suite can take too long with all models.
-  `TEST_MODELS` always overrides provider mappings marked with `test: "skip"`. For example, `TEST_MODELS="anthropic/claude-opus-4-6"` will include that Anthropic mapping even if it is skipped by default, so metadata-driven e2e assertions such as `reasoningOutput` still apply.
-- `FULL_MODE` - Include free models in tests (default: only paid models)
-- `LOG_MODE` - Enable detailed logging of responses
-
-#### E2E Test Structure
-
-E2E tests are organized for optimal performance:
-
-- **Parallel execution**: Tests run up to 16 in parallel using Vitest's thread pool (minimum 8 threads)
-- **Split structure**:
-  - `apps/gateway/src/api.e2e.ts` - Contains all `.each()` tests that benefit from parallelization
-  - `apps/gateway/src/api-individual.e2e.ts` - Contains individual test cases that need isolation
-- **Concurrent mode**: The main test suite uses `{ concurrent: true }` to enable parallel execution of `.each()` tests
+For E2E env-var options (`TEST_MODELS`, `FULL_MODE`, `LOG_MODE`) and the suite's file structure, use the local `e2e-testing` skill.
 
 ### Database Operations
 
@@ -124,52 +85,6 @@ NOTE: these commands can only be run in the root directory of the repository, no
 - `pnpm --filter db push` - Push database schema
 - `pnpm --filter db seed` - Seed database with initial data
 - `pnpm run setup` – Reset db, sync schema, seed data (use this for development)
-
-## Architecture Overview
-
-**betarouter** is a monorepo containing a full-stack LLM API gateway with multiple services:
-
-### Core Services
-
-- **Gateway** (`apps/gateway`) - LLM request routing and provider management (Hono + Zod + OpenAPI)
-- **API** (`apps/api`) - Backend API for user management, billing, analytics (Hono + Zod + OpenAPI)
-- **UI** (`apps/ui`) - Frontend dashboard (Next.js App Router)
-- **Playground** (`apps/playground`) - Interactive LLM testing environment (Next.js App Router)
-- **Code** (`apps/code`) - Dev plans + coding tools landing & dashboard (Next.js App Router)
-- **Docs** (`apps/docs`) - Documentation site (Next.js + Fumadocs)
-
-### Shared Packages
-
-- **@betarouter/db** - Database schema, migrations, and utilities (Drizzle ORM)
-- **@betarouter/models** - LLM provider definitions and model configurations
-- **@betarouter/auth** - Authentication utilities and session management
-
-## Technology Stack
-
-### Backend
-
-- **Framework**: Hono (lightweight web framework)
-- **Database**: PostgreSQL with Drizzle ORM
-- **Caching**: Redis
-- **Authentication**: Better Auth with passkey support
-- **Validation**: Zod schemas
-- **API Documentation**: OpenAPI/Swagger
-
-### Frontend
-
-- **Framework**: Next.js App Router (React Server Components)
-- **State Management**: TanStack Query
-- **UI Components**: Radix UI with Tailwind CSS
-- **Build Tool**: Next.js (Turbopack during dev; Node/Edge runtime)
-- **Navigation**: Use `next/link` for links and `next/navigation`'s router for programmatic navigation
-
-### Development Tools
-
-- **Monorepo**: Turbo with pnpm workspaces
-- **TypeScript**: Strict mode enabled
-- **Testing**: Vitest for unit and E2E tests
-- **Linting**: ESLint with custom configuration
-- **Formatting**: Prettier
 
 ## Development Guidelines
 
@@ -214,7 +129,6 @@ When creating a new package in `packages/`, include these config files. Copy the
 - When creating a pull request, always write/update both the PR title and description; if the PR's scope changes in later commits, update the title and description to reflect the final scope before handing it off
 - Always use pnpm for package management
 - Use cookies for user-settings which are not saved in the database to ensure SSR works
-- Apply DRY principles for code reuse
 - Do not add explicit caching or memoization around `process.env` reads or parsed env-var values unless there is a measured hot-path need
 - Exception: in `packages/models`, explicit duplication of model/provider mappings is acceptable and preferred over helper-based expansion. This is the only place in the repo where duplicating model definitions is OK. NEVER add helper functions (e.g. `makeModel(...)`/`makeProvider(...)`) that build model or provider definition objects, even when it means repeating fields across entries — write each model and provider mapping out in full as a plain object literal in the `models` array. Small shared `const` values are fine, but the definition objects themselves must not be constructed by a function.
 - Models and provider mappings in `packages/models` can NEVER be removed, only deactivated. To retire a model or provider mapping, set `deactivatedAt: new Date("YYYY-MM-DD")` (today's date) on the relevant provider mapping(s) instead of deleting the definition. Historical usage records and analytics reference these definitions, so deleting them breaks lookups.
@@ -232,71 +146,6 @@ When creating a new package in `packages/`, include these config files. Copy the
 - Run `pnpm build` to ensure production builds work
 - Run `pnpm format` after code changes
 
-### Service URLs (Development)
-
-- UI: http://localhost:3002
-- Playground: http://localhost:3003
-- Code: http://localhost:3004
-- API: http://localhost:4002
-- Gateway: http://localhost:4001
-- Docs: http://localhost:3005
-- Admin: http://localhost:3006
-- PostgreSQL: localhost:5432
-- Redis: localhost:6379
-
-## Folder Structure
-
-- `apps/ui`: Next.js frontend
-- `apps/playground`: Interactive LLM testing environment
-- `apps/code`: Dev plans + coding tools landing & dashboard
-- `apps/api`: Hono backend
-- `apps/gateway`: API gateway for routing LLM requests
-- `apps/docs`: Documentation site
-- `ee/admin`: Internal Admin Dashboard (Enterprise License)
-- `packages/db`: Drizzle ORM schema and migrations
-- `packages/models`: Model and provider definitions
-- `packages/shared`: Shared types and utilities
-
-## Key Features
-
-### betarouter
-
-- Multi-provider support (OpenAI, Anthropic, Google Vertex AI, etc.)
-- OpenAI-compatible API interface
-- Request routing and load balancing
-- Response caching with Redis
-- Usage tracking and cost analytics
-
-### Management Platform
-
-- User authentication with passkey support
-- API key management
-- Project and organization management
-- Billing integration with Stripe
-- Real-time usage monitoring
-- Provider key management
-
-### Database Schema
-
-- Users, organizations, and projects
-- API keys and provider configurations
-- Usage tracking and billing records
-- Analytics and performance metrics
-
 ## License
 
-betarouter is available under a dual license:
-
-- **Open Source**: Core functionality is licensed under AGPLv3 - see the [LICENSE](LICENSE) file for details.
-- **Enterprise**: Commercial features in the `ee/` directory require an Enterprise license - see [ee/LICENSE](ee/LICENSE) for details.
-
-### Enterprise features include:
-
-- Advanced billing and subscription management
-- Extended data retention (90 days vs 3 days)
-- Provider API key management
-- Team and organization management
-- Priority support
-- And more to be defined
-
-For enterprise licensing, please contact us at contact@betarouter.com
+betarouter is dual-licensed: AGPLv3 for the core (see [LICENSE](LICENSE)), Enterprise license for everything under `ee/` (see [ee/LICENSE](ee/LICENSE)). Enterprise licensing: contact@betarouter.com
