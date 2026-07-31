@@ -53,6 +53,39 @@ Create a Cloudflare Access self-hosted application for
 `admin.betarouter.com` before sharing the admin URL. Tunnel transport protects
 the connection but does not replace an identity policy.
 
+### Access policy on admin.betarouter.com
+
+Configured in Cloudflare Zero Trust under **Access controls → Applications**:
+
+| Field       | Value                                             |
+| ----------- | ------------------------------------------------- |
+| Application | `betarouter admin dashboard` (self-hosted, public DNS) |
+| Destination | `admin.betarouter.com`                            |
+| Policy      | `betarouter admins`, action **Allow**             |
+| Rule        | selector **Emails** is `lawrence@publicbeta.io`   |
+| Identity    | One-time PIN by email (no external IdP)           |
+| Session     | 24 hours                                          |
+
+Use the **Emails** selector, not **Emails ending in** — the latter would admit
+every address on the domain. Access is default-deny, so anything not matching
+the rule is rejected at Cloudflare's edge and never reaches the Droplet.
+
+There are TWO independent gates and they must be kept in sync:
+
+1. **Cloudflare Access** decides who may reach `admin.betarouter.com` at all.
+2. **`ADMIN_EMAILS`** in `.env.production` decides who the `ee/admin` app treats
+   as an admin once they have logged in.
+
+An address in Access but not in `ADMIN_EMAILS` clears the edge and is then
+rejected by the app; the reverse never gets far enough to matter. When adding
+or removing an admin, change both.
+
+To verify: `curl -sI https://admin.betarouter.com/` should return `302` with a
+`location` on `*.cloudflareaccess.com`. A redirect to `/login` instead means
+Access is NOT in front of the app and the dashboard is publicly reachable.
+Deleting the Access application reverts to exactly that unprotected state, so it
+is also the escape hatch if a policy change locks everyone out.
+
 ## First deployment
 
 The production checkout lives at `/opt/betarouter-ai-gateway`.
