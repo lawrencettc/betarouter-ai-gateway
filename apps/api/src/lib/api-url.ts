@@ -19,6 +19,6 @@ export function getApiBaseUrl(): string {
 		return configured;
 	}
 	return process.env.HOSTED === "true"
-		? "https://internal.betarouter.com"
+		? "https://platform-api.betarouter.com"
 		: "http://localhost:4002";
 }
