@@ -13,7 +13,6 @@ import {
 	OpenClawIcon,
 	ClineIcon,
 	CursorIcon,
-	DevPassCodeIcon,
 	GitHubCopilotIcon,
 	HermesIcon,
 	KiloCodeIcon,
@@ -39,14 +38,6 @@ interface Integration {
 }
 
 const integrations: Integration[] = [
-	{
-		name: "BetaPass Code",
-		description:
-			"Our open-source terminal coding agent built for betarouter. One browser login, every model, no per-provider keys.",
-		href: "/guides/devpass-code",
-		icon: DevPassCodeIcon,
-		comingSoon: false,
-	},
 	{
 		name: "Autohand Code",
 		description:

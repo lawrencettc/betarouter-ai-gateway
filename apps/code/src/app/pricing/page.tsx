@@ -178,7 +178,7 @@ const includedInEveryPlan = [
 	"All 200+ models — flagships land day one",
 	"Claude Opus 4.8, GPT-5.5, Gemini 3.1 Pro",
 	"Open-weight coders — GLM-4.7, Qwen3, Kimi K2.6",
-	"BetaPass Code, Claude Code, OpenCode, Empryo, SoulForge",
+	"Claude Code, OpenCode, Empryo, SoulForge",
 	"Any OpenAI/Anthropic-compatible tool",
 	"Real-time dashboard with per-request cost & latency",
 	"Switch tiers anytime — no lock-in, no cancellation fee",

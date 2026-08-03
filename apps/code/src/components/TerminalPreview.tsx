@@ -6,14 +6,12 @@ import {
 	AnthropicIcon,
 	AutohandIcon,
 	ClineIcon,
-	DevPassCodeIcon,
 	EmpryoIcon,
 	OpenCodeIcon,
 	SoulForgeIcon,
 } from "@betarouter/shared/components";
 
 type Tool =
-	| "devpass-code"
 	| "claude-code"
 	| "empryo"
 	| "soulforge"
@@ -27,12 +25,6 @@ const tools: {
 	icon: typeof AnthropicIcon;
 	highlight?: string;
 }[] = [
-	{
-		id: "devpass-code",
-		name: "BetaPass Code",
-		icon: DevPassCodeIcon,
-		highlight: "First-party",
-	},
 	{ id: "claude-code", name: "Claude Code", icon: AnthropicIcon },
 	{ id: "opencode", name: "OpenCode", icon: OpenCodeIcon },
 	{
@@ -58,11 +50,6 @@ const snippets: Record<
 		modelLine?: { key: string; value: string };
 	}
 > = {
-	"devpass-code": {
-		lines: [],
-		command: "devpass-code auth login",
-		comment: "# opens your browser — no keys to copy, models built in",
-	},
 	"claude-code": {
 		lines: [
 			{
@@ -128,7 +115,7 @@ const snippets: Record<
 };
 
 export function TerminalPreview() {
-	const [activeTool, setActiveTool] = useState<Tool>("devpass-code");
+	const [activeTool, setActiveTool] = useState<Tool>("claude-code");
 	const snippet = snippets[activeTool];
 
 	return (

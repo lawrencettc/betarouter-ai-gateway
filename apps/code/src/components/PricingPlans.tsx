@@ -37,7 +37,7 @@ const plans: PlanContent[] = [
 		support: "Email",
 		features: [
 			"All 200+ models — Claude, GPT-5, Gemini, GLM, Qwen, …",
-			"BetaPass Code, Claude Code, OpenCode, Empryo, SoulForge & any OpenAI-compatible tool",
+			"Claude Code, OpenCode, Empryo, SoulForge & any OpenAI-compatible tool",
 			"Real-time dashboard with per-request cost",
 		],
 	},

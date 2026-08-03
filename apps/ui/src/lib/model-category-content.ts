@@ -73,7 +73,7 @@ export const modelCategoryContent = {
 				question:
 					"Can I use these models with coding agents like Cline or Aider?",
 				answer:
-					"Yes. Any agent that supports an OpenAI-compatible endpoint or custom base URL can route through betarouter with one API key — that includes Cline, Aider, Roo Code, and devpass-code — so you can mix models per task and see per-agent cost analytics.",
+					"Yes. Any agent that supports an OpenAI-compatible endpoint or custom base URL can route through betarouter with one API key — that includes Claude Code, OpenCode, Cline, Aider, and Roo Code — so you can mix models per task and see per-agent cost analytics.",
 			},
 			{
 				question: "Do coding models need tool calling?",

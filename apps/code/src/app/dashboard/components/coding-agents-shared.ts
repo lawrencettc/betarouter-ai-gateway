@@ -25,7 +25,7 @@ export interface AgentDefinition {
 	label: string;
 	icon: IconComponent;
 	sources: string[];
-	guideUrl: string;
+	guideUrl?: string;
 }
 
 export const AGENTS: AgentDefinition[] = [
@@ -34,7 +34,6 @@ export const AGENTS: AgentDefinition[] = [
 		label: "BetaPass Code",
 		icon: DevPassCodeIcon,
 		sources: ["devpass-code"],
-		guideUrl: "/guides/devpass-code",
 	},
 	{
 		id: "claude-code",

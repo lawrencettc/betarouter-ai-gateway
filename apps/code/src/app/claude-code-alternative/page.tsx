@@ -92,7 +92,7 @@ const comparisonFeatures = [
 		competitor: true,
 	},
 	{
-		label: "Works with BetaPass Code, OpenCode, Cursor, Zed, Cline",
+		label: "Works with OpenCode, Cursor, Zed, Cline, and more",
 		devpass: true,
 		competitor: false,
 	},
@@ -273,8 +273,8 @@ export default function ClaudeCodeAlternativePage() {
 								caps. BetaPass does exactly that: point the CLI you already use
 								at one key that meters {MARKETING_STATS.models} models, Claude
 								included, at the providers&apos; own published rates. Swap the
-								agent too if you want — <strong>BetaPass Code</strong>,
-								OpenCode, Cursor, Zed and Cline all take the same key.
+								agent too if you want — OpenCode, Cursor, Zed and Cline all
+								take the same key.
 							</p>
 						</div>
 					</div>

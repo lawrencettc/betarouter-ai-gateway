@@ -17,7 +17,7 @@ const faqItems: { question: string; answer: ReactNode }[] = [
 	{
 		question: "Which coding agents work with BetaPass?",
 		answer:
-			"Anything that speaks the OpenAI or Anthropic API — BetaPass Code, Claude Code, OpenCode, Empryo, SoulForge, Cursor, Cline, Continue, Aider, the OpenAI and Anthropic SDKs, and more. Set two environment variables and you're in.",
+			"Anything that speaks the OpenAI or Anthropic API — Claude Code, OpenCode, Empryo, SoulForge, Cursor, Cline, Continue, Aider, the OpenAI and Anthropic SDKs, and more. Set two environment variables and you're in.",
 	},
 	{
 		question: "What models are included?",

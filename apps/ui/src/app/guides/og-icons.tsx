@@ -350,7 +350,6 @@ export function getIconForGuide(slug: string) {
 		"kimi-code": KimiIcon,
 		mimocode: MimoCodeIcon,
 		"kilo-code": KiloCodeIcon,
-		"devpass-code": DevPassCodeIcon,
 		"github-copilot": GitHubCopilotIcon,
 		mcp: McpIcon,
 	};
