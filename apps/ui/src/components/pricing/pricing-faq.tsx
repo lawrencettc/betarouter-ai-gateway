@@ -18,8 +18,13 @@ const FAQ_ITEMS: PricingFaqItem[] = [
 	},
 	{
 		question: "Is there a fee when I bring my own API keys?",
-		answer:
-			"No. With your own provider keys (BYOK), routing through betarouter is free — you pay your providers directly and still get unified analytics, caching, and failover.",
+		answer: `No platform fee. With your own provider keys (BYOK), routing through betarouter is free — you pay your providers directly and still get unified analytics, caching, and failover. The only optional charge is storage: if you enable full data retention, stored requests are billed at ${MARKETING_STATS.dataStoragePrice}.`,
+		links: [
+			{
+				href: "https://docs.betarouter.com/features/data-retention#storage-pricing",
+				label: "See storage pricing",
+			},
+		],
 	},
 	{
 		question: "How much do tokens cost for each model?",
@@ -40,12 +45,6 @@ const FAQ_ITEMS: PricingFaqItem[] = [
 		question: "What does the Enterprise plan include?",
 		answer: `Enterprise adds volume discounts, custom routing, unlimited data retention, and a ${MARKETING_STATS.uptimeSla} uptime SLA on top of everything in the free plan.`,
 		links: [{ href: "/enterprise", label: "Explore Enterprise" }],
-	},
-	{
-		question: "Can I self-host betarouter?",
-		answer:
-			"Yes. betarouter is open source under AGPLv3, so you can self-host the gateway for free — or use the hosted platform and pay only the credit fee.",
-		links: [{ href: "/open-source", label: "See the open-source project" }],
 	},
 ];
 

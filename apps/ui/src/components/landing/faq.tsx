@@ -28,8 +28,7 @@ const faqData = [
 	},
 	{
 		question: "How much does it cost?",
-		answer:
-			"Credits: Pay-as-you-go with a flat 5% platform fee. BYOK: Use your own provider API keys for free. Enterprise: Custom SLA, dedicated infrastructure, and volume discounts.",
+		answer: `Credits: Pay-as-you-go with a flat 5% platform fee. BYOK: Use your own provider API keys for free. Enterprise: Custom SLA, dedicated infrastructure, and volume discounts. Optional full data retention is billed at ${MARKETING_STATS.dataStoragePrice} in both credits and BYOK modes.`,
 	},
 ];
 
@@ -201,6 +200,17 @@ export function Faq() {
 												volume discounts. Contact sales for a tailored quote.
 											</li>
 										</ul>
+										<p className="mt-2">
+											Optional{" "}
+											<a
+												href="https://docs.betarouter.com/features/data-retention#storage-pricing"
+												className="underline"
+											>
+												full data retention
+											</a>{" "}
+											is billed at {MARKETING_STATS.dataStoragePrice} in both
+											credits and BYOK modes.
+										</p>
 									</div>
 								</AccordionContent>
 							</AccordionItem>
