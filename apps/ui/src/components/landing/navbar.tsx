@@ -20,6 +20,7 @@ import {
 	ScrollText,
 	Shield,
 	ShieldCheck,
+	Trophy,
 	X,
 } from "lucide-react";
 import Link from "next/link";
@@ -259,6 +260,15 @@ export const Navbar = ({
 			icon: KeyRound,
 			gradient:
 				"hover:from-cyan-500/20 hover:to-blue-600/30 hover:shadow-cyan-500/10 group-hover/product:text-cyan-500 dark:group-hover/product:text-cyan-400",
+		},
+		{
+			title: "Rankings",
+			href: "/rankings",
+			description:
+				"Top models by real token volume routed through the gateway.",
+			icon: Trophy,
+			gradient:
+				"hover:from-amber-500/20 hover:to-yellow-600/30 hover:shadow-amber-500/10 group-hover/product:text-amber-500 dark:group-hover/product:text-amber-400",
 		},
 		{
 			title: "Apps",
