@@ -28,7 +28,8 @@ export function getConfig(): AppConfig {
 		playgroundUrl: process.env.PLAYGROUND_URL ?? "http://localhost:3003",
 		docsUrl: process.env.DOCS_URL ?? "http://localhost:3005",
 		githubUrl:
-			process.env.GITHUB_URL ?? "https://github.com/theopenco/llmgateway",
+			process.env.GITHUB_URL ??
+			"https://github.com/lawrencettc/betarouter-ai-gateway",
 		discordUrl: process.env.DISCORD_URL ?? "https://betarouter.com/discord",
 		twitterUrl: process.env.TWITTER_URL ?? "https://x.com/betarouterco",
 		posthogKey: process.env.POSTHOG_KEY,

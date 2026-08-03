@@ -27,7 +27,8 @@ export function getConfig(): AppConfig {
 		apiBackendUrl: process.env.API_BACKEND_URL ?? apiUrl,
 		gatewayUrl: process.env.GATEWAY_URL ?? "http://localhost:4001",
 		githubUrl:
-			process.env.GITHUB_URL ?? "https://github.com/theopenco/llmgateway",
+			process.env.GITHUB_URL ??
+			"https://github.com/lawrencettc/betarouter-ai-gateway",
 		discordUrl: process.env.DISCORD_URL ?? "https://betarouter.com/discord",
 		twitterUrl: process.env.TWITTER_URL ?? "https://x.com/betarouterco",
 		docsUrl: process.env.DOCS_URL ?? "http://localhost:3005",
