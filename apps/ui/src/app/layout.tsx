@@ -39,7 +39,7 @@ export const metadata: Metadata = {
 		template: "%s | betarouter",
 	},
 	description:
-		"Route, manage, and analyze LLM requests across OpenAI, Anthropic, Google, and 40+ providers through one unified API.",
+		"Route, manage, and analyze LLM requests across OpenAI, Anthropic, Google, and 40+ providers through one unified, OpenAI-compatible API. Free and open source.",
 	authors: [{ name: "betarouter" }],
 	creator: "betarouter",
 	publisher: "betarouter",
@@ -66,7 +66,7 @@ export const metadata: Metadata = {
 	openGraph: {
 		title: "betarouter - Unified API for Multiple LLM Providers",
 		description:
-			"Route, manage, and analyze LLM requests across OpenAI, Anthropic, Google, and 40+ providers through one unified API.",
+			"Route, manage, and analyze LLM requests across OpenAI, Anthropic, Google, and 40+ providers through one unified, OpenAI-compatible API. Free and open source.",
 		images: ["/opengraph.png?v=4"],
 		type: "website",
 		url: "https://betarouter.com",
