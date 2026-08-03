@@ -6,7 +6,6 @@ import {
 	FileText,
 	Plug,
 	ScrollText,
-	Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { usePostHog } from "posthog-js/react";
@@ -41,13 +40,6 @@ const tools: Tool[] = [
 			"Use betarouter as an MCP server for Claude Code, Cursor, and other MCP-compatible clients.",
 		href: "/guides/mcp",
 		icon: <Plug className="size-5" />,
-	},
-	{
-		title: "Agent Skills",
-		description:
-			"Packaged instructions and guidelines for AI coding agents to generate higher-quality code.",
-		href: "/guides/agent-skills",
-		icon: <Sparkles className="size-5" />,
 	},
 	{
 		title: "Templates & Agents",

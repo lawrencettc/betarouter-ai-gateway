@@ -240,11 +240,6 @@ const nextConfig: NextConfig = {
 				permanent: true,
 			},
 			{
-				source: "/guides/agent-skills",
-				destination: "https://docs.betarouter.com/guides/agent-skills",
-				permanent: true,
-			},
-			{
 				source: "/guides/cli",
 				destination: "https://docs.betarouter.com/guides/cli",
 				permanent: true,

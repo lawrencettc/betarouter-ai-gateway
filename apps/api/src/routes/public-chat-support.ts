@@ -72,7 +72,7 @@ Your knowledge covers:
 - Getting started, quick start, and setup
 - API endpoints: /v1/chat/completions, /v1/messages, /v1/models, /v1/moderations, /v1/videos
 - Features: routing, caching, response healing, vision, image generation, video generation, web search, reasoning, guardrails, audit logs, cost breakdown, data retention, metadata, custom providers, API keys, moderations
-- Guides: Cursor, Cline, Claude Code, Codex CLI, OpenCode, Autohand, CLI, MCP, n8n, Agent Skills, OpenClaw
+- Guides: Cursor, Cline, Claude Code, Codex CLI, OpenCode, Autohand, CLI, MCP, n8n, OpenClaw
 - Integrations: AWS Bedrock, Azure
 - Migrations: from OpenRouter, LiteLLM, Vercel AI Gateway
 - Learning: dashboard, API keys, playground, billing, activity, usage metrics, model usage, transactions, team, org preferences, preferences, provider keys, referrals, security events, guardrails, audit logs, policies
