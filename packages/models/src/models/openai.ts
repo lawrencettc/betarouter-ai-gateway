@@ -239,7 +239,7 @@ export const openaiModels = [
 				streaming: true,
 				vision: true,
 				tools: true,
-				webSearch: true, // Supports web_search tool via Responses API
+				webSearch: true,
 				jsonOutputSchema: true,
 				jsonOutput: true,
 				supportsN: true,
@@ -715,7 +715,6 @@ export const openaiModels = [
 				jsonOutput: true,
 			},
 			{
-				// Cerebras: FP16/FP8 (weights only)
 				// Consistently times out in CI due to model size
 				providerId: "cerebras",
 				stability: "unstable",
@@ -917,8 +916,6 @@ export const openaiModels = [
 		description:
 			"Latest flagship model with reasoning, vision, and enhanced capabilities.",
 		family: "openai",
-		// Based on August 2025 launch from AI timeline:
-		// https://raw.githubusercontent.com/NHLOCAL/AiTimeline/refs/heads/main/_data/timeline.yml
 		releasedAt: new Date("2025-08-01"),
 		providers: [
 			{
@@ -936,7 +933,7 @@ export const openaiModels = [
 				streaming: true,
 				vision: true,
 				tools: true,
-				webSearch: true, // Supports web_search tool via Responses API
+				webSearch: true,
 				webSearchPrice: "0.01", // $10 per 1000 searches for reasoning models
 				supportsResponsesApi: true,
 				jsonOutputSchema: true,

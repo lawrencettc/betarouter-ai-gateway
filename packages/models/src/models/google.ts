@@ -2316,7 +2316,6 @@ export const googleModels = [
 				jsonOutput: true,
 			},
 			{
-				// Cerebras: reasoning controllable via reasoning_effort; supports image inputs
 				providerId: "cerebras",
 				test: "skip",
 				externalId: "gemma-4-31b",
