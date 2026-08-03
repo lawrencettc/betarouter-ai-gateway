@@ -1,6 +1,6 @@
-# BetaPass by LLM Gateway
+# BetaPass by betarouter
 
-> BetaPass is a flat-price subscription for AI coding tools. One API key unlocks 200+ models across 40+ providers in any OpenAI-compatible coding agent — BetaPass Code, Claude Code, opencode, Cursor, Continue, and more — with a fixed monthly usage allowance instead of surprise token bills.
+> BetaPass is a flat-price subscription for AI coding tools. One API key unlocks 200+ models across 40+ providers in Claude Code, OpenCode, Cursor, Continue, and other OpenAI-compatible tools, with a fixed monthly usage allowance instead of surprise token bills.
 
 ## Plans
 
@@ -12,10 +12,10 @@
 ## Key pages
 
 - [BetaPass](https://betapass.betarouter.com): Plans, supported coding agents, and setup.
-- [Docs & agent guides](https://docs.llmgateway.io/guides): Step-by-step setup for each coding agent.
-- [Models](https://llmgateway.io/models): Full catalog of supported models with pricing and capabilities.
-- [LLM Gateway](https://llmgateway.io): The open-source gateway platform BetaPass runs on.
-- [Pricing (machine-readable)](https://llmgateway.io/pricing.md): Plain-markdown pricing for the whole platform.
+- [Docs & integration guides](https://docs.betarouter.com/guides): Step-by-step setup for supported tools.
+- [Models](https://betarouter.com/models): Full catalog of supported models with pricing and capabilities.
+- [betarouter](https://betarouter.com): The hosted gateway platform BetaPass runs on.
+- [Pricing (machine-readable)](https://betarouter.com/pricing.md): Plain-markdown pricing for the whole platform.
 
 ## Notes
 

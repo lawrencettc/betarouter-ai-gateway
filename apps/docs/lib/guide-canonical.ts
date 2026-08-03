@@ -5,7 +5,7 @@
 // Docs-only guides without a marketing-site counterpart stay self-canonical —
 // add new docs-only guide slugs here, otherwise their canonical points at a
 // 404 on the marketing site.
-const docsOnlyGuideSlugs = new Set(["agent-skills", "cli"]);
+const docsOnlyGuideSlugs = new Set(["cli"]);
 
 export function marketingGuideCanonical(pageUrl: string): string | null {
 	const match = /^\/guides\/([^/]+)$/.exec(pageUrl);

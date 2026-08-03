@@ -48,7 +48,7 @@ const features = [
 		icon: KeyRound,
 		title: "One key, every agent",
 		description:
-			"BetaPass Code, Claude Code, OpenCode, Cursor, Cline, Aider, Continue — set two env vars and any OpenAI-compatible tool is stamped in.",
+			"Claude Code, OpenCode, Cursor, Cline, Aider, Continue — set the BetaRouter base URL and key in any OpenAI-compatible tool.",
 	},
 	{
 		icon: Terminal,
@@ -100,7 +100,7 @@ export default function DevPassProductPage() {
 					eyebrow="Product · BetaPass"
 					title="One key. Every model. Three flat prices."
 					subtitle="All-access dev plans for AI coding."
-					description="BetaPass turns every dollar into $3 of model usage at provider rates — metered transparently, with no token math and no lock-in. Best in BetaPass Code, our first-party agent, and drop-in for every OpenAI-compatible tool."
+					description="BetaPass turns every dollar into $3 of model usage at provider rates — metered transparently, with no token math and no lock-in. Use it with Claude Code, OpenCode, Cline, or any OpenAI-compatible tool."
 					ctas={[
 						{ label: "Get BetaPass", href: DEVPASS_URL, external: true },
 						{

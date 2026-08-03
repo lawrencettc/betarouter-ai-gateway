@@ -1,4 +1,3 @@
-import { getGithubLastEdit } from "fumadocs-core/content/github";
 import { createRelativeLink } from "fumadocs-ui/mdx";
 import {
 	DocsPage,
@@ -71,17 +70,6 @@ export default async function Page(props: {
 		notFound();
 	}
 
-	let time: Date | null = null;
-	try {
-		time = await getGithubLastEdit({
-			owner: "theopenco",
-			repo: "llmgateway",
-			path: `apps/docs/content/${page.path}`,
-		});
-	} catch {
-		// Ignore errors (rate limits, network issues, missing auth in Docker builds)
-	}
-
 	const MDXContent = page.data.body;
 
 	const path = page.url === "/" ? "" : page.url;
@@ -91,7 +79,6 @@ export default async function Page(props: {
 		headline: page.data.title,
 		description: page.data.description,
 		url: marketingGuideCanonical(page.url) ?? `${docsBaseUrl}${path}`,
-		...(time ? { dateModified: new Date(time).toISOString() } : {}),
 		author: {
 			"@type": "Organization",
 			name: "betarouter",
@@ -112,7 +99,6 @@ export default async function Page(props: {
 				style: "clerk",
 				footer: <EnterpriseCTA />,
 			}}
-			lastUpdate={time ? new Date(time) : new Date()}
 		>
 			<JsonLd data={techArticleSchema} />
 			<nav
@@ -128,7 +114,6 @@ export default async function Page(props: {
 					markdownUrl={
 						page.url === "/" ? "/llms.mdx/index" : `/llms.mdx${page.url}`
 					}
-					githubUrl={`https://github.com/theopenco/llmgateway/blob/main/apps/docs/content/${page.path}`}
 				/>
 			</nav>
 			<DocsTitle>{page.data.title}</DocsTitle>
@@ -142,12 +127,10 @@ export default async function Page(props: {
 				/>
 			</DocsBody>
 			<Feedback
-				onRateAction={async (url, feedback) => {
+				onRateAction={async (_url, feedback) => {
 					"use server";
 					posthog.capture("on_rate_docs", feedback);
-					return await Promise.resolve({
-						githubUrl: `https://github.com/theopenco/llmgateway/blob/main/apps/docs/content${url}.mdx`,
-					});
+					await Promise.resolve();
 				}}
 			/>
 		</DocsPage>

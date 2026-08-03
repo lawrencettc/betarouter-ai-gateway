@@ -6,7 +6,7 @@ export const revalidate = false;
 
 const HEADER = `# betarouter — Full Documentation
 
-> betarouter is an open-source, OpenAI-compatible API gateway that routes, manages, and analyzes LLM requests across 40+ providers (OpenAI, Anthropic, Google, and more) through a single unified API. Switch providers without changing code, manage API keys centrally, track usage and cost, add caching and guardrails, and self-host or use the managed cloud.
+> betarouter is a hosted, OpenAI-compatible API gateway that routes, manages, and analyzes LLM requests across 40+ providers (OpenAI, Anthropic, Google, and more) through a single unified API. Switch providers without changing code, manage API keys centrally, track usage and cost, and add caching and guardrails.
 
 API base URL: https://api.betarouter.com/v1 · Docs: https://docs.betarouter.com · Site: https://betarouter.com
 

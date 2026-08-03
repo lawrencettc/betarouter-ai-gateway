@@ -73,7 +73,7 @@ export const modelCategoryContent = {
 				question:
 					"Can I use these models with coding agents like Cline or Aider?",
 				answer:
-					"Yes. Any agent that supports an OpenAI-compatible endpoint or custom base URL can route through betarouter with one API key — that includes Cline, Aider, Roo Code, and devpass-code — so you can mix models per task and see per-agent cost analytics.",
+					"Yes. Any agent that supports an OpenAI-compatible endpoint or custom base URL can route through betarouter with one API key — that includes Claude Code, OpenCode, Cline, Aider, and Roo Code — so you can mix models per task and see per-agent cost analytics.",
 			},
 			{
 				question: "Do coding models need tool calling?",
@@ -261,7 +261,7 @@ export const modelCategoryContent = {
 			"Open-weight models — Llama, DeepSeek, Qwen, GLM, Kimi, GPT-OSS, Gemma, and more — served through one API",
 		intro: [
 			"Open-weight models have closed most of the gap with proprietary frontiers: DeepSeek V4, Qwen3.7, GLM-5, Kimi K2, and MiniMax M3 sit near the top of real-world leaderboards, joined by OpenAI's GPT-OSS and Google's Gemma releases. Their weights are public — but running a 200B+ parameter model yourself means serious GPU infrastructure.",
-			"This page lists open-weight models served by hosted providers, so you get the openness — inspectable weights, no lock-in, the option to self-host later — with API convenience. betarouter itself is open source (AGPLv3) and self-hostable, so the whole stack can run on your terms.",
+			"This page lists open-weight models served by hosted providers, so you get the openness — inspectable weights, no lock-in, and the option to run those models yourself later — with API convenience.",
 		],
 		faqs: [
 			{

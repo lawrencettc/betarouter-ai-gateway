@@ -37,7 +37,7 @@ const steps = [
 		step: "02",
 		title: "Paste your key in your agent",
 		description:
-			"Two env vars for Claude Code, /connect in OpenCode, /keys in Empryo — or one-click login in BetaPass Code. No SDK changes.",
+			"Two env vars for Claude Code, /connect in OpenCode, or /keys in Empryo. No SDK changes.",
 	},
 	{
 		step: "03",
@@ -163,8 +163,8 @@ export default function StartPage() {
 						</Marquee>
 					</div>
 					<p className="container mx-auto mt-10 px-4 text-center font-mono text-xs text-muted-foreground">
-						Runs on the open-source betarouter — {MARKETING_STATS.tokensRouted}{" "}
-						tokens routed · {MARKETING_STATS.githubStars} GitHub stars
+						Runs on betarouter — {MARKETING_STATS.tokensRouted} tokens routed ·{" "}
+						{MARKETING_STATS.providers} providers
 					</p>
 				</section>
 

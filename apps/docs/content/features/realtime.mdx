@@ -19,13 +19,11 @@ The API is a drop-in replacement: point any OpenAI realtime client at
 key, and keep your existing event handling.
 
 <Callout type="warn">
-	Realtime is **off by default** and must be turned on by the operator of your
-	betarouter deployment. Until it is, `POST /v1/realtime/client_secrets` returns
-	404 and the WebSocket upgrade is refused. Self-hosting? See the
-	enable-realtime procedure in `infra/DEPLOYMENT_BETAROUTER.md`. Realtime also
-	requires a regular developer API key (not an end-user session token) on a
-	pay-as-you-go organization with credits or a BYOK provider key without a
-	custom base URL.
+	Realtime is currently in a staged hosted rollout. Until it is enabled for the
+	service, `POST /v1/realtime/client_secrets` returns 404 and the WebSocket
+	upgrade is refused. Realtime requires a regular developer API key (not an
+	end-user session token) on a pay-as-you-go organization with credits or a BYOK
+	provider key without a custom base URL.
 </Callout>
 
 <Callout type="info">
@@ -283,11 +281,3 @@ like any other request, including separate line items for input transcription.
 - Realtime requires a regular developer API key on a pay-as-you-go
   organization. End-user session tokens, platform keys, and BetaPass/chat plan
   organizations are not supported yet.
-
-## Self-Hosting
-
-Realtime is disabled by default on self-hosted deployments. Set
-`REALTIME_INLINE=true` to attach the `/v1/realtime` WebSocket listener (and
-the client-secret mint endpoint) to the gateway process — `pnpm dev` sets
-this automatically. Client secrets require Redis. See `.env.example` for the
-tunables (session caps, concurrency limits, shutdown grace period).

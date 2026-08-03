@@ -32,7 +32,7 @@ export const COPILOT_CALCULATOR_FAQ: CopilotCalculatorFaqItem[] = [
 	{
 		question: "What if I want a flat monthly price per developer?",
 		answer:
-			"BetaPass plans give each developer a flat monthly allowance ($29–$179/month) usable across coding agents like BetaPass Code, Claude Code, and Cline, with roughly 3x the plan price in monthly usage value. It's the predictable-seat model Copilot used to be, but with model choice.",
+			"BetaPass plans give each developer a flat monthly allowance ($29–$179/month) usable across coding agents like Claude Code, OpenCode, and Cline, with roughly 3x the plan price in monthly usage value. It's the predictable-seat model Copilot used to be, but with model choice.",
 	},
 	{
 		question: "How accurate are these estimates?",

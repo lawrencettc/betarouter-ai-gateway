@@ -35,13 +35,7 @@ export interface Feedback {
 	message: string;
 }
 
-export interface ActionResponse {
-	githubUrl: string;
-}
-
-interface Result extends Feedback {
-	response?: ActionResponse;
-}
+type Result = Feedback;
 
 function readStoredFeedback(url: string): Result | null {
 	const item = localStorage.getItem(`docs-feedback-${url}`);
@@ -51,7 +45,7 @@ function readStoredFeedback(url: string): Result | null {
 export function Feedback({
 	onRateAction,
 }: {
-	onRateAction: (url: string, feedback: Feedback) => Promise<ActionResponse>;
+	onRateAction: (url: string, feedback: Feedback) => Promise<void>;
 }) {
 	const url = usePathname();
 	const [previous, replacePrevious] = useReducer(
@@ -87,11 +81,8 @@ export function Feedback({
 				message,
 			};
 
-			void onRateAction(url, feedback).then((response) => {
-				replacePrevious({
-					response,
-					...feedback,
-				});
+			void onRateAction(url, feedback).then(() => {
+				replacePrevious(feedback);
 				setMessage("");
 				setOpinion(null);
 			});
@@ -148,20 +139,6 @@ export function Feedback({
 					<div className="px-3 py-6 flex flex-col items-center gap-3 bg-fd-card text-fd-muted-foreground text-sm text-center rounded-xl">
 						<p>Thank you for your feedback!</p>
 						<div className="flex flex-row items-center gap-2">
-							<a
-								href={previous.response?.githubUrl}
-								rel="noreferrer noopener"
-								target="_blank"
-								className={cn(
-									buttonVariants({
-										color: "primary",
-									}),
-									"text-xs",
-								)}
-							>
-								View on GitHub
-							</a>
-
 							<button
 								className={cn(
 									buttonVariants({

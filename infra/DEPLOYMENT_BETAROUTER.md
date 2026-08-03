@@ -123,6 +123,32 @@ verification delivery uses strict, token-safe error logging. Better Auth may
 still return a successful sign-up response when delivery fails, but the account
 remains unverified and the user can retry verification after email recovers.
 
+### Hosted billing
+
+Create live USD prices in Stripe for BetaPass Lite/Pro/Max ($29/$79/$179
+monthly), Playground Starter/Plus/Pro ($9/$19/$49 monthly), and the one-time
+provider listing fee ($2,500). Configure
+`https://platform-api.betarouter.com/stripe/webhook` for these events:
+
+- `payment_intent.succeeded`
+- `payment_intent.payment_failed`
+- `setup_intent.succeeded`
+- `checkout.session.completed`
+- `invoice.payment_succeeded`
+- `invoice.paid`
+- `invoice.payment_failed`
+- `customer.subscription.created`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+- `charge.refunded`
+
+Set the live secret and publishable keys, webhook signing secret, and every
+price ID from `.env.production.example`. The managed Compose file requires the
+complete live billing configuration so a partial Stripe setup cannot launch.
+The organization Pro price IDs are optional legacy compatibility values. Hosted
+creation and plan changes for that retired product return HTTP 410; existing
+subscribers can still view, cancel, or resume their subscriptions.
+
 Normally, GitHub Actions publishes the unified image to GHCR. Start it with:
 
 ```sh

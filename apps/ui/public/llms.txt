@@ -1,6 +1,6 @@
 # betarouter
 
-> betarouter is a unified API for routing requests across 40+ LLM providers, including OpenAI, Anthropic, Google, Meta, Mistral, and DeepSeek. Use one OpenAI-compatible API and one key to access 200+ models, with usage analytics, cost tracking, caching, and automatic failover. Open source (AGPLv3) and self-hostable.
+> betarouter is a hosted unified API for routing requests across 40+ LLM providers, including OpenAI, Anthropic, Google, Meta, Mistral, and DeepSeek. Use one OpenAI-compatible API and one key to access 200+ models, with usage analytics, cost tracking, caching, and automatic failover.
 
 ## Key pages
 

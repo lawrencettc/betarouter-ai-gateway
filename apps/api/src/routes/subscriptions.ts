@@ -14,6 +14,14 @@ import type { ServerTypes } from "@/vars.js";
 
 export const subscriptions = new OpenAPIHono<ServerTypes>();
 
+function rejectRetiredHostedProMutation() {
+	if (process.env.HOSTED === "true") {
+		throw new HTTPException(410, {
+			message: "New Pro subscriptions and plan changes are no longer available",
+		});
+	}
+}
+
 const createProSubscription = createRoute({
 	method: "post",
 	path: "/create-pro-subscription",
@@ -46,6 +54,8 @@ const createProSubscription = createRoute({
 });
 
 subscriptions.openapi(createProSubscription, async (c) => {
+	rejectRetiredHostedProMutation();
+
 	const user = c.get("user");
 	const { billingCycle } = c.req.valid("json");
 
@@ -385,6 +395,8 @@ const upgradeToYearlyPlan = createRoute({
 });
 
 subscriptions.openapi(upgradeToYearlyPlan, async (c) => {
+	rejectRetiredHostedProMutation();
+
 	const user = c.get("user");
 
 	if (!user) {

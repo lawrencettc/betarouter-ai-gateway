@@ -31,11 +31,11 @@ Copilot is an IDE product, not an API, so migration means pointing each workflow
 
 | Copilot feature            | Gateway-backed replacement                                                                            |
 | -------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Copilot Chat               | Any chat-capable agent (BetaPass Code, Claude Code, Cline, Continue) with any of 200+ models          |
-| Agent mode                 | BetaPass Code, Claude Code, Cline, or Aider routed through betarouter                                 |
+| Copilot Chat               | Any chat-capable agent (Claude Code, OpenCode, Cline, Continue) with any of 200+ models               |
+| Agent mode                 | Claude Code, OpenCode, Cline, or Aider routed through betarouter                                      |
 | Inline completions         | Continue or Cline autocomplete — or keep a Copilot seat just for completions (they're still flat-fee) |
 | PR summaries & code review | Your CI calling the gateway's OpenAI-compatible API with any model                                    |
-| Copilot CLI                | Codex CLI, BetaPass Code, or Claude Code in the terminal                                              |
+| Copilot CLI                | Codex CLI, OpenCode, or Claude Code in the terminal                                                   |
 
 ## Migration Steps
 
@@ -47,7 +47,6 @@ Sign up at [betarouter.com/signup](/signup) and create an API key from your dash
 
 Each of these takes minutes to set up and works with every model on the gateway:
 
-- **[BetaPass Code](/guides/devpass-code)** — open-source terminal agent built for betarouter. One browser login, no API keys to juggle.
 - **[Claude Code](/guides/claude-code)** — three environment variables point it at the gateway, and it can run GPT-5, Gemini, or any other model:
 
 ```bash

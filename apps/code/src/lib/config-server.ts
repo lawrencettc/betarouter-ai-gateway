@@ -5,7 +5,6 @@ export interface AppConfig {
 	uiUrl: string;
 	playgroundUrl: string;
 	docsUrl: string;
-	githubUrl: string;
 	discordUrl: string;
 	twitterUrl: string;
 	posthogKey?: string;
@@ -27,8 +26,6 @@ export function getConfig(): AppConfig {
 		uiUrl: process.env.UI_URL ?? "http://localhost:3002",
 		playgroundUrl: process.env.PLAYGROUND_URL ?? "http://localhost:3003",
 		docsUrl: process.env.DOCS_URL ?? "http://localhost:3005",
-		githubUrl:
-			process.env.GITHUB_URL ?? "https://github.com/theopenco/llmgateway",
 		discordUrl: process.env.DISCORD_URL ?? "https://betarouter.com/discord",
 		twitterUrl: process.env.TWITTER_URL ?? "https://x.com/betarouterco",
 		posthogKey: process.env.POSTHOG_KEY,
@@ -36,7 +33,9 @@ export function getConfig(): AppConfig {
 		googleTagId: process.env.GOOGLE_TAG_ID,
 		googleAdsSignupConversion: process.env.GOOGLE_ADS_SIGNUP_CONVERSION,
 		googleAdsPurchaseConversion: process.env.GOOGLE_ADS_PURCHASE_CONVERSION,
-		stripePublishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+		stripePublishableKey:
+			process.env.STRIPE_PUBLISHABLE_KEY ??
+			process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
 		githubAuth: !!process.env.GITHUB_CLIENT_ID,
 		googleAuth: !!process.env.GOOGLE_CLIENT_ID,
 	};

@@ -10,7 +10,6 @@ import {
 	CodeCTATracker,
 	LandingPageTracker,
 } from "@/components/LandingTracker";
-import { PassportBook } from "@/components/PassportBook";
 import { PricingPlans } from "@/components/PricingPlans";
 import { TerminalPreview } from "@/components/TerminalPreview";
 import { Button } from "@/components/ui/button";
@@ -140,12 +139,8 @@ export default function LandingPage() {
 										$3
 									</span>{" "}
 									of model usage at provider rates — metered transparently, with
-									no token math and no lock-in. Best in{" "}
-									<span className="font-semibold text-foreground">
-										BetaPass Code
-									</span>
-									, our first-party agent, and drop-in for every
-									OpenAI-compatible tool.
+									no token math and no lock-in. Use it with Claude Code,
+									OpenCode, Cline, or any OpenAI-compatible tool.
 								</p>
 								<div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
 									<GetDevPassButton
@@ -234,16 +229,8 @@ export default function LandingPage() {
 							</div>
 						</div>
 						<p className="mt-8 text-center font-mono text-xs text-muted-foreground">
-							Runs on the open-source betarouter —{" "}
-							{MARKETING_STATS.tokensRouted} tokens routed ·{" "}
-							<a
-								href="https://github.com/theopenco/llmgateway"
-								target="_blank"
-								rel="noopener noreferrer"
-								className="text-foreground underline-offset-4 hover:underline"
-							>
-								{MARKETING_STATS.githubStars} GitHub stars
-							</a>
+							Runs on betarouter — {MARKETING_STATS.tokensRouted} tokens routed
+							· {MARKETING_STATS.providers} providers
 						</p>
 					</div>
 				</section>
@@ -323,29 +310,23 @@ export default function LandingPage() {
 					</div>
 				</section>
 
-				{/* Passport control */}
+				{/* Compatible agents */}
 				<section className="border-t bg-muted/20 py-24 px-4">
 					<div className="container mx-auto max-w-6xl">
 						<div className="mx-auto mb-14 max-w-2xl text-center">
 							<p className="mb-3 font-mono text-xs uppercase tracking-[0.25em] text-muted-foreground">
-								Passport control
+								Compatible tools
 							</p>
 							<h2 className="font-display mb-3 text-3xl font-bold tracking-tight sm:text-5xl">
-								One passport. Every agent stamped in.
+								One key. Every compatible agent.
 							</h2>
 							<p className="text-muted-foreground">
-								<span className="font-semibold text-foreground">
-									BetaPass Code
-								</span>{" "}
-								— our own terminal agent — is the bearer: one-click browser
-								login, no keys to copy. Claude Code, OpenCode, Empryo, and every
-								OpenAI-compatible tool get stamped in with two env vars.
+								Use the BetaRouter base URL and your BetaPass key with Claude
+								Code, OpenCode, Empryo, and other OpenAI-compatible tools.
 							</p>
 						</div>
 
-						<PassportBook />
-
-						<div className="mt-16 grid gap-5 md:grid-cols-3">
+						<div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
 							{featuredTools.map((tool) => {
 								const Icon = tool.icon;
 								return (
