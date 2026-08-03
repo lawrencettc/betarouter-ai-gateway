@@ -829,6 +829,8 @@ The betarouter Team`.trim();
 									to: user.email,
 									subject: "Welcome to betarouter — verify your email",
 									text,
+									strict: true,
+									logSafe: true,
 								});
 							} catch (error) {
 								logger.error(

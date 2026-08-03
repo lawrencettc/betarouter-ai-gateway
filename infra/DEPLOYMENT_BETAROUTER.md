@@ -105,6 +105,23 @@ look up that account's immutable database user ID and place it in
 in to `admin.betarouter.com` with the same email and password. Keep this file
 only on the Droplet.
 
+### Hosted authentication and email
+
+The managed Compose file pins `HOSTED=true`. This keeps email verification
+enabled and prevents the self-hosted sign-in hook from automatically verifying
+new accounts.
+
+Add `mail.betarouter.com` as a sending domain in Resend, publish its DNS records
+through Cloudflare, and wait for Resend to report the domain as verified. Create
+a full-access API key because hosted authentication uses both transactional
+email and the Contacts API. Set `RESEND_API_KEY`, `RESEND_AUDIENCE_ID`,
+`RESEND_NEWSLETTER_TOPIC_ID`, `RESEND_FROM_EMAIL`, and
+`RESEND_REPLY_TO_EMAIL` in `.env.production`.
+
+Compose refuses to start when the required Resend values are missing. Hosted
+verification email delivery is also strict, so sign-up cannot appear successful
+when no verification message was sent.
+
 Normally, GitHub Actions publishes the unified image to GHCR. Start it with:
 
 ```sh
