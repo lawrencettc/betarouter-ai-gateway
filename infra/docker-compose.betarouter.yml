@@ -23,6 +23,10 @@ services:
       - "4002"
     environment:
       NODE_ENV: production
+      # This is the managed BetaRouter deployment, not a self-hosted install.
+      # Hosted mode keeps email ownership verification enabled and prevents the
+      # self-hosted sign-in hook from auto-verifying every new account.
+      HOSTED: "true"
       RUN_MIGRATIONS: "true"
       TELEMETRY_ACTIVE: ${TELEMETRY_ACTIVE:-false}
 
@@ -93,9 +97,11 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
 
-      RESEND_API_KEY: ${RESEND_API_KEY:-}
-      RESEND_AUDIENCE_ID: ${RESEND_AUDIENCE_ID:-}
-      RESEND_NEWSLETTER_TOPIC_ID: ${RESEND_NEWSLETTER_TOPIC_ID:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:?RESEND_API_KEY is required for hosted authentication}
+      RESEND_AUDIENCE_ID: ${RESEND_AUDIENCE_ID:?RESEND_AUDIENCE_ID is required for hosted contact management}
+      RESEND_NEWSLETTER_TOPIC_ID: ${RESEND_NEWSLETTER_TOPIC_ID:?RESEND_NEWSLETTER_TOPIC_ID is required for newsletter subscriptions}
+      RESEND_FROM_EMAIL: "${RESEND_FROM_EMAIL:-betarouter <hello@betarouter.com>}"
+      RESEND_REPLY_TO_EMAIL: ${RESEND_REPLY_TO_EMAIL:-contact@betarouter.com}
       POSTHOG_KEY: ${POSTHOG_KEY:-}
       POSTHOG_HOST: ${POSTHOG_HOST:-}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}

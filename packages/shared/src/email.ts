@@ -2,7 +2,7 @@ import { Resend } from "resend";
 
 const resendApiKey = process.env.RESEND_API_KEY;
 const fromEmail =
-	process.env.RESEND_FROM_EMAIL ?? "betarouter <contact@mail.betarouter.com>";
+	process.env.RESEND_FROM_EMAIL ?? "betarouter <hello@betarouter.com>";
 const replyToEmail =
 	process.env.RESEND_REPLY_TO_EMAIL ?? "contact@betarouter.com";
 const resendAudienceId = process.env.RESEND_AUDIENCE_ID ?? "";
