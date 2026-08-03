@@ -125,11 +125,10 @@ remains unverified and the user can retry verification after email recovers.
 
 ### Hosted billing
 
-Create live USD prices in Stripe for the organization Pro plan ($50 monthly and
-$500 yearly), BetaPass Lite/Pro/Max ($29/$79/$179 monthly), Playground
-Starter/Plus/Pro ($9/$19/$49 monthly), and the one-time provider listing fee
-($2,500). Configure `https://platform-api.betarouter.com/stripe/webhook` for
-these events:
+Create live USD prices in Stripe for BetaPass Lite/Pro/Max ($29/$79/$179
+monthly), Playground Starter/Plus/Pro ($9/$19/$49 monthly), and the one-time
+provider listing fee ($2,500). Configure
+`https://platform-api.betarouter.com/stripe/webhook` for these events:
 
 - `payment_intent.succeeded`
 - `payment_intent.payment_failed`
@@ -146,9 +145,9 @@ these events:
 Set the live secret and publishable keys, webhook signing secret, and every
 price ID from `.env.production.example`. The managed Compose file requires the
 complete live billing configuration so a partial Stripe setup cannot launch.
-To enable SDK test-wallet top-ups, also create a test-mode webhook for the same
-endpoint and set the optional `STRIPE_SECRET_KEY_TEST` and
-`STRIPE_WEBHOOK_SECRET_TEST` values.
+The organization Pro price IDs are optional legacy compatibility values. Hosted
+creation and plan changes for that retired product return HTTP 410; existing
+subscribers can still view, cancel, or resume their subscriptions.
 
 Normally, GitHub Actions publishes the unified image to GHCR. Start it with:
 
