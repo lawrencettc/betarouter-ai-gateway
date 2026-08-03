@@ -1,6 +1,6 @@
-# LLM Gateway Chat
+# betarouter Chat
 
-> LLM Gateway Chat (chat.llmgateway.io) is an AI chat playground for talking to 200+ models from OpenAI, Anthropic, Google, xAI, DeepSeek, Meta, Mistral, and other providers in one place. It supports text chat, image and video generation, side-by-side multi-model group chats, and projects with knowledge files — on transparent provider-rate credits.
+> betarouter Chat (chat.betarouter.com) is an AI chat playground for talking to 200+ models from OpenAI, Anthropic, Google, xAI, DeepSeek, Meta, Mistral, and other providers in one place. It supports text chat, image and video generation, side-by-side multi-model group chats, and projects with knowledge files on transparent provider-rate credits.
 
 ## Plans
 
@@ -11,10 +11,10 @@
 
 ## Key pages
 
-- [Chat](https://chat.llmgateway.io): The chat playground.
-- [Models](https://llmgateway.io/models): Every supported model with pricing and capabilities.
-- [LLM Gateway](https://llmgateway.io): The open-source gateway platform behind Chat.
-- [Pricing (machine-readable)](https://llmgateway.io/pricing.md): Plain-markdown pricing for the whole platform.
+- [Chat](https://chat.betarouter.com): The chat playground.
+- [Models](https://betarouter.com/models): Every supported model with pricing and capabilities.
+- [betarouter](https://betarouter.com): The hosted gateway platform behind Chat.
+- [Pricing (machine-readable)](https://betarouter.com/pricing.md): Plain-markdown pricing for the whole platform.
 
 ## Notes
 

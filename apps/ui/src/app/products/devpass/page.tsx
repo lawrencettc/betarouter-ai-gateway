@@ -100,7 +100,7 @@ export default function DevPassProductPage() {
 					eyebrow="Product · BetaPass"
 					title="One key. Every model. Three flat prices."
 					subtitle="All-access dev plans for AI coding."
-				description="BetaPass turns every dollar into $3 of model usage at provider rates — metered transparently, with no token math and no lock-in. Use it with Claude Code, OpenCode, Cline, or any OpenAI-compatible tool."
+					description="BetaPass turns every dollar into $3 of model usage at provider rates — metered transparently, with no token math and no lock-in. Use it with Claude Code, OpenCode, Cline, or any OpenAI-compatible tool."
 					ctas={[
 						{ label: "Get BetaPass", href: DEVPASS_URL, external: true },
 						{

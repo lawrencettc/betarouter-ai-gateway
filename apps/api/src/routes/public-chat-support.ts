@@ -77,7 +77,6 @@ Your knowledge covers:
 - Migrations: from OpenRouter, LiteLLM, Vercel AI Gateway
 - Learning: dashboard, API keys, playground, billing, activity, usage metrics, model usage, transactions, team, org preferences, preferences, provider keys, referrals, security events, guardrails, audit logs, policies
 - BetaPass subscription plans
-- Self-hosting
 - Rate limits and resources
 
 When answering:

@@ -8,7 +8,7 @@ const DOCS_URL = "https://docs.betarouter.com";
 // are dropped entirely.
 const MDX_COMPONENT_REPLACEMENTS: Record<string, string> = {
 	FeatureCards: `All features are documented under ${DOCS_URL}/features; each feature page is included in full in this file.`,
-	AIToolingCards: `AI tooling: ${DOCS_URL}/llms.txt (docs index for LLMs), ${DOCS_URL}/llms-full.txt (this file), ${DOCS_URL}/guides/mcp (MCP server), and https://betarouter.com/templates (templates and agents).`,
+	AIToolingCards: `AI tooling: ${DOCS_URL}/llms.txt (docs index for LLMs), ${DOCS_URL}/llms-full.txt (this file), and ${DOCS_URL}/guides/mcp (MCP server).`,
 };
 
 // Raw MDX component tags mean nothing to LLM readers; swap known navigation

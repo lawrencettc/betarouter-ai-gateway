@@ -146,6 +146,9 @@ these events:
 Set the live secret and publishable keys, webhook signing secret, and every
 price ID from `.env.production.example`. The managed Compose file requires the
 complete live billing configuration so a partial Stripe setup cannot launch.
+To enable SDK test-wallet top-ups, also create a test-mode webhook for the same
+endpoint and set the optional `STRIPE_SECRET_KEY_TEST` and
+`STRIPE_WEBHOOK_SECRET_TEST` values.
 
 Normally, GitHub Actions publishes the unified image to GHCR. Start it with:
 
