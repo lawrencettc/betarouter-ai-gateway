@@ -152,6 +152,11 @@ export { MARKETING_STATS } from "./marketing.js";
 export { isContentFilterErrorText } from "./content-filter.js";
 
 export {
+	MAX_BULK_BLOCK_ORGANIZATIONS,
+	MIN_BULK_BLOCK_SEARCH_LENGTH,
+} from "./bulk-block.js";
+
+export {
 	CUSTOM_PROVIDER_NAME_MESSAGE,
 	CUSTOM_PROVIDER_NAME_REGEX,
 } from "./custom-providers.js";

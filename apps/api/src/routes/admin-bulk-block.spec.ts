@@ -4,11 +4,9 @@ import { app } from "@/index.js";
 import { createTestUser, deleteAll } from "@/testing.js";
 
 import { db, tables } from "@betarouter/db";
+import { MAX_BULK_BLOCK_ORGANIZATIONS } from "@betarouter/shared";
 
 const originalAdminEmails = process.env.ADMIN_EMAILS;
-
-// Mirrors MAX_BULK_BLOCK_ORGANIZATIONS in apps/api/src/routes/admin.ts.
-const MAX_BULK_BLOCK_ORGANIZATIONS = 500;
 
 interface PreviewResponse {
 	search: string;
