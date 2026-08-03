@@ -167,6 +167,19 @@ async function runRealtimePreflightInner(
 			`Realtime model not found: ${input.requestedModel}`,
 		);
 	}
+	// Provider-scoped kill switch. Enforced here so it covers both client-secret
+	// minting and the WebSocket upgrade with the same normal 503, instead of a
+	// mint succeeding and the upgrade failing opaquely.
+	if (
+		staticMatch.mapping.providerId === "google-ai-studio" &&
+		process.env.REALTIME_GEMINI_DISABLED === "true"
+	) {
+		throw new RealtimeConnectError(
+			503,
+			"realtime_gemini_disabled",
+			"Gemini realtime sessions are temporarily unavailable.",
+		);
+	}
 	// Platform-catalog admission. Fails closed: a mapping the operator has
 	// deactivated (or that the catalogue cannot price) is not servable, and the
 	// admitted match carries the catalogue's customer prices for billing.

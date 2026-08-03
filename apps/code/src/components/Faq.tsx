@@ -87,7 +87,7 @@ const faqData: FaqItem[] = [
 	},
 	{
 		question: "Do I need a subscription, or is there pay-as-you-go?",
-		answer: `Both work. BetaPass plans turn every dollar into $3 of model usage. If you'd rather not subscribe, betarouter offers pay-as-you-go: top up credits and pay per token at provider rates with a flat ${MARKETING_STATS.platformFee} platform fee, or bring your own provider keys for free.`,
+		answer: `Both work. BetaPass plans turn every dollar into $3 of model usage. If you'd rather not subscribe, betarouter offers pay-as-you-go: top up credits and pay per token at provider rates with a flat ${MARKETING_STATS.platformFee} platform fee, or bring your own provider keys for free. Pay-as-you-go organizations can optionally enable full data retention, billed at ${MARKETING_STATS.dataStoragePrice}; BetaPass is metadata only and has no retention option.`,
 	},
 	{
 		question: "Which tools and SDKs work with BetaPass?",
@@ -98,6 +98,40 @@ const faqData: FaqItem[] = [
 		question: "Are all 200+ models included on every plan?",
 		answer:
 			"Yes. Every plan includes the full catalog — Claude, GPT-5, Gemini, Llama, Qwen, and the rest. Plans differ in the size of your monthly usage allowance and the weekly fair-use allowance on premium frontier models.",
+	},
+	{
+		question: "Can I pin a specific provider, like on pay-as-you-go?",
+		answer:
+			"No — BetaPass always smart-routes. You request a model by its plain id (e.g. claude-sonnet-5) and the gateway picks the best provider in real time based on uptime, speed, price, and prompt caching — that routing is part of how BetaPass stretches every dollar into $3 of usage. Provider-prefixed model ids like openai/gpt-4o aren't available on BetaPass; your coding sessions still stick to one provider automatically to keep prompt caches warm. If you need to pin an exact provider or region, use betarouter's pay-as-you-go API, which fully supports provider pinning.",
+		content: (
+			<>
+				<p>
+					No — BetaPass always smart-routes. You request a model by its plain id
+					(e.g. <code className="font-mono text-sm">claude-sonnet-5</code>) and
+					the gateway picks the best provider in real time based on uptime,
+					speed, price, and prompt caching — that routing is part of how
+					BetaPass stretches every dollar into $3 of usage. Provider-prefixed
+					model ids like{" "}
+					<code className="font-mono text-sm">openai/gpt-4o</code> aren&apos;t
+					available on BetaPass, and your coding sessions still stick to one
+					provider automatically to keep prompt caches warm.
+				</p>
+				<p className="mt-3">
+					If you need to pin an exact provider or region, use{" "}
+					<Link href="https://betarouter.com" className="underline">
+						betarouter's pay-as-you-go API
+					</Link>{" "}
+					instead — it fully supports{" "}
+					<Link
+						href="https://docs.betarouter.com/features/routing#provider-specific-routing"
+						className="underline"
+					>
+						provider-specific routing
+					</Link>
+					.
+				</p>
+			</>
+		),
 	},
 	{
 		question: "Are there limits on premium models?",

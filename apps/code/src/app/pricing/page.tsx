@@ -15,6 +15,7 @@ import { CodeCTATracker } from "@/components/LandingTracker";
 import { PricingPlans } from "@/components/PricingPlans";
 import { Button } from "@/components/ui/button";
 import { getConfig } from "@/lib/config-server";
+import { buildDevPassProductSchema } from "@/lib/product-schema";
 import { formatUsageRatio } from "@/lib/utils";
 
 import {
@@ -56,83 +57,9 @@ const maxCredits = getDevPlanCreditsLimit("max");
 const premiumInputPerM = Math.round(HIGH_COST_INPUT_PRICE * 1_000_000);
 const premiumOutputPerM = Math.round(HIGH_COST_OUTPUT_PRICE * 1_000_000);
 
-const productSchema = {
-	"@context": "https://schema.org",
-	"@type": "Product",
-	name: "BetaPass by betarouter",
-	description:
-		"Flat-rate AI coding plans with access to 200+ models — Claude Opus 4.8, GPT-5.5, Gemini 3.1 Pro, GLM-4.7, and more. Works with Claude Code, OpenCode, Empryo, SoulForge, and any OpenAI-compatible tool.",
-	brand: {
-		"@type": "Brand",
-		name: "betarouter",
-	},
-	offers: {
-		"@type": "AggregateOffer",
-		priceCurrency: "USD",
-		lowPrice: DEV_PLAN_PRICES.lite,
-		highPrice: DEV_PLAN_PRICES.max,
-		offerCount: 3,
-		offers: [
-			{
-				"@type": "Offer",
-				name: "BetaPass Lite",
-				price: DEV_PLAN_PRICES.lite,
-				priceCurrency: "USD",
-				url: "https://betapass.betarouter.com/pricing",
-				availability: "https://schema.org/InStock",
-				priceSpecification: {
-					"@type": "UnitPriceSpecification",
-					price: DEV_PLAN_PRICES.lite,
-					priceCurrency: "USD",
-					unitCode: "MON",
-					referenceQuantity: {
-						"@type": "QuantitativeValue",
-						value: 1,
-						unitCode: "MON",
-					},
-				},
-			},
-			{
-				"@type": "Offer",
-				name: "BetaPass Pro",
-				price: DEV_PLAN_PRICES.pro,
-				priceCurrency: "USD",
-				url: "https://betapass.betarouter.com/pricing",
-				availability: "https://schema.org/InStock",
-				priceSpecification: {
-					"@type": "UnitPriceSpecification",
-					price: DEV_PLAN_PRICES.pro,
-					priceCurrency: "USD",
-					unitCode: "MON",
-					referenceQuantity: {
-						"@type": "QuantitativeValue",
-						value: 1,
-						unitCode: "MON",
-					},
-				},
-			},
-			{
-				"@type": "Offer",
-				name: "BetaPass Max",
-				price: DEV_PLAN_PRICES.max,
-				priceCurrency: "USD",
-				url: "https://betapass.betarouter.com/pricing",
-				availability: "https://schema.org/InStock",
-				priceSpecification: {
-					"@type": "UnitPriceSpecification",
-					price: DEV_PLAN_PRICES.max,
-					priceCurrency: "USD",
-					unitCode: "MON",
-					referenceQuantity: {
-						"@type": "QuantitativeValue",
-						value: 1,
-						unitCode: "MON",
-					},
-				},
-			},
-		],
-	},
-};
+const productSchema = buildDevPassProductSchema(
+	"https://betapass.betarouter.com/pricing",
+);
 
 const usageRows: UsageRow[] = [
 	{

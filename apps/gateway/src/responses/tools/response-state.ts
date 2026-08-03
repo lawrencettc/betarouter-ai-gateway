@@ -22,8 +22,12 @@ const ITEM_INDEX_TTL_SECONDS = 30 * 24 * 60 * 60;
 // to keep the (un-indexed) JSONB containment query bounded.
 const ITEM_FALLBACK_LOOKBACK_MS = ITEM_INDEX_TTL_SECONDS * 1000;
 
+// Shared prefix of every key written to the responses storage. Tests use it to
+// keep this state out of blanket Redis resets (see clearCache in test-utils).
+export const RESPONSES_STORAGE_KEY_PREFIX = "responses:";
+
 function itemIndexKey(projectId: string, itemId: string): string {
-	return `responses:item:${projectId}:${itemId}`;
+	return `${RESPONSES_STORAGE_KEY_PREFIX}item:${projectId}:${itemId}`;
 }
 
 /**

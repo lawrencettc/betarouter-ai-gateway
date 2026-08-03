@@ -272,6 +272,15 @@ curl -X POST "https://api.betarouter.com/v1/chat/completions" \
   }'
 ```
 
+<Callout type="info">
+	Provider-specific routing is not available on **BetaPass coding plans** —
+	provider-prefixed model ids (and custom provider routing) return a `403`
+	there. BetaPass always uses the prompt-cache–aware smart routing above with
+	plain model ids. Provider pinning requires the pay-as-you-go API. See
+	[Provider routing on
+	BetaPass](/learn/model-categories#provider-routing-on-betapass).
+</Callout>
+
 #### Regions
 
 Some providers expose the same model in multiple regions. In that case, betarouter supports two routing modes:

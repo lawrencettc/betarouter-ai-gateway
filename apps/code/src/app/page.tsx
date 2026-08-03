@@ -18,6 +18,7 @@ import { Marquee } from "@/components/ui/marquee";
 import { NumberTicker } from "@/components/ui/number-ticker";
 import { marqueeTools } from "@/lib/agent-tools";
 import { getConfig } from "@/lib/config-server";
+import { buildDevPassProductSchema } from "@/lib/product-schema";
 
 import {
 	DEV_PLAN_PRICES,
@@ -101,8 +102,19 @@ export default function LandingPage() {
 	};
 	const usageRatio = Math.round(credits.lite / DEV_PLAN_PRICES.lite);
 
+	const productSchemaJson = JSON.stringify(
+		buildDevPassProductSchema("https://betapass.betarouter.com/#pricing"),
+	).replace(/</g, "\\u003c");
+
 	return (
 		<div className="min-h-screen bg-[#131313]">
+			<script
+				type="application/ld+json"
+				// eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
+				dangerouslySetInnerHTML={{
+					__html: productSchemaJson,
+				}}
+			/>
 			<LandingPageTracker />
 			<Header />
 
@@ -125,7 +137,7 @@ export default function LandingPage() {
 									$1 in → $3 of model usage, at provider rates
 								</div>
 								<h1 className="font-display mb-6 text-5xl font-bold tracking-tight text-balance sm:text-6xl lg:text-7xl">
-									One key.
+									One AI coding subscription.
 									<br />
 									Every model.
 									<br />

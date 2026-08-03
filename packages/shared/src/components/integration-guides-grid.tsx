@@ -8,6 +8,7 @@ import {
 	ClineIcon,
 	CodexIcon,
 	ContinueIcon,
+	CrushIcon,
 	CursorIcon,
 	GitHubCopilotIcon,
 	HermesIcon,
@@ -82,6 +83,14 @@ export const DEFAULT_INTEGRATION_GUIDES: IntegrationGuide[] = [
 			"Use betarouter with Continue's open-source AI code assistant CLI.",
 		href: "/guides/continue",
 		icon: ContinueIcon,
+		comingSoon: false,
+	},
+	{
+		name: "Crush",
+		description:
+			"Use betarouter with Charm's Crush coding agent for AI-powered terminal coding.",
+		href: "/guides/crush",
+		icon: CrushIcon,
 		comingSoon: false,
 	},
 	{

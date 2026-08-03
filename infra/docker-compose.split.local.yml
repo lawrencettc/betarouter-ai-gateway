@@ -318,10 +318,40 @@ services:
     networks:
       - llmgateway-network
 
+  # Storage Redis: Responses API state (30d retention) + gateway response cache
+  redis-storage:
+    image: redis:8-alpine
+    platform: linux/amd64
+    container_name: llmgateway-redis-storage
+    restart: unless-stopped
+    command:
+      [
+        "redis-server",
+        "--appendonly",
+        "yes",
+        "--requirepass",
+        "${STORAGE_REDIS_PASSWORD:-redis_dev_password}",
+      ]
+    volumes:
+      - redis_storage_data:/data
+    ports:
+      - "${STORAGE_REDIS_PORT:-6479}:6379"
+    environment:
+      CI: ${CI}
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - llmgateway-network
+
 volumes:
   postgres_data:
     driver: local
   redis_data:
+    driver: local
+  redis_storage_data:
     driver: local
 
 networks:

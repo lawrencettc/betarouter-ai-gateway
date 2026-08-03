@@ -88,6 +88,9 @@ const modelProviderMappingSchema = z.object({
 	inputAudioHourPrice: z.string().nullable(),
 	contextSize: z.number().nullable(),
 	maxOutput: z.number().nullable(),
+	quantization: z
+		.enum(["int4", "int8", "fp4", "fp6", "fp8", "fp16", "bf16", "fp32"])
+		.nullable(),
 	streaming: z.boolean(),
 	vision: z.boolean().nullable(),
 	audio: z.boolean().nullable(),
@@ -383,6 +386,7 @@ internalModels.openapi(getModelsRoute, async (c) => {
 							}
 						: {}),
 					discount: getGlobalDiscount(mapping.providerId, model.id),
+					quantization: sharedMapping?.quantization ?? null,
 					reasoningEfforts: sharedMapping?.reasoningEfforts ?? null,
 					audio: sharedMapping?.audio ?? null,
 					document: sharedMapping?.document ?? null,

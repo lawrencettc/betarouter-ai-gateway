@@ -3,6 +3,8 @@ import { HeroCompare } from "@/components/compare/hero-compare";
 import { ComparisonVercel } from "@/components/landing/comparison-vercel";
 import Footer from "@/components/landing/footer";
 
+import { MARKETING_STATS } from "@betarouter/shared";
+
 import type { CompareFaqItem } from "@/components/compare/compare-faq";
 
 const vercelFaqs: CompareFaqItem[] = [
@@ -18,8 +20,7 @@ const vercelFaqs: CompareFaqItem[] = [
 	},
 	{
 		question: "How does pricing compare to Vercel AI Gateway?",
-		answer:
-			"Both charge no markup on tokens. betarouter adds a flat 5% platform fee on credits, or 0% when you bring your own provider keys — and there are no team-seat or governance add-ons gated behind a higher plan.",
+		answer: `Both charge no markup on tokens. On the managed tier betarouter adds a flat 5% platform fee on credits, or 0% when you bring your own provider keys; optional full data retention is billed at ${MARKETING_STATS.dataStoragePrice}, and there are no team-seat or governance add-ons gated behind a higher plan.`,
 	},
 	{
 		question: "What can betarouter do that Vercel AI Gateway doesn't?",
