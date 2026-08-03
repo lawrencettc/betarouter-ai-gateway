@@ -119,8 +119,9 @@ email and the Contacts API. Set `RESEND_API_KEY`, `RESEND_AUDIENCE_ID`,
 `RESEND_REPLY_TO_EMAIL` in `.env.production`.
 
 Compose refuses to start when the required Resend values are missing. Hosted
-verification email delivery is also strict, so sign-up cannot appear successful
-when no verification message was sent.
+verification delivery uses strict, token-safe error logging. Better Auth may
+still return a successful sign-up response when delivery fails, but the account
+remains unverified and the user can retry verification after email recovers.
 
 Normally, GitHub Actions publishes the unified image to GHCR. Start it with:
 
