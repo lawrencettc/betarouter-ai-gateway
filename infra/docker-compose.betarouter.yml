@@ -100,7 +100,7 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY:?RESEND_API_KEY is required for hosted authentication}
       RESEND_AUDIENCE_ID: ${RESEND_AUDIENCE_ID:?RESEND_AUDIENCE_ID is required for hosted contact management}
       RESEND_NEWSLETTER_TOPIC_ID: ${RESEND_NEWSLETTER_TOPIC_ID:?RESEND_NEWSLETTER_TOPIC_ID is required for newsletter subscriptions}
-      RESEND_FROM_EMAIL: "${RESEND_FROM_EMAIL:-betarouter <contact@mail.betarouter.com>}"
+      RESEND_FROM_EMAIL: "${RESEND_FROM_EMAIL:-betarouter <hello@betarouter.com>}"
       RESEND_REPLY_TO_EMAIL: ${RESEND_REPLY_TO_EMAIL:-contact@betarouter.com}
       POSTHOG_KEY: ${POSTHOG_KEY:-}
       POSTHOG_HOST: ${POSTHOG_HOST:-}

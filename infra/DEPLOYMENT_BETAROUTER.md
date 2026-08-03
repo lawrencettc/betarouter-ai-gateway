@@ -111,7 +111,7 @@ The managed Compose file pins `HOSTED=true`. This keeps email verification
 enabled and prevents the self-hosted sign-in hook from automatically verifying
 new accounts.
 
-Add `mail.betarouter.com` as a sending domain in Resend, publish its DNS records
+Add `betarouter.com` as a sending domain in Resend, publish its DNS records
 through Cloudflare, and wait for Resend to report the domain as verified. Create
 a full-access API key because hosted authentication uses both transactional
 email and the Contacts API. Set `RESEND_API_KEY`, `RESEND_AUDIENCE_ID`,
