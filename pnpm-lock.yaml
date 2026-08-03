@@ -53,6 +53,7 @@ overrides:
   body-parser@>=2 <2.3.0: ^2.3.0
   hono@<4.12.27: ^4.12.27
   sharp@<0.35.0: ^0.35.0
+  '@hono/node-server@<2.0.5': ^2.0.5
 
 packageExtensionsChecksum: sha256-7EyWhva5Lcamo6pe18OzfUc27A7xbWt39+G/ofluF9k=
 
@@ -624,8 +625,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/shared
       '@hono/node-server':
-        specifier: ^1.19.13
-        version: 1.19.13(hono@4.12.31)
+        specifier: ^2.0.5
+        version: 2.0.12(hono@4.12.31)
       '@hono/swagger-ui':
         specifier: ^0.5.2
         version: 0.5.2(hono@4.12.31)
@@ -2611,12 +2612,6 @@ packages:
 
   '@hexagon/base64@1.1.28':
     resolution: {integrity: sha512-lhqDEAvWixy3bZ+UOYbPwUbBkwBq5C1LAJ/xPC8Oi+lL54oyakv/npbA0aU2hgCsx/1NUd4IBvV03+aUBWxerw==}
-
-  '@hono/node-server@1.19.13':
-    resolution: {integrity: sha512-TsQLe4i2gvoTtrHje625ngThGBySOgSK3Xo2XRYOdqGN1teR8+I7vchQC46uLJi8OF62YTYA3AhSpumtkhsaKQ==}
-    engines: {node: '>=18.14.1'}
-    peerDependencies:
-      hono: ^4.12.27
 
   '@hono/node-server@2.0.12':
     resolution: {integrity: sha512-eWpQYr67tqJLeaSUl0Q+TquuYfUdTibpOJlUMV2FfUP7+KqCC5TufnwnlXL6mobZBJbGAYRd7ZvEBDCbLInjhg==}
@@ -13949,10 +13944,6 @@ snapshots:
 
   '@hexagon/base64@1.1.28': {}
 
-  '@hono/node-server@1.19.13(hono@4.12.31)':
-    dependencies:
-      hono: 4.12.31
-
   '@hono/node-server@2.0.12(hono@4.12.31)':
     dependencies:
       hono: 4.12.31
@@ -14252,7 +14243,7 @@ snapshots:
 
   '@modelcontextprotocol/sdk@1.29.0(zod@3.25.75)':
     dependencies:
-      '@hono/node-server': 1.19.13(hono@4.12.31)
+      '@hono/node-server': 2.0.12(hono@4.12.31)
       ajv: 8.18.0
       ajv-formats: 3.0.1(ajv@8.18.0)
       content-type: 1.0.5
@@ -14274,7 +14265,7 @@ snapshots:
 
   '@modelcontextprotocol/sdk@1.29.0(zod@4.3.6)':
     dependencies:
-      '@hono/node-server': 1.19.13(hono@4.12.31)
+      '@hono/node-server': 2.0.12(hono@4.12.31)
       ajv: 8.18.0
       ajv-formats: 3.0.1(ajv@8.18.0)
       content-type: 1.0.5
