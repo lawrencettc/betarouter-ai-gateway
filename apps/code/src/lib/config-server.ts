@@ -36,7 +36,9 @@ export function getConfig(): AppConfig {
 		googleTagId: process.env.GOOGLE_TAG_ID,
 		googleAdsSignupConversion: process.env.GOOGLE_ADS_SIGNUP_CONVERSION,
 		googleAdsPurchaseConversion: process.env.GOOGLE_ADS_PURCHASE_CONVERSION,
-		stripePublishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+		stripePublishableKey:
+			process.env.STRIPE_PUBLISHABLE_KEY ??
+			process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
 		githubAuth: !!process.env.GITHUB_CLIENT_ID,
 		googleAuth: !!process.env.GOOGLE_CLIENT_ID,
 	};

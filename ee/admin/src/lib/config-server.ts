@@ -7,6 +7,7 @@ export interface AppConfig {
 	twitterUrl: string;
 	docsUrl: string;
 	adminUrl: string;
+	stripePublishableKey?: string;
 }
 
 export function getConfig(): AppConfig {
@@ -21,5 +22,6 @@ export function getConfig(): AppConfig {
 		twitterUrl: process.env.TWITTER_URL ?? "https://x.com/betarouterco",
 		docsUrl: process.env.DOCS_URL ?? "http://localhost:3005",
 		adminUrl: process.env.ADMIN_URL ?? "http://localhost:3006",
+		stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
 	};
 }

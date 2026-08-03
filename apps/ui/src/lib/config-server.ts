@@ -12,6 +12,7 @@ export interface AppConfig {
 	adminUrl: string;
 	posthogKey?: string;
 	posthogHost?: string;
+	stripePublishableKey?: string;
 	githubAuth: boolean;
 	googleAuth: boolean;
 	ssoEnabled: boolean;
@@ -34,6 +35,7 @@ export function getConfig(): AppConfig {
 		adminUrl: process.env.ADMIN_URL ?? "http://localhost:3006",
 		posthogKey: process.env.POSTHOG_KEY,
 		posthogHost: process.env.POSTHOG_HOST,
+		stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
 		githubAuth: !!process.env.GITHUB_CLIENT_ID,
 		googleAuth: !!process.env.GOOGLE_CLIENT_ID,
 		ssoEnabled: process.env.SSO_ENABLED === "true",
