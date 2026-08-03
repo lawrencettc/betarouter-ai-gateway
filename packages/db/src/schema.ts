@@ -3468,6 +3468,13 @@ export const modelProviderMappingHistory = pgTable(
 		timeToFirstTokenCount: integer().notNull().default(0),
 		timeToFirstReasoningTokenCount: integer().notNull().default(0),
 		totalCost: real().notNull().default(0),
+		// Per-token-type slices of totalCost, so the admin dashboard can attribute
+		// spend to input/cached/output tokens instead of only showing one lump sum.
+		// They do not necessarily add up to totalCost, which also covers per-request,
+		// image, audio, video and cache-write charges.
+		totalInputCost: real().notNull().default(0),
+		totalOutputCost: real().notNull().default(0),
+		totalCachedInputCost: real().notNull().default(0),
 	},
 	(table) => [
 		// Unique constraint ensures one record per mapping-minute combination
@@ -3556,6 +3563,10 @@ export const modelHistory = pgTable(
 		timeToFirstTokenCount: integer().notNull().default(0),
 		timeToFirstReasoningTokenCount: integer().notNull().default(0),
 		totalCost: real().notNull().default(0),
+		// See model_provider_mapping_history: per-token-type slices of totalCost.
+		totalInputCost: real().notNull().default(0),
+		totalOutputCost: real().notNull().default(0),
+		totalCachedInputCost: real().notNull().default(0),
 	},
 	(table) => [
 		// Unique constraint ensures one record per model-minute combination
@@ -3614,6 +3625,10 @@ export const modelProviderMappingHistoryHourly = pgTable(
 		timeToFirstTokenCount: integer().notNull().default(0),
 		timeToFirstReasoningTokenCount: integer().notNull().default(0),
 		totalCost: real().notNull().default(0),
+		// See model_provider_mapping_history: per-token-type slices of totalCost.
+		totalInputCost: real().notNull().default(0),
+		totalOutputCost: real().notNull().default(0),
+		totalCachedInputCost: real().notNull().default(0),
 	},
 	(table) => [
 		// Unique constraint ensures one record per mapping-hour combination
@@ -3694,6 +3709,10 @@ export const modelHistoryHourly = pgTable(
 		timeToFirstTokenCount: integer().notNull().default(0),
 		timeToFirstReasoningTokenCount: integer().notNull().default(0),
 		totalCost: real().notNull().default(0),
+		// See model_provider_mapping_history: per-token-type slices of totalCost.
+		totalInputCost: real().notNull().default(0),
+		totalOutputCost: real().notNull().default(0),
+		totalCachedInputCost: real().notNull().default(0),
 	},
 	(table) => [
 		// Unique constraint ensures one record per model-hour combination

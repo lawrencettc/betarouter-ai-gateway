@@ -31,6 +31,7 @@ import { logAuditEvent } from "@betarouter/audit";
 import {
 	aliasedTable,
 	and,
+	type AnyColumn,
 	asc,
 	avgEffectiveTtftSql,
 	db,
@@ -47,6 +48,7 @@ import {
 	notInArray,
 	or,
 	sql,
+	type SQLWrapper,
 	tables,
 	projectHourlyStats,
 	projectHourlyModelStats,
@@ -123,6 +125,153 @@ function buildOrganizationSearchFilter(search: string | undefined) {
 export const admin = new OpenAPIHono<ServerTypes>();
 
 admin.use("/*", adminMiddleware);
+
+// Token counts split by billed token type, plus the cost each type accounts for.
+// Spliced into every admin stats payload so the dashboard can explain a cost
+// figure rather than only showing the lump sum. The three costs are slices of
+// the row's total cost and do not have to add up to it: per-request, image,
+// audio, video and cache-write charges live outside this breakdown.
+const tokenBreakdownShape = {
+	inputTokens: z.number(),
+	cachedTokens: z.number(),
+	outputTokens: z.number(),
+	inputCost: z.number(),
+	cachedInputCost: z.number(),
+	outputCost: z.number(),
+};
+
+interface TokenBreakdown {
+	inputTokens: number;
+	cachedTokens: number;
+	outputTokens: number;
+	inputCost: number;
+	cachedInputCost: number;
+	outputCost: number;
+}
+
+const EMPTY_TOKEN_BREAKDOWN: TokenBreakdown = {
+	inputTokens: 0,
+	cachedTokens: 0,
+	outputTokens: 0,
+	inputCost: 0,
+	cachedInputCost: 0,
+	outputCost: 0,
+};
+
+// The history tables all expose the same six breakdown columns, so both the
+// per-row select list and the mapping back onto the API shape are shared.
+function tokenBreakdownSums(table: {
+	totalInputTokens: AnyColumn;
+	totalCachedTokens: AnyColumn;
+	totalOutputTokens: AnyColumn;
+	totalInputCost: AnyColumn;
+	totalCachedInputCost: AnyColumn;
+	totalOutputCost: AnyColumn;
+}) {
+	return {
+		inputTokens:
+			sql<number>`COALESCE(SUM(CAST(${table.totalInputTokens} AS NUMERIC)), 0)`.as(
+				"input_tokens",
+			),
+		cachedTokens:
+			sql<number>`COALESCE(SUM(CAST(${table.totalCachedTokens} AS NUMERIC)), 0)`.as(
+				"cached_tokens",
+			),
+		outputTokens:
+			sql<number>`COALESCE(SUM(CAST(${table.totalOutputTokens} AS NUMERIC)), 0)`.as(
+				"output_tokens",
+			),
+		inputCost: sql<number>`COALESCE(SUM(${table.totalInputCost}), 0)`.as(
+			"input_cost",
+		),
+		cachedInputCost:
+			sql<number>`COALESCE(SUM(${table.totalCachedInputCost}), 0)`.as(
+				"cached_input_cost",
+			),
+		outputCost: sql<number>`COALESCE(SUM(${table.totalOutputCost}), 0)`.as(
+			"output_cost",
+		),
+	};
+}
+
+// Re-select the breakdown out of a stats subquery that was left-joined onto a
+// catalogue table, so mappings with no traffic in the window come back as zeroes
+// instead of nulls.
+function tokenBreakdownFromSub(sub: Record<keyof TokenBreakdown, SQLWrapper>) {
+	return {
+		inputTokens: sql<number>`COALESCE(${sub.inputTokens}, 0)`.as(
+			"input_tokens",
+		),
+		cachedTokens: sql<number>`COALESCE(${sub.cachedTokens}, 0)`.as(
+			"cached_tokens",
+		),
+		outputTokens: sql<number>`COALESCE(${sub.outputTokens}, 0)`.as(
+			"output_tokens",
+		),
+		inputCost: sql<number>`COALESCE(${sub.inputCost}, 0)`.as("input_cost"),
+		cachedInputCost: sql<number>`COALESCE(${sub.cachedInputCost}, 0)`.as(
+			"cached_input_cost",
+		),
+		outputCost: sql<number>`COALESCE(${sub.outputCost}, 0)`.as("output_cost"),
+	};
+}
+
+// Same subquery, but rolled up across every joined row for the page-level totals.
+function tokenBreakdownSubTotals(
+	sub: Record<keyof TokenBreakdown, SQLWrapper>,
+) {
+	return {
+		inputTokens:
+			sql<number>`COALESCE(SUM(COALESCE(${sub.inputTokens}, 0)), 0)`.as(
+				"input_tokens",
+			),
+		cachedTokens:
+			sql<number>`COALESCE(SUM(COALESCE(${sub.cachedTokens}, 0)), 0)`.as(
+				"cached_tokens",
+			),
+		outputTokens:
+			sql<number>`COALESCE(SUM(COALESCE(${sub.outputTokens}, 0)), 0)`.as(
+				"output_tokens",
+			),
+		inputCost: sql<number>`COALESCE(SUM(COALESCE(${sub.inputCost}, 0)), 0)`.as(
+			"input_cost",
+		),
+		cachedInputCost:
+			sql<number>`COALESCE(SUM(COALESCE(${sub.cachedInputCost}, 0)), 0)`.as(
+				"cached_input_cost",
+			),
+		outputCost:
+			sql<number>`COALESCE(SUM(COALESCE(${sub.outputCost}, 0)), 0)`.as(
+				"output_cost",
+			),
+	};
+}
+
+function toTokenBreakdown(
+	row: Partial<Record<keyof TokenBreakdown, unknown>> | undefined,
+): TokenBreakdown {
+	return {
+		inputTokens: Number(row?.inputTokens ?? 0),
+		cachedTokens: Number(row?.cachedTokens ?? 0),
+		outputTokens: Number(row?.outputTokens ?? 0),
+		inputCost: Number(row?.inputCost ?? 0),
+		cachedInputCost: Number(row?.cachedInputCost ?? 0),
+		outputCost: Number(row?.outputCost ?? 0),
+	};
+}
+
+function addTokenBreakdown(
+	target: TokenBreakdown,
+	row: Partial<Record<keyof TokenBreakdown, unknown>>,
+): void {
+	const value = toTokenBreakdown(row);
+	target.inputTokens += value.inputTokens;
+	target.cachedTokens += value.cachedTokens;
+	target.outputTokens += value.outputTokens;
+	target.inputCost += value.inputCost;
+	target.cachedInputCost += value.cachedInputCost;
+	target.outputCost += value.outputCost;
+}
 
 const adminMetricsSchema = z.object({
 	totalSignups: z.number(),
@@ -4375,6 +4524,7 @@ const providerStatsSchema = z.object({
 	modelCount: z.number(),
 	totalTokens: z.number(),
 	totalCost: z.number(),
+	...tokenBreakdownShape,
 	updatedAt: z.string(),
 });
 
@@ -4383,6 +4533,7 @@ const providersListSchema = z.object({
 	total: z.number(),
 	totalTokens: z.number(),
 	totalCost: z.number(),
+	...tokenBreakdownShape,
 });
 
 const getProviderStats = createRoute({
@@ -4466,6 +4617,7 @@ admin.openapi(getProviderStats, async (c) => {
 				// Reasoning-token samples take precedence so thinking mappings
 				// aren't measured on their (much later) first content token.
 				avgTimeToFirstToken: avgEffectiveTtftSql(mph).as("avgTimeToFirstToken"),
+				...tokenBreakdownSums(mph),
 			})
 			.from(mph)
 			.where(and(gte(mphTs, startDate), lt(mphTs, endDateExclusive)))
@@ -4498,6 +4650,7 @@ admin.openapi(getProviderStats, async (c) => {
 						sql<number>`COALESCE(SUM(COALESCE(${providerStatsSub.totalCost}, 0)), 0)`.as(
 							"totalCost",
 						),
+					...tokenBreakdownSubTotals(providerStatsSub),
 				})
 				.from(tables.provider)
 				.leftJoin(
@@ -4536,6 +4689,7 @@ admin.openapi(getProviderStats, async (c) => {
 					totalCost: sql<number>`COALESCE(${providerStatsSub.totalCost}, 0)`.as(
 						"totalCost",
 					),
+					...tokenBreakdownFromSub(providerStatsSub),
 					updatedAt: tables.provider.updatedAt,
 				})
 				.from(tables.provider)
@@ -4566,11 +4720,13 @@ admin.openapi(getProviderStats, async (c) => {
 				modelCount: Number(r.modelCount ?? 0),
 				totalTokens: Number(r.totalTokens ?? 0),
 				totalCost: Number(r.totalCost ?? 0),
+				...toTokenBreakdown(r),
 				updatedAt: r.updatedAt.toISOString(),
 			})),
 			total: rows.length,
 			totalTokens: totalTokensAgg,
 			totalCost: totalCostAgg,
+			...toTokenBreakdown(totalsResult),
 		});
 	}
 
@@ -4626,11 +4782,13 @@ admin.openapi(getProviderStats, async (c) => {
 			modelCount: Number(r.modelCount),
 			totalTokens: 0,
 			totalCost: 0,
+			...EMPTY_TOKEN_BREAKDOWN,
 			updatedAt: r.updatedAt.toISOString(),
 		})),
 		total: rows.length,
 		totalTokens: 0,
 		totalCost: 0,
+		...EMPTY_TOKEN_BREAKDOWN,
 	});
 });
 
@@ -4668,6 +4826,7 @@ const modelStatsSchema = z.object({
 	providerCount: z.number(),
 	totalTokens: z.number(),
 	totalCost: z.number(),
+	...tokenBreakdownShape,
 	inputPrice: z.string().nullable(),
 	outputPrice: z.string().nullable(),
 	requestPrice: z.string().nullable(),
@@ -4681,6 +4840,7 @@ const modelsListSchema = z.object({
 	offset: z.number(),
 	totalTokens: z.number(),
 	totalCost: z.number(),
+	...tokenBreakdownShape,
 });
 
 const getModelStats = createRoute({
@@ -4785,6 +4945,7 @@ admin.openapi(getModelStats, async (c) => {
 				totalCost: sql<number>`COALESCE(SUM(${mh.totalCost}), 0)`.as(
 					"totalCost",
 				),
+				...tokenBreakdownSums(mh),
 			})
 			.from(mh)
 			.where(and(gte(mhTs, startDate), lt(mhTs, endDateExclusive)))
@@ -4856,6 +5017,7 @@ admin.openapi(getModelStats, async (c) => {
 					sql<number>`COALESCE(SUM(COALESCE(${modelAggSub.totalCost}, 0)), 0)`.as(
 						"totalCost",
 					),
+				...tokenBreakdownSubTotals(modelAggSub),
 			})
 			.from(tables.model)
 			.leftJoin(modelAggSub, eq(tables.model.id, modelAggSub.modelId))
@@ -4904,6 +5066,7 @@ admin.openapi(getModelStats, async (c) => {
 				totalCost: sql<number>`COALESCE(${modelAggSub.totalCost}, 0)`.as(
 					"totalCost",
 				),
+				...tokenBreakdownFromSub(modelAggSub),
 				inputPrice: pricingSub.inputPrice,
 				outputPrice: pricingSub.outputPrice,
 				requestPrice: pricingSub.requestPrice,
@@ -4953,6 +5116,7 @@ admin.openapi(getModelStats, async (c) => {
 				providerCount: Number(r.providerCount ?? 0),
 				totalTokens: Number(r.totalTokens ?? 0),
 				totalCost: Number(r.totalCost ?? 0),
+				...toTokenBreakdown(r),
 				inputPrice: r.inputPrice ?? null,
 				outputPrice: r.outputPrice ?? null,
 				requestPrice: r.requestPrice ?? null,
@@ -4963,6 +5127,7 @@ admin.openapi(getModelStats, async (c) => {
 			offset,
 			totalTokens: totalTokensAgg,
 			totalCost: totalCostAgg,
+			...toTokenBreakdown(totalsResult),
 		});
 	}
 
@@ -5077,6 +5242,7 @@ admin.openapi(getModelStats, async (c) => {
 			providerCount: Number(r.providerCount),
 			totalTokens: 0,
 			totalCost: 0,
+			...EMPTY_TOKEN_BREAKDOWN,
 			inputPrice: r.inputPrice ?? null,
 			outputPrice: r.outputPrice ?? null,
 			requestPrice: r.requestPrice ?? null,
@@ -5087,6 +5253,7 @@ admin.openapi(getModelStats, async (c) => {
 		offset,
 		totalTokens: 0,
 		totalCost: 0,
+		...EMPTY_TOKEN_BREAKDOWN,
 	});
 });
 
@@ -5146,6 +5313,7 @@ const modelProviderStatsSchema = z.object({
 	errorsCount: z.number(),
 	cachedCount: z.number(),
 	avgTimeToFirstToken: z.number().nullable(),
+	...tokenBreakdownShape,
 	updatedAt: z.string(),
 });
 
@@ -5171,6 +5339,7 @@ const modelDetailSchema = z.object({
 		cachedCount: z.number(),
 		avgTimeToFirstToken: z.number().nullable(),
 		providerCount: z.number(),
+		...tokenBreakdownShape,
 		updatedAt: z.string(),
 	}),
 	providers: z.array(modelProviderStatsSchema),
@@ -5263,6 +5432,28 @@ admin.openapi(getModelDetail, async (c) => {
 				cachedCount: sql<number>`SUM(${projectHourlyModelStats.cacheCount})`.as(
 					"cached_count",
 				),
+				inputTokens:
+					sql<number>`SUM(CAST(${projectHourlyModelStats.inputTokens} AS NUMERIC))`.as(
+						"input_tokens",
+					),
+				cachedTokens:
+					sql<number>`SUM(CAST(${projectHourlyModelStats.cachedTokens} AS NUMERIC))`.as(
+						"cached_tokens",
+					),
+				outputTokens:
+					sql<number>`SUM(CAST(${projectHourlyModelStats.outputTokens} AS NUMERIC))`.as(
+						"output_tokens",
+					),
+				inputCost: sql<number>`SUM(${projectHourlyModelStats.inputCost})`.as(
+					"input_cost",
+				),
+				cachedInputCost:
+					sql<number>`SUM(${projectHourlyModelStats.cachedInputCost})`.as(
+						"cached_input_cost",
+					),
+				outputCost: sql<number>`SUM(${projectHourlyModelStats.outputCost})`.as(
+					"output_cost",
+				),
 			})
 			.from(projectHourlyModelStats)
 			.where(
@@ -5328,6 +5519,10 @@ admin.openapi(getModelDetail, async (c) => {
 			(s, r) => s + Number(r.cachedCount),
 			0,
 		);
+		const totalBreakdown = { ...EMPTY_TOKEN_BREAKDOWN };
+		for (const r of statsRows) {
+			addTokenBreakdown(totalBreakdown, r);
+		}
 
 		return c.json({
 			model: {
@@ -5351,6 +5546,7 @@ admin.openapi(getModelDetail, async (c) => {
 				cachedCount: totalCached,
 				avgTimeToFirstToken: null,
 				providerCount: statsRows.length,
+				...totalBreakdown,
 				updatedAt: model.updatedAt.toISOString(),
 			},
 			providers: statsRows.map((r) => ({
@@ -5360,6 +5556,7 @@ admin.openapi(getModelDetail, async (c) => {
 				errorsCount: Number(r.errorsCount),
 				cachedCount: Number(r.cachedCount),
 				avgTimeToFirstToken: null,
+				...toTokenBreakdown(r),
 				updatedAt: model.updatedAt.toISOString(),
 			})),
 		});
@@ -5444,6 +5641,7 @@ admin.openapi(getModelDetail, async (c) => {
 					sql<number>`COALESCE(SUM(${mph.timeToFirstReasoningTokenCount}), 0)`.as(
 						"ttfrt_count",
 					),
+				...tokenBreakdownSums(mph),
 			})
 			.from(mph)
 			.where(and(eq(mph.modelId, modelId), gte(mphTs, startDate)))
@@ -5480,6 +5678,7 @@ admin.openapi(getModelDetail, async (c) => {
 					errorsCount: Number(r.errorsCount ?? 0),
 					cachedCount,
 					avgTtft: ttftCount > 0 ? totalTtft / ttftCount : null,
+					breakdown: toTokenBreakdown(r),
 				},
 			];
 		}),
@@ -5494,6 +5693,7 @@ admin.openapi(getModelDetail, async (c) => {
 			errorsCount: stats?.errorsCount ?? 0,
 			cachedCount: stats?.cachedCount ?? 0,
 			avgTimeToFirstToken: stats?.avgTtft ?? m.avgTimeToFirstToken,
+			...(stats?.breakdown ?? EMPTY_TOKEN_BREAKDOWN),
 			updatedAt: m.updatedAt.toISOString(),
 		};
 	});
@@ -5516,6 +5716,7 @@ admin.openapi(getModelDetail, async (c) => {
 			acc.ttftCount += Number(r.ttftCount ?? 0);
 			acc.totalTtfrt += Number(r.totalTtfrt ?? 0);
 			acc.ttfrtCount += Number(r.ttfrtCount ?? 0);
+			addTokenBreakdown(acc.breakdown, r);
 			return acc;
 		},
 		{
@@ -5535,6 +5736,7 @@ admin.openapi(getModelDetail, async (c) => {
 			ttftCount: 0,
 			totalTtfrt: 0,
 			ttfrtCount: 0,
+			breakdown: { ...EMPTY_TOKEN_BREAKDOWN },
 		},
 	);
 	const hasWindowData = agg.logsCount > 0;
@@ -5580,6 +5782,7 @@ admin.openapi(getModelDetail, async (c) => {
 					model.avgTimeToFirstToken)
 				: (model.avgTimeToFirstReasoningToken ?? model.avgTimeToFirstToken),
 			providerCount: providerStats.length,
+			...agg.breakdown,
 			updatedAt: model.updatedAt.toISOString(),
 		},
 		providers: providerStats,
@@ -6575,6 +6778,7 @@ const historyDataPointSchema = z.object({
 	avgDuration: z.number().nullable(),
 	totalTokens: z.number(),
 	totalCost: z.number(),
+	...tokenBreakdownShape,
 });
 
 const historyResponseSchema = z.object({
@@ -6603,6 +6807,12 @@ function mapHistoryRows(
 		timeToFirstReasoningTokenCount: number;
 		totalTokens: number;
 		totalCost?: number;
+		inputTokens?: number;
+		cachedTokens?: number;
+		outputTokens?: number;
+		inputCost?: number;
+		cachedInputCost?: number;
+		outputCost?: number;
 	}[],
 	costByHour: Map<string, number> = new Map(),
 ) {
@@ -6659,6 +6869,7 @@ function mapHistoryRows(
 			avgDuration: logsCount > 0 ? Math.round(totalDuration / logsCount) : null,
 			totalTokens,
 			totalCost,
+			...toTokenBreakdown(r),
 		};
 	});
 }
@@ -6748,6 +6959,7 @@ admin.openapi(getProviderHistory, async (c) => {
 					sql<number>`SUM(${modelProviderMappingHistoryHourly.totalCost})`.as(
 						"total_cost",
 					),
+				...tokenBreakdownSums(modelProviderMappingHistoryHourly),
 			})
 			.from(modelProviderMappingHistoryHourly)
 			.where(
@@ -6814,6 +7026,7 @@ admin.openapi(getProviderHistory, async (c) => {
 					sql<number>`SUM(${modelProviderMappingHistory.totalTokens})`.as(
 						"total_tokens",
 					),
+				...tokenBreakdownSums(modelProviderMappingHistory),
 			})
 			.from(modelProviderMappingHistory)
 			.where(
@@ -6898,6 +7111,28 @@ admin.openapi(getModelHistory, async (c) => {
 						"total_tokens",
 					),
 				cost: sql<number>`SUM(${projectHourlyModelStats.cost})`.as("cost"),
+				inputTokens:
+					sql<number>`SUM(CAST(${projectHourlyModelStats.inputTokens} AS NUMERIC))`.as(
+						"input_tokens",
+					),
+				cachedTokens:
+					sql<number>`SUM(CAST(${projectHourlyModelStats.cachedTokens} AS NUMERIC))`.as(
+						"cached_tokens",
+					),
+				outputTokens:
+					sql<number>`SUM(CAST(${projectHourlyModelStats.outputTokens} AS NUMERIC))`.as(
+						"output_tokens",
+					),
+				inputCost: sql<number>`SUM(${projectHourlyModelStats.inputCost})`.as(
+					"input_cost",
+				),
+				cachedInputCost:
+					sql<number>`SUM(${projectHourlyModelStats.cachedInputCost})`.as(
+						"cached_input_cost",
+					),
+				outputCost: sql<number>`SUM(${projectHourlyModelStats.outputCost})`.as(
+					"output_cost",
+				),
 			})
 			.from(projectHourlyModelStats)
 			.where(
@@ -6923,6 +7158,7 @@ admin.openapi(getModelHistory, async (c) => {
 				avgDuration: null,
 				totalTokens: Number(r.totalTokens),
 				totalCost: Number(r.cost),
+				...toTokenBreakdown(r),
 			})),
 		});
 	}
@@ -6979,6 +7215,7 @@ admin.openapi(getModelHistory, async (c) => {
 				totalCost: sql<number>`SUM(${modelHistoryHourly.totalCost})`.as(
 					"total_cost",
 				),
+				...tokenBreakdownSums(modelHistoryHourly),
 			})
 			.from(modelHistoryHourly)
 			.where(
@@ -7037,6 +7274,7 @@ admin.openapi(getModelHistory, async (c) => {
 				"total_tokens",
 			),
 			totalCost: sql<number>`SUM(${modelHistory.totalCost})`.as("total_cost"),
+			...tokenBreakdownSums(modelHistory),
 		})
 		.from(modelHistory)
 		.where(
@@ -7124,6 +7362,28 @@ admin.openapi(getMappingHistory, async (c) => {
 						"total_tokens",
 					),
 				cost: sql<number>`SUM(${projectHourlyModelStats.cost})`.as("cost"),
+				inputTokens:
+					sql<number>`SUM(CAST(${projectHourlyModelStats.inputTokens} AS NUMERIC))`.as(
+						"input_tokens",
+					),
+				cachedTokens:
+					sql<number>`SUM(CAST(${projectHourlyModelStats.cachedTokens} AS NUMERIC))`.as(
+						"cached_tokens",
+					),
+				outputTokens:
+					sql<number>`SUM(CAST(${projectHourlyModelStats.outputTokens} AS NUMERIC))`.as(
+						"output_tokens",
+					),
+				inputCost: sql<number>`SUM(${projectHourlyModelStats.inputCost})`.as(
+					"input_cost",
+				),
+				cachedInputCost:
+					sql<number>`SUM(${projectHourlyModelStats.cachedInputCost})`.as(
+						"cached_input_cost",
+					),
+				outputCost: sql<number>`SUM(${projectHourlyModelStats.outputCost})`.as(
+					"output_cost",
+				),
 			})
 			.from(projectHourlyModelStats)
 			.where(
@@ -7150,6 +7410,7 @@ admin.openapi(getMappingHistory, async (c) => {
 				avgDuration: null,
 				totalTokens: Number(r.totalTokens),
 				totalCost: Number(r.cost),
+				...toTokenBreakdown(r),
 			})),
 		});
 	}
@@ -7229,6 +7490,7 @@ admin.openapi(getMappingHistory, async (c) => {
 					sql<number>`SUM(${modelProviderMappingHistoryHourly.totalCost})`.as(
 						"total_cost",
 					),
+				...tokenBreakdownSums(modelProviderMappingHistoryHourly),
 			})
 			.from(modelProviderMappingHistoryHourly)
 			.where(
@@ -7299,6 +7561,7 @@ admin.openapi(getMappingHistory, async (c) => {
 			totalCost: sql<number>`SUM(${modelProviderMappingHistory.totalCost})`.as(
 				"total_cost",
 			),
+			...tokenBreakdownSums(modelProviderMappingHistory),
 		})
 		.from(modelProviderMappingHistory)
 		.where(
@@ -7330,6 +7593,7 @@ const providerModelStatsSchema = z.object({
 	cachedCount: z.number(),
 	avgTimeToFirstToken: z.number().nullable(),
 	totalCost: z.number(),
+	...tokenBreakdownShape,
 	updatedAt: z.string(),
 });
 
@@ -7349,6 +7613,7 @@ const providerDetailSchema = z.object({
 		cachedCount: z.number(),
 		avgTimeToFirstToken: z.number().nullable(),
 		modelCount: z.number(),
+		...tokenBreakdownShape,
 		updatedAt: z.string(),
 	}),
 	models: z.array(providerModelStatsSchema),
@@ -7452,6 +7717,7 @@ admin.openapi(getProviderDetail, async (c) => {
 				totalCost: sql<number>`COALESCE(SUM(${mph.totalCost}), 0)`.as(
 					"total_cost",
 				),
+				...tokenBreakdownSums(mph),
 			})
 			.from(mph)
 			.where(and(eq(mph.providerId, providerId), gte(mphTs, startDate)))
@@ -7489,6 +7755,7 @@ admin.openapi(getProviderDetail, async (c) => {
 			cachedCount,
 			avgTimeToFirstToken: avgTtft ?? m.avgTimeToFirstToken,
 			totalCost: Number(s?.totalCost ?? 0),
+			...toTokenBreakdown(s),
 			updatedAt: m.updatedAt.toISOString(),
 		};
 	});
@@ -7505,6 +7772,7 @@ admin.openapi(getProviderDetail, async (c) => {
 			acc.ttftCount += Number(r.ttftCount ?? 0);
 			acc.totalTtfrt += Number(r.totalTtfrt ?? 0);
 			acc.ttfrtCount += Number(r.ttfrtCount ?? 0);
+			addTokenBreakdown(acc.breakdown, r);
 			return acc;
 		},
 		{
@@ -7518,6 +7786,7 @@ admin.openapi(getProviderDetail, async (c) => {
 			ttftCount: 0,
 			totalTtfrt: 0,
 			ttfrtCount: 0,
+			breakdown: { ...EMPTY_TOKEN_BREAKDOWN },
 		},
 	);
 	const hasWindowData = agg.logsCount > 0;
@@ -7558,6 +7827,7 @@ admin.openapi(getProviderDetail, async (c) => {
 				: (providerRow.avgTimeToFirstReasoningToken ??
 					providerRow.avgTimeToFirstToken),
 			modelCount: mappings.length,
+			...agg.breakdown,
 			updatedAt: providerRow.updatedAt.toISOString(),
 		},
 		models: modelsOut,
@@ -7597,6 +7867,8 @@ const mappingDetailSchema = z.object({
 		unknownFinishCount: z.number(),
 		cachedCount: z.number(),
 		avgTimeToFirstToken: z.number().nullable(),
+		totalCost: z.number(),
+		...tokenBreakdownShape,
 		updatedAt: z.string(),
 	}),
 });
@@ -7740,6 +8012,10 @@ admin.openapi(getMappingDetail, async (c) => {
 			// samples take precedence so thinking mappings aren't measured on
 			// their (much later) first content token.
 			avgTtft: avgEffectiveTtftSql(mph).as("avg_ttft"),
+			totalCost: sql<number>`COALESCE(SUM(${mph.totalCost}), 0)`.as(
+				"total_cost",
+			),
+			...tokenBreakdownSums(mph),
 		})
 		.from(mph)
 		.where(and(eq(mph.modelProviderMappingId, m.id), gte(mphTs, startDate)));
@@ -7792,6 +8068,8 @@ admin.openapi(getMappingDetail, async (c) => {
 					? Number(aggRow.avgTtft)
 					: m.avgTimeToFirstToken
 				: m.avgTimeToFirstToken,
+			totalCost: Number(aggRow?.totalCost ?? 0),
+			...toTokenBreakdown(aggRow),
 			updatedAt: m.updatedAt.toISOString(),
 		},
 	});
@@ -8463,6 +8741,7 @@ const projectModelProviderStatsEntrySchema = z.object({
 	cachedCount: z.number(),
 	cost: z.number(),
 	totalTokens: z.number(),
+	...tokenBreakdownShape,
 });
 
 const projectModelProviderStatsResponseSchema = z.object({
@@ -8471,6 +8750,7 @@ const projectModelProviderStatsResponseSchema = z.object({
 	totalRequests: z.number(),
 	totalTokens: z.number(),
 	totalCost: z.number(),
+	...tokenBreakdownShape,
 });
 
 const getProjectModelProviderStats = createRoute({
@@ -8588,6 +8868,30 @@ admin.openapi(getProjectModelProviderStats, async (c) => {
 			cachedCount: cachedCountExpr,
 			cost: costExpr,
 			totalTokens: totalTokensExpr,
+			inputTokens:
+				sql<number>`COALESCE(SUM(CAST(${projectHourlyModelStats.inputTokens} AS NUMERIC)), 0)`.as(
+					"input_tokens",
+				),
+			cachedTokens:
+				sql<number>`COALESCE(SUM(CAST(${projectHourlyModelStats.cachedTokens} AS NUMERIC)), 0)`.as(
+					"cached_tokens",
+				),
+			outputTokens:
+				sql<number>`COALESCE(SUM(CAST(${projectHourlyModelStats.outputTokens} AS NUMERIC)), 0)`.as(
+					"output_tokens",
+				),
+			inputCost:
+				sql<number>`COALESCE(SUM(${projectHourlyModelStats.inputCost}), 0)`.as(
+					"input_cost",
+				),
+			cachedInputCost:
+				sql<number>`COALESCE(SUM(${projectHourlyModelStats.cachedInputCost}), 0)`.as(
+					"cached_input_cost",
+				),
+			outputCost:
+				sql<number>`COALESCE(SUM(${projectHourlyModelStats.outputCost}), 0)`.as(
+					"output_cost",
+				),
 		})
 		.from(projectHourlyModelStats)
 		.where(whereConditions)
@@ -8611,6 +8915,10 @@ admin.openapi(getProjectModelProviderStats, async (c) => {
 	const totalRequests = rows.reduce((s, r) => s + Number(r.logsCount), 0);
 	const totalTokens = rows.reduce((s, r) => s + Number(r.totalTokens), 0);
 	const totalCost = rows.reduce((s, r) => s + Number(r.cost), 0);
+	const totalBreakdown = { ...EMPTY_TOKEN_BREAKDOWN };
+	for (const r of rows) {
+		addTokenBreakdown(totalBreakdown, r);
+	}
 
 	return c.json({
 		mappings: rows.map((r) => ({
@@ -8622,11 +8930,13 @@ admin.openapi(getProjectModelProviderStats, async (c) => {
 			cachedCount: Number(r.cachedCount),
 			cost: Number(r.cost),
 			totalTokens: Number(r.totalTokens),
+			...toTokenBreakdown(r),
 		})),
 		total: rows.length,
 		totalRequests,
 		totalTokens,
 		totalCost,
+		...totalBreakdown,
 	});
 });
 
@@ -8648,6 +8958,7 @@ const modelProviderMappingEntrySchema = z.object({
 	cachedCount: z.number(),
 	cost: z.number(),
 	avgTimeToFirstToken: z.number().nullable(),
+	...tokenBreakdownShape,
 	inputPrice: z.string().nullable(),
 	outputPrice: z.string().nullable(),
 	contextSize: z.number().nullable(),
@@ -8660,6 +8971,7 @@ const modelProviderMappingsListSchema = z.object({
 	totalRequests: z.number(),
 	totalTokens: z.number(),
 	totalCost: z.number(),
+	...tokenBreakdownShape,
 });
 
 const providersWithHiddenRootMappings = providers
@@ -8807,6 +9119,7 @@ admin.openapi(getModelProviderMappings, async (c) => {
 					cost: sql<number>`COALESCE(SUM(${mappingHistory.table.totalCost}), 0)`.as(
 						"cost",
 					),
+					...tokenBreakdownSums(mappingHistory.table),
 				})
 				.from(mappingHistory.table)
 				.where(
@@ -8826,9 +9139,16 @@ admin.openapi(getModelProviderMappings, async (c) => {
 					gatewayErrorsCount: tables.modelProviderMapping.gatewayErrorsCount,
 					upstreamErrorsCount: tables.modelProviderMapping.upstreamErrorsCount,
 					cachedCount: tables.modelProviderMapping.cachedCount,
-					// Cost is only tracked in the history table, so it is only
-					// available when a date range is provided (mirrors the models list).
+					// Cost and the token breakdown are only tracked in the history
+					// table, so they are only available when a date range is provided
+					// (mirrors the models list).
 					cost: sql<number>`0`.as("cost"),
+					inputTokens: sql<number>`0`.as("input_tokens"),
+					cachedTokens: sql<number>`0`.as("cached_tokens"),
+					outputTokens: sql<number>`0`.as("output_tokens"),
+					inputCost: sql<number>`0`.as("input_cost"),
+					cachedInputCost: sql<number>`0`.as("cached_input_cost"),
+					outputCost: sql<number>`0`.as("output_cost"),
 				})
 				.from(tables.modelProviderMapping)
 				.as("mapping_stats_sub");
@@ -8848,6 +9168,7 @@ admin.openapi(getModelProviderMappings, async (c) => {
 						sql<number>`COALESCE(SUM(${mappingHistory.table.totalCost}), 0)`.as(
 							"totalCost",
 						),
+					...tokenBreakdownSums(mappingHistory.table),
 				})
 				.from(mappingHistory.table)
 				.innerJoin(
@@ -8869,6 +9190,7 @@ admin.openapi(getModelProviderMappings, async (c) => {
 					totalRequests: 0,
 					totalTokens: 0,
 					totalCost: 0,
+					...EMPTY_TOKEN_BREAKDOWN,
 				},
 			]);
 
@@ -8930,6 +9252,7 @@ admin.openapi(getModelProviderMappings, async (c) => {
 				>`COALESCE(${tables.modelProviderMapping.avgTimeToFirstReasoningToken}, ${tables.modelProviderMapping.avgTimeToFirstToken})`.as(
 					"avgTimeToFirstToken",
 				),
+				...tokenBreakdownFromSub(statsJoin),
 				inputPrice: tables.modelProviderMapping.inputPrice,
 				outputPrice: tables.modelProviderMapping.outputPrice,
 				contextSize: tables.modelProviderMapping.contextSize,
@@ -8967,6 +9290,7 @@ admin.openapi(getModelProviderMappings, async (c) => {
 			cachedCount: Number(r.cachedCount ?? 0),
 			cost: Number(r.cost ?? 0),
 			avgTimeToFirstToken: r.avgTimeToFirstToken,
+			...toTokenBreakdown(r),
 			inputPrice: r.inputPrice,
 			outputPrice: r.outputPrice,
 			contextSize: r.contextSize,
@@ -8976,6 +9300,7 @@ admin.openapi(getModelProviderMappings, async (c) => {
 		totalRequests: Number(totalsResult?.totalRequests ?? 0),
 		totalTokens: Number(totalsResult?.totalTokens ?? 0),
 		totalCost: Number(totalsResult?.totalCost ?? 0),
+		...toTokenBreakdown(totalsResult),
 	});
 });
 
