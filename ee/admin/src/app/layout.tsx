@@ -1,4 +1,4 @@
-import { Bricolage_Grotesque, Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Bricolage_Grotesque } from "next/font/google";
 
 import { AdminShell } from "@/components/admin-shell";
 import { getConfig } from "@/lib/config-server";
@@ -9,21 +9,26 @@ import "./globals.css";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
-const geistSans = Inter({
-	variable: "--font-geist-sans",
+const inter = Inter({
+	variable: "--font-inter",
 	subsets: ["latin"],
 	display: "swap",
 });
 
 const geistMono = JetBrains_Mono({
+	// globals.css maps the Tailwind token: --font-mono: var(--font-geist-mono).
+	// Registering the font under --font-mono directly would leave that theme
+	// mapping dangling and every `font-mono` element falls back to sans.
 	variable: "--font-geist-mono",
 	subsets: ["latin"],
+	display: "swap",
 });
 
-const bricolage = Bricolage_Grotesque({
-	variable: "--font-bricolage",
+const plusJakarta = Bricolage_Grotesque({
+	variable: "--font-display",
 	subsets: ["latin"],
-	weight: ["600", "700", "800"],
+	weight: ["300", "400", "500", "600", "700", "800"],
+	display: "swap",
 });
 
 export const dynamic = "force-dynamic";
@@ -45,10 +50,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 	const config = getConfig();
 
 	return (
-		<html lang="en" suppressHydrationWarning>
-			<body
-				className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} antialiased`}
-			>
+		<html
+			lang="en"
+			className={`${inter.variable} ${geistMono.variable} ${plusJakarta.variable}`}
+			suppressHydrationWarning
+		>
+			<body className="antialiased">
 				<Providers config={config}>
 					<AdminShell>{children}</AdminShell>
 				</Providers>
