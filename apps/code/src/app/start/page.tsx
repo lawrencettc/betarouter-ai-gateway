@@ -163,8 +163,8 @@ export default function StartPage() {
 						</Marquee>
 					</div>
 					<p className="container mx-auto mt-10 px-4 text-center font-mono text-xs text-muted-foreground">
-						Runs on betarouter — {MARKETING_STATS.tokensRouted}{" "}
-						tokens routed · {MARKETING_STATS.providers} providers
+						Runs on betarouter — {MARKETING_STATS.tokensRouted} tokens routed ·{" "}
+						{MARKETING_STATS.providers} providers
 					</p>
 				</section>
 

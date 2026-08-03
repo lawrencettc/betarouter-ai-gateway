@@ -229,9 +229,8 @@ export default function LandingPage() {
 							</div>
 						</div>
 						<p className="mt-8 text-center font-mono text-xs text-muted-foreground">
-							Runs on betarouter —{" "}
-							{MARKETING_STATS.tokensRouted} tokens routed ·{" "}
-							{MARKETING_STATS.providers} providers
+							Runs on betarouter — {MARKETING_STATS.tokensRouted} tokens routed
+							· {MARKETING_STATS.providers} providers
 						</p>
 					</div>
 				</section>

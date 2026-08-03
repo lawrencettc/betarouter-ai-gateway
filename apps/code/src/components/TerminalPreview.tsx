@@ -12,12 +12,7 @@ import {
 } from "@betarouter/shared/components";
 
 type Tool =
-	| "claude-code"
-	| "empryo"
-	| "soulforge"
-	| "autohand"
-	| "opencode"
-	| "cline";
+	"claude-code" | "empryo" | "soulforge" | "autohand" | "opencode" | "cline";
 
 const tools: {
 	id: Tool;
