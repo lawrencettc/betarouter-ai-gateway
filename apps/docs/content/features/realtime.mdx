@@ -283,11 +283,3 @@ like any other request, including separate line items for input transcription.
 - Realtime requires a regular developer API key on a pay-as-you-go
   organization. End-user session tokens, platform keys, and BetaPass/chat plan
   organizations are not supported yet.
-
-## Self-Hosting
-
-Realtime is disabled by default on self-hosted deployments. Set
-`REALTIME_INLINE=true` to attach the `/v1/realtime` WebSocket listener (and
-the client-secret mint endpoint) to the gateway process — `pnpm dev` sets
-this automatically. Client secrets require Redis. See `.env.example` for the
-tunables (session caps, concurrency limits, shutdown grace period).

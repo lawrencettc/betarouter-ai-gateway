@@ -5,7 +5,6 @@ export interface AppConfig {
 	uiUrl: string;
 	playgroundUrl: string;
 	docsUrl: string;
-	githubUrl: string;
 	discordUrl: string;
 	twitterUrl: string;
 	posthogKey?: string;
@@ -27,9 +26,6 @@ export function getConfig(): AppConfig {
 		uiUrl: process.env.UI_URL ?? "http://localhost:3002",
 		playgroundUrl: process.env.PLAYGROUND_URL ?? "http://localhost:3003",
 		docsUrl: process.env.DOCS_URL ?? "http://localhost:3005",
-		githubUrl:
-			process.env.GITHUB_URL ??
-			"https://github.com/lawrencettc/betarouter-ai-gateway",
 		discordUrl: process.env.DISCORD_URL ?? "https://betarouter.com/discord",
 		twitterUrl: process.env.TWITTER_URL ?? "https://x.com/betarouterco",
 		posthogKey: process.env.POSTHOG_KEY,

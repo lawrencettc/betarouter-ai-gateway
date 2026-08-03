@@ -261,7 +261,7 @@ export const modelCategoryContent = {
 			"Open-weight models — Llama, DeepSeek, Qwen, GLM, Kimi, GPT-OSS, Gemma, and more — served through one API",
 		intro: [
 			"Open-weight models have closed most of the gap with proprietary frontiers: DeepSeek V4, Qwen3.7, GLM-5, Kimi K2, and MiniMax M3 sit near the top of real-world leaderboards, joined by OpenAI's GPT-OSS and Google's Gemma releases. Their weights are public — but running a 200B+ parameter model yourself means serious GPU infrastructure.",
-			"This page lists open-weight models served by hosted providers, so you get the openness — inspectable weights, no lock-in, the option to self-host later — with API convenience. betarouter itself is open source (AGPLv3) and self-hostable, so the whole stack can run on your terms.",
+			"This page lists open-weight models served by hosted providers, so you get the openness — inspectable weights, no lock-in, and the option to run those models yourself later — with API convenience.",
 		],
 		faqs: [
 			{

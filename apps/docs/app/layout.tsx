@@ -35,7 +35,7 @@ export const metadata: Metadata = {
 		template: "%s | betarouter Docs",
 	},
 	description:
-		"Route, manage, and analyze LLM requests across multiple providers with a unified API. Guides, API reference, and self-hosting docs.",
+		"Route, manage, and analyze LLM requests across multiple providers with a unified API. Guides and API reference.",
 	icons: {
 		icon: "/favicon/favicon.ico?v=2",
 	},

@@ -564,11 +564,6 @@ export default function ReferralsPublicPage() {
 												them: "Logs + export",
 											},
 											{
-												feature: "Self-Hosting",
-												us: "Free (AGPLv3)",
-												them: "Not available",
-											},
-											{
 												feature: "Guardrails",
 												us: "PII, injection, secrets",
 												them: "Enterprise",

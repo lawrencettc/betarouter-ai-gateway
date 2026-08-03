@@ -53,13 +53,13 @@ export async function GET() {
 
 	const content = `# betarouter
 
-> betarouter is an open-source, OpenAI-compatible API gateway that routes, manages, and analyzes LLM requests across 40+ providers (OpenAI, Anthropic, Google, and more) through a single unified API. Switch providers without changing code, manage API keys centrally, track usage and cost, add caching and guardrails, and self-host or use the managed cloud.
+> betarouter is a hosted, OpenAI-compatible API gateway that routes, manages, and analyzes LLM requests across 40+ providers (OpenAI, Anthropic, Google, and more) through a single unified API. Switch providers without changing code, manage API keys centrally, track usage and cost, and add caching and guardrails.
 
 ## Key facts
 
 - One OpenAI-compatible API for 40+ providers and 200+ models.
 - Migrate by changing only the base URL (\`https://api.betarouter.com/v1\`) and your API key — no code rewrites.
-- Open source (AGPLv3 core) with a managed cloud option; self-hosting supported via Docker.
+- Fully managed hosted service with no gateway infrastructure to operate.
 - Built-in usage analytics, per-model/provider cost breakdowns, automatic routing, fallbacks, caching, and guardrails.
 - API base URL: \`https://api.betarouter.com/v1\` · Docs: ${DOCS_URL} · Site: ${SITE_URL}
 
@@ -69,7 +69,7 @@ export async function GET() {
 - [Models](${SITE_URL}/models): Browse 200+ supported models with pricing and capabilities.
 - [Providers](${SITE_URL}/providers): All supported LLM providers.
 - [Pricing](${SITE_URL}/pricing): Plans and pricing.
-- [Enterprise](${SITE_URL}/enterprise): Self-hosting, SSO, and team features.
+- [Enterprise](${SITE_URL}/enterprise): SSO, governance, and team features.
 - [Token Cost Calculator](${SITE_URL}/token-cost-calculator): Estimate and compare LLM costs across models.
 - [betarouter vs LiteLLM](${SITE_URL}/compare/litellm)
 - [betarouter vs OpenRouter](${SITE_URL}/compare/open-router)

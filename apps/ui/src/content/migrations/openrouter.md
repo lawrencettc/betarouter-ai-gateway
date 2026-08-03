@@ -2,12 +2,12 @@
 id: openrouter
 slug: openrouter
 title: Migrate from OpenRouter
-description: Switch to betarouter for built-in analytics, self-hosting options, and simpler API. Two-line code change.
+description: Switch to betarouter for built-in analytics, automatic failover, and a simpler API. Two-line code change.
 date: 2026-01-20
 fromProvider: OpenRouter
 ---
 
-betarouter works just like OpenRouter—same API format, same model names—but with built-in analytics and the option to self-host. Migration takes two lines of code.
+betarouter works just like OpenRouter—same API format and same model names—but adds built-in analytics and automatic failover. Migration takes two lines of code.
 
 ## Quick Migration
 

@@ -149,11 +149,6 @@ const nextConfig: NextConfig = {
 				permanent: true,
 			},
 			{
-				source: "/github",
-				destination: "https://github.com/theopenco/llmgateway",
-				permanent: true,
-			},
-			{
 				source: "/twitter",
 				destination: "https://twitter.com/betarouterco",
 				permanent: true,
@@ -217,16 +212,6 @@ const nextConfig: NextConfig = {
 			{
 				source: "/overview",
 				destination: "https://docs.betarouter.com/overview",
-				permanent: true,
-			},
-			{
-				source: "/self-host",
-				destination: "https://docs.betarouter.com/self-host",
-				permanent: true,
-			},
-			{
-				source: "/self-host/:path*",
-				destination: "https://docs.betarouter.com/self-host/:path*",
 				permanent: true,
 			},
 			{

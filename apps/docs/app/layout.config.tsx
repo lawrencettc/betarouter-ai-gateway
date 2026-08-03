@@ -58,7 +58,6 @@ export const baseOptions: BaseLayoutProps = {
 			</>
 		),
 	},
-	githubUrl: "https://github.com/theopenco/llmgateway",
 	links: [
 		{
 			text: "Dashboard",

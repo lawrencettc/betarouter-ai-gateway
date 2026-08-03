@@ -785,11 +785,6 @@ export const enterpriseFeatures: EnterpriseFeatureDefinition[] = [
 		],
 		faq: [
 			{
-				question: "Can we self-host the white-label?",
-				answer:
-					"Yes. Enterprise plans include the option to deploy the playground container into your own infrastructure with branding baked in.",
-			},
-			{
 				question: "Does white-label work with our SSO?",
 				answer:
 					"Yes. The white-labeled deployment uses your [[sso-saml]] configuration so users authenticate against your IdP, not a separate betarouter account.",

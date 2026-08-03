@@ -1,6 +1,5 @@
 "use client";
 
-import { GithubIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -130,15 +129,6 @@ export function Footer() {
 							by betarouter — one API for {MARKETING_STATS.models} models
 						</a>
 						<div className="flex items-center gap-3 mt-4">
-							<a
-								href={config.githubUrl}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="text-muted-foreground hover:text-foreground transition-colors"
-								aria-label="GitHub"
-							>
-								<GithubIcon className="h-5 w-5" />
-							</a>
 							<a
 								href={config.twitterUrl}
 								target="_blank"
@@ -284,16 +274,6 @@ export function Footer() {
 										className="text-sm hover:underline underline-offset-4 hover:text-foreground"
 									>
 										Twitter
-									</a>
-								</li>
-								<li>
-									<a
-										href={config.githubUrl}
-										target="_blank"
-										rel="noopener noreferrer"
-										className="text-sm hover:underline underline-offset-4 hover:text-foreground"
-									>
-										GitHub
 									</a>
 								</li>
 							</ul>

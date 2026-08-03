@@ -234,16 +234,9 @@ export default function LandingPage() {
 							</div>
 						</div>
 						<p className="mt-8 text-center font-mono text-xs text-muted-foreground">
-							Runs on the open-source betarouter —{" "}
+							Runs on betarouter —{" "}
 							{MARKETING_STATS.tokensRouted} tokens routed ·{" "}
-							<a
-								href="https://github.com/theopenco/llmgateway"
-								target="_blank"
-								rel="noopener noreferrer"
-								className="text-foreground underline-offset-4 hover:underline"
-							>
-								{MARKETING_STATS.githubStars} GitHub stars
-							</a>
+							{MARKETING_STATS.providers} providers
 						</p>
 					</div>
 				</section>

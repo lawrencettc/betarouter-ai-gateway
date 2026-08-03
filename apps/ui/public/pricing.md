@@ -2,7 +2,7 @@
 
 Last updated: 2026-07-10
 
-> One OpenAI-compatible API for 200+ models across 40+ providers. Per-token prices match each provider's published rates; betarouter charges a flat 5% platform fee when you buy credits. Bringing your own provider keys is free, and self-hosting is free under AGPLv3.
+> One OpenAI-compatible API for 200+ models across 40+ providers. Per-token prices match each provider's published rates; betarouter charges a flat 5% platform fee when you buy credits. Bringing your own provider keys is free.
 
 ## Managed cloud — pay-as-you-go credits
 
@@ -15,10 +15,6 @@ Last updated: 2026-07-10
 
 - Price: free. Your provider bills you directly at its own rates.
 - Platform fee: none — the 5% fee applies only to credit purchases.
-
-## Self-hosted
-
-- Price: free and open source (AGPLv3): https://github.com/theopenco/llmgateway
 
 ## Enterprise
 
