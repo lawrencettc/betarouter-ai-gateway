@@ -124,6 +124,19 @@ describe("getProviderEndpoint", () => {
 		expect(endpoint).toBe("http://localhost:8787/openai/v1/chat/completions");
 	});
 
+	// A stored base URL ending in "/" must not produce "https://host//v1/..."
+	// — some OpenAI-compatible upstreams answer such double-slash paths with
+	// their HTML frontend instead of the API.
+	it("strips trailing slashes from a configured base URL", () => {
+		const endpoint = getProviderEndpoint(
+			"openai",
+			"https://dragtokens.example/",
+			"gpt-4o",
+		);
+
+		expect(endpoint).toBe("https://dragtokens.example/v1/chat/completions");
+	});
+
 	it("defaults to api.openai.com when no OpenAI base URL is configured", () => {
 		delete process.env.LLM_OPENAI_BASE_URL;
 

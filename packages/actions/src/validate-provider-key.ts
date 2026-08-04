@@ -350,6 +350,28 @@ export async function validateProviderKey(
 			};
 		}
 
+		// A 2xx alone is not proof the credential reached a real API: a
+		// misconfigured base URL can land on an upstream's HTML frontend, which
+		// happily answers 200 to any POST. Only a JSON body counts as success.
+		const responseText = await response.text();
+		try {
+			JSON.parse(responseText);
+		} catch {
+			logger.warn("Provider key validation returned non-JSON success body", {
+				provider,
+				model: validationModel?.modelId,
+				statusCode: response.status,
+				bodyPreview: responseText.slice(0, 200),
+			});
+			return {
+				valid: false,
+				error:
+					"Upstream returned a non-JSON response (an HTML page, not an API) — check that the base URL points at the provider's API host",
+				statusCode: response.status,
+				model: validationModel?.modelId,
+			};
+		}
+
 		logger.debug("Provider key validation succeeded", {
 			provider,
 			model: validationModel?.modelId,
