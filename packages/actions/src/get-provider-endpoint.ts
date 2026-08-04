@@ -466,6 +466,11 @@ export function getProviderEndpoint(
 		throw new Error(`Failed to determine base URL for provider ${provider}`);
 	}
 
+	// A trailing slash on a configured base URL would produce double-slash
+	// paths (e.g. "https://host//v1/responses") that some OpenAI-compatible
+	// upstreams answer with their HTML frontend instead of the API.
+	url = url.replace(/\/+$/, "");
+
 	switch (provider) {
 		case "anthropic":
 			return `${url}/v1/messages`;

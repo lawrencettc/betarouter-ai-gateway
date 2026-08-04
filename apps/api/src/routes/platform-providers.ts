@@ -93,9 +93,23 @@ function sanitizeValidationMessage(statusCode?: number, valid = false): string {
 	if (valid) {
 		return "Credential validated successfully";
 	}
+	// A failed validation with a 2xx status means the upstream answered
+	// success but not with an API response (e.g. an HTML frontend page).
+	if (statusCode && statusCode >= 200 && statusCode < 300) {
+		return "Upstream answered with a non-API response — check that the base URL points at the provider's API host";
+	}
 	return statusCode
 		? `Upstream credential validation failed (status ${statusCode})`
 		: "Upstream credential validation failed";
+}
+
+// Stored verbatim, a trailing slash produces double-slash endpoint paths
+// ("https://host//v1/...") that some OpenAI-compatible upstreams answer with
+// their HTML frontend instead of the API.
+function normalizeBaseUrl<T extends string | null | undefined>(baseUrl: T): T {
+	return (
+		typeof baseUrl === "string" ? baseUrl.replace(/\/+$/, "") : baseUrl
+	) as T;
 }
 
 function assertSupportedProvider(
@@ -335,10 +349,11 @@ platformProviders.openapi(createCredentialRoute, async (c) => {
 		async () => {
 			assertSupportedProvider(input.provider);
 			const options = input.options as ProviderKeyOptions | undefined;
+			const baseUrl = normalizeBaseUrl(input.baseUrl);
 			const validation = await validateCredential({
 				provider: input.provider,
 				token: input.token,
-				baseUrl: input.baseUrl,
+				baseUrl,
 				options,
 			});
 			if (!validation.valid) {
@@ -374,7 +389,7 @@ platformProviders.openapi(createCredentialRoute, async (c) => {
 					id,
 					provider: input.provider,
 					name: input.name,
-					baseUrl: input.baseUrl,
+					baseUrl,
 					options,
 					priority: input.priority,
 					status: input.status,
@@ -450,8 +465,9 @@ platformProviders.openapi(updateCredentialRoute, async (c) => {
 					? (existing.options ?? undefined)
 					: (input.options ?? undefined)
 			) as ProviderKeyOptions | undefined;
-			const baseUrl =
-				input.baseUrl === undefined ? existing.baseUrl : input.baseUrl;
+			const baseUrl = normalizeBaseUrl(
+				input.baseUrl === undefined ? existing.baseUrl : input.baseUrl,
+			);
 			const update: Partial<typeof platformProviderCredential.$inferInsert> = {
 				updatedBy: user.id,
 			};
@@ -525,7 +541,7 @@ platformProviders.openapi(updateCredentialRoute, async (c) => {
 				update.name = input.name;
 			}
 			if (input.baseUrl !== undefined) {
-				update.baseUrl = input.baseUrl;
+				update.baseUrl = normalizeBaseUrl(input.baseUrl);
 			}
 			if (input.options !== undefined) {
 				update.options = options ?? null;
