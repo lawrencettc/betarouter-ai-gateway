@@ -43,9 +43,17 @@ export function getValidationModel(
 	provider: ProviderId,
 	providerKeyOptions?: ProviderKeyOptions,
 ): { modelId: string; externalId: string } | null {
-	if (provider === "azure" && providerKeyOptions?.azure_validation_model) {
-		const azureModel = providerKeyOptions.azure_validation_model;
-		return { modelId: azureModel, externalId: azureModel };
+	// A configured validation model bypasses the auto-pick entirely, using the
+	// given id verbatim as the upstream model. Deployments that serve only a
+	// subset of the provider's catalogue (resellers, gateways) reject the
+	// auto-picked cheapest model, so validation would never pass without this.
+	const overrideModel =
+		providerKeyOptions?.validation_model ??
+		(provider === "azure"
+			? providerKeyOptions?.azure_validation_model
+			: undefined);
+	if (overrideModel) {
+		return { modelId: overrideModel, externalId: overrideModel };
 	}
 
 	// Resolve the selected region from provider key options
