@@ -168,6 +168,29 @@ describe("validateProviderKey error reporting", () => {
 		expect(result.error).toBe("Rate limit exceeded");
 	});
 
+	// A misconfigured base URL (e.g. a trailing slash producing a double-slash
+	// path) can land on an upstream's HTML frontend, which answers 200 to any
+	// POST. A 2xx with a non-JSON body must not count as a valid credential.
+	it("rejects a 200 response whose body is not JSON", async () => {
+		vi.spyOn(globalThis, "fetch").mockResolvedValue(
+			new Response("<!doctype html><html><head><title>New API</title></head>", {
+				status: 200,
+				headers: { "Content-Type": "text/html; charset=utf-8" },
+			}),
+		);
+
+		const result = await validateProviderKey(
+			"openai",
+			"sk-test",
+			"https://example.com/",
+			false,
+		);
+
+		expect(result.valid).toBe(false);
+		expect(result.statusCode).toBe(200);
+		expect(result.error).toContain("non-JSON");
+	});
+
 	it("falls back to status text when the body carries no message", async () => {
 		vi.spyOn(globalThis, "fetch").mockResolvedValue(
 			new Response("not json", { status: 401, statusText: "Unauthorized" }),
