@@ -1530,6 +1530,11 @@ export interface ProviderKeyOptions {
 	azure_api_version?: string;
 	azure_deployment_type?: "openai" | "ai-foundry";
 	azure_validation_model?: string;
+	// Overrides the auto-picked validation model for any provider. Needed for
+	// OpenAI-compatible deployments that serve only a subset of the provider's
+	// catalogue (e.g. a reseller without the cheapest model, which is what the
+	// auto-pick would otherwise choose).
+	validation_model?: string;
 	azure_deployment_name?: string;
 	azure_ai_foundry_resource?: string;
 	azure_ai_foundry_api_version?: string;

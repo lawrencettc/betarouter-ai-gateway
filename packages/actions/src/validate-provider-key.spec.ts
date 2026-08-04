@@ -9,6 +9,37 @@ import {
 } from "./validate-provider-key.js";
 
 describe("getValidationModel", () => {
+	// Deployments that serve only a subset of a provider's catalogue (e.g. a
+	// reseller) reject the auto-picked cheapest model, so a configured
+	// validation model must win over the auto-pick, verbatim.
+	it("honors the generic validation_model override for any provider", () => {
+		const selected = getValidationModel("openai", {
+			validation_model: "gpt-5.5",
+		});
+		expect(selected).toEqual({ modelId: "gpt-5.5", externalId: "gpt-5.5" });
+	});
+
+	it("prefers validation_model over azure_validation_model", () => {
+		const selected = getValidationModel("azure", {
+			validation_model: "my-deployment",
+			azure_validation_model: "other-deployment",
+		});
+		expect(selected).toEqual({
+			modelId: "my-deployment",
+			externalId: "my-deployment",
+		});
+	});
+
+	it("still honors azure_validation_model for azure", () => {
+		const selected = getValidationModel("azure", {
+			azure_validation_model: "my-deployment",
+		});
+		expect(selected).toEqual({
+			modelId: "my-deployment",
+			externalId: "my-deployment",
+		});
+	});
+
 	it("never selects an OCR model for provider key validation", () => {
 		// The OCR model has zero token prices, which would otherwise make it the
 		// cheapest (first) candidate. It must be excluded so key validation calls

@@ -99,9 +99,18 @@ function CredentialDialog({ credential }: { credential?: Credential }) {
 	const [status, setStatus] = useState<"active" | "inactive">(
 		credential?.status === "inactive" ? "inactive" : "active",
 	);
-	const [options, setOptions] = useState(
-		credential?.options ? JSON.stringify(credential.options, null, 2) : "",
+	const [validationModel, setValidationModel] = useState(
+		typeof credential?.options?.validation_model === "string"
+			? credential.options.validation_model
+			: "",
 	);
+	const [options, setOptions] = useState(() => {
+		if (!credential?.options) {
+			return "";
+		}
+		const { validation_model: _validationModel, ...rest } = credential.options;
+		return Object.keys(rest).length ? JSON.stringify(rest, null, 2) : "";
+	});
 
 	const submit = async (event: React.FormEvent) => {
 		event.preventDefault();
@@ -121,6 +130,12 @@ function CredentialDialog({ credential }: { credential?: Credential }) {
 					);
 				}
 				parsedOptions = parsed as Record<string, string>;
+			}
+			if (validationModel.trim()) {
+				parsedOptions = {
+					...parsedOptions,
+					validation_model: validationModel.trim(),
+				};
 			}
 
 			if (credential) {
@@ -277,6 +292,22 @@ function CredentialDialog({ credential }: { credential?: Credential }) {
 								</SelectContent>
 							</Select>
 						</div>
+					</div>
+					<div className="space-y-2">
+						<Label htmlFor="provider-validation-model">
+							Validation model (optional)
+						</Label>
+						<Input
+							id="provider-validation-model"
+							value={validationModel}
+							onChange={(event) => setValidationModel(event.target.value)}
+							placeholder="Auto-picked from the catalogue when empty"
+						/>
+						<p className="text-muted-foreground text-xs">
+							Upstream model id used to test this credential. Set it when the
+							deployment serves only a subset of the provider&apos;s catalogue
+							(e.g. a reseller without the auto-picked cheapest model).
+						</p>
 					</div>
 					<div className="space-y-2">
 						<Label htmlFor="provider-options">Advanced options (JSON)</Label>
