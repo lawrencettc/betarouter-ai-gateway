@@ -2,6 +2,12 @@ export interface CatalogFeatureFlags {
 	shadowRead: boolean;
 	discoveryEnabled: boolean;
 	routingEnabled: boolean;
+	/**
+	 * Chat read-path inversion: resolve model base data (capabilities, limits,
+	 * source prices) from the catalog snapshot instead of the static arrays.
+	 * Flip only after a clean shadow-read soak shows zero resolution divergence.
+	 */
+	baseReadEnabled: boolean;
 	breakerMode: "off" | "observe" | "enforce";
 }
 
@@ -20,6 +26,7 @@ export function readCatalogFeatureFlags(
 		shadowRead: enabled(env.PLATFORM_CATALOG_SHADOW_READ),
 		discoveryEnabled: enabled(env.PLATFORM_CATALOG_DISCOVERY_ENABLED),
 		routingEnabled: enabled(env.PLATFORM_CATALOG_ROUTING_ENABLED),
+		baseReadEnabled: enabled(env.PLATFORM_CATALOG_BASE_READ_ENABLED),
 		breakerMode,
 	};
 }

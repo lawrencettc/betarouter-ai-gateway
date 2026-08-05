@@ -7,6 +7,19 @@ import {
 	providers,
 } from "@betarouter/models";
 
+/**
+ * Model/provider existence data derived from the catalog snapshot. When
+ * provided (base reads enabled), parsing accepts models the snapshot knows
+ * even when the static array does not — the catalog may be ahead of this
+ * deploy or carry admin-created entries. Static knowledge always remains
+ * valid: the union keeps parsing safe when the stored revision is older
+ * than the running code.
+ */
+export interface CatalogParseContext {
+	modelIds: ReadonlySet<string>;
+	providerIdsByModel: ReadonlyMap<string, ReadonlySet<string>>;
+}
+
 export interface ParseModelInputResult {
 	requestedModel: Model;
 	requestedProvider: Provider | undefined;
@@ -38,12 +51,15 @@ export interface ParseModelInputResult {
  *   catalogue (database-defined platform providers). Prefixes matching one of
  *   these are resolved as platform providers instead of tenant custom
  *   providers. Static catalogue providers always win over this list.
+ * @param catalog - Catalog-derived existence data (read-path inversion).
+ *   Extends, never narrows, what the static array accepts.
  *
  * @throws HTTPException if the model or provider is not supported
  */
 export function parseModelInput(
 	modelInput: string,
 	platformProviderIds?: readonly string[],
+	catalog?: CatalogParseContext,
 ): ParseModelInputResult {
 	let requestedModel: Model = modelInput as Model;
 	let requestedProvider: Provider | undefined;
@@ -100,26 +116,40 @@ export function parseModelInput(
 			// Fall back to matching by catalog id only
 			modelDef ??= models.find((m) => m.id === modelName);
 
-			if (!modelDef) {
-				throw new HTTPException(400, {
-					message: `Requested model ${modelName} not supported`,
-				});
-			}
+			const catalogHasPair = (modelId: string) =>
+				catalog?.providerIdsByModel
+					.get(modelId)
+					?.has(requestedProvider as string) === true;
 
-			if (!modelDef.providers.some((p) => p.providerId === requestedProvider)) {
+			if (!modelDef) {
+				if (!catalogHasPair(modelName)) {
+					throw new HTTPException(400, {
+						message: `Requested model ${modelName} not supported`,
+					});
+				}
+				// Known to the catalog snapshot only; the model name is already
+				// the canonical catalog id there.
+				requestedModel = modelName as Model;
+			} else if (
+				!modelDef.providers.some((p) => p.providerId === requestedProvider) &&
+				!catalogHasPair(modelDef.id)
+			) {
 				throw new HTTPException(400, {
 					message: `Provider ${requestedProvider} does not support model ${modelName}`,
 				});
+			} else {
+				// Use the canonical catalog id, never the upstream externalId: two
+				// catalog entries (e.g. a free and a paid sibling) can share the same
+				// externalId, so collapsing to externalId here would let downstream
+				// resolution pick the wrong entry. The upstream externalId is derived
+				// separately from the selected provider mapping at request time.
+				requestedModel = modelDef.id as Model;
 			}
-
-			// Use the canonical catalog id, never the upstream externalId: two
-			// catalog entries (e.g. a free and a paid sibling) can share the same
-			// externalId, so collapsing to externalId here would let downstream
-			// resolution pick the wrong entry. The upstream externalId is derived
-			// separately from the selected provider mapping at request time.
-			requestedModel = modelDef.id as Model;
 		}
-	} else if (models.find((m) => m.id === modelInput)) {
+	} else if (
+		models.find((m) => m.id === modelInput) ||
+		catalog?.modelIds.has(modelInput)
+	) {
 		requestedModel = modelInput as Model;
 	} else {
 		throw new HTTPException(400, {

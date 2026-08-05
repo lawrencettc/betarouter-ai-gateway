@@ -1101,6 +1101,10 @@ function transformMessagesForResponsesApi(messages: any[]): any[] {
  *   per-region variants. Used together with `usedProvider` to disambiguate.
  * @param usedExternalId - Provider-specific upstream model id. Used only as
  *   the `model:` value in the upstream request body — never for lookups.
+ * @param modelDefinition - The already-resolved model definition for
+ *   `usedInternalModel` (read-path inversion). When provided it replaces the
+ *   static registry lookup, so catalog-resolved capability data drives the
+ *   provider-specific request shaping.
  */
 export async function prepareRequestBody(
 	usedProvider: ProviderId | string,
@@ -1145,9 +1149,11 @@ export async function prepareRequestBody(
 	prompt_cache_options?: PromptCacheOptions,
 	session_id?: string,
 	reasoning_context?: "auto" | "current_turn" | "all_turns",
+	modelDefinition?: ModelDefinition,
 ): Promise<ProviderRequestBody | FormData> {
 	tools = normalizeToolParameters(tools);
-	const modelDef = models.find((m) => m.id === usedInternalModel);
+	const modelDef =
+		modelDefinition ?? models.find((m) => m.id === usedInternalModel);
 	const providerMappingForOptions = getProviderMapping(
 		modelDef,
 		usedProvider,

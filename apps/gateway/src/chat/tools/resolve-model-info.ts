@@ -22,11 +22,20 @@ export interface ResolveModelInfoResult {
  * For custom providers, creates a mock model info that treats it as an OpenAI-compatible model.
  * For regular providers, looks up model info from the models list and filters out deactivated providers.
  *
+ * @param lookupModel - Optional model resolution hook (read-path inversion).
+ *   When provided it replaces the static-array lookup — the gateway passes a
+ *   resolver that reads the catalog snapshot first and falls back to the
+ *   static array, preserving the provider-preference semantics below.
+ *
  * @throws HTTPException if the model is not supported or all providers are deactivated
  */
 export function resolveModelInfo(
 	requestedModel: Model,
 	requestedProvider: Provider | undefined,
+	lookupModel?: (
+		modelId: string,
+		requestedProvider?: string,
+	) => ModelDefinition | undefined,
 ): ResolveModelInfoResult {
 	let modelInfo: ModelDefinition;
 
@@ -67,14 +76,19 @@ export function resolveModelInfo(
 		// model name and must never be used to identify a catalog entry — two
 		// entries (e.g. a free and a paid sibling) can share the same externalId.
 		// When a specific provider is requested, prefer the definition that includes that provider
-		let foundModel = requestedProvider
-			? models.find(
-					(m) =>
-						m.id === baseRequestedModel &&
-						m.providers.some((p) => p.providerId === requestedProvider),
-				)
-			: undefined;
-		foundModel ??= models.find((m) => m.id === baseRequestedModel);
+		let foundModel: ModelDefinition | undefined;
+		if (lookupModel) {
+			foundModel = lookupModel(baseRequestedModel, requestedProvider);
+		} else {
+			foundModel = requestedProvider
+				? models.find(
+						(m) =>
+							m.id === baseRequestedModel &&
+							m.providers.some((p) => p.providerId === requestedProvider),
+					)
+				: undefined;
+			foundModel ??= models.find((m) => m.id === baseRequestedModel);
+		}
 
 		if (!foundModel) {
 			throw new HTTPException(400, {

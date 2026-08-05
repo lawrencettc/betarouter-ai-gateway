@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import {
+	catalogSnapshotHasBaseData,
+	compareCatalogModelResolution,
+	parseStoredCatalogSnapshot,
+	resolveModelFromCatalog,
+} from "@betarouter/catalog";
+import {
 	db,
 	desc,
 	eq,
@@ -559,5 +565,41 @@ describe("sync-models", () => {
 			}
 		}
 		expect(mappingRows).toHaveLength(expandedCount);
+	});
+
+	// Phase 3 exit gate: after one sync, the published snapshot must
+	// reconstruct every static model definition (via resolveModelFromCatalog)
+	// with zero divergence — including numerically exact prices, which is the
+	// billing-equivalence guarantee the read-path inversion relies on.
+	it("reconstructs every static model from the stored snapshot", async () => {
+		await syncProvidersAndModels();
+
+		const [revision] = await db
+			.select({
+				checksum: platformCatalogRevision.checksum,
+				snapshot: platformCatalogRevision.snapshot,
+			})
+			.from(platformCatalogRevision)
+			.orderBy(desc(platformCatalogRevision.id))
+			.limit(1);
+		expect(revision).toBeDefined();
+		const snapshot = parseStoredCatalogSnapshot(
+			revision!.snapshot,
+			revision!.checksum,
+		);
+		expect(catalogSnapshotHasBaseData(snapshot)).toBe(true);
+
+		const allDivergences: unknown[] = [];
+		for (const def of modelDefinitions) {
+			if (!(def.providers && def.providers.length > 0)) {
+				continue;
+			}
+			const resolved = resolveModelFromCatalog(def.id, snapshot);
+			expect(resolved, `model ${def.id} reconstructs`).not.toBeNull();
+			for (const divergence of compareCatalogModelResolution(def, resolved!)) {
+				allDivergences.push(divergence);
+			}
+		}
+		expect(allDivergences).toEqual([]);
 	});
 });
