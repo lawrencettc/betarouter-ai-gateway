@@ -4,6 +4,7 @@ import {
 	boolean,
 	check,
 	decimal,
+	doublePrecision,
 	index,
 	integer,
 	json,
@@ -20,8 +21,16 @@ import { customAlphabet } from "nanoid";
 import type { gatewayContentFilterResponseSchema } from "./log-payloads.js";
 import type { errorDetails, tools, toolChoice, toolResults } from "./types.js";
 import type {
+	PricingTier,
+	ProviderAdditionalLink,
 	ProviderComplianceAttestation,
 	ProviderCompliancePolicy,
+	ProviderDataPolicy,
+	ProviderProtocol,
+	ProviderRegionConfig,
+	ReasoningEffort,
+	ServiceTier,
+	ToolChoiceMode,
 } from "@betarouter/models";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import type z from "zod";
@@ -2882,6 +2891,24 @@ export const provider = pgTable(
 		color: text(),
 		website: text(),
 		announcement: text(),
+		// Nullable until the worker sync mirrors it; always set for synced rows
+		protocol: text().$type<ProviderProtocol>(),
+		priority: doublePrecision(),
+		contentFilter: boolean(),
+		maxTemperature: doublePrecision(),
+		headquarters: text(),
+		dataPolicy: jsonb().$type<ProviderDataPolicy>(),
+		serviceTiers: jsonb().$type<ServiceTier[]>(),
+		regionConfig: jsonb().$type<ProviderRegionConfig>(),
+		termsUrl: text(),
+		privacyPolicyUrl: text(),
+		statusPageUrl: text(),
+		apiKeyInstructions: text(),
+		modelCardBadge: text(),
+		additionalLinks: jsonb().$type<ProviderAdditionalLink[]>(),
+		source: text({ enum: ["static", "admin"] })
+			.notNull()
+			.default("static"),
 		status: text({
 			enum: ["active", "inactive"],
 		})
@@ -2922,6 +2949,9 @@ export const model = pgTable(
 		})
 			.default("stable")
 			.notNull(),
+		source: text({ enum: ["static", "admin"] })
+			.notNull()
+			.default("static"),
 		status: text({
 			enum: ["active", "inactive"],
 		})
@@ -2939,6 +2969,14 @@ export const model = pgTable(
 	},
 	(table) => [index("model_status_idx").on(table.status)],
 );
+
+/**
+ * Mirrored context-length pricing tier. JSON cannot represent Infinity, so an
+ * unbounded top tier (`upToTokens: Infinity` in code) is stored as null.
+ */
+export interface MappingPricingTier extends Omit<PricingTier, "upToTokens"> {
+	upToTokens: number | null;
+}
 
 export const modelProviderMapping = pgTable(
 	"model_provider_mapping",
@@ -2974,6 +3012,8 @@ export const modelProviderMapping = pgTable(
 		inputAudioHourPrice: decimal(),
 		perSecondPrice: jsonb().$type<Record<string, string>>(),
 		requestPrice: decimal(),
+		pricingTiers: jsonb().$type<MappingPricingTier[]>(),
+		serviceTierMultipliers: jsonb().$type<Partial<Record<string, number>>>(),
 		contextSize: integer(),
 		maxOutput: integer(),
 		streaming: boolean().notNull().default(false),
@@ -2992,11 +3032,16 @@ export const modelProviderMapping = pgTable(
 			.default("stable")
 			.notNull(),
 		supportedParameters: json().$type<string[]>(),
+		supportedToolChoices: jsonb().$type<ToolChoiceMode[]>(),
+		reasoningEfforts: jsonb().$type<ReasoningEffort[]>(),
 		test: text({
 			enum: ["skip", "only"],
 		}),
 		deprecatedAt: timestamp(),
 		deactivatedAt: timestamp(),
+		source: text({ enum: ["static", "admin"] })
+			.notNull()
+			.default("static"),
 		status: text({
 			enum: ["active", "inactive"],
 		})

@@ -55,6 +55,159 @@ describe("parseStoredCatalogSnapshot", () => {
 		).toThrow("checksum");
 	});
 
+	it("round-trips base model and mapping data through a stored snapshot", () => {
+		const resolved = resolveEffectiveCatalog({
+			revision: 9,
+			now: new Date("2026-07-22T00:00:00.000Z"),
+			providers: [{ id: "relay", status: "active" }],
+			models: [
+				{
+					id: "gpt",
+					status: "active",
+					name: "GPT",
+					family: "openai",
+					aliases: ["gpt-latest"],
+					output: ["text", "image"],
+					free: false,
+				},
+			],
+			mappings: [
+				{
+					id: "relay-gpt",
+					providerId: "relay",
+					modelId: "gpt",
+					status: "active",
+					externalId: "gpt",
+					contextSize: 128_000,
+					maxOutput: 16_384,
+					streaming: true,
+					vision: true,
+					reasoning: null,
+					reasoningMaxTokens: false,
+					tools: true,
+					jsonOutput: true,
+					jsonOutputSchema: false,
+					webSearch: false,
+					supportedParameters: ["temperature", "max_tokens"],
+					pricingTiers: [
+						{
+							name: "128K",
+							upToTokens: 128_000,
+							inputPrice: "1.4e-6",
+							outputPrice: "5.6e-6",
+						},
+						{
+							name: "unbounded",
+							upToTokens: null,
+							inputPrice: "2.8e-6",
+							outputPrice: "1.12e-5",
+						},
+					],
+					serviceTierMultipliers: { flex: 0.5, priority: 2 },
+				},
+			],
+			providerPolicies: [
+				{
+					providerId: "relay",
+					visible: true,
+					enabled: true,
+					lifecycle: "active",
+				},
+			],
+			modelPolicies: [
+				{
+					modelId: "gpt",
+					visible: true,
+					enabled: true,
+					allowDirect: true,
+					lifecycle: "active",
+				},
+			],
+			mappingPolicies: [
+				{
+					mappingId: "relay-gpt",
+					enabled: true,
+					priority: 0,
+					weight: 100,
+					breakerEnabled: true,
+				},
+			],
+			providerCredentialAvailability: { relay: true },
+			mappingReadiness: {
+				"relay-gpt": { priceReady: true, testPassed: true },
+			},
+			breakerStates: {},
+		});
+
+		const parsed = parseStoredCatalogSnapshot(
+			JSON.parse(JSON.stringify(resolved)),
+		);
+		expect(parsed.models[0]).toMatchObject({
+			name: "GPT",
+			family: "openai",
+			aliases: ["gpt-latest"],
+			output: ["text", "image"],
+			free: false,
+		});
+		expect(parsed.mappings[0]).toMatchObject({
+			contextSize: 128_000,
+			maxOutput: 16_384,
+			streaming: true,
+			vision: true,
+			reasoning: null,
+			reasoningMaxTokens: false,
+			tools: true,
+			jsonOutput: true,
+			jsonOutputSchema: false,
+			webSearch: false,
+			supportedParameters: ["temperature", "max_tokens"],
+			serviceTierMultipliers: { flex: 0.5, priority: 2 },
+		});
+		expect(parsed.mappings[0]?.pricingTiers).toEqual(
+			resolved.mappings[0]?.pricingTiers,
+		);
+
+		const recomputed = applyCatalogLifecycleAt(
+			parsed,
+			new Date("2026-07-22T00:00:00.000Z"),
+		);
+		expect(recomputed.models[0]?.name).toBe("GPT");
+		expect(recomputed.mappings[0]?.pricingTiers).toEqual(
+			resolved.mappings[0]?.pricingTiers,
+		);
+	});
+
+	it("parses snapshots stored before base data existed", () => {
+		const resolved = resolveEffectiveCatalog({
+			revision: 4,
+			now: new Date("2026-07-22T00:00:00.000Z"),
+			providers: [{ id: "relay", status: "active" }],
+			models: [{ id: "gpt", status: "active" }],
+			mappings: [
+				{
+					id: "relay-gpt",
+					providerId: "relay",
+					modelId: "gpt",
+					status: "active",
+					externalId: "gpt",
+				},
+			],
+			providerPolicies: [],
+			modelPolicies: [],
+			mappingPolicies: [],
+			providerCredentialAvailability: {},
+			mappingReadiness: {},
+			breakerStates: {},
+		});
+		const stored = JSON.parse(JSON.stringify(resolved)) as {
+			models: object[];
+			mappings: object[];
+		};
+		expect(stored.models[0]).not.toHaveProperty("name");
+		expect(stored.mappings[0]).not.toHaveProperty("contextSize");
+		expect(parseStoredCatalogSnapshot(stored).revision).toBe(4);
+	});
+
 	it("enforces scheduled retirement and source deactivation without a new revision", () => {
 		const input: CatalogResolverInput = {
 			revision: 7,

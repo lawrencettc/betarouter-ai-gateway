@@ -13,6 +13,19 @@ import { CatalogSnapshotCache } from "./snapshot-cache.js";
 import type { EffectiveCatalog, MappingEligibilityReason } from "./catalog.js";
 
 const lifecycleSchema = z.enum(["draft", "active", "deprecated", "retired"]);
+const storedPricingTierSchema = z
+	.object({
+		name: z.string(),
+		// null mirrors an unbounded (Infinity) top tier
+		upToTokens: z.number().nullable(),
+		inputPrice: z.string(),
+		outputPrice: z.string(),
+		cachedInputPrice: z.string().optional(),
+		cacheReadInputPrice: z.string().optional(),
+		cacheWriteInputPrice: z.string().optional(),
+		cacheWriteInputPrice1h: z.string().optional(),
+	})
+	.strict();
 const storedCatalogSnapshotSchema = z
 	.object({
 		revision: z.number().int().nonnegative(),
@@ -40,6 +53,12 @@ const storedCatalogSnapshotSchema = z
 				deprecatedAt: z.string().nullable(),
 				retireAt: z.string().nullable(),
 				retirementMessage: z.string().nullable(),
+				// Base data fields are optional: pre-Phase-2 snapshots lack them
+				name: z.string().optional(),
+				family: z.string().optional(),
+				aliases: z.array(z.string()).optional(),
+				output: z.array(z.string()).optional(),
+				free: z.boolean().optional(),
 			}),
 		),
 		mappings: z.array(
@@ -67,6 +86,23 @@ const storedCatalogSnapshotSchema = z
 				pricingMode: z.enum(["source_cost", "markup", "fixed"]).nullable(),
 				markupBps: z.number().nullable(),
 				reasons: z.array(z.string()),
+				// Base data fields are optional: pre-Phase-2 snapshots lack them
+				contextSize: z.number().int().nullable().optional(),
+				maxOutput: z.number().int().nullable().optional(),
+				streaming: z.boolean().optional(),
+				vision: z.boolean().nullable().optional(),
+				reasoning: z.boolean().nullable().optional(),
+				reasoningMaxTokens: z.boolean().optional(),
+				tools: z.boolean().nullable().optional(),
+				jsonOutput: z.boolean().optional(),
+				jsonOutputSchema: z.boolean().optional(),
+				webSearch: z.boolean().optional(),
+				supportedParameters: z.array(z.string()).nullable().optional(),
+				pricingTiers: z.array(storedPricingTierSchema).nullable().optional(),
+				serviceTierMultipliers: z
+					.record(z.string(), z.number())
+					.nullable()
+					.optional(),
 			}),
 		),
 		visibleProviderIds: z.array(z.string()),

@@ -12,6 +12,11 @@ import {
 	platformProviderPolicy,
 	provider,
 } from "@betarouter/db";
+import {
+	expandAllProviderRegions,
+	models as modelDefinitions,
+	providers as providerDefinitions,
+} from "@betarouter/models";
 
 import { syncProvidersAndModels } from "./sync-models.js";
 
@@ -335,5 +340,224 @@ describe("sync-models", () => {
 	it("should handle errors gracefully", async () => {
 		// This test ensures the function doesn't throw on edge cases
 		await expect(syncProvidersAndModels()).resolves.not.toThrow();
+	});
+
+	// Phase 3 reads the catalog from the database instead of the static
+	// arrays, so every code-defined field must survive one sync verbatim.
+	it("mirrors every code-defined field to the database", async () => {
+		await syncProvidersAndModels();
+
+		const numeric = (value: string | null | undefined) =>
+			value === null || value === undefined ? null : Number(value);
+
+		const providerRows = await db.select().from(provider);
+		expect(providerRows).toHaveLength(providerDefinitions.length);
+		const providerById = new Map(providerRows.map((row) => [row.id, row]));
+		for (const def of providerDefinitions) {
+			const row = providerById.get(def.id);
+			expect(row, `provider ${def.id}`).toBeDefined();
+			expect(
+				{
+					name: row!.name,
+					description: row!.description,
+					streaming: row!.streaming,
+					cancellation: row!.cancellation,
+					color: row!.color,
+					website: row!.website,
+					announcement: row!.announcement,
+					protocol: row!.protocol,
+					priority: row!.priority,
+					contentFilter: row!.contentFilter,
+					maxTemperature: row!.maxTemperature,
+					headquarters: row!.headquarters,
+					dataPolicy: row!.dataPolicy,
+					serviceTiers: row!.serviceTiers,
+					regionConfig: row!.regionConfig,
+					termsUrl: row!.termsUrl,
+					privacyPolicyUrl: row!.privacyPolicyUrl,
+					statusPageUrl: row!.statusPageUrl,
+					apiKeyInstructions: row!.apiKeyInstructions,
+					modelCardBadge: row!.modelCardBadge,
+					additionalLinks: row!.additionalLinks,
+					source: row!.source,
+					status: row!.status,
+				},
+				`provider ${def.id}`,
+			).toEqual({
+				name: def.name,
+				description: def.description,
+				streaming: def.streaming ?? null,
+				cancellation: def.cancellation ?? null,
+				color: def.color ?? null,
+				website: def.website ?? null,
+				announcement: def.announcement ?? null,
+				protocol: def.protocol,
+				priority: def.priority ?? null,
+				contentFilter: def.contentFilter ?? null,
+				maxTemperature: def.maxTemperature ?? null,
+				headquarters: def.headquarters ?? null,
+				dataPolicy: def.dataPolicy ?? null,
+				serviceTiers: def.serviceTiers ?? null,
+				regionConfig: def.regionConfig ?? null,
+				termsUrl: def.termsUrl ?? null,
+				privacyPolicyUrl: def.privacyPolicyUrl ?? null,
+				statusPageUrl: def.statusPageUrl ?? null,
+				apiKeyInstructions: def.apiKeyInstructions ?? null,
+				modelCardBadge: def.modelCardBadge ?? null,
+				additionalLinks: def.additionalLinks ?? null,
+				source: "static",
+				status: "active",
+			});
+		}
+
+		const modelRows = await db.select().from(model);
+		expect(modelRows).toHaveLength(modelDefinitions.length);
+		const modelById = new Map(modelRows.map((row) => [row.id, row]));
+		for (const def of modelDefinitions) {
+			const row = modelById.get(def.id);
+			expect(row, `model ${def.id}`).toBeDefined();
+			expect(
+				{
+					name: row!.name,
+					family: row!.family,
+					aliases: row!.aliases,
+					description: row!.description,
+					free: row!.free,
+					output: row!.output,
+					imageInputRequired: row!.imageInputRequired,
+					stability: row!.stability,
+					source: row!.source,
+					status: row!.status,
+				},
+				`model ${def.id}`,
+			).toEqual({
+				name: def.name,
+				family: def.family,
+				aliases: "aliases" in def ? def.aliases : [],
+				description: "description" in def ? def.description : "(empty)",
+				free: "free" in def ? def.free : false,
+				output: "output" in def ? def.output : ["text"],
+				imageInputRequired:
+					"imageInputRequired" in def ? def.imageInputRequired : false,
+				stability: "stability" in def ? def.stability : "stable",
+				source: "static",
+				status: "active",
+			});
+			if ("releasedAt" in def && def.releasedAt) {
+				expect(row!.releasedAt.getTime(), `model ${def.id} releasedAt`).toBe(
+					def.releasedAt.getTime(),
+				);
+			}
+		}
+
+		const mappingRows = await db.select().from(modelProviderMapping);
+		const mappingByKey = new Map(
+			mappingRows.map((row) => [
+				`${row.modelId}|${row.providerId}|${row.region ?? ""}`,
+				row,
+			]),
+		);
+		const priceFields = [
+			"inputPrice",
+			"outputPrice",
+			"cachedInputPrice",
+			"cacheReadInputPrice",
+			"cacheWriteInputPrice",
+			"cacheWriteInputPrice1h",
+			"imageInputPrice",
+			"imageOutputPrice",
+			"inputAudioPrice",
+			"cachedImageInputPrice",
+			"cachedInputAudioPrice",
+			"outputAudioPrice",
+			"inputCharacterPrice",
+			"ocrPagePrice",
+			"inputAudioHourPrice",
+			"requestPrice",
+			"webSearchPrice",
+		] as const;
+		let expandedCount = 0;
+		for (const def of modelDefinitions) {
+			if (!(def.providers && def.providers.length > 0)) {
+				continue;
+			}
+			for (const mapping of expandAllProviderRegions(def.providers)) {
+				expandedCount += 1;
+				const key = `${def.id}|${mapping.providerId}|${mapping.region ?? ""}`;
+				const row = mappingByKey.get(key);
+				expect(row, `mapping ${key}`).toBeDefined();
+				for (const field of priceFields) {
+					expect(numeric(row![field]), `mapping ${key} ${field}`).toBe(
+						mapping[field] !== undefined ? Number(mapping[field]) : null,
+					);
+				}
+				expect(
+					{
+						externalId: row!.externalId,
+						perSecondPrice: row!.perSecondPrice,
+						pricingTiers: row!.pricingTiers,
+						serviceTierMultipliers: row!.serviceTierMultipliers,
+						contextSize: row!.contextSize,
+						maxOutput: row!.maxOutput,
+						streaming: row!.streaming,
+						vision: row!.vision,
+						reasoning: row!.reasoning,
+						reasoningMaxTokens: row!.reasoningMaxTokens,
+						reasoningOutput: row!.reasoningOutput,
+						tools: row!.tools,
+						jsonOutput: row!.jsonOutput,
+						jsonOutputSchema: row!.jsonOutputSchema,
+						webSearch: row!.webSearch,
+						stability: row!.stability,
+						supportedParameters: row!.supportedParameters,
+						supportedToolChoices: row!.supportedToolChoices,
+						reasoningEfforts: row!.reasoningEfforts,
+						test: row!.test,
+						source: row!.source,
+						status: row!.status,
+					},
+					`mapping ${key}`,
+				).toEqual({
+					externalId: mapping.externalId,
+					perSecondPrice: mapping.perSecondPrice ?? null,
+					pricingTiers: mapping.pricingTiers
+						? mapping.pricingTiers.map((tier) => ({
+								...tier,
+								upToTokens: Number.isFinite(tier.upToTokens)
+									? tier.upToTokens
+									: null,
+							}))
+						: null,
+					serviceTierMultipliers: mapping.serviceTierMultipliers ?? null,
+					contextSize: mapping.contextSize ?? null,
+					maxOutput: mapping.maxOutput ?? null,
+					streaming: mapping.streaming === false ? false : true,
+					vision: mapping.vision ?? null,
+					reasoning: mapping.reasoning ?? null,
+					reasoningMaxTokens: mapping.reasoningMaxTokens ?? false,
+					reasoningOutput: mapping.reasoningOutput ?? null,
+					tools: mapping.tools ?? null,
+					jsonOutput: mapping.jsonOutput ?? false,
+					jsonOutputSchema: mapping.jsonOutputSchema ?? false,
+					webSearch: mapping.webSearch ?? false,
+					stability: mapping.stability ?? "stable",
+					supportedParameters: mapping.supportedParameters ?? null,
+					supportedToolChoices: mapping.supportedToolChoices ?? null,
+					reasoningEfforts: mapping.reasoningEfforts ?? null,
+					test: mapping.test ?? null,
+					source: "static",
+					status: "active",
+				});
+				expect(
+					row!.deprecatedAt?.getTime() ?? null,
+					`mapping ${key} deprecatedAt`,
+				).toBe(mapping.deprecatedAt?.getTime() ?? null);
+				expect(
+					row!.deactivatedAt?.getTime() ?? null,
+					`mapping ${key} deactivatedAt`,
+				).toBe(mapping.deactivatedAt?.getTime() ?? null);
+			}
+		}
+		expect(mappingRows).toHaveLength(expandedCount);
 	});
 });
