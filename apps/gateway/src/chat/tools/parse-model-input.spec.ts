@@ -43,3 +43,42 @@ describe("parseModelInput / resolveModelInfo catalog-id-only routing", () => {
 		expect(result.requestedProvider).toBe("together-ai");
 	});
 });
+
+describe("parseModelInput platform provider resolution", () => {
+	it("treats an unknown prefix as a tenant custom provider by default", () => {
+		const result = parseModelInput("some-relay/gpt-4o");
+		expect(result.requestedProvider).toBe("custom");
+		expect(result.customProviderName).toBe("some-relay");
+		expect(result.platformProviderId).toBeUndefined();
+		expect(result.requestedModel).toBe("gpt-4o");
+	});
+
+	it("resolves a prefix on the platform provider list as a platform provider", () => {
+		const result = parseModelInput("some-relay/gpt-4o", ["some-relay"]);
+		expect(result.platformProviderId).toBe("some-relay");
+		expect(result.requestedProvider).toBeUndefined();
+		expect(result.customProviderName).toBeUndefined();
+		// Model names of database-defined providers are not validated against
+		// the static catalogue.
+		expect(result.requestedModel).toBe("gpt-4o");
+	});
+
+	it("keeps a platform provider model name with slashes intact", () => {
+		const result = parseModelInput("some-relay/org/model-name", ["some-relay"]);
+		expect(result.platformProviderId).toBe("some-relay");
+		expect(result.requestedModel).toBe("org/model-name");
+	});
+
+	it("parses the region suffix for platform providers", () => {
+		const result = parseModelInput("some-relay/gpt-4o:eu", ["some-relay"]);
+		expect(result.platformProviderId).toBe("some-relay");
+		expect(result.requestedModel).toBe("gpt-4o");
+		expect(result.requestedRegion).toBe("eu");
+	});
+
+	it("never shadows a static catalogue provider", () => {
+		const result = parseModelInput("anthropic/claude-haiku-4-5", ["anthropic"]);
+		expect(result.requestedProvider).toBe("anthropic");
+		expect(result.platformProviderId).toBeUndefined();
+	});
+});

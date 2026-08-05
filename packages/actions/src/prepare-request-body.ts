@@ -144,7 +144,7 @@ function stripSchemaDefaults(
 
 function getProviderMapping(
 	modelDef: ModelDefinition | undefined,
-	usedProvider: ProviderId,
+	usedProvider: ProviderId | string,
 	usedRegion: string | null,
 ): ProviderModelMapping | undefined {
 	if (!modelDef) {
@@ -1103,7 +1103,7 @@ function transformMessagesForResponsesApi(messages: any[]): any[] {
  *   the `model:` value in the upstream request body — never for lookups.
  */
 export async function prepareRequestBody(
-	usedProvider: ProviderId,
+	usedProvider: ProviderId | string,
 	usedInternalModel: string,
 	usedRegion: string | null,
 	usedExternalId: string,

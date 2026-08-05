@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { providers } from "@betarouter/models";
+
 import { transformStreamingToOpenai } from "./transform-streaming-to-openai.js";
 
 const { warn, error } = vi.hoisted(() => ({
@@ -594,5 +596,72 @@ describe("transformStreamingToOpenai", () => {
 			"[transform-streaming-to-openai] Google streaming chunk missing candidates",
 			expect.objectContaining({ hasCandidates: false }),
 		);
+	});
+});
+
+describe("protocol-based transform family selection", () => {
+	const UNKNOWN_PROVIDER_WARNING =
+		"[streaming] Unknown provider using OpenAI fallback";
+
+	const openaiChunk = () => ({
+		id: "chatcmpl-1",
+		object: "chat.completion.chunk",
+		created: 1,
+		model: "test-model",
+		choices: [{ index: 0, delta: { content: "hi" }, finish_reason: null }],
+	});
+
+	it("never hits the unknown-provider fallback for a declared provider", () => {
+		warn.mockClear();
+
+		for (const provider of providers) {
+			transformStreamingToOpenai(provider.id, "test-model", openaiChunk(), []);
+		}
+
+		const unknownProviderWarnings = warn.mock.calls.filter(
+			([message]) => message === UNKNOWN_PROVIDER_WARNING,
+		);
+		expect(unknownProviderWarnings).toEqual([]);
+	});
+
+	it("warns for an undeclared provider id without an explicit protocol", () => {
+		warn.mockClear();
+
+		const result = transformStreamingToOpenai(
+			"db-only-provider",
+			"test-model",
+			openaiChunk(),
+			[],
+		);
+
+		expect(warn).toHaveBeenCalledWith(
+			UNKNOWN_PROVIDER_WARNING,
+			expect.objectContaining({ provider: "db-only-provider" }),
+		);
+		expect(result.choices[0].delta.content).toBe("hi");
+	});
+
+	it("takes the openai-chat transform for an undeclared provider with an explicit protocol", () => {
+		warn.mockClear();
+
+		const chunk = openaiChunk();
+		chunk.choices[0].finish_reason = "end_turn" as any;
+		const result = transformStreamingToOpenai(
+			"db-only-provider",
+			"test-model",
+			chunk,
+			[],
+			undefined,
+			true,
+			"openai-chat",
+		);
+
+		expect(warn).not.toHaveBeenCalledWith(
+			UNKNOWN_PROVIDER_WARNING,
+			expect.anything(),
+		);
+		// The openai-chat family maps the non-standard end_turn finish reason;
+		// the unknown-provider fallback would pass it through untouched.
+		expect(result.choices[0].finish_reason).toBe("stop");
 	});
 });

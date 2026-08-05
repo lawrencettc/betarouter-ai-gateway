@@ -167,3 +167,41 @@ describe("getProviderHeaders - Google Vertex service tiers", () => {
 		expect(quartz[VERTEX_TIER_HEADER]).toBeUndefined();
 	});
 });
+
+describe("getProviderHeaders - protocol-family defaults", () => {
+	it("keeps Anthropic Messages auth for the anthropic provider", () => {
+		const headers = getProviderHeaders("anthropic", "sk-ant-test");
+		expect(headers["x-api-key"]).toBe("sk-ant-test");
+		expect(headers["anthropic-version"]).toBe("2023-06-01");
+		expect(headers.Authorization).toBeUndefined();
+	});
+
+	it("defaults an undeclared provider to Bearer auth", () => {
+		expect(getProviderHeaders("db-only-provider", "tok")).toEqual({
+			Authorization: "Bearer tok",
+		});
+	});
+
+	it("honors an explicit anthropic-messages protocol for an undeclared provider", () => {
+		const headers = getProviderHeaders("db-only-provider", "tok", {
+			protocol: "anthropic-messages",
+		});
+		expect(headers["x-api-key"]).toBe("tok");
+		expect(headers["anthropic-version"]).toBe("2023-06-01");
+		expect(headers.Authorization).toBeUndefined();
+	});
+
+	it("honors an explicit google-generative protocol for an undeclared provider", () => {
+		expect(
+			getProviderHeaders("db-only-provider", "tok", {
+				protocol: "google-generative",
+			}),
+		).toEqual({});
+	});
+
+	it("ignores the explicit protocol for a declared provider", () => {
+		expect(
+			getProviderHeaders("openai", "tok", { protocol: "anthropic-messages" }),
+		).toEqual({ Authorization: "Bearer tok" });
+	});
+});
