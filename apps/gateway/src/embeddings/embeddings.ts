@@ -46,6 +46,10 @@ import { createFailedKeyTracker } from "@/lib/failed-key-tracker.js";
 import { throwIamException, validateRequestModelAccess } from "@/lib/iam.js";
 import { calculateDataStorageCost, insertLog } from "@/lib/logs.js";
 import {
+	getCatalogModelResolutionContext,
+	resolveGatewayModelDefinition,
+} from "@/lib/model-resolution.js";
+import {
 	clientFacingUpstreamFailureMessage,
 	redactedProviderErrorText,
 	shouldRedactProviderError,
@@ -61,12 +65,12 @@ import { logger } from "@betarouter/logger";
 import {
 	getOrganizationEnvVariant,
 	getProviderEnvValue,
-	models as modelDefinitions,
 	resolveVertexTokenType,
 	type VertexTokenType,
 } from "@betarouter/models";
 
 import type { RoutingAttempt } from "@/chat/tools/retry-with-fallback.js";
+import type { CatalogModelResolutionContext } from "@/lib/model-resolution.js";
 import type { ServerTypes } from "@/vars.js";
 import type { RoutingMetadata } from "@betarouter/actions";
 import type {
@@ -226,7 +230,17 @@ function packFloat32Base64(values: number[]): string {
 	return Buffer.from(buffer).toString("base64");
 }
 
-function findEmbeddingMapping(modelId: string): {
+/**
+ * Resolve the embeddings model and its first embeddings-capable provider
+ * mapping. Resolution goes through the shared gateway resolver: static-array
+ * lookup by default, catalog-first when base reads are enabled, and a
+ * dual-resolve divergence log under shadow read — the same read-path
+ * inversion the chat surface uses. Exported for tests.
+ */
+export function findEmbeddingMapping(
+	modelId: string,
+	context: CatalogModelResolutionContext,
+): {
 	mapping: ProviderModelMapping;
 	modelDef: ModelDefinition;
 	modelDefId: string;
@@ -243,24 +257,28 @@ function findEmbeddingMapping(modelId: string): {
 		requestedProvider = modelId.slice(0, slashIdx);
 		modelKey = modelId.slice(slashIdx + 1);
 	}
-	for (const model of modelDefinitions) {
-		for (const mapping of model.providers) {
-			const candidate = mapping as ProviderModelMapping;
-			if (!candidate.embeddings) {
-				continue;
-			}
-			if (requestedProvider && candidate.providerId !== requestedProvider) {
-				continue;
-			}
-			if (model.id === modelKey) {
-				return {
-					mapping: candidate,
-					modelDef: model,
-					modelDefId: model.id,
-					explicitProvider: requestedProvider !== undefined,
-				};
-			}
+	const modelDef = resolveGatewayModelDefinition(
+		modelKey,
+		context,
+		requestedProvider,
+	);
+	if (!modelDef) {
+		return null;
+	}
+	for (const mapping of modelDef.providers) {
+		const candidate = mapping as ProviderModelMapping;
+		if (!candidate.embeddings) {
+			continue;
 		}
+		if (requestedProvider && candidate.providerId !== requestedProvider) {
+			continue;
+		}
+		return {
+			mapping: candidate,
+			modelDef,
+			modelDefId: modelDef.id,
+			explicitProvider: requestedProvider !== undefined,
+		};
 	}
 	return null;
 }
@@ -492,7 +510,10 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 		user,
 	} = validationResult.data;
 
-	const match = findEmbeddingMapping(requestedModel);
+	// One resolution context (and snapshot) serves the whole request, exactly
+	// like the chat path's read-path inversion.
+	const modelResolutionContext = await getCatalogModelResolutionContext();
+	const match = findEmbeddingMapping(requestedModel, modelResolutionContext);
 	if (!match) {
 		return c.json(
 			{
@@ -508,7 +529,7 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 	}
 
 	const {
-		mapping: legacyMapping,
+		mapping: resolvedMapping,
 		modelDef,
 		modelDefId,
 		explicitProvider,
@@ -516,11 +537,11 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 	const catalogDecision = await enforceCatalogRequest(
 		{
 			modelId: modelDefId,
-			providerId: explicitProvider ? legacyMapping.providerId : undefined,
-			region: explicitProvider ? legacyMapping.region : undefined,
+			providerId: explicitProvider ? resolvedMapping.providerId : undefined,
+			region: explicitProvider ? resolvedMapping.region : undefined,
 		},
 		{
-			operation: "deferred_non_chat",
+			operation: "embeddings",
 			setHeader: (name, value) => c.header(name, value),
 		},
 	);
@@ -528,7 +549,8 @@ embeddings.openapi(createEmbeddings, async (c): Promise<any> => {
 		modelDef.providers.filter(
 			(provider): provider is ProviderModelMapping =>
 				Boolean((provider as ProviderModelMapping).embeddings) &&
-				(!explicitProvider || provider.providerId === legacyMapping.providerId),
+				(!explicitProvider ||
+					provider.providerId === resolvedMapping.providerId),
 		),
 		catalogDecision,
 	);

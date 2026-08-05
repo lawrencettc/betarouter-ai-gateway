@@ -9,6 +9,7 @@ import {
 import { logger } from "@betarouter/logger";
 
 import type {
+	CatalogFeatureFlags,
 	CatalogRequestDecision,
 	CatalogRequestInput,
 	EffectiveMapping,
@@ -16,7 +17,7 @@ import type {
 import type { ProviderModelMapping } from "@betarouter/models";
 
 interface EnforceCatalogRequestOptions {
-	operation: "chat" | "deferred_non_chat";
+	operation: "chat" | "embeddings" | "deferred_non_chat";
 	setHeader?: (name: string, value: string) => void;
 }
 
@@ -40,7 +41,34 @@ export function isTenantCustomProviderId(
 export function isCatalogOperationEnabled(
 	operation: EnforceCatalogRequestOptions["operation"],
 ): boolean {
-	return operation === "chat";
+	return operation === "chat" || operation === "embeddings";
+}
+
+/**
+ * Whether catalog decisions are ENFORCED (throw/filter) for this operation,
+ * as opposed to only logged under shadow read. Chat enforces under the global
+ * routing flag alone; every later modality additionally needs its own flip so
+ * a deployment already enforcing chat does not start rejecting that
+ * modality's requests before the operator has activated its mappings
+ * (the launch boundary keeps non-chat mappings disabled in the catalog).
+ */
+export function isCatalogRoutingEnforcedForOperation(
+	operation: EnforceCatalogRequestOptions["operation"],
+	flags: Pick<
+		CatalogFeatureFlags,
+		"routingEnabled" | "embeddingsRoutingEnabled"
+	>,
+): boolean {
+	if (!flags.routingEnabled) {
+		return false;
+	}
+	if (operation === "chat") {
+		return true;
+	}
+	if (operation === "embeddings") {
+		return flags.embeddingsRoutingEnabled;
+	}
+	return false;
 }
 
 function perUnit(value: string | undefined): string | undefined {
@@ -182,7 +210,11 @@ export async function enforceCatalogRequest(
 		return null;
 	}
 	const flags = readCatalogFeatureFlags();
-	if (!flags.routingEnabled && !flags.shadowRead) {
+	const enforced = isCatalogRoutingEnforcedForOperation(
+		options.operation,
+		flags,
+	);
+	if (!enforced && !flags.shadowRead) {
 		return null;
 	}
 	const baseSnapshot = await getEffectiveCatalogSnapshot({
@@ -190,9 +222,7 @@ export async function enforceCatalogRequest(
 	});
 	const baseDecision = evaluateCatalogRequest(baseSnapshot, input);
 	const snapshot =
-		flags.routingEnabled &&
-		flags.breakerMode === "enforce" &&
-		baseDecision.allowed
+		enforced && flags.breakerMode === "enforce" && baseDecision.allowed
 			? await getEffectiveCatalogSnapshot({
 					breakerMappingIds: baseDecision.mappingIds,
 					claimBreakerProbes: true,
@@ -201,7 +231,8 @@ export async function enforceCatalogRequest(
 	const decision = evaluateCatalogRequest(snapshot, input);
 	if (flags.shadowRead) {
 		logger.info("Catalog routing decision", {
-			mode: flags.routingEnabled ? "enforce" : "shadow",
+			mode: enforced ? "enforce" : "shadow",
+			operation: options.operation,
 			revision: snapshot.revision,
 			modelId: input.modelId,
 			providerId: input.providerId,
@@ -212,7 +243,7 @@ export async function enforceCatalogRequest(
 				: { code: decision.code, status: decision.status }),
 		});
 	}
-	if (!flags.routingEnabled) {
+	if (!enforced) {
 		return null;
 	}
 	if (!decision.allowed) {

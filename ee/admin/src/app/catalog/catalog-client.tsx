@@ -1361,9 +1361,11 @@ export function CatalogClient({
 			);
 			return;
 		}
+		// The server derives the probe profile (minimal-chat / minimal-embeddings)
+		// from the model's output modalities.
 		const result = await api.POST("/admin/catalog/mappings/{id}/test", {
 			params: { path: { id: item.id } },
-			body: { credentialId: credential.id, testProfile: "minimal-chat" },
+			body: { credentialId: credential.id },
 		});
 		if (result.error) {
 			toast.error(message(result.error));

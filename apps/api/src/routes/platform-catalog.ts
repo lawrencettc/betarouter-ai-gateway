@@ -4,11 +4,15 @@ import { z } from "zod";
 
 import { platformAdminMiddleware } from "@/middleware/admin.js";
 
-import { validateProviderKey } from "@betarouter/actions";
+import {
+	validateProviderEmbeddings,
+	validateProviderKey,
+} from "@betarouter/actions";
 import { redisClient } from "@betarouter/cache";
 import {
 	applyCatalogOperations,
 	buildCatalogResolverInput,
+	catalogMappingProfileForOutputs,
 	catalogMappingTestProfile,
 	catalogOperationTargets,
 	catalogSourceInvariantBlockers,
@@ -1951,7 +1955,11 @@ platformCatalog.openapi(
 					"application/json": {
 						schema: z.object({
 							credentialId: z.string().min(1),
-							testProfile: z.literal("minimal-chat").default("minimal-chat"),
+							// Omitted → derived from the model's output modalities;
+							// an explicit value must match the derived profile.
+							testProfile: z
+								.enum(["minimal-chat", "minimal-embeddings"])
+								.optional(),
 						}),
 					},
 				},
@@ -2021,10 +2029,18 @@ platformCatalog.openapi(
 			.from(model)
 			.where(eq(model.id, mapping.modelId))
 			.limit(1);
-		if (!sourceModel?.output.includes("text")) {
+		const probeProfile = catalogMappingProfileForOutputs(
+			sourceModel?.output ?? [],
+		);
+		if (!probeProfile) {
 			throw new HTTPException(400, {
 				message:
-					"This launch supports mapping probes for text/chat models only. Keep this mapping disabled until its operation-specific probe profile is available.",
+					"Mapping probes exist for text/chat and embeddings models only. Keep this mapping disabled until its operation-specific probe profile is available.",
+			});
+		}
+		if (input.testProfile && input.testProfile !== probeProfile) {
+			throw new HTTPException(400, {
+				message: `Test profile ${input.testProfile} does not match this model's modality (expected ${probeProfile})`,
 			});
 		}
 		const currentPolicy = mappingPolicy[0];
@@ -2044,7 +2060,7 @@ platformCatalog.openapi(
 			credentialFingerprint: credential.tokenFingerprint,
 			baseUrl: credential.baseUrl,
 			credentialOptions: credential.options,
-			profile: input.testProfile,
+			profile: probeProfile,
 		});
 		const [run] = await db
 			.insert(platformMappingTestRun)
@@ -2071,18 +2087,33 @@ platformCatalog.openapi(
 				credential.id,
 				credential.provider,
 			);
-			const result = await validateProviderKey(
-				credential.provider as ProviderId,
-				token,
-				credential.baseUrl ?? undefined,
-				process.env.NODE_ENV === "test",
-				credential.options ?? undefined,
-				{
-					modelId: mapping.modelId,
-					externalId: currentPolicy?.externalIdOverride ?? mapping.externalId,
-					region: mapping.region,
-				},
-			);
+			const result =
+				probeProfile === "minimal-embeddings"
+					? await validateProviderEmbeddings(
+							credential.provider as ProviderId,
+							token,
+							credential.baseUrl ?? undefined,
+							process.env.NODE_ENV === "test",
+							credential.options ?? undefined,
+							{
+								externalId:
+									currentPolicy?.externalIdOverride ?? mapping.externalId,
+								region: mapping.region,
+							},
+						)
+					: await validateProviderKey(
+							credential.provider as ProviderId,
+							token,
+							credential.baseUrl ?? undefined,
+							process.env.NODE_ENV === "test",
+							credential.options ?? undefined,
+							{
+								modelId: mapping.modelId,
+								externalId:
+									currentPolicy?.externalIdOverride ?? mapping.externalId,
+								region: mapping.region,
+							},
+						);
 			status = result.valid ? "passed" : "failed";
 			upstreamStatus = result.statusCode ?? null;
 			errorClass = result.valid ? null : "upstream_validation_failed";
