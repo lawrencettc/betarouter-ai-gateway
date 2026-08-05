@@ -15,3 +15,4 @@ export * from "./source-operations.js";
 export * from "./runtime.js";
 export * from "./snapshot-cache.js";
 export * from "./test-target.js";
+export * from "./upstream-review.js";
