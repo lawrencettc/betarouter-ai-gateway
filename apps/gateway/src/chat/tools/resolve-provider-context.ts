@@ -153,6 +153,13 @@ export interface ProviderContextOptions {
 	providerCacheControlEnabled: boolean;
 	service_tier?: "auto" | "default" | "flex" | "priority";
 	verbosity?: "low" | "medium" | "high";
+	/**
+	 * The resolved pre-policy model definition for the request's canonical
+	 * model id (read-path inversion). Passed through to prepareRequestBody so
+	 * request shaping reads the same resolution the request was routed with
+	 * instead of doing its own static registry lookup.
+	 */
+	baseModelDefinition?: ModelDefinition;
 }
 
 interface ProjectInfo {
@@ -569,6 +576,10 @@ export async function resolveProviderContext(
 		usedInternalModel,
 		vertexTokenType,
 		envVariant,
+		undefined,
+		// Read-path inversion: the selected mapping drives externalId and
+		// capability checks instead of a fresh static registry lookup.
+		providerMappingForSelected,
 	);
 
 	if (!url) {
@@ -709,6 +720,8 @@ export async function resolveProviderContext(
 		options.verbosity,
 		options.prompt_cache_options,
 		options.session_id,
+		undefined,
+		options.baseModelDefinition,
 	);
 
 	// Post-validation of max_tokens in request body

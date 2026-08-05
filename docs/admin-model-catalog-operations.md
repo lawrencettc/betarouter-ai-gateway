@@ -26,10 +26,11 @@ plus these rollout flags:
 PLATFORM_CATALOG_SHADOW_READ=false
 PLATFORM_CATALOG_DISCOVERY_ENABLED=false
 PLATFORM_CATALOG_ROUTING_ENABLED=false
+PLATFORM_CATALOG_BASE_READ_ENABLED=false
 PLATFORM_CATALOG_BREAKER_MODE=off
 ```
 
-The production Compose file forwards all four flags to the unified service.
+The production Compose file forwards all five flags to the unified service.
 Do not enable a later stage in Git or the image; change the deployment secret
 file so emergency rollback remains independent of a new build.
 
@@ -182,18 +183,32 @@ health summaries without changing routes. Only after the observation window is
 clean set it to `enforce`, then exercise open, half-open, successful probes,
 close, and an operator reset backed by a current passing mapping test.
 
+### Stage 7: chat read-path inversion
+
+With `PLATFORM_CATALOG_SHADOW_READ=true`, the gateway dual-resolves chat-path
+model base data (capabilities, limits, source prices) from the catalog
+snapshot alongside the static arrays and logs any difference as
+`Catalog model resolution divergence` (field-level detail; pricing fields log
+as `Catalog model resolution pricing divergence` at error level). Require a
+clean soak covering at least two worker syncs, one cache refresh, and one
+restart. Any pricing divergence, by any amount, aborts the stage. Only then
+set `PLATFORM_CATALOG_BASE_READ_ENABLED=true`, which makes the snapshot the
+primary source for chat model resolution (static remains the fallback for
+revisions that predate the base-data mirror).
+
 ## Emergency rollback
 
 Apply the smallest safe rollback in this order:
 
 1. Set `PLATFORM_CATALOG_BREAKER_MODE=off`.
-2. Set `PLATFORM_CATALOG_ROUTING_ENABLED=false`.
-3. If discovery is affected, set
+2. Set `PLATFORM_CATALOG_BASE_READ_ENABLED=false`.
+3. Set `PLATFORM_CATALOG_ROUTING_ENABLED=false`.
+4. If discovery is affected, set
    `PLATFORM_CATALOG_DISCOVERY_ENABLED=false` and
    `PLATFORM_CATALOG_SHADOW_READ=false`.
-4. Use Admin rollback preview and audited inverse revision when the issue is an
+5. Use Admin rollback preview and audited inverse revision when the issue is an
    operator policy change.
-5. Redeploy the previous image when the application is faulty. Keep additive
+6. Redeploy the previous image when the application is faulty. Keep additive
    catalog tables and audit history.
 6. Restore the predeploy database backup only for proven data corruption and
    after recording an incident decision. A normal feature rollback does not

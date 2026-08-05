@@ -78,6 +78,11 @@ import {
 	insertLog as _insertLog,
 } from "@/lib/logs.js";
 import {
+	buildCatalogParseContext,
+	getCatalogModelResolutionContext,
+	resolveGatewayModelDefinition,
+} from "@/lib/model-resolution.js";
+import {
 	createSessionProviderStore,
 	getPreferredProvider,
 	resolvePreferredProvider,
@@ -1716,8 +1721,31 @@ chat.openapi(completions, async (c) => {
 	// Store the original llmgateway model ID for logging purposes
 	const initialRequestedModel = modelInput;
 
-	// Parse model input to resolve model, provider, and custom provider name
-	const parseResult = parseModelInput(modelInput);
+	// Chat read-path inversion: resolve model base data catalog-first when
+	// enabled, and dual-resolve with divergence logging under shadow read.
+	// One context (and snapshot) serves the whole request.
+	const modelResolutionContext = await getCatalogModelResolutionContext();
+	const lookupModelDefinition = (
+		modelId: string,
+		lookupRequestedProvider?: string,
+	) =>
+		resolveGatewayModelDefinition(
+			modelId,
+			modelResolutionContext,
+			lookupRequestedProvider,
+		);
+
+	// Parse model input to resolve model, provider, and custom provider name.
+	// The catalog existence context only extends what parsing accepts, so it
+	// is passed only once base reads are enabled — shadow mode must not change
+	// request outcomes.
+	const parseResult = parseModelInput(
+		modelInput,
+		undefined,
+		modelResolutionContext.baseReadEnabled && modelResolutionContext.snapshot
+			? buildCatalogParseContext(modelResolutionContext.snapshot)
+			: undefined,
+	);
 	const requestedModel = parseResult.requestedModel;
 	const customProviderName = parseResult.customProviderName;
 	const requestedRegion = parseResult.requestedRegion;
@@ -1750,6 +1778,7 @@ chat.openapi(completions, async (c) => {
 	const modelInfoResult = resolveModelInfo(
 		requestedModel,
 		parseResult.requestedProvider,
+		lookupModelDefinition,
 	);
 	const useExpandedRoutingProviders =
 		Boolean(modelInfoResult.requestedProvider) &&
@@ -3447,7 +3476,7 @@ chat.openapi(completions, async (c) => {
 			};
 		} else {
 			// Fallback case: look up the default model definition
-			const fallbackModelDef = models.find((m) => m.id === "claude-haiku-4-5");
+			const fallbackModelDef = lookupModelDefinition("claude-haiku-4-5");
 			if (fallbackModelDef) {
 				modelInfo = {
 					...fallbackModelDef,
@@ -3812,7 +3841,7 @@ chat.openapi(completions, async (c) => {
 				);
 
 				if (preferredCandidatesForRouting.length > 0) {
-					const rawModelForFallback = models.find((m) => m.id === baseModelId);
+					const rawModelForFallback = lookupModelDefinition(baseModelId);
 					const modelWithPricing = rawModelForFallback
 						? {
 								...rawModelForFallback,
@@ -4010,7 +4039,7 @@ chat.openapi(completions, async (c) => {
 				);
 
 				if (uptimeFallbackCandidates.length > 0) {
-					const rawModelForFallback = models.find((m) => m.id === baseModelId);
+					const rawModelForFallback = lookupModelDefinition(baseModelId);
 					const modelWithPricing = rawModelForFallback
 						? {
 								...rawModelForFallback,
@@ -4320,9 +4349,7 @@ chat.openapi(completions, async (c) => {
 				providersWithKeys,
 			);
 
-			const rawModelWithPricing = models.find(
-				(m) => m.id === usedInternalModel,
-			);
+			const rawModelWithPricing = lookupModelDefinition(usedInternalModel);
 			const modelWithPricing = rawModelWithPricing
 				? {
 						...rawModelWithPricing,
@@ -4711,11 +4738,17 @@ chat.openapi(completions, async (c) => {
 			],
 		};
 	} else {
-		const rawFinalModelInfo = models.find(
-			(m) =>
-				m.id === usedInternalModel &&
-				m.providers.some((p) => p.providerId === usedProvider),
+		const lookedUpFinalModelInfo = lookupModelDefinition(
+			usedInternalModel,
+			usedProvider,
 		);
+		// Preserve the historical contract: only accept a definition that
+		// actually carries the used provider.
+		const rawFinalModelInfo = lookedUpFinalModelInfo?.providers.some(
+			(p) => p.providerId === usedProvider,
+		)
+			? lookedUpFinalModelInfo
+			: undefined;
 		if (rawFinalModelInfo) {
 			finalModelInfo = {
 				...rawFinalModelInfo,
@@ -5507,6 +5540,10 @@ chat.openapi(completions, async (c) => {
 			usedInternalModel,
 			resolveActiveVertexTokenType(),
 			envVariant,
+			undefined,
+			// Read-path inversion: the routed mapping drives externalId and
+			// capability checks instead of a fresh static registry lookup.
+			getUsedProviderMapping(),
 		);
 
 		// If region is still unset but the provider supports regions, resolve the
@@ -6404,6 +6441,9 @@ chat.openapi(completions, async (c) => {
 			prompt_cache_options,
 			sessionId,
 			reasoning_context,
+			// Read-path inversion: hand the resolved (pre-policy) definition to
+			// request shaping instead of a fresh static registry lookup.
+			lookupModelDefinition(usedInternalModel),
 		);
 	} catch (e) {
 		// Surface typed pre-upstream input errors in the activity feed as a
@@ -6614,6 +6654,9 @@ chat.openapi(completions, async (c) => {
 				providerCacheControlEnabled,
 				service_tier,
 				verbosity,
+				baseModelDefinition: modelInfo.id
+					? lookupModelDefinition(modelInfo.id)
+					: undefined,
 			},
 		);
 	}

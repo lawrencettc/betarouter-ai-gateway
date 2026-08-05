@@ -8,6 +8,7 @@ describe("readCatalogFeatureFlags", () => {
 			shadowRead: false,
 			discoveryEnabled: false,
 			routingEnabled: false,
+			baseReadEnabled: false,
 			breakerMode: "off",
 		});
 	});
@@ -18,12 +19,14 @@ describe("readCatalogFeatureFlags", () => {
 				PLATFORM_CATALOG_SHADOW_READ: "true",
 				PLATFORM_CATALOG_DISCOVERY_ENABLED: "true",
 				PLATFORM_CATALOG_ROUTING_ENABLED: "1",
+				PLATFORM_CATALOG_BASE_READ_ENABLED: "true",
 				PLATFORM_CATALOG_BREAKER_MODE: "observe",
 			}),
 		).toEqual({
 			shadowRead: true,
 			discoveryEnabled: true,
 			routingEnabled: true,
+			baseReadEnabled: true,
 			breakerMode: "observe",
 		});
 	});

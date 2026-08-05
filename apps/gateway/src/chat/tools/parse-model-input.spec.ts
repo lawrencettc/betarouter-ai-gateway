@@ -82,3 +82,73 @@ describe("parseModelInput platform provider resolution", () => {
 		expect(result.platformProviderId).toBeUndefined();
 	});
 });
+
+describe("parseModelInput catalog context (read-path inversion)", () => {
+	const catalog = {
+		modelIds: new Set(["snapshot-only-model"]),
+		providerIdsByModel: new Map([
+			["snapshot-only-model", new Set(["openai"])],
+			["gpt-4o-mini", new Set(["anthropic"])],
+		]),
+	};
+
+	it("accepts a bare model id known only to the catalog", () => {
+		expect(() => parseModelInput("snapshot-only-model")).toThrow();
+		const result = parseModelInput("snapshot-only-model", undefined, catalog);
+		expect(result.requestedModel).toBe("snapshot-only-model");
+		expect(result.requestedProvider).toBeUndefined();
+	});
+
+	it("accepts a provider/model pair known only to the catalog", () => {
+		expect(() => parseModelInput("openai/snapshot-only-model")).toThrow();
+		const result = parseModelInput(
+			"openai/snapshot-only-model",
+			undefined,
+			catalog,
+		);
+		expect(result.requestedProvider).toBe("openai");
+		expect(result.requestedModel).toBe("snapshot-only-model");
+	});
+
+	it("extends a static model with a catalog-only provider pair", () => {
+		expect(() => parseModelInput("anthropic/gpt-4o-mini")).toThrow();
+		const result = parseModelInput("anthropic/gpt-4o-mini", undefined, catalog);
+		expect(result.requestedProvider).toBe("anthropic");
+		expect(result.requestedModel).toBe("gpt-4o-mini");
+	});
+
+	it("still rejects pairs unknown to both sources", () => {
+		expect(() =>
+			parseModelInput("anthropic/snapshot-only-model", undefined, catalog),
+		).toThrow();
+		expect(() =>
+			parseModelInput("definitely-not-a-model", undefined, catalog),
+		).toThrow();
+	});
+});
+
+describe("resolveModelInfo lookup hook (read-path inversion)", () => {
+	it("resolves through the provided hook instead of the static array", () => {
+		const hooked = {
+			id: "snapshot-only-model",
+			family: "openai",
+			providers: [
+				{
+					providerId: "openai" as const,
+					externalId: "snapshot-only-upstream",
+					streaming: true,
+				},
+			],
+		};
+		const result = resolveModelInfo(
+			"snapshot-only-model" as Parameters<typeof resolveModelInfo>[0],
+			undefined,
+			(modelId) => (modelId === "snapshot-only-model" ? hooked : undefined),
+		);
+		expect(result.modelInfo.id).toBe("snapshot-only-model");
+		expect(result.activeProviders).toHaveLength(1);
+		expect(result.activeProviders[0]?.externalId).toBe(
+			"snapshot-only-upstream",
+		);
+	});
+});

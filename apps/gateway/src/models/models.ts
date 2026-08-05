@@ -5,8 +5,10 @@ import {
 	applyCatalogCustomerPrices,
 	findProviderMappingForCatalogMapping,
 } from "@/lib/catalog-policy.js";
+import { resolveGatewayModelDefinition } from "@/lib/model-resolution.js";
 
 import {
+	catalogSnapshotHasBaseData,
 	getEffectiveCatalogSnapshot,
 	readCatalogFeatureFlags,
 } from "@betarouter/catalog";
@@ -217,11 +219,57 @@ modelsApi.openapi(listModels, async (c) => {
 		const catalogModelById = new Map(
 			(catalogSnapshot?.models ?? []).map((model) => [model.id, model]),
 		);
+		// Read-path inversion context: with base reads enabled the snapshot is
+		// the primary source of model base data; with shadow read only, static
+		// keeps serving while every visible model is dual-resolved and any
+		// divergence is logged for the rollout soak.
+		const modelResolutionContext = {
+			snapshot:
+				catalogSnapshot && catalogSnapshotHasBaseData(catalogSnapshot)
+					? catalogSnapshot
+					: null,
+			baseReadEnabled: catalogFlags.baseReadEnabled,
+			shadowRead: catalogFlags.shadowRead,
+		};
 		const catalogModels: ModelDefinition[] =
 			catalogFlags.discoveryEnabled && catalogSnapshot
-				? modelsList
-						.filter((model) => visibleModelIds.has(model.id))
-						.map((model) => {
+				? (() => {
+						const visibleStatic = modelsList.filter((model) =>
+							visibleModelIds.has(model.id),
+						);
+						const staticIds = new Set<string>(
+							modelsList.map((model) => model.id),
+						);
+						// Models the snapshot knows but the static array does not
+						// (admin-created or newer than this deploy) become listable
+						// once base reads are enabled.
+						const catalogOnlyVisible =
+							catalogFlags.baseReadEnabled && modelResolutionContext.snapshot
+								? catalogSnapshot.models.filter(
+										(model) =>
+											visibleModelIds.has(model.id) && !staticIds.has(model.id),
+									)
+								: [];
+						const baseDefinitions: ModelDefinition[] = [
+							...visibleStatic.map((model) => {
+								// Dual-resolve for the shadow soak even while static serves.
+								const resolved = resolveGatewayModelDefinition(
+									model.id,
+									modelResolutionContext,
+								);
+								return catalogFlags.baseReadEnabled
+									? (resolved ?? (model as ModelDefinition))
+									: (model as ModelDefinition);
+							}),
+							...catalogOnlyVisible.flatMap((model) => {
+								const resolved = resolveGatewayModelDefinition(
+									model.id,
+									modelResolutionContext,
+								);
+								return resolved ? [resolved] : [];
+							}),
+						];
+						return baseDefinitions.map((model) => {
 							const effectiveMappings = catalogSnapshot.mappings.filter(
 								(mapping) =>
 									mapping.modelId === model.id && mapping.displayable,
@@ -238,7 +286,8 @@ modelsApi.openapi(listModels, async (c) => {
 										: [];
 								}),
 							};
-						})
+						});
+					})()
 				: [...modelsList];
 		if (catalogSnapshot && catalogFlags.shadowRead) {
 			logger.info("Catalog /v1/models shadow comparison", {

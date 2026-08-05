@@ -7,6 +7,7 @@ export * from "./catalog-store.js";
 export * from "./change-set.js";
 export * from "./contracts.js";
 export * from "./flags.js";
+export * from "./model-resolution.js";
 export * from "./pricing.js";
 export * from "./request-policy.js";
 export * from "./runtime.js";

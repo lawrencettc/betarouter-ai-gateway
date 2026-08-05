@@ -184,6 +184,11 @@ function getGoogleGenerateContentEndpoint(
  * @param protocol - Wire protocol for providers outside the static catalogue
  *   (database-defined providers). Ignored when the provider id has a declared
  *   protocol in code.
+ * @param selectedProviderMapping - The mapping already resolved for this
+ *   request (read-path inversion). When provided, the static registry lookup
+ *   is skipped entirely: this mapping's externalId and capabilities drive the
+ *   endpoint, so catalog-resolved mappings cannot be clobbered by stale
+ *   static data.
  */
 export function getProviderEndpoint(
 	provider: ProviderId | string,
@@ -202,10 +207,12 @@ export function getProviderEndpoint(
 	vertexTokenType?: VertexTokenType,
 	variant?: EnvVarVariant,
 	protocol?: ProviderProtocol,
+	selectedProviderMapping?: ProviderModelMapping,
 ): string {
 	let externalId = model;
-	let providerMapping: ProviderModelMapping | undefined;
-	if (model && model !== "custom") {
+	let providerMapping: ProviderModelMapping | undefined =
+		selectedProviderMapping;
+	if (!providerMapping && model && model !== "custom") {
 		const modelInfo = models.find((m) => m.id === (modelId ?? model));
 		if (modelInfo) {
 			const expandedProviderMappings = expandAllProviderRegions(
@@ -221,10 +228,10 @@ export function getProviderEndpoint(
 					(p) => p.providerId === provider && !p.region,
 				) ??
 				expandedProviderMappings.find((p) => p.providerId === provider);
-			if (providerMapping) {
-				externalId = providerMapping.externalId;
-			}
 		}
+	}
+	if (providerMapping && model && model !== "custom") {
+		externalId = providerMapping.externalId;
 	}
 	let url: string | undefined;
 
@@ -700,18 +707,12 @@ export function getProviderEndpoint(
 					variant,
 				);
 
-				if (model && useResponsesApiEnv !== "false") {
-					const modelDef = models.find((m) => m.id === (modelId ?? model));
-					const providerMapping = modelDef?.providers.find(
-						(p) => p.providerId === "azure",
-					);
-					const supportsResponsesApi =
-						(providerMapping as ProviderModelMapping)?.supportsResponsesApi ===
-						true;
-
-					if (supportsResponsesApi) {
-						return `${url}/openai/v1/responses?api-version=preview`;
-					}
+				if (
+					model &&
+					useResponsesApiEnv !== "false" &&
+					providerMapping?.supportsResponsesApi === true
+				) {
+					return `${url}/openai/v1/responses?api-version=preview`;
 				}
 				return `${url}/openai/v1/chat/completions`;
 			}
@@ -734,18 +735,8 @@ export function getProviderEndpoint(
 				return `${url}/v1/images/generations`;
 			}
 			// Use responses endpoint for models that support responses API
-			if (model) {
-				const modelDef = models.find((m) => m.id === (modelId ?? model));
-				const providerMapping = modelDef?.providers.find(
-					(p) => p.providerId === "openai",
-				);
-				const supportsResponsesApi =
-					(providerMapping as ProviderModelMapping)?.supportsResponsesApi ===
-					true;
-
-				if (supportsResponsesApi) {
-					return `${url}/v1/responses`;
-				}
+			if (model && providerMapping?.supportsResponsesApi === true) {
+				return `${url}/v1/responses`;
 			}
 			return `${url}/v1/chat/completions`;
 		}
@@ -777,35 +768,16 @@ export function getProviderEndpoint(
 			// completion. So use the Responses API only for non-streaming requests
 			// (where reasoning matters and chunking doesn't); stream over the Chat
 			// Completions endpoint, which emits incremental content deltas.
-			if (!stream && model) {
-				const modelDef = models.find((m) => m.id === (modelId ?? model));
-				const providerMapping = modelDef?.providers.find(
-					(p) => p.providerId === "sakana",
-				);
-				const supportsResponsesApi =
-					(providerMapping as ProviderModelMapping)?.supportsResponsesApi ===
-					true;
-				if (supportsResponsesApi) {
-					return `${url}/v1/responses`;
-				}
+			if (!stream && model && providerMapping?.supportsResponsesApi === true) {
+				return `${url}/v1/responses`;
 			}
 			return `${url}/v1/chat/completions`;
 		}
 		case "meta": {
 			// Muse Spark only exposes reasoning (as summaries) through the
 			// Responses API — Chat Completions redacts reasoning_content entirely.
-			if (model) {
-				const modelDef = models.find((m) => m.id === (modelId ?? model));
-				const providerMapping = modelDef?.providers.find(
-					(p) => p.providerId === "meta",
-				);
-				const supportsResponsesApi =
-					(providerMapping as ProviderModelMapping)?.supportsResponsesApi ===
-					true;
-
-				if (supportsResponsesApi) {
-					return `${url}/v1/responses`;
-				}
+			if (model && providerMapping?.supportsResponsesApi === true) {
+				return `${url}/v1/responses`;
 			}
 			return `${url}/v1/chat/completions`;
 		}
