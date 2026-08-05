@@ -708,6 +708,12 @@ describe("sync-models", () => {
 	// the mapping at the configured prices, with no code change and no deploy.
 	it("serves the relay scenario end to end through change sets", async () => {
 		await syncProvidersAndModels();
+		// Credentials have no FK to the provider table, so a relay credential
+		// from a previous suite run survives the table cleanup above and would
+		// make the draft-stage admission assertions pass vacuously.
+		await db
+			.delete(platformProviderCredential)
+			.where(eq(platformProviderCredential.provider, "acme-relay"));
 		const relayMappingId = adminMappingId({
 			modelId: "gpt-5.5",
 			providerId: "acme-relay",
