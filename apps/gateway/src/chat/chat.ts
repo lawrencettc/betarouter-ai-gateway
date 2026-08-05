@@ -1738,14 +1738,24 @@ chat.openapi(completions, async (c) => {
 	// Parse model input to resolve model, provider, and custom provider name.
 	// The catalog existence context only extends what parsing accepts, so it
 	// is passed only once base reads are enabled — shadow mode must not change
-	// request outcomes.
-	const parseResult = parseModelInput(
-		modelInput,
-		undefined,
+	// request outcomes. The same gate covers database-defined platform
+	// provider ids (admin-created providers, e.g. relays): without them a
+	// matching prefix parses as a tenant custom provider.
+	const catalogParseContext =
 		modelResolutionContext.baseReadEnabled && modelResolutionContext.snapshot
 			? buildCatalogParseContext(modelResolutionContext.snapshot)
-			: undefined,
+			: undefined;
+	const parseResult = parseModelInput(
+		modelInput,
+		catalogParseContext?.platformProviderIds,
+		catalogParseContext,
 	);
+	// A database-defined platform provider is pinned exactly like a static
+	// one: its id is only outside the compile-time union, never outside the
+	// catalog, and all downstream selection compares provider ids as strings.
+	const parsedRequestedProvider =
+		parseResult.requestedProvider ??
+		(parseResult.platformProviderId as Provider | undefined);
 	const requestedModel = parseResult.requestedModel;
 	const customProviderName = parseResult.customProviderName;
 	const requestedRegion = parseResult.requestedRegion;
@@ -1755,9 +1765,9 @@ chat.openapi(completions, async (c) => {
 			// "custom" is forwarded verbatim so enforceCatalogRequest can exempt
 			// tenant-owned BYOK providers, which the platform catalogue never lists.
 			providerId:
-				parseResult.requestedProvider === "llmgateway"
+				parsedRequestedProvider === "llmgateway"
 					? undefined
-					: parseResult.requestedProvider,
+					: parsedRequestedProvider,
 			region: requestedRegion,
 		},
 		{
@@ -1777,7 +1787,7 @@ chat.openapi(completions, async (c) => {
 	// Resolve model info and filter deactivated providers
 	const modelInfoResult = resolveModelInfo(
 		requestedModel,
-		parseResult.requestedProvider,
+		parsedRequestedProvider,
 		lookupModelDefinition,
 	);
 	const useExpandedRoutingProviders =

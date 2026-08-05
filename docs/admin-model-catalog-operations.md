@@ -196,6 +196,45 @@ set `PLATFORM_CATALOG_BASE_READ_ENABLED=true`, which makes the snapshot the
 primary source for chat model resolution (static remains the fallback for
 revisions that predate the base-data mirror).
 
+### Stage 8: source authority (create and edit operations)
+
+No flag gates this stage; it ships as new change-set operations that only take
+effect through applied revisions.
+
+Creating a provider without a deploy (the relay flow, in order):
+
+1. `provider.create` (declares an existing protocol, e.g. `openai-chat`) plus
+   `mapping.create` against existing root models in one change set. Created
+   entries land as `source='admin'` with draft, disabled policies — they are
+   invisible and unroutable until every admission gate passes.
+2. Attach a platform credential (its base URL is the relay endpoint) through
+   the credential API and run the mapping test from the console; the passed
+   test is fingerprint-bound to that exact credential configuration.
+3. Set a price policy (fixed policies use the V2 shape, which can price
+   `cacheRead`, `cachedImageInput`, `cachedAudioInput`, and `audioInput`
+   independently; stored V1 policies keep their aliasing) and enable the
+   mapping, provider, and model policies.
+
+Admin-created providers carry no compliance attestations (`dataPolicy`,
+`headquarters` stay code-only), so compliance-gated organizations exclude
+them automatically. The worker sync never writes `source='admin'` rows; if
+code later ships a mapping for a slot an admin mapping occupies, the sync
+logs `Skipping sync for admin-owned mapping slot` and the admin row keeps
+serving until it is retired.
+
+Editing code-defined (static) entries uses `*.set_source_override` /
+`*.clear_source_override`: the mirror row is never mutated — the override is
+a per-field patch stored on the policy row, composed as
+`mirror → override → policy → price → breaker`, and it records the mirrored
+value at set-time for the upstream-change review. Values use mirror units
+(per-token `e-6` price strings, exactly the code catalogue's notation).
+Clearing an override instantly reverts to upstream truth. NOTE: while a
+source override is active, Stage 7 shadow logging reports an expected
+divergence between the static array and the snapshot for the overridden
+field — the zero-divergence soak interpretation applies to the pre-override
+world, so flip `PLATFORM_CATALOG_BASE_READ_ENABLED` before relying on
+overrides, or account for them when reading the soak.
+
 ## Emergency rollback
 
 Apply the smallest safe rollback in this order:
@@ -207,10 +246,12 @@ Apply the smallest safe rollback in this order:
    `PLATFORM_CATALOG_DISCOVERY_ENABLED=false` and
    `PLATFORM_CATALOG_SHADOW_READ=false`.
 5. Use Admin rollback preview and audited inverse revision when the issue is an
-   operator policy change.
+   operator policy change. The inverse of a creation retires the created
+   entry (no catalog row is ever hard-deleted); the inverse of a source
+   override restores the previous override values.
 6. Redeploy the previous image when the application is faulty. Keep additive
    catalog tables and audit history.
-6. Restore the predeploy database backup only for proven data corruption and
+7. Restore the predeploy database backup only for proven data corruption and
    after recording an incident decision. A normal feature rollback does not
    require schema reversal.
 

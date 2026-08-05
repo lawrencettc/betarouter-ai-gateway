@@ -80,6 +80,17 @@ export interface FixedPricesV1Input {
 	perSecondByResolution?: Record<string, string>;
 }
 
+export interface FixedPricesV2Input extends Omit<
+	FixedPricesV1Input,
+	"version"
+> {
+	version: 2;
+	cacheReadPerMillionTokens?: string;
+	cachedImageInputPerMillionTokens?: string;
+	cachedAudioInputPerMillionTokens?: string;
+	audioInputPerMillionTokens?: string;
+}
+
 export interface ResolvedMappingPrice {
 	ready: boolean;
 	customerPrices: PriceMap;
@@ -217,6 +228,38 @@ export function fixedPricesV1ToPriceMap(fixed: FixedPricesV1Input): PriceMap {
 			]),
 		),
 	};
+}
+
+/**
+ * V2 keeps V1's aliasing as the fallback (a policy without the independent
+ * fields behaves exactly like its V1 equivalent) while letting each aliased
+ * unit be priced on its own: explicit `cacheRead`/`cachedImageInput`/
+ * `cachedAudioInput`/`audioInput` values take precedence over the alias.
+ */
+export function fixedPricesV2ToPriceMap(fixed: FixedPricesV2Input): PriceMap {
+	const audioInput =
+		fixed.audioInputPerMillionTokens ?? fixed.inputPerMillionTokens;
+	const cacheRead =
+		fixed.cacheReadPerMillionTokens ?? fixed.cachedInputPerMillionTokens;
+	const cachedImageInput =
+		fixed.cachedImageInputPerMillionTokens ?? fixed.cachedInputPerMillionTokens;
+	const cachedAudioInput =
+		fixed.cachedAudioInputPerMillionTokens ?? fixed.cachedInputPerMillionTokens;
+	return {
+		...fixedPricesV1ToPriceMap({ ...fixed, version: 1 }),
+		...(audioInput !== undefined && { audioInput }),
+		...(cacheRead !== undefined && { cacheRead }),
+		...(cachedImageInput !== undefined && { cachedImageInput }),
+		...(cachedAudioInput !== undefined && { cachedAudioInput }),
+	};
+}
+
+export function fixedPricesToPriceMap(
+	fixed: FixedPricesV1Input | FixedPricesV2Input,
+): PriceMap {
+	return fixed.version === 2
+		? fixedPricesV2ToPriceMap(fixed)
+		: fixedPricesV1ToPriceMap(fixed);
 }
 
 export function resolveMappingPrice(

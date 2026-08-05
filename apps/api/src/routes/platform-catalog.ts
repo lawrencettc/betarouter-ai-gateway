@@ -8,23 +8,25 @@ import { validateProviderKey } from "@betarouter/actions";
 import { redisClient } from "@betarouter/cache";
 import {
 	applyCatalogOperations,
+	buildCatalogResolverInput,
 	catalogMappingTestProfile,
-	catalogCredentialConfigurationProfile,
+	catalogOperationTargets,
+	catalogSourceInvariantBlockers,
+	catalogSourceLookupFromRows,
 	compareCatalogRevision,
+	environmentCredentialAvailable,
 	findCatalogRoutabilityLosses,
 	catalogChangeSetInputSchema,
 	normalizePersistedInverseOperations,
-	fixedPricesV1ToPriceMap,
 	getCatalogBreakerStates,
 	getCatalogRevisionStatus,
 	mappingPolicyPatchSchema,
 	mappingPricePolicySchema,
+	persistSourceCreates,
 	publishCatalogRevisionInvalidation,
 	refreshCatalogRevisionFromSource,
 	resolveEffectiveCatalog,
-	resolveMappingPrice,
 	resetCatalogBreaker,
-	sourceMappingPricesToPriceMap,
 	validateCatalogActivation,
 } from "@betarouter/catalog";
 import {
@@ -53,7 +55,6 @@ import {
 	sql,
 	videoJob,
 } from "@betarouter/db";
-import { getProviderEnvConfig, getProviderEnvVar } from "@betarouter/models";
 
 import type { ServerTypes } from "@/vars.js";
 import type {
@@ -61,14 +62,11 @@ import type {
 	CatalogOperationV1,
 	CatalogPolicyState,
 	CatalogRevisionStatus,
+	CatalogSourceCreate,
 	EffectiveCatalog,
-	MappingPolicy,
-	ModelPolicy,
-	ProviderPolicy,
-	ResolvedMappingPrice,
 } from "@betarouter/catalog";
 import type { PlatformCatalogOperationV1 } from "@betarouter/db";
-import type { Provider, ProviderId } from "@betarouter/models";
+import type { ProviderId } from "@betarouter/models";
 
 const platformCatalog = new OpenAPIHono<ServerTypes>();
 platformCatalog.use("/*", platformAdminMiddleware);
@@ -243,115 +241,6 @@ const catalogRevisionStatusSchema = z.object({
 	currentCounts: catalogRevisionCountsSchema,
 });
 
-function environmentCredentialAvailable(providerId: string): boolean {
-	const envVar = getProviderEnvVar(providerId as Provider);
-	if (!envVar || !process.env[envVar]?.trim()) {
-		return false;
-	}
-	const required = getProviderEnvConfig(providerId as Provider)?.required;
-	return Object.entries(required ?? {}).every(
-		([key, variable]) =>
-			key === "apiKey" || !variable || Boolean(process.env[variable]?.trim()),
-	);
-}
-
-function toProviderPolicy(
-	row: typeof platformProviderPolicy.$inferSelect,
-): ProviderPolicy {
-	return {
-		providerId: row.providerId,
-		visible: row.visible,
-		enabled: row.enabled,
-		lifecycle: row.lifecycle as CatalogLifecycle,
-		deprecatedAt: row.deprecatedAt,
-		retireAt: row.retireAt,
-	};
-}
-
-function toModelPolicy(
-	row: typeof platformModelPolicy.$inferSelect,
-): ModelPolicy {
-	return {
-		modelId: row.modelId,
-		visible: row.visible,
-		enabled: row.enabled,
-		allowDirect: row.allowDirect,
-		lifecycle: row.lifecycle as CatalogLifecycle,
-		deprecatedAt: row.deprecatedAt,
-		retireAt: row.retireAt,
-		replacementModelId: row.replacementModelId,
-		retirementMessage: row.retirementMessage,
-	};
-}
-
-function toMappingPolicy(
-	row: typeof platformMappingPolicy.$inferSelect,
-): MappingPolicy {
-	return {
-		mappingId: row.mappingId,
-		enabled: row.enabled,
-		priority: row.priority,
-		weight: row.weight,
-		breakerEnabled: row.breakerEnabled,
-		externalIdOverride: row.externalIdOverride,
-		contextSizeLimit: row.contextSizeLimit,
-		maxOutputLimit: row.maxOutputLimit,
-		disabledCapabilities:
-			mappingPolicyPatchSchema.shape.disabledCapabilities.parse(
-				row.disabledCapabilities,
-			),
-	};
-}
-
-function resolvePricePolicy(
-	mapping: typeof modelProviderMapping.$inferSelect,
-	policy: CatalogPolicyState["prices"][string]["policy"] | undefined,
-): ResolvedMappingPrice & {
-	sourcePrices: ReturnType<typeof sourceMappingPricesToPriceMap>;
-	pricingMode: "source_cost" | "markup" | "fixed" | null;
-	markupBps: number | null;
-} {
-	const sourcePrices = sourceMappingPricesToPriceMap(mapping);
-	if (!policy) {
-		return {
-			ready: false,
-			sourcePrices,
-			customerPrices: {},
-			margin: {},
-			missingUnits: [],
-			invalidUnits: [],
-			negativeMarginUnits: [],
-			pricingMode: null,
-			markupBps: null,
-		};
-	}
-	const resolved = resolveMappingPrice({
-		sourcePrices,
-		policy:
-			policy.mode === "fixed"
-				? {
-						mode: "fixed",
-						fixedPrices: fixedPricesV1ToPriceMap(policy.fixedPrices),
-						allowNegativeMargin: policy.allowNegativeMargin,
-						negativeMarginReason: policy.negativeMarginReason,
-					}
-				: policy.mode === "markup"
-					? {
-							mode: "markup",
-							markupBps: policy.markupBps,
-							allowNegativeMargin: policy.allowNegativeMargin,
-							negativeMarginReason: policy.negativeMarginReason,
-						}
-					: { mode: "source_cost" },
-	});
-	return {
-		...resolved,
-		sourcePrices,
-		pricingMode: policy.mode,
-		markupBps: policy.mode === "markup" ? policy.markupBps : null,
-	};
-}
-
 export function serializeMappingPricePolicy(
 	pricePolicy: typeof platformMappingPricePolicy.$inferSelect,
 ) {
@@ -456,30 +345,8 @@ async function loadCatalogView(): Promise<{
 			.limit(1),
 	]);
 	const credentialProviders = new Set(credentials.map((item) => item.provider));
-	const priceMappingIds = new Set(pricePolicies.map((item) => item.mappingId));
-	const pricePolicyById = new Map(
-		pricePolicies.map((row) => {
-			const rawPolicy = {
-				mode: row.mode,
-				currency: row.currency,
-				...(row.markupBps === null ? {} : { markupBps: row.markupBps }),
-				...(row.fixedPrices === null ? {} : { fixedPrices: row.fixedPrices }),
-				allowNegativeMargin: row.allowNegativeMargin,
-				...(row.negativeMarginReason
-					? { negativeMarginReason: row.negativeMarginReason }
-					: {}),
-			};
-			return [
-				row.mappingId,
-				mappingPricePolicySchema.parse(rawPolicy),
-			] as const;
-		}),
-	);
 	const passedTests = new Set(
 		tests.map((item) => `${item.mappingId}:${item.testProfile}`),
-	);
-	const mappingPolicyById = new Map(
-		mappingPolicies.map((item) => [item.mappingId, item]),
 	);
 	const credentialAvailability = Object.fromEntries(
 		sourceProviders.map((item) => [
@@ -488,100 +355,22 @@ async function loadCatalogView(): Promise<{
 				environmentCredentialAvailable(item.id),
 		]),
 	);
-	const snapshot = resolveEffectiveCatalog({
-		revision: latestRevisions[0]?.id ?? 0,
-		now: new Date(),
-		providers: sourceProviders.map((item) => ({
-			id: item.id,
-			status: item.status,
-		})),
-		models: sourceModels.map((item) => ({
-			id: item.id,
-			status: item.status,
-			name: item.name,
-			family: item.family,
-			aliases: item.aliases,
-			output: item.output,
-			free: item.free,
-		})),
-		mappings: sourceMappings.map((item) => ({
-			id: item.id,
-			providerId: item.providerId,
-			modelId: item.modelId,
-			status: item.status,
-			externalId: item.externalId,
-			region: item.region,
-			deprecatedAt: item.deprecatedAt,
-			deactivatedAt: item.deactivatedAt,
-			contextSize: item.contextSize,
-			maxOutput: item.maxOutput,
-			streaming: item.streaming,
-			vision: item.vision,
-			reasoning: item.reasoning,
-			reasoningMaxTokens: item.reasoningMaxTokens,
-			tools: item.tools,
-			jsonOutput: item.jsonOutput,
-			jsonOutputSchema: item.jsonOutputSchema,
-			webSearch: item.webSearch,
-			supportedParameters: item.supportedParameters,
-			pricingTiers: item.pricingTiers,
-			serviceTierMultipliers: item.serviceTierMultipliers,
-		})),
-		providerPolicies: providerPolicies.map(toProviderPolicy),
-		modelPolicies: modelPolicies.map(toModelPolicy),
-		mappingPolicies: mappingPolicies.map(toMappingPolicy),
-		providerCredentialAvailability: credentialAvailability,
-		mappingReadiness: Object.fromEntries(
-			sourceMappings.map((item) => {
-				const mappingPolicy = mappingPolicyById.get(item.id);
-				const testedCredential = credentials
-					.filter((credential) => credential.provider === item.providerId)
-					.sort(
-						(left, right) =>
-							left.priority - right.priority || left.id.localeCompare(right.id),
-					)
-					.find((credential) => {
-						const profile = catalogMappingTestProfile({
-							mappingId: item.id,
-							providerId: item.providerId,
-							region: item.region,
-							externalId: mappingPolicy?.externalIdOverride ?? item.externalId,
-							contextSizeLimit: mappingPolicy?.contextSizeLimit,
-							maxOutputLimit: mappingPolicy?.maxOutputLimit,
-							disabledCapabilities: mappingPolicy?.disabledCapabilities,
-							credentialId: credential.id,
-							credentialFingerprint: credential.tokenFingerprint,
-							baseUrl: credential.baseUrl,
-							credentialOptions: credential.options,
-						});
-						return passedTests.has(`${item.id}:${profile}`);
-					});
-				const prices = resolvePricePolicy(item, pricePolicyById.get(item.id));
-				return [
-					item.id,
-					{
-						priceReady: priceMappingIds.has(item.id) && prices.ready,
-						testPassed: testedCredential !== undefined,
-						platformCredentialId: testedCredential?.id ?? null,
-						platformCredentialProfile: testedCredential
-							? catalogCredentialConfigurationProfile({
-									credentialId: testedCredential.id,
-									credentialFingerprint: testedCredential.tokenFingerprint,
-									baseUrl: testedCredential.baseUrl,
-									credentialOptions: testedCredential.options,
-								})
-							: null,
-						sourcePrices: prices.sourcePrices,
-						customerPrices: prices.customerPrices,
-						margin: prices.margin,
-						pricingMode: prices.pricingMode,
-						markupBps: prices.markupBps,
-					},
-				];
+	const snapshot = resolveEffectiveCatalog(
+		buildCatalogResolverInput({
+			revision: latestRevisions[0]?.id ?? 0,
+			providers: sourceProviders,
+			models: sourceModels,
+			mappings: sourceMappings,
+			state: policyStateFromRows({
+				providerPolicies,
+				modelPolicies,
+				mappingPolicies,
+				pricePolicies,
 			}),
-		),
-		breakerStates: {},
-	});
+			credentials,
+			passedTests,
+		}),
+	);
 	const sourceTimestamps = [
 		...sourceProviders.map((item) => item.updatedAt.getTime()),
 		...sourceModels.map((item) => item.updatedAt.getTime()),
@@ -632,10 +421,19 @@ function reservedNamespaceBlockers(
 	const offending = operations.flatMap((operation) => {
 		switch (operation.type) {
 			case "provider.set_policy":
+			case "provider.set_source_override":
+			case "provider.clear_source_override":
 				return operation.providerId === RESERVED_TENANT_PROVIDER_ID
 					? [operation.providerId]
 					: [];
+			// Reserved-namespace conflicts for created entities are contract
+			// invariants (`catalogSourceInvariantBlockers`).
 			case "model.set_policy":
+			case "model.set_source_override":
+			case "model.clear_source_override":
+			case "provider.create":
+			case "model.create":
+			case "mapping.create":
 				return [];
 			case "entity.archive_policy":
 				return (operation.entityType === "provider" &&
@@ -664,12 +462,29 @@ function missingOperationBlockers(
 	const modelIds = new Set(view.sourceModels.map((item) => item.id));
 	const mappingIds = new Set(view.sourceMappings.map((item) => item.id));
 	const missing = operations.flatMap((operation) => {
-		if (operation.type === "provider.set_policy") {
+		// Create operations target entities that must NOT exist yet; their
+		// existence conflicts are contract invariants, not missing entities.
+		if (
+			operation.type === "provider.create" ||
+			operation.type === "model.create" ||
+			operation.type === "mapping.create"
+		) {
+			return [];
+		}
+		if (
+			operation.type === "provider.set_policy" ||
+			operation.type === "provider.set_source_override" ||
+			operation.type === "provider.clear_source_override"
+		) {
 			return providerIds.has(operation.providerId)
 				? []
 				: [operation.providerId];
 		}
-		if (operation.type === "model.set_policy") {
+		if (
+			operation.type === "model.set_policy" ||
+			operation.type === "model.set_source_override" ||
+			operation.type === "model.clear_source_override"
+		) {
 			return modelIds.has(operation.modelId) ? [] : [operation.modelId];
 		}
 		if (operation.type === "entity.archive_policy") {
@@ -689,7 +504,26 @@ function missingOperationBlockers(
 	}));
 }
 
-function policyStateFromView(view: CatalogView): CatalogPolicyState {
+function invariantOperationBlockers(
+	view: CatalogView,
+	operations: CatalogOperationV1[],
+): Array<{ entityId: string; reasons: string[] }> {
+	return catalogSourceInvariantBlockers(
+		{
+			providers: view.sourceProviders,
+			models: view.sourceModels,
+			mappings: view.sourceMappings,
+		},
+		operations,
+	);
+}
+
+function policyStateFromRows(view: {
+	providerPolicies: (typeof platformProviderPolicy.$inferSelect)[];
+	modelPolicies: (typeof platformModelPolicy.$inferSelect)[];
+	mappingPolicies: (typeof platformMappingPolicy.$inferSelect)[];
+	pricePolicies: (typeof platformMappingPricePolicy.$inferSelect)[];
+}): CatalogPolicyState {
 	return {
 		providers: Object.fromEntries(
 			view.providerPolicies.map((row) => [
@@ -758,128 +592,20 @@ function resolveStateSnapshot(
 	view: CatalogView,
 	state: CatalogPolicyState,
 	revision: number,
+	sourceCreates?: readonly CatalogSourceCreate[],
 ): EffectiveCatalog {
-	return resolveEffectiveCatalog({
-		revision,
-		now: new Date(),
-		providers: view.sourceProviders.map((item) => ({
-			id: item.id,
-			status: item.status,
-		})),
-		models: view.sourceModels.map((item) => ({
-			id: item.id,
-			status: item.status,
-			name: item.name,
-			family: item.family,
-			aliases: item.aliases,
-			output: item.output,
-			free: item.free,
-		})),
-		mappings: view.sourceMappings.map((item) => ({
-			id: item.id,
-			providerId: item.providerId,
-			modelId: item.modelId,
-			status: item.status,
-			externalId: item.externalId,
-			region: item.region,
-			deprecatedAt: item.deprecatedAt,
-			deactivatedAt: item.deactivatedAt,
-			contextSize: item.contextSize,
-			maxOutput: item.maxOutput,
-			streaming: item.streaming,
-			vision: item.vision,
-			reasoning: item.reasoning,
-			reasoningMaxTokens: item.reasoningMaxTokens,
-			tools: item.tools,
-			jsonOutput: item.jsonOutput,
-			jsonOutputSchema: item.jsonOutputSchema,
-			webSearch: item.webSearch,
-			supportedParameters: item.supportedParameters,
-			pricingTiers: item.pricingTiers,
-			serviceTierMultipliers: item.serviceTierMultipliers,
-		})),
-		providerPolicies: Object.values(state.providers).map((item) => ({
-			providerId: item.providerId,
-			visible: item.visible,
-			enabled: item.enabled,
-			lifecycle: item.lifecycle,
-			deprecatedAt: item.deprecatedAt ? new Date(item.deprecatedAt) : null,
-			retireAt: item.retireAt ? new Date(item.retireAt) : null,
-		})),
-		modelPolicies: Object.values(state.models).map((item) => ({
-			modelId: item.modelId,
-			visible: item.visible,
-			enabled: item.enabled,
-			allowDirect: item.allowDirect,
-			lifecycle: item.lifecycle,
-			deprecatedAt: item.deprecatedAt ? new Date(item.deprecatedAt) : null,
-			retireAt: item.retireAt ? new Date(item.retireAt) : null,
-			replacementModelId: item.replacementModelId,
-			retirementMessage: item.retirementMessage,
-		})),
-		mappingPolicies: Object.values(state.mappings).map((item) => ({
-			mappingId: item.mappingId,
-			enabled: item.enabled,
-			priority: item.priority ?? 100,
-			weight: item.weight ?? 100,
-			breakerEnabled: item.breakerEnabled ?? true,
-			externalIdOverride: item.externalIdOverride,
-			contextSizeLimit: item.contextSizeLimit,
-			maxOutputLimit: item.maxOutputLimit,
-			disabledCapabilities: item.disabledCapabilities,
-		})),
-		providerCredentialAvailability: view.credentialAvailability,
-		mappingReadiness: Object.fromEntries(
-			view.sourceMappings.map((item) => {
-				const mappingPolicy = state.mappings[item.id];
-				const testedCredential = view.credentials
-					.filter((credential) => credential.provider === item.providerId)
-					.sort(
-						(left, right) =>
-							left.priority - right.priority || left.id.localeCompare(right.id),
-					)
-					.find((credential) => {
-						const profile = catalogMappingTestProfile({
-							mappingId: item.id,
-							providerId: item.providerId,
-							region: item.region,
-							externalId: mappingPolicy?.externalIdOverride ?? item.externalId,
-							contextSizeLimit: mappingPolicy?.contextSizeLimit,
-							maxOutputLimit: mappingPolicy?.maxOutputLimit,
-							disabledCapabilities: mappingPolicy?.disabledCapabilities,
-							credentialId: credential.id,
-							credentialFingerprint: credential.tokenFingerprint,
-							baseUrl: credential.baseUrl,
-							credentialOptions: credential.options,
-						});
-						return view.passedTests.has(`${item.id}:${profile}`);
-					});
-				const prices = resolvePricePolicy(item, state.prices[item.id]?.policy);
-				return [
-					item.id,
-					{
-						priceReady: prices.ready,
-						testPassed: testedCredential !== undefined,
-						platformCredentialId: testedCredential?.id ?? null,
-						platformCredentialProfile: testedCredential
-							? catalogCredentialConfigurationProfile({
-									credentialId: testedCredential.id,
-									credentialFingerprint: testedCredential.tokenFingerprint,
-									baseUrl: testedCredential.baseUrl,
-									credentialOptions: testedCredential.options,
-								})
-							: null,
-						sourcePrices: prices.sourcePrices,
-						customerPrices: prices.customerPrices,
-						margin: prices.margin,
-						pricingMode: prices.pricingMode,
-						markupBps: prices.markupBps,
-					},
-				];
-			}),
-		),
-		breakerStates: {},
-	});
+	return resolveEffectiveCatalog(
+		buildCatalogResolverInput({
+			revision,
+			providers: view.sourceProviders,
+			models: view.sourceModels,
+			mappings: view.sourceMappings,
+			state,
+			sourceCreates,
+			credentials: view.credentials,
+			passedTests: view.passedTests,
+		}),
+	);
 }
 
 function requestMetadata(c: {
@@ -917,20 +643,15 @@ async function calculateCatalogImpact(
 	const modelIds = new Set<string>();
 	const mappingIds = new Set<string>();
 	for (const operation of operations) {
-		if (operation.type === "provider.set_policy") {
-			providerIds.add(operation.providerId);
-		} else if (operation.type === "model.set_policy") {
-			modelIds.add(operation.modelId);
-		} else if (operation.type === "entity.archive_policy") {
-			if (operation.entityType === "provider") {
-				providerIds.add(operation.entityId);
-			} else if (operation.entityType === "model") {
-				modelIds.add(operation.entityId);
-			} else {
-				mappingIds.add(operation.entityId);
-			}
-		} else {
-			mappingIds.add(operation.mappingId);
+		const targets = catalogOperationTargets(operation);
+		for (const id of targets.providerIds) {
+			providerIds.add(id);
+		}
+		for (const id of targets.modelIds) {
+			modelIds.add(id);
+		}
+		for (const id of [...targets.mappingIds, ...targets.priceMappingIds]) {
+			mappingIds.add(id);
 		}
 	}
 	for (const mapping of view.sourceMappings) {
@@ -1089,15 +810,15 @@ async function calculateCatalogImpact(
 		const scheduledIds = new Set(
 			catalogChangeSetInputSchema.shape.operations
 				.parse(changeSet.operations)
-				.flatMap((operation) =>
-					operation.type === "provider.set_policy"
-						? [operation.providerId]
-						: operation.type === "model.set_policy"
-							? [operation.modelId]
-							: operation.type === "entity.archive_policy"
-								? [operation.entityId]
-								: [operation.mappingId],
-				),
+				.flatMap((operation) => {
+					const targets = catalogOperationTargets(operation);
+					return [
+						...targets.providerIds,
+						...targets.modelIds,
+						...targets.mappingIds,
+						...targets.priceMappingIds,
+					];
+				}),
 		);
 		return [...scheduledIds].some((id) => affectedEntityIds.has(id))
 			? [changeSet.id]
@@ -1160,32 +881,18 @@ async function persistPolicyState(
 	const mappingIds = new Set<string>();
 	const priceMappingIds = new Set<string>();
 	for (const operation of operations) {
-		switch (operation.type) {
-			case "provider.set_policy":
-				providerIds.add(operation.providerId);
-				break;
-			case "model.set_policy":
-				modelIds.add(operation.modelId);
-				break;
-			case "mapping.set_policy":
-			case "mapping.set_external_id":
-				mappingIds.add(operation.mappingId);
-				break;
-			case "mapping.set_price_policy":
-				priceMappingIds.add(operation.mappingId);
-				break;
-			case "mapping.clear_price_policy":
-				priceMappingIds.add(operation.mappingId);
-				break;
-			case "entity.archive_policy":
-				if (operation.entityType === "provider") {
-					providerIds.add(operation.entityId);
-				} else if (operation.entityType === "model") {
-					modelIds.add(operation.entityId);
-				} else {
-					mappingIds.add(operation.entityId);
-				}
-				break;
+		const targets = catalogOperationTargets(operation);
+		for (const id of targets.providerIds) {
+			providerIds.add(id);
+		}
+		for (const id of targets.modelIds) {
+			modelIds.add(id);
+		}
+		for (const id of targets.mappingIds) {
+			mappingIds.add(id);
+		}
+		for (const id of targets.priceMappingIds) {
+			priceMappingIds.add(id);
 		}
 	}
 
@@ -1206,6 +913,7 @@ async function persistPolicyState(
 			deprecatedAt: row.deprecatedAt ? new Date(row.deprecatedAt) : null,
 			retireAt: row.retireAt ? new Date(row.retireAt) : null,
 			replacementProviderId: row.replacementProviderId ?? null,
+			sourceOverrides: row.sourceOverrides ?? null,
 			updatedAt: new Date(row.updatedAt),
 			updatedBy: row.updatedBy,
 		};
@@ -1233,6 +941,7 @@ async function persistPolicyState(
 			retireAt: row.retireAt ? new Date(row.retireAt) : null,
 			replacementModelId: row.replacementModelId ?? null,
 			retirementMessage: row.retirementMessage ?? null,
+			sourceOverrides: row.sourceOverrides ?? null,
 			updatedAt: new Date(row.updatedAt),
 			updatedBy: row.updatedBy,
 		};
@@ -1257,6 +966,7 @@ async function persistPolicyState(
 			weight: row.weight ?? 100,
 			breakerEnabled: row.breakerEnabled ?? true,
 			requiredTestRevision: row.requiredTestRevision ?? null,
+			sourceOverrides: row.sourceOverrides ?? null,
 			updatedAt: new Date(row.updatedAt),
 			updatedBy: row.updatedBy,
 		};
@@ -2409,16 +2119,71 @@ platformCatalog.openapi(
 				});
 				return c.json({ message: "Catalog base revision is stale" }, 409);
 			}
+			// Contract invariants are rejected before preview: applying the
+			// operations to compute an impact snapshot would be meaningless (and
+			// creates/overrides would conflict), so short-circuit with blockers.
+			const invariantBlockers = invariantOperationBlockers(
+				view,
+				input.operations,
+			);
+			if (invariantBlockers.length > 0) {
+				const blockers = [
+					...missingOperationBlockers(view, input.operations),
+					...reservedNamespaceBlockers(view, input.operations),
+					...invariantBlockers,
+				];
+				await db.insert(platformAuditLog).values({
+					userId: user.id,
+					action: "platform_catalog.preview",
+					success: true,
+					metadata: {
+						baseRevision: input.baseRevision,
+						operationCount: input.operations.length,
+						valid: false,
+						blockerCount: blockers.length,
+					},
+					...requestMetadata(c),
+				});
+				return c.json({
+					valid: false,
+					baseRevision: input.baseRevision,
+					resultingChecksum: view.snapshot.checksum,
+					blockers,
+					warnings: [],
+					affected: {
+						providers: 0,
+						models: 0,
+						mappings: 0,
+						credentials: 0,
+						requests: 0,
+						organizations: 0,
+						projects: 0,
+						apiKeys: 0,
+						queuedJobs: 0,
+					},
+					fallbackLosses: [],
+					stateChanges: [],
+					scheduledConflicts: [],
+					priceChanges: [],
+					marginEstimate: null,
+				});
+			}
 			const applied = applyCatalogOperations({
-				state: policyStateFromView(view),
+				state: policyStateFromRows(view),
 				operations: input.operations,
 				actor: user.id,
 				updatedAt: new Date().toISOString(),
+				sources: catalogSourceLookupFromRows({
+					providers: view.sourceProviders,
+					models: view.sourceModels,
+					mappings: view.sourceMappings,
+				}),
 			});
 			const snapshot = resolveStateSnapshot(
 				view,
 				applied.state,
 				view.snapshot.revision + 1,
+				applied.sourceCreates,
 			);
 			const impact = await calculateCatalogImpact(
 				view,
@@ -2752,17 +2517,31 @@ platformCatalog.openapi(
 							.join(", ")}`,
 					});
 				}
+				const invariants = invariantOperationBlockers(view, operations);
+				if (invariants.length > 0) {
+					throw new HTTPException(400, {
+						message: `Catalog source invariants are violated: ${invariants
+							.map((item) => `${item.entityId} (${item.reasons.join(", ")})`)
+							.join("; ")}`,
+					});
+				}
 				const updatedAt = new Date().toISOString();
 				const applied = applyCatalogOperations({
-					state: policyStateFromView(view),
+					state: policyStateFromRows(view),
 					operations,
 					actor: user.id,
 					updatedAt,
+					sources: catalogSourceLookupFromRows({
+						providers: view.sourceProviders,
+						models: view.sourceModels,
+						mappings: view.sourceMappings,
+					}),
 				});
 				const provisionalSnapshot = resolveStateSnapshot(
 					view,
 					applied.state,
 					0,
+					applied.sourceCreates,
 				);
 				try {
 					validateCatalogActivation(
@@ -2783,6 +2562,7 @@ platformCatalog.openapi(
 					.update(platformCatalogChangeSet)
 					.set({ state: "applying" })
 					.where(eq(platformCatalogChangeSet.id, changeSetId));
+				await persistSourceCreates(tx, applied.sourceCreates);
 				await persistPolicyState(tx, applied.state, operations);
 				const [revision] = await tx
 					.insert(platformCatalogRevision)
@@ -2906,15 +2686,21 @@ platformCatalog.openapi(
 			...reservedNamespaceBlockers(view, operations),
 		];
 		const applied = applyCatalogOperations({
-			state: policyStateFromView(view),
+			state: policyStateFromRows(view),
 			operations,
 			actor: user.id,
 			updatedAt: new Date().toISOString(),
+			sources: catalogSourceLookupFromRows({
+				providers: view.sourceProviders,
+				models: view.sourceModels,
+				mappings: view.sourceMappings,
+			}),
 		});
 		const snapshot = resolveStateSnapshot(
 			view,
 			applied.state,
 			view.snapshot.revision + 1,
+			applied.sourceCreates,
 		);
 		const blockers = [...missing];
 		if (blockers.length === 0) {
@@ -3117,15 +2903,21 @@ platformCatalog.openapi(
 				}
 				const updatedAt = new Date().toISOString();
 				const applied = applyCatalogOperations({
-					state: policyStateFromView(view),
+					state: policyStateFromRows(view),
 					operations,
 					actor: user.id,
 					updatedAt,
+					sources: catalogSourceLookupFromRows({
+						providers: view.sourceProviders,
+						models: view.sourceModels,
+						mappings: view.sourceMappings,
+					}),
 				});
 				const provisionalSnapshot = resolveStateSnapshot(
 					view,
 					applied.state,
 					0,
+					applied.sourceCreates,
 				);
 				try {
 					validateCatalogActivation(
@@ -3142,6 +2934,7 @@ platformCatalog.openapi(
 								: "Rollback conflicts with current catalog state",
 					});
 				}
+				await persistSourceCreates(tx, applied.sourceCreates);
 				await persistPolicyState(tx, applied.state, operations);
 				const [revision] = await tx
 					.insert(platformCatalogRevision)

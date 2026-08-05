@@ -6,7 +6,7 @@ import {
 	resolveModelFromCatalog,
 } from "@betarouter/catalog";
 import { logger } from "@betarouter/logger";
-import { models } from "@betarouter/models";
+import { models, providers } from "@betarouter/models";
 
 import type { CatalogParseContext } from "@/chat/tools/parse-model-input.js";
 import type { EffectiveCatalog } from "@betarouter/catalog";
@@ -171,9 +171,19 @@ export function resolveGatewayModelDefinition(
 	return staticDefinition;
 }
 
+export interface GatewayCatalogParseContext extends CatalogParseContext {
+	/**
+	 * Provider ids present in the snapshot but absent from the static array —
+	 * database-defined platform providers (admin-created, e.g. relays). Passed
+	 * to `parseModelInput` so a `provider/model` prefix using one resolves as
+	 * a first-class platform provider instead of a tenant custom provider.
+	 */
+	platformProviderIds: readonly string[];
+}
+
 let parseContextCache: {
 	revision: number;
-	context: CatalogParseContext;
+	context: GatewayCatalogParseContext;
 } | null = null;
 
 /**
@@ -182,7 +192,7 @@ let parseContextCache: {
  */
 export function buildCatalogParseContext(
 	snapshot: EffectiveCatalog,
-): CatalogParseContext {
+): GatewayCatalogParseContext {
 	if (parseContextCache?.revision === snapshot.revision) {
 		return parseContextCache.context;
 	}
@@ -195,9 +205,15 @@ export function buildCatalogParseContext(
 		}
 		providerIds.add(mapping.providerId);
 	}
-	const context: CatalogParseContext = {
+	const staticProviderIds = new Set<string>(
+		providers.map((provider) => provider.id),
+	);
+	const context: GatewayCatalogParseContext = {
 		modelIds: new Set(snapshot.models.map((model) => model.id)),
 		providerIdsByModel,
+		platformProviderIds: snapshot.providers
+			.map((provider) => provider.id)
+			.filter((providerId) => !staticProviderIds.has(providerId)),
 	};
 	parseContextCache = { revision: snapshot.revision, context };
 	return context;

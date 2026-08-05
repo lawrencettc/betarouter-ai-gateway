@@ -3090,7 +3090,51 @@ export interface PlatformFixedPricesV1 {
 	audioOutputPerMillionTokens?: string;
 	ocrPage?: string;
 	inputPerMillionCharacters?: string;
+	audioHour?: string;
 	perSecondByResolution?: Record<string, string>;
+}
+
+/**
+ * V2 adds independent cache-read and audio/image cached-input fields. V1
+ * aliased them from `input`/`cachedInput`; V2 keeps that aliasing as the
+ * fallback when the independent field is absent, so a V1 policy upgrades
+ * without behavior change.
+ */
+export interface PlatformFixedPricesV2 extends Omit<
+	PlatformFixedPricesV1,
+	"version"
+> {
+	version: 2;
+	cacheReadPerMillionTokens?: string;
+	cachedImageInputPerMillionTokens?: string;
+	cachedAudioInputPerMillionTokens?: string;
+	audioInputPerMillionTokens?: string;
+}
+
+export type PlatformFixedPrices = PlatformFixedPricesV1 | PlatformFixedPricesV2;
+
+export interface PlatformSourceOverrideFieldV1 {
+	/** Effective value replacing the mirrored source value. */
+	value: unknown;
+	/**
+	 * Mirrored source value at set-time. The upstream-change review compares
+	 * this against the current mirror to detect the base moving underneath an
+	 * override; it never feeds the effective catalog.
+	 */
+	baseValue: unknown;
+	setAt: string;
+	setBy: string;
+}
+
+/**
+ * Versioned partial override patch for code-mirrored source rows. Applies
+ * only to `source = 'static'` rows: the sync keeps rewriting the mirror while
+ * the override persists, and clearing an override instantly reverts to
+ * upstream truth. Admin-created rows are edited directly instead.
+ */
+export interface PlatformSourceOverridesV1 {
+	version: 1;
+	fields: Record<string, PlatformSourceOverrideFieldV1>;
 }
 
 export type PlatformCatalogOperationV1 =
@@ -3141,6 +3185,63 @@ export type PlatformCatalogOperationV1 =
 			entityType: "provider" | "model" | "mapping";
 			entityId: string;
 			expectedUpdatedAt: string;
+	  }
+	| {
+			version: 1;
+			type: "provider.set_source_override";
+			providerId: string;
+			expectedUpdatedAt: string | null;
+			patch: Record<string, unknown>;
+	  }
+	| {
+			version: 1;
+			type: "model.set_source_override";
+			modelId: string;
+			expectedUpdatedAt: string | null;
+			patch: Record<string, unknown>;
+	  }
+	| {
+			version: 1;
+			type: "mapping.set_source_override";
+			mappingId: string;
+			expectedUpdatedAt: string | null;
+			patch: Record<string, unknown>;
+	  }
+	| {
+			version: 1;
+			type: "provider.clear_source_override";
+			providerId: string;
+			expectedUpdatedAt: string;
+	  }
+	| {
+			version: 1;
+			type: "model.clear_source_override";
+			modelId: string;
+			expectedUpdatedAt: string;
+	  }
+	| {
+			version: 1;
+			type: "mapping.clear_source_override";
+			mappingId: string;
+			expectedUpdatedAt: string;
+	  }
+	| {
+			version: 1;
+			type: "provider.create";
+			expectedUpdatedAt: string | null;
+			create: Record<string, unknown>;
+	  }
+	| {
+			version: 1;
+			type: "model.create";
+			expectedUpdatedAt: string | null;
+			create: Record<string, unknown>;
+	  }
+	| {
+			version: 1;
+			type: "mapping.create";
+			expectedUpdatedAt: string | null;
+			create: Record<string, unknown>;
 	  };
 
 export interface PlatformCatalogImpactSnapshotV1 {
@@ -3196,6 +3297,7 @@ export const platformProviderPolicy = pgTable(
 		replacementProviderId: text().references((): AnyPgColumn => provider.id, {
 			onDelete: "set null",
 		}),
+		sourceOverrides: jsonb().$type<PlatformSourceOverridesV1>(),
 		updatedAt: timestamp({ withTimezone: true })
 			.notNull()
 			.defaultNow()
@@ -3240,6 +3342,7 @@ export const platformModelPolicy = pgTable(
 			onDelete: "set null",
 		}),
 		retirementMessage: text(),
+		sourceOverrides: jsonb().$type<PlatformSourceOverridesV1>(),
 		updatedAt: timestamp({ withTimezone: true })
 			.notNull()
 			.defaultNow()
@@ -3281,6 +3384,7 @@ export const platformMappingPolicy = pgTable(
 		weight: integer().notNull().default(100),
 		breakerEnabled: boolean().notNull().default(true),
 		requiredTestRevision: text(),
+		sourceOverrides: jsonb().$type<PlatformSourceOverridesV1>(),
 		updatedAt: timestamp({ withTimezone: true })
 			.notNull()
 			.defaultNow()
@@ -3318,7 +3422,7 @@ export const platformMappingPricePolicy = pgTable(
 			.default("USD"),
 		mode: text({ enum: ["source_cost", "markup", "fixed"] }).notNull(),
 		markupBps: integer(),
-		fixedPrices: jsonb().$type<PlatformFixedPricesV1>(),
+		fixedPrices: jsonb().$type<PlatformFixedPrices>(),
 		allowNegativeMargin: boolean().notNull().default(false),
 		negativeMarginReason: text(),
 		updatedAt: timestamp({ withTimezone: true })

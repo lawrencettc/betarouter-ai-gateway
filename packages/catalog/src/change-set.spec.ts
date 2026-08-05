@@ -3,10 +3,12 @@ import { describe, expect, it } from "vitest";
 import {
 	applyCatalogOperations,
 	CatalogConflictError,
+	catalogSourceLookupFromRows,
 	normalizePersistedInverseOperations,
 	type CatalogPolicyState,
 } from "./change-set.js";
 import {
+	adminMappingId,
 	catalogChangeSetInputSchema,
 	catalogOperationV1Schema,
 	type CatalogOperationV1,
@@ -324,5 +326,355 @@ describe("applyCatalogOperations", () => {
 			operations: applied.inverseOperations,
 		});
 		expect(rolledBack.state.prices).toEqual({});
+	});
+});
+
+describe("source override operations", () => {
+	const sources = catalogSourceLookupFromRows({
+		providers: [{ id: "openai", source: "static" }],
+		models: [{ id: "gpt-5.5", source: "static" }],
+		mappings: [
+			{
+				id: "mapping-1",
+				source: "static",
+				inputPrice: "1.5e-6",
+				vision: false,
+			},
+			{ id: "mapping-admin", source: "admin" },
+		],
+	});
+
+	it("records the mirrored base value at set-time and restores on rollback", () => {
+		const applied = applyCatalogOperations({
+			state,
+			actor: "admin-2",
+			updatedAt: "2026-07-22T01:00:00.000Z",
+			sources,
+			operations: [
+				{
+					version: 1,
+					type: "mapping.set_source_override",
+					mappingId: "mapping-1",
+					expectedUpdatedAt: null,
+					patch: { inputPrice: "2e-6", vision: true },
+				},
+			],
+		});
+
+		expect(applied.state.mappings["mapping-1"]?.sourceOverrides).toEqual({
+			version: 1,
+			fields: {
+				inputPrice: {
+					value: "2e-6",
+					baseValue: "1.5e-6",
+					setAt: "2026-07-22T01:00:00.000Z",
+					setBy: "admin-2",
+				},
+				vision: {
+					value: true,
+					baseValue: false,
+					setAt: "2026-07-22T01:00:00.000Z",
+					setBy: "admin-2",
+				},
+			},
+		});
+		expect(applied.sourceCreates).toEqual([]);
+		expect(applied.inverseOperations[0]).toMatchObject({
+			type: "mapping.set_source_override",
+			mappingId: "mapping-1",
+			patch: { inputPrice: null, vision: null },
+		});
+		expect(
+			catalogOperationV1Schema.safeParse(applied.inverseOperations[0]).success,
+		).toBe(true);
+
+		const rolledBack = applyCatalogOperations({
+			state: applied.state,
+			actor: "admin-2",
+			updatedAt: "2026-07-22T02:00:00.000Z",
+			sources,
+			operations: applied.inverseOperations,
+		});
+		expect(rolledBack.state.mappings["mapping-1"]?.sourceOverrides).toBeNull();
+	});
+
+	it("merges per-field patches and clears single fields with null", () => {
+		const first = applyCatalogOperations({
+			state,
+			actor: "admin-2",
+			updatedAt: "2026-07-22T01:00:00.000Z",
+			sources,
+			operations: [
+				{
+					version: 1,
+					type: "mapping.set_source_override",
+					mappingId: "mapping-1",
+					expectedUpdatedAt: null,
+					patch: { inputPrice: "2e-6", vision: true },
+				},
+			],
+		});
+		const second = applyCatalogOperations({
+			state: first.state,
+			actor: "admin-3",
+			updatedAt: "2026-07-22T02:00:00.000Z",
+			sources,
+			operations: [
+				{
+					version: 1,
+					type: "mapping.set_source_override",
+					mappingId: "mapping-1",
+					expectedUpdatedAt: "2026-07-22T01:00:00.000Z",
+					patch: { inputPrice: null, tools: true },
+				},
+			],
+		});
+		const overrides = second.state.mappings["mapping-1"]?.sourceOverrides;
+		expect(Object.keys(overrides?.fields ?? {}).sort()).toEqual([
+			"tools",
+			"vision",
+		]);
+		expect(second.inverseOperations[0]).toMatchObject({
+			patch: { inputPrice: "2e-6", tools: null },
+		});
+	});
+
+	it("refuses overrides on admin-created entities", () => {
+		expect(() =>
+			applyCatalogOperations({
+				state,
+				actor: "admin-2",
+				updatedAt: "2026-07-22T01:00:00.000Z",
+				sources,
+				operations: [
+					{
+						version: 1,
+						type: "mapping.set_source_override",
+						mappingId: "mapping-admin",
+						expectedUpdatedAt: null,
+						patch: { vision: true },
+					},
+				],
+			}),
+		).toThrow(/admin-created/);
+	});
+
+	it("clears all overrides and produces a full restore inverse", () => {
+		const applied = applyCatalogOperations({
+			state,
+			actor: "admin-2",
+			updatedAt: "2026-07-22T01:00:00.000Z",
+			sources,
+			operations: [
+				{
+					version: 1,
+					type: "mapping.set_source_override",
+					mappingId: "mapping-1",
+					expectedUpdatedAt: null,
+					patch: { inputPrice: "2e-6", vision: true },
+				},
+			],
+		});
+		const cleared = applyCatalogOperations({
+			state: applied.state,
+			actor: "admin-2",
+			updatedAt: "2026-07-22T02:00:00.000Z",
+			sources,
+			operations: [
+				{
+					version: 1,
+					type: "mapping.clear_source_override",
+					mappingId: "mapping-1",
+					expectedUpdatedAt: "2026-07-22T01:00:00.000Z",
+				},
+			],
+		});
+		expect(cleared.state.mappings["mapping-1"]?.sourceOverrides).toBeNull();
+		expect(cleared.inverseOperations[0]).toMatchObject({
+			type: "mapping.set_source_override",
+			patch: { inputPrice: "2e-6", vision: true },
+		});
+		expect(
+			catalogOperationV1Schema.safeParse(cleared.inverseOperations[0]).success,
+		).toBe(true);
+
+		expect(() =>
+			applyCatalogOperations({
+				state: cleared.state,
+				actor: "admin-2",
+				updatedAt: "2026-07-22T03:00:00.000Z",
+				sources,
+				operations: [
+					{
+						version: 1,
+						type: "mapping.clear_source_override",
+						mappingId: "mapping-1",
+						expectedUpdatedAt: "2026-07-22T02:00:00.000Z",
+					},
+				],
+			}),
+		).toThrow(CatalogConflictError);
+	});
+
+	it("keeps set_policy inverse patches free of sourceOverrides", () => {
+		const withOverride = applyCatalogOperations({
+			state,
+			actor: "admin-2",
+			updatedAt: "2026-07-22T01:00:00.000Z",
+			sources,
+			operations: [
+				{
+					version: 1,
+					type: "provider.set_source_override",
+					providerId: "openai",
+					expectedUpdatedAt: "2026-07-22T00:00:00.000Z",
+					patch: { priority: 5 },
+				},
+			],
+		});
+		const policyChange = applyCatalogOperations({
+			state: withOverride.state,
+			actor: "admin-2",
+			updatedAt: "2026-07-22T02:00:00.000Z",
+			sources,
+			operations: [
+				{
+					version: 1,
+					type: "provider.set_policy",
+					providerId: "openai",
+					expectedUpdatedAt: "2026-07-22T01:00:00.000Z",
+					patch: { enabled: true },
+				},
+			],
+		});
+		// The policy change must not drop the stored override…
+		expect(
+			policyChange.state.providers.openai?.sourceOverrides?.fields.priority
+				?.value,
+		).toBe(5);
+		// …and its inverse must survive the strict patch schema.
+		expect(
+			catalogOperationV1Schema.safeParse(policyChange.inverseOperations[0])
+				.success,
+		).toBe(true);
+	});
+});
+
+describe("creation operations", () => {
+	const sources = catalogSourceLookupFromRows({
+		providers: [{ id: "openai", source: "static" }],
+		models: [{ id: "gpt-5.5", source: "static" }],
+		mappings: [],
+	});
+
+	it("creates provider, model, and mapping with draft policies and archive inverses", () => {
+		const appliedAt = "2026-07-22T01:00:00.000Z";
+		const applied = applyCatalogOperations({
+			state,
+			actor: "admin-2",
+			updatedAt: appliedAt,
+			sources,
+			operations: [
+				{
+					version: 1,
+					type: "provider.create",
+					expectedUpdatedAt: null,
+					create: {
+						providerId: "acme-relay",
+						name: "Acme Relay",
+						description: "OpenAI-compatible relay",
+						protocol: "openai-chat",
+					},
+				},
+				{
+					version: 1,
+					type: "model.create",
+					expectedUpdatedAt: null,
+					create: { modelId: "acme-model", family: "acme" },
+				},
+				{
+					version: 1,
+					type: "mapping.create",
+					expectedUpdatedAt: null,
+					create: {
+						modelId: "gpt-5.5",
+						providerId: "acme-relay",
+						externalId: "gpt-5.5",
+						inputPrice: "1.5e-6",
+						outputPrice: "6e-6",
+					},
+				},
+			],
+		});
+
+		const mappingId = adminMappingId({
+			modelId: "gpt-5.5",
+			providerId: "acme-relay",
+		});
+		expect(mappingId).toBe("adm:gpt-5.5:acme-relay");
+		expect(applied.state.providers["acme-relay"]).toMatchObject({
+			visible: false,
+			enabled: false,
+			lifecycle: "draft",
+		});
+		expect(applied.state.models["acme-model"]).toMatchObject({
+			enabled: false,
+			allowDirect: false,
+		});
+		expect(applied.state.mappings[mappingId]).toMatchObject({
+			enabled: false,
+		});
+		expect(applied.sourceCreates.map((item) => item.entityId)).toEqual([
+			"acme-relay",
+			"acme-model",
+			mappingId,
+		]);
+		expect(
+			applied.inverseOperations.map((operation) => operation.type),
+		).toEqual([
+			"entity.archive_policy",
+			"entity.archive_policy",
+			"entity.archive_policy",
+		]);
+		expect(
+			applied.inverseOperations.every(
+				(operation) => catalogOperationV1Schema.safeParse(operation).success,
+			),
+		).toBe(true);
+
+		// The inverse retires the created entries without deleting anything.
+		const rolledBack = applyCatalogOperations({
+			state: applied.state,
+			actor: "admin-2",
+			updatedAt: "2026-07-22T02:00:00.000Z",
+			sources,
+			operations: applied.inverseOperations,
+		});
+		expect(rolledBack.state.providers["acme-relay"]?.lifecycle).toBe("retired");
+		expect(rolledBack.state.mappings[mappingId]?.enabled).toBe(false);
+	});
+
+	it("rejects creating an entity that already exists in the source tables", () => {
+		expect(() =>
+			applyCatalogOperations({
+				state,
+				actor: "admin-2",
+				updatedAt: "2026-07-22T01:00:00.000Z",
+				sources,
+				operations: [
+					{
+						version: 1,
+						type: "provider.create",
+						expectedUpdatedAt: null,
+						create: {
+							providerId: "openai",
+							name: "OpenAI again",
+							description: "duplicate",
+							protocol: "openai-chat",
+						},
+					},
+				],
+			}),
+		).toThrow(CatalogConflictError);
 	});
 });

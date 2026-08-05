@@ -1,20 +1,27 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import {
+	adminMappingId,
+	applyStoredCatalogChangeSet,
+	catalogMappingTestProfile,
 	catalogSnapshotHasBaseData,
 	compareCatalogModelResolution,
 	parseStoredCatalogSnapshot,
 	resolveModelFromCatalog,
 } from "@betarouter/catalog";
 import {
+	and,
 	db,
 	desc,
 	eq,
 	model,
 	modelProviderMapping,
+	platformCatalogChangeSet,
 	platformCatalogRevision,
 	platformMappingPolicy,
+	platformMappingTestRun,
 	platformModelPolicy,
+	platformProviderCredential,
 	platformProviderPolicy,
 	provider,
 } from "@betarouter/db";
@@ -25,6 +32,46 @@ import {
 } from "@betarouter/models";
 
 import { syncProvidersAndModels } from "./sync-models.js";
+
+import type { CatalogOperationV1 } from "@betarouter/catalog";
+import type { PlatformCatalogOperationV1 } from "@betarouter/db";
+
+async function applyOperations(operations: CatalogOperationV1[]) {
+	const [latest] = await db
+		.select({ id: platformCatalogRevision.id })
+		.from(platformCatalogRevision)
+		.orderBy(desc(platformCatalogRevision.id))
+		.limit(1);
+	const [changeSet] = await db
+		.insert(platformCatalogChangeSet)
+		.values({
+			createdBy: "phase4-test",
+			title: "Phase 4 source authority test",
+			reason: "Exercise create and override operations end to end",
+			state: "draft",
+			baseRevision: latest?.id ?? null,
+			operations: operations as unknown as PlatformCatalogOperationV1[],
+			idempotencyKey: `phase4-${crypto.randomUUID()}`,
+		})
+		.returning({ id: platformCatalogChangeSet.id });
+	return await applyStoredCatalogChangeSet({
+		changeSetId: changeSet!.id,
+		actorId: "phase4-test",
+	});
+}
+
+async function loadLatestSnapshot() {
+	const [revision] = await db
+		.select({
+			checksum: platformCatalogRevision.checksum,
+			snapshot: platformCatalogRevision.snapshot,
+		})
+		.from(platformCatalogRevision)
+		.orderBy(desc(platformCatalogRevision.id))
+		.limit(1);
+	expect(revision).toBeDefined();
+	return parseStoredCatalogSnapshot(revision!.snapshot, revision!.checksum);
+}
 
 describe("sync-models", () => {
 	beforeEach(async () => {
@@ -601,5 +648,357 @@ describe("sync-models", () => {
 			}
 		}
 		expect(allDivergences).toEqual([]);
+	});
+
+	it("never overwrites admin-owned source rows during sync", async () => {
+		await syncProvidersAndModels();
+
+		await db
+			.update(provider)
+			.set({ source: "admin", name: "Operator OpenAI" })
+			.where(eq(provider.id, "openai"));
+		await db
+			.update(model)
+			.set({ source: "admin", family: "operator" })
+			.where(eq(model.id, "gpt-4o"));
+		const [mappingRow] = await db
+			.select()
+			.from(modelProviderMapping)
+			.where(
+				and(
+					eq(modelProviderMapping.modelId, "gpt-4o"),
+					eq(modelProviderMapping.providerId, "openai"),
+				),
+			)
+			.limit(1);
+		expect(mappingRow).toBeDefined();
+		await db
+			.update(modelProviderMapping)
+			.set({ source: "admin", externalId: "operator-owned" })
+			.where(eq(modelProviderMapping.id, mappingRow!.id));
+
+		await syncProvidersAndModels();
+
+		const [providerRow] = await db
+			.select()
+			.from(provider)
+			.where(eq(provider.id, "openai"));
+		expect(providerRow).toMatchObject({
+			name: "Operator OpenAI",
+			source: "admin",
+		});
+		const [modelRow] = await db
+			.select()
+			.from(model)
+			.where(eq(model.id, "gpt-4o"));
+		expect(modelRow).toMatchObject({ family: "operator", source: "admin" });
+		const [afterMapping] = await db
+			.select()
+			.from(modelProviderMapping)
+			.where(eq(modelProviderMapping.id, mappingRow!.id));
+		expect(afterMapping).toMatchObject({
+			externalId: "operator-owned",
+			source: "admin",
+		});
+	});
+
+	// Phase 4 exit gate: create an OpenAI-compatible relay provider, attach a
+	// credential, create a mapping on an existing model, pass the mapping
+	// test, set a fixed price policy, enable — and the chat read path serves
+	// the mapping at the configured prices, with no code change and no deploy.
+	it("serves the relay scenario end to end through change sets", async () => {
+		await syncProvidersAndModels();
+		const relayMappingId = adminMappingId({
+			modelId: "gpt-5.5",
+			providerId: "acme-relay",
+		});
+
+		await applyOperations([
+			{
+				version: 1,
+				type: "provider.create",
+				expectedUpdatedAt: null,
+				create: {
+					providerId: "acme-relay",
+					name: "Acme Relay",
+					description: "OpenAI-compatible relay",
+					protocol: "openai-chat",
+					website: "https://relay.example.com",
+				},
+			},
+			{
+				version: 1,
+				type: "mapping.create",
+				expectedUpdatedAt: null,
+				create: {
+					modelId: "gpt-5.5",
+					providerId: "acme-relay",
+					externalId: "gpt-5.5-relay",
+					contextSize: 200000,
+					maxOutput: 32768,
+					vision: true,
+					tools: true,
+					inputPrice: "1.5e-6",
+					outputPrice: "6e-6",
+					cacheReadInputPrice: "2e-7",
+				},
+			},
+		]);
+
+		const [relayProvider] = await db
+			.select()
+			.from(provider)
+			.where(eq(provider.id, "acme-relay"));
+		expect(relayProvider).toMatchObject({
+			source: "admin",
+			protocol: "openai-chat",
+			status: "active",
+		});
+		const [relayMapping] = await db
+			.select()
+			.from(modelProviderMapping)
+			.where(eq(modelProviderMapping.id, relayMappingId));
+		expect(relayMapping).toMatchObject({
+			source: "admin",
+			externalId: "gpt-5.5-relay",
+		});
+
+		// Admission gates hold: the new mapping stays unroutable until the
+		// credential, fingerprint-bound test, price policy, and enablement all
+		// exist.
+		const draftSnapshot = await loadLatestSnapshot();
+		const draftMapping = draftSnapshot.mappings.find(
+			(item) => item.id === relayMappingId,
+		);
+		expect(draftMapping?.routable).toBe(false);
+		expect(draftMapping?.reasons).toEqual(
+			expect.arrayContaining([
+				"provider_credential_unavailable",
+				"mapping_test_required",
+				"mapping_price_incomplete",
+			]),
+		);
+
+		// Credential and passed mapping test, as the platform credential API
+		// and the test console would record them.
+		const [credential] = await db
+			.insert(platformProviderCredential)
+			.values({
+				createdBy: "phase4-test",
+				updatedBy: "phase4-test",
+				provider: "acme-relay",
+				name: "Relay production key",
+				baseUrl: "https://relay.example.com/v1",
+				priority: 100,
+				status: "active",
+				encryptedToken: "encrypted-token",
+				encryptionIv: "iv",
+				encryptionAuthTag: "auth-tag",
+				encryptionKeyVersion: "v1",
+				maskedToken: "sk-...cafe",
+				tokenFingerprint: `phase4-${crypto.randomUUID()}`,
+				validationStatus: "valid",
+			})
+			.returning();
+		await db.insert(platformMappingTestRun).values({
+			createdBy: "phase4-test",
+			mappingId: relayMappingId,
+			credentialId: credential!.id,
+			status: "passed",
+			testProfile: catalogMappingTestProfile({
+				mappingId: relayMappingId,
+				providerId: "acme-relay",
+				region: null,
+				externalId: "gpt-5.5-relay",
+				contextSizeLimit: null,
+				maxOutputLimit: null,
+				disabledCapabilities: [],
+				credentialId: credential!.id,
+				credentialFingerprint: credential!.tokenFingerprint,
+				baseUrl: credential!.baseUrl,
+				credentialOptions: credential!.options,
+			}),
+		});
+
+		const [providerPolicyRow] = await db
+			.select()
+			.from(platformProviderPolicy)
+			.where(eq(platformProviderPolicy.providerId, "acme-relay"));
+		const [mappingPolicyRow] = await db
+			.select()
+			.from(platformMappingPolicy)
+			.where(eq(platformMappingPolicy.mappingId, relayMappingId));
+		await applyOperations([
+			{
+				version: 1,
+				type: "mapping.set_price_policy",
+				mappingId: relayMappingId,
+				expectedUpdatedAt: null,
+				policy: {
+					mode: "fixed",
+					currency: "USD",
+					allowNegativeMargin: false,
+					fixedPrices: {
+						version: 2,
+						inputPerMillionTokens: "2",
+						outputPerMillionTokens: "8",
+						cacheReadPerMillionTokens: "0.25",
+					},
+				},
+			},
+			{
+				version: 1,
+				type: "mapping.set_policy",
+				mappingId: relayMappingId,
+				expectedUpdatedAt: mappingPolicyRow!.updatedAt.toISOString(),
+				patch: { enabled: true },
+			},
+			{
+				version: 1,
+				type: "provider.set_policy",
+				providerId: "acme-relay",
+				expectedUpdatedAt: providerPolicyRow!.updatedAt.toISOString(),
+				patch: { enabled: true, visible: true, lifecycle: "active" },
+			},
+			{
+				version: 1,
+				type: "model.set_policy",
+				modelId: "gpt-5.5",
+				expectedUpdatedAt: null,
+				patch: { enabled: true, visible: true, lifecycle: "active" },
+			},
+		]);
+
+		const snapshot = await loadLatestSnapshot();
+		expect(snapshot.routableMappingIds).toContain(relayMappingId);
+		expect(snapshot.availableModelIds).toContain("gpt-5.5");
+		const effective = snapshot.mappings.find(
+			(item) => item.id === relayMappingId,
+		);
+		expect(effective).toMatchObject({
+			routable: true,
+			platformCredentialId: credential!.id,
+			pricingMode: "fixed",
+		});
+		expect(effective?.sourcePrices).toEqual({
+			input: "1.5",
+			output: "6",
+			cacheRead: "0.2",
+		});
+		// The V2 fixed price policy bills cacheRead independently.
+		expect(effective?.customerPrices).toEqual({
+			input: "2",
+			output: "8",
+			cacheRead: "0.25",
+		});
+
+		// The chat read path resolves the relay mapping from the snapshot.
+		const resolved = resolveModelFromCatalog("gpt-5.5", snapshot);
+		const relayServing = resolved?.providers.find(
+			(item) => (item.providerId as string) === "acme-relay",
+		);
+		expect(relayServing).toBeDefined();
+		expect(relayServing).toMatchObject({
+			externalId: "gpt-5.5-relay",
+			contextSize: 200000,
+			maxOutput: 32768,
+			vision: true,
+			tools: true,
+		});
+		expect(Number(relayServing!.inputPrice)).toBe(1.5e-6);
+		expect(Number(relayServing!.outputPrice)).toBe(6e-6);
+	});
+
+	it("rejects duplicate (provider, region) mapping creation at the store", async () => {
+		await syncProvidersAndModels();
+		const [existing] = await db
+			.select()
+			.from(modelProviderMapping)
+			.where(
+				and(
+					eq(modelProviderMapping.modelId, "gpt-4o"),
+					eq(modelProviderMapping.providerId, "openai"),
+				),
+			)
+			.limit(1);
+		expect(existing).toBeDefined();
+
+		await expect(
+			applyOperations([
+				{
+					version: 1,
+					type: "mapping.create",
+					expectedUpdatedAt: null,
+					create: {
+						modelId: "gpt-4o",
+						providerId: "openai",
+						externalId: "gpt-4o-duplicate",
+						region: existing!.region,
+						inputPrice: "1e-6",
+						outputPrice: "2e-6",
+					},
+				},
+			]),
+		).rejects.toThrow(/duplicate_provider_region_mapping/);
+	});
+
+	it("applies and clears a source override on a static mapping", async () => {
+		await syncProvidersAndModels();
+		const [staticMapping] = await db
+			.select()
+			.from(modelProviderMapping)
+			.where(
+				and(
+					eq(modelProviderMapping.modelId, "gpt-4o"),
+					eq(modelProviderMapping.providerId, "openai"),
+				),
+			)
+			.limit(1);
+		expect(staticMapping).toBeDefined();
+		const basePrice = staticMapping!.inputPrice;
+		expect(basePrice).not.toBeNull();
+
+		await applyOperations([
+			{
+				version: 1,
+				type: "mapping.set_source_override",
+				mappingId: staticMapping!.id,
+				expectedUpdatedAt: null,
+				patch: { inputPrice: "2e-6" },
+			},
+		]);
+
+		const overridden = await loadLatestSnapshot();
+		expect(
+			overridden.mappings.find((item) => item.id === staticMapping!.id)
+				?.sourcePrices.input,
+		).toBe("2");
+
+		// The override records the mirrored base value at set-time, feeding the
+		// Phase 5 upstream-change review.
+		const [policyRow] = await db
+			.select()
+			.from(platformMappingPolicy)
+			.where(eq(platformMappingPolicy.mappingId, staticMapping!.id));
+		expect(policyRow?.sourceOverrides?.fields.inputPrice).toMatchObject({
+			value: "2e-6",
+			baseValue: basePrice,
+			setBy: "phase4-test",
+		});
+
+		// Clearing instantly reverts to the mirrored upstream value.
+		await applyOperations([
+			{
+				version: 1,
+				type: "mapping.clear_source_override",
+				mappingId: staticMapping!.id,
+				expectedUpdatedAt: policyRow!.updatedAt.toISOString(),
+			},
+		]);
+		const reverted = await loadLatestSnapshot();
+		const revertedInput = reverted.mappings.find(
+			(item) => item.id === staticMapping!.id,
+		)?.sourcePrices.input;
+		expect(Number(revertedInput)).toBe(Number(basePrice) * 1_000_000);
 	});
 });
