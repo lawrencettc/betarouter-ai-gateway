@@ -235,6 +235,33 @@ field — the zero-divergence soak interpretation applies to the pre-override
 world, so flip `PLATFORM_CATALOG_BASE_READ_ENABLED` before relying on
 overrides, or account for them when reading the soak.
 
+### Stage 9: upstream-change review
+
+No flag gates this stage either. The worker reconciles the review queue right
+after the startup catalog sync; the queue is served by the Admin API under
+`/platform/catalog/review` (list, `/refresh` to reconcile on demand,
+`/{id}/acknowledge` for informational entries).
+
+- **Drift entries** (`override_drift`): open while an active source
+  override's recorded base value no longer matches the mirrored row — i.e.
+  upstream moved a value the operator has pinned. The override keeps serving
+  either way; the entry is only a prompt. Resolve it by **keeping** the
+  override (re-apply `*.set_source_override` with the same value — any set
+  re-captures the base value) or **clearing** it (`*.clear_source_override`,
+  which reverts to the new upstream value). Applying either change set
+  reconciles the queue in the same transaction and labels the entry
+  `override_kept` or `override_cleared`; drift entries cannot be
+  acknowledged away.
+- **Informational entries** (`entity_added`, `entity_retired`): new static
+  entities and code-side retirements observed after the queue's first run.
+  Acknowledge them from the queue; a retirement reverted upstream before
+  review closes itself as `superseded`.
+
+The first reconcile ever seeds the existing catalog as pre-resolved
+`baseline` rows, so deploying this stage does not flood the queue with
+history. A field can drift again after a keep — each recurrence opens a new
+entry and the resolved rows remain as the audit trail.
+
 ## Emergency rollback
 
 Apply the smallest safe rollback in this order:

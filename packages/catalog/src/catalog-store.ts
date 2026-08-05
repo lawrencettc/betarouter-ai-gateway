@@ -34,6 +34,10 @@ import {
 	createdModelSourceRow,
 	createdProviderSourceRow,
 } from "./source-operations.js";
+import {
+	operationsTouchSourceOverrides,
+	reconcileCatalogReviewEntries,
+} from "./upstream-review.js";
 
 import type { CatalogLifecycle, EffectiveCatalog } from "./catalog.js";
 import type { CatalogPolicyState, CatalogSourceCreate } from "./change-set.js";
@@ -698,6 +702,16 @@ export async function applyStoredCatalogChangeSet(input: {
 						applied.inverseOperations as PlatformCatalogOperationV1[],
 				})
 				.where(eq(platformCatalogChangeSet.id, changeSet.id));
+			if (operationsTouchSourceOverrides(operations)) {
+				// Keeping or clearing an override is exactly how drift entries
+				// resolve, so reconcile the review queue in the same transaction
+				// instead of leaving the entry open until the next worker pass.
+				await reconcileCatalogReviewEntries({
+					transaction: tx,
+					actorId: input.actorId,
+					now,
+				});
+			}
 			return {
 				changeSetId: changeSet.id,
 				catalogRevision: revision.id,

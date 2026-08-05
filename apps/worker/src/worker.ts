@@ -12,6 +12,7 @@ import {
 	LOG_QUEUE,
 	publishToQueue,
 } from "@betarouter/cache";
+import { reconcileCatalogReviewEntries } from "@betarouter/catalog";
 import {
 	addApiKeyPeriodDuration,
 	and,
@@ -2702,6 +2703,19 @@ export async function startWorker() {
 	} catch (error) {
 		logger.error(
 			"Error during initial sync",
+			error instanceof Error ? error : new Error(String(error)),
+		);
+	}
+
+	// The sync is the only writer that moves mirrored values, so the
+	// upstream-change review reconciles right after it: overrides whose
+	// recorded base value no longer matches the mirror open queue entries.
+	try {
+		const review = await reconcileCatalogReviewEntries();
+		logger.info("Catalog upstream-change review reconciled", { ...review });
+	} catch (error) {
+		logger.error(
+			"Error reconciling catalog upstream-change review",
 			error instanceof Error ? error : new Error(String(error)),
 		);
 	}

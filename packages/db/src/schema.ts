@@ -1678,6 +1678,8 @@ export const platformAuditLogActions = [
 	"platform_catalog.test",
 	"platform_catalog.circuit_open",
 	"platform_catalog.circuit_close",
+	"platform_catalog.review_refresh",
+	"platform_catalog.review_acknowledge",
 ] as const;
 
 export type PlatformAuditLogAction = (typeof platformAuditLogActions)[number];
@@ -3577,6 +3579,110 @@ export const platformMappingHealthSummary = pgTable(
 		check(
 			"platform_mapping_health_summary_breaker_state_check",
 			sql`${table.breakerState} IN ('closed', 'open', 'half_open')`,
+		),
+	],
+);
+
+export const platformCatalogReviewKinds = [
+	"override_drift",
+	"entity_added",
+	"entity_retired",
+] as const;
+
+export type PlatformCatalogReviewKind =
+	(typeof platformCatalogReviewKinds)[number];
+
+export const platformCatalogReviewResolutions = [
+	"baseline",
+	"override_kept",
+	"override_cleared",
+	"acknowledged",
+	"superseded",
+] as const;
+
+export type PlatformCatalogReviewResolution =
+	(typeof platformCatalogReviewResolutions)[number];
+
+// Drift values travel inside one enveloping object: a bare scalar at the top
+// level of a jsonb column round-trips through Postgres' jsonb literal parsing
+// (the string "0.000003" comes back as a number), so the three values are
+// never stored as top-level scalars.
+export interface PlatformCatalogReviewDriftValuesV1 {
+	version: 1;
+	override: unknown;
+	base: unknown;
+	mirror: unknown;
+}
+
+// Upstream-change review queue: one row per detected condition. Drift entries
+// open while an override's recorded base value differs from the current
+// mirror and auto-resolve when the operator keeps (re-captures base) or
+// clears the override; informational entries surface new upstream entities
+// and code-side retirements. entityId stays polymorphic across the three
+// catalog entity tables, like platform_audit_log.resource_id.
+export const platformCatalogReviewEntry = pgTable(
+	"platform_catalog_review_entry",
+	{
+		id: text().primaryKey().notNull().$defaultFn(shortid),
+		createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+		updatedAt: timestamp({ withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => new Date()),
+		entryKey: text().notNull(),
+		kind: text({ enum: platformCatalogReviewKinds }).notNull(),
+		entityType: text({ enum: ["provider", "model", "mapping"] }).notNull(),
+		entityId: text().notNull(),
+		field: text(),
+		driftValues: jsonb().$type<PlatformCatalogReviewDriftValuesV1>(),
+		status: text({ enum: ["open", "resolved"] })
+			.notNull()
+			.default("open"),
+		detectedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+		lastSeenAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+		resolvedAt: timestamp({ withTimezone: true }),
+		resolvedBy: text(),
+		resolution: text({ enum: platformCatalogReviewResolutions }),
+	},
+	(table) => [
+		// A condition may recur after resolution (an override kept once can
+		// drift again), so uniqueness holds only among open entries; resolved
+		// rows keep the history.
+		uniqueIndex("platform_catalog_review_entry_open_key_unique")
+			.on(table.entryKey)
+			.where(sql`${table.status} = 'open'`),
+		index("platform_catalog_review_entry_status_kind_idx").on(
+			table.status,
+			table.kind,
+		),
+		index("platform_catalog_review_entry_key_idx").on(table.entryKey),
+		check(
+			"platform_catalog_review_entry_kind_check",
+			sql`${table.kind} IN ('override_drift', 'entity_added', 'entity_retired')`,
+		),
+		check(
+			"platform_catalog_review_entry_entity_type_check",
+			sql`${table.entityType} IN ('provider', 'model', 'mapping')`,
+		),
+		check(
+			"platform_catalog_review_entry_status_check",
+			sql`${table.status} IN ('open', 'resolved')`,
+		),
+		check(
+			"platform_catalog_review_entry_resolution_check",
+			sql`${table.resolution} IS NULL OR ${table.resolution} IN ('baseline', 'override_kept', 'override_cleared', 'acknowledged', 'superseded')`,
+		),
+		check(
+			"platform_catalog_review_entry_resolved_state_check",
+			sql`(${table.status} = 'open' AND ${table.resolvedAt} IS NULL AND ${table.resolution} IS NULL) OR (${table.status} = 'resolved' AND ${table.resolvedAt} IS NOT NULL AND ${table.resolution} IS NOT NULL)`,
+		),
+		check(
+			"platform_catalog_review_entry_field_check",
+			sql`(${table.kind} = 'override_drift') = (${table.field} IS NOT NULL)`,
+		),
+		check(
+			"platform_catalog_review_entry_drift_values_check",
+			sql`(${table.kind} = 'override_drift') = (${table.driftValues} IS NOT NULL)`,
 		),
 	],
 );

@@ -22,8 +22,10 @@ import {
 	getCatalogRevisionStatus,
 	mappingPolicyPatchSchema,
 	mappingPricePolicySchema,
+	operationsTouchSourceOverrides,
 	persistSourceCreates,
 	publishCatalogRevisionInvalidation,
+	reconcileCatalogReviewEntries,
 	refreshCatalogRevisionFromSource,
 	resolveEffectiveCatalog,
 	resetCatalogBreaker,
@@ -41,6 +43,7 @@ import {
 	model,
 	modelProviderMapping,
 	platformCatalogChangeSet,
+	platformCatalogReviewEntry,
 	platformCatalogRevision,
 	platformAuditLog,
 	platformMappingPolicy,
@@ -2593,6 +2596,15 @@ platformCatalog.openapi(
 							applied.inverseOperations as PlatformCatalogOperationV1[],
 					})
 					.where(eq(platformCatalogChangeSet.id, changeSetId));
+				if (operationsTouchSourceOverrides(operations)) {
+					// Keeping or clearing an override is exactly how drift entries
+					// resolve, so reconcile the review queue in the same transaction
+					// instead of leaving the entry open until the next worker pass.
+					await reconcileCatalogReviewEntries({
+						transaction: tx,
+						actorId: user.id,
+					});
+				}
 				await tx.insert(platformAuditLog).values({
 					userId: user.id,
 					action: "platform_catalog.apply",
@@ -2973,6 +2985,12 @@ platformCatalog.openapi(
 					.update(platformCatalogChangeSet)
 					.set({ state: "rolled_back" })
 					.where(eq(platformCatalogChangeSet.id, original.id));
+				if (operationsTouchSourceOverrides(operations)) {
+					await reconcileCatalogReviewEntries({
+						transaction: tx,
+						actorId: user.id,
+					});
+				}
 				await tx.insert(platformAuditLog).values({
 					userId: user.id,
 					action: "platform_catalog.rollback",
@@ -3075,6 +3093,261 @@ platformCatalog.openapi(
 				appliedAt: row.appliedAt?.toISOString() ?? null,
 			})),
 		);
+	},
+);
+
+const reviewEntrySchema = z.object({
+	id: z.string(),
+	entryKey: z.string(),
+	kind: z.enum(["override_drift", "entity_added", "entity_retired"]),
+	entityType: z.enum(["provider", "model", "mapping"]),
+	entityId: z.string(),
+	field: z.string().nullable(),
+	overrideValue: z.unknown(),
+	baseValue: z.unknown(),
+	mirrorValue: z.unknown(),
+	status: z.enum(["open", "resolved"]),
+	detectedAt: z.string(),
+	lastSeenAt: z.string(),
+	resolvedAt: z.string().nullable(),
+	resolvedBy: z.string().nullable(),
+	resolution: z
+		.enum([
+			"baseline",
+			"override_kept",
+			"override_cleared",
+			"acknowledged",
+			"superseded",
+		])
+		.nullable(),
+});
+
+const reviewSummarySchema = z.object({
+	baseline: z.boolean(),
+	driftOpened: z.number(),
+	driftResolved: z.number(),
+	entitiesAdded: z.number(),
+	entitiesRetired: z.number(),
+	retirementsSuperseded: z.number(),
+	openEntries: z.number(),
+});
+
+function reviewEntryView(
+	entry: typeof platformCatalogReviewEntry.$inferSelect,
+) {
+	return {
+		id: entry.id,
+		entryKey: entry.entryKey,
+		kind: entry.kind,
+		entityType: entry.entityType,
+		entityId: entry.entityId,
+		field: entry.field,
+		overrideValue: entry.driftValues?.override ?? null,
+		baseValue: entry.driftValues?.base ?? null,
+		mirrorValue: entry.driftValues?.mirror ?? null,
+		status: entry.status,
+		detectedAt: entry.detectedAt.toISOString(),
+		lastSeenAt: entry.lastSeenAt.toISOString(),
+		resolvedAt: entry.resolvedAt?.toISOString() ?? null,
+		resolvedBy: entry.resolvedBy,
+		resolution: entry.resolution,
+	};
+}
+
+platformCatalog.openapi(
+	createRoute({
+		method: "get",
+		path: "/review",
+		request: {
+			query: z.object({
+				status: z.enum(["open", "resolved", "all"]).default("open"),
+				kind: z
+					.enum(["override_drift", "entity_added", "entity_retired"])
+					.optional(),
+				entityType: z.enum(["provider", "model", "mapping"]).optional(),
+				page: z.coerce.number().int().positive().default(1),
+				pageSize: z.coerce.number().int().min(1).max(500).default(50),
+			}),
+		},
+		responses: {
+			200: {
+				description:
+					"Upstream-change review queue: override drift plus informational entity additions and retirements",
+				content: {
+					"application/json": {
+						schema: z.object({
+							items: z.array(reviewEntrySchema),
+							total: z.number(),
+							page: z.number(),
+							pageSize: z.number(),
+							openCounts: z.object({
+								override_drift: z.number(),
+								entity_added: z.number(),
+								entity_retired: z.number(),
+							}),
+						}),
+					},
+				},
+			},
+		},
+	}),
+	async (c) => {
+		const query = c.req.valid("query");
+		const conditions = [
+			query.status === "all"
+				? undefined
+				: eq(platformCatalogReviewEntry.status, query.status),
+			query.kind ? eq(platformCatalogReviewEntry.kind, query.kind) : undefined,
+			query.entityType
+				? eq(platformCatalogReviewEntry.entityType, query.entityType)
+				: undefined,
+		].filter((condition) => condition !== undefined);
+		const [rows, openRows] = await Promise.all([
+			db
+				.select()
+				.from(platformCatalogReviewEntry)
+				.where(conditions.length > 0 ? and(...conditions) : undefined)
+				.orderBy(
+					desc(platformCatalogReviewEntry.detectedAt),
+					desc(platformCatalogReviewEntry.id),
+				),
+			db
+				.select({
+					kind: platformCatalogReviewEntry.kind,
+					count: sql<number>`count(*)::int`,
+				})
+				.from(platformCatalogReviewEntry)
+				.where(eq(platformCatalogReviewEntry.status, "open"))
+				.groupBy(platformCatalogReviewEntry.kind),
+		]);
+		const openCounts = {
+			override_drift: 0,
+			entity_added: 0,
+			entity_retired: 0,
+		};
+		for (const row of openRows) {
+			openCounts[row.kind] = row.count;
+		}
+		const paged = paginate(
+			rows.map(reviewEntryView),
+			query.page,
+			query.pageSize,
+		);
+		return c.json({ ...paged, openCounts });
+	},
+);
+
+platformCatalog.openapi(
+	createRoute({
+		method: "post",
+		path: "/review/refresh",
+		responses: {
+			200: {
+				description:
+					"Reconcile the review queue against the current mirror on demand",
+				content: {
+					"application/json": { schema: reviewSummarySchema },
+				},
+			},
+		},
+	}),
+	async (c) => {
+		const user = c.get("user");
+		if (!user) {
+			throw new HTTPException(401, { message: "Unauthorized" });
+		}
+		const summary = await reconcileCatalogReviewEntries({ actorId: user.id });
+		await db.insert(platformAuditLog).values({
+			userId: user.id,
+			action: "platform_catalog.review_refresh",
+			resourceId: null,
+			success: true,
+			metadata: { ...summary },
+			...requestMetadata(c),
+		});
+		return c.json(summary);
+	},
+);
+
+platformCatalog.openapi(
+	createRoute({
+		method: "post",
+		path: "/review/{id}/acknowledge",
+		request: { params: z.object({ id: z.string().min(1) }) },
+		responses: {
+			200: {
+				description: "Acknowledged informational review entry",
+				content: {
+					"application/json": { schema: reviewEntrySchema },
+				},
+			},
+			404: { description: "Review entry not found" },
+			409: {
+				description:
+					"Drift entries resolve by keeping or clearing the override, not by acknowledgement",
+			},
+		},
+	}),
+	async (c) => {
+		const user = c.get("user");
+		if (!user) {
+			throw new HTTPException(401, { message: "Unauthorized" });
+		}
+		const entryId = c.req.valid("param").id;
+		const entry = await db.transaction(async (tx) => {
+			const [existing] = await tx
+				.select()
+				.from(platformCatalogReviewEntry)
+				.where(eq(platformCatalogReviewEntry.id, entryId))
+				.limit(1);
+			if (!existing) {
+				throw new HTTPException(404, { message: "Review entry not found" });
+			}
+			if (existing.kind === "override_drift") {
+				// Acknowledging drift would hide a real divergence; the operator
+				// resolves it by keeping (re-set, which re-captures the base value)
+				// or clearing the override through a change set.
+				throw new HTTPException(409, {
+					message:
+						"Drift entries resolve by keeping or clearing the override, not by acknowledgement",
+				});
+			}
+			if (existing.status === "resolved") {
+				return existing;
+			}
+			const now = new Date();
+			const [updated] = await tx
+				.update(platformCatalogReviewEntry)
+				.set({
+					status: "resolved",
+					resolvedAt: now,
+					resolvedBy: user.id,
+					resolution: "acknowledged",
+					lastSeenAt: now,
+				})
+				.where(eq(platformCatalogReviewEntry.id, entryId))
+				.returning();
+			if (!updated) {
+				throw new HTTPException(500, {
+					message: "Review entry was not updated",
+				});
+			}
+			await tx.insert(platformAuditLog).values({
+				userId: user.id,
+				action: "platform_catalog.review_acknowledge",
+				resourceId: entryId,
+				success: true,
+				metadata: {
+					entryKey: updated.entryKey,
+					kind: updated.kind,
+					entityType: updated.entityType,
+					entityId: updated.entityId,
+				},
+				...requestMetadata(c),
+			});
+			return updated;
+		});
+		return c.json(reviewEntryView(entry));
 	},
 );
 
