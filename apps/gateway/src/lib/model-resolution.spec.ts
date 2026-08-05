@@ -217,6 +217,16 @@ describe("buildCatalogParseContext", () => {
 		expect(context.providerIdsByModel.get(CANARY_MODEL_ID)?.has("openai")).toBe(
 			true,
 		);
+		// Every provider in a static-only snapshot exists in code, so nothing
+		// qualifies as a database-only platform provider.
+		expect(context.platformProviderIds).toEqual([]);
 		expect(buildCatalogParseContext(snapshot)).toBe(context);
+	});
+
+	it("exposes database-only platform provider ids for parsing", () => {
+		const input = resolverInputForStatic(canaryDefinition(), 9);
+		input.providers.push({ id: "acme-relay", status: "active" });
+		const context = buildCatalogParseContext(resolveEffectiveCatalog(input));
+		expect(context.platformProviderIds).toEqual(["acme-relay"]);
 	});
 });

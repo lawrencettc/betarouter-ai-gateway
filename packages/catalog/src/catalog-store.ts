@@ -14,53 +14,37 @@ import {
 	platformProviderPolicy,
 	provider,
 } from "@betarouter/db/schema";
-import { getProviderEnvConfig, getProviderEnvVar } from "@betarouter/models";
 
 import { validateCatalogActivation } from "./activation.js";
 import { resolveEffectiveCatalog } from "./catalog.js";
-import { applyCatalogOperations } from "./change-set.js";
+import {
+	applyCatalogOperations,
+	catalogSourceLookupFromRows,
+} from "./change-set.js";
 import {
 	catalogChangeSetInputSchema,
 	mappingPolicyPatchSchema,
 	mappingPricePolicySchema,
 } from "./contracts.js";
+import { buildCatalogResolverInput } from "./resolver-input.js";
 import {
-	fixedPricesV1ToPriceMap,
-	resolveMappingPrice,
-	sourceMappingPricesToPriceMap,
-} from "./pricing.js";
-import {
-	catalogCredentialConfigurationProfile,
-	catalogMappingTestProfile,
-} from "./test-target.js";
+	catalogOperationTargets,
+	catalogSourceInvariantBlockers,
+	createdMappingSourceRow,
+	createdModelSourceRow,
+	createdProviderSourceRow,
+} from "./source-operations.js";
 
-import type {
-	CatalogLifecycle,
-	CatalogResolverInput,
-	EffectiveCatalog,
-} from "./catalog.js";
-import type { CatalogPolicyState } from "./change-set.js";
+import type { CatalogLifecycle, EffectiveCatalog } from "./catalog.js";
+import type { CatalogPolicyState, CatalogSourceCreate } from "./change-set.js";
 import type { CatalogOperationV1 } from "./contracts.js";
 import type { PlatformCatalogOperationV1 } from "@betarouter/db/schema";
-import type { Provider } from "@betarouter/models";
 
 const CATALOG_INVALIDATION_CHANNEL = "platform-catalog:invalidate";
 
 export type CatalogTransaction = Parameters<
 	Parameters<typeof db.transaction>[0]
 >[0];
-
-function environmentCredentialAvailable(providerId: string): boolean {
-	const envVar = getProviderEnvVar(providerId as Provider);
-	if (!envVar || !process.env[envVar]?.trim()) {
-		return false;
-	}
-	const required = getProviderEnvConfig(providerId as Provider)?.required;
-	return Object.entries(required ?? {}).every(
-		([key, variable]) =>
-			key === "apiKey" || !variable || Boolean(process.env[variable]?.trim()),
-	);
-}
 
 async function loadStoreView(tx: CatalogTransaction) {
 	const [
@@ -131,12 +115,30 @@ function validateOperationEntities(
 	const modelIds = new Set(view.models.map((item) => item.id));
 	const mappingIds = new Set(view.mappings.map((item) => item.id));
 	const missing = operations.flatMap((operation) => {
-		if (operation.type === "provider.set_policy") {
+		// Create operations target entities that must NOT exist yet; their
+		// existence conflicts and parent checks are contract invariants
+		// (`catalogSourceInvariantBlockers`), not missing-entity errors.
+		if (
+			operation.type === "provider.create" ||
+			operation.type === "model.create" ||
+			operation.type === "mapping.create"
+		) {
+			return [];
+		}
+		if (
+			operation.type === "provider.set_policy" ||
+			operation.type === "provider.set_source_override" ||
+			operation.type === "provider.clear_source_override"
+		) {
 			return providerIds.has(operation.providerId)
 				? []
 				: [operation.providerId];
 		}
-		if (operation.type === "model.set_policy") {
+		if (
+			operation.type === "model.set_policy" ||
+			operation.type === "model.set_source_override" ||
+			operation.type === "model.clear_source_override"
+		) {
 			return modelIds.has(operation.modelId) ? [] : [operation.modelId];
 		}
 		if (operation.type === "entity.archive_policy") {
@@ -153,6 +155,27 @@ function validateOperationEntities(
 	if (missing.length > 0) {
 		throw new Error(
 			`Catalog source entities do not exist: ${[...new Set(missing)].join(", ")}`,
+		);
+	}
+}
+
+function validateSourceInvariants(
+	view: StoreView,
+	operations: CatalogOperationV1[],
+): void {
+	const blockers = catalogSourceInvariantBlockers(
+		{
+			providers: view.providers,
+			models: view.models,
+			mappings: view.mappings,
+		},
+		operations,
+	);
+	if (blockers.length > 0) {
+		throw new Error(
+			`Catalog source invariants are violated: ${blockers
+				.map((blocker) => `${blocker.entityId} (${blocker.reasons.join(", ")})`)
+				.join("; ")}`,
 		);
 	}
 }
@@ -225,154 +248,44 @@ function resolveStoreSnapshot(
 	view: StoreView,
 	state: CatalogPolicyState,
 	revision: number,
+	sourceCreates?: readonly CatalogSourceCreate[],
 ): EffectiveCatalog {
-	const credentialAvailability = Object.fromEntries(
-		view.providers.map((item) => [
-			item.id,
-			view.credentialProviderIds.has(item.id) ||
-				environmentCredentialAvailable(item.id),
-		]),
+	return resolveEffectiveCatalog(
+		buildCatalogResolverInput({
+			revision,
+			providers: view.providers,
+			models: view.models,
+			mappings: view.mappings,
+			state,
+			sourceCreates,
+			credentials: view.credentials,
+			passedTests: view.passedTests,
+		}),
 	);
-	const mappingReadiness: CatalogResolverInput["mappingReadiness"] = {};
-	for (const mapping of view.mappings) {
-		const pricePolicy = state.prices[mapping.id]?.policy;
-		const sourcePrices = sourceMappingPricesToPriceMap(mapping);
-		const prices = pricePolicy
-			? resolveMappingPrice({
-					sourcePrices,
-					policy:
-						pricePolicy.mode === "fixed"
-							? {
-									mode: "fixed",
-									fixedPrices: fixedPricesV1ToPriceMap(pricePolicy.fixedPrices),
-									allowNegativeMargin: pricePolicy.allowNegativeMargin,
-									negativeMarginReason: pricePolicy.negativeMarginReason,
-								}
-							: pricePolicy.mode === "markup"
-								? {
-										mode: "markup",
-										markupBps: pricePolicy.markupBps,
-										allowNegativeMargin: pricePolicy.allowNegativeMargin,
-										negativeMarginReason: pricePolicy.negativeMarginReason,
-									}
-								: { mode: "source_cost" },
-				})
-			: null;
-		const mappingPolicy = state.mappings[mapping.id];
-		const testedCredential = view.credentials
-			.filter((credential) => credential.provider === mapping.providerId)
-			.sort(
-				(left, right) =>
-					left.priority - right.priority || left.id.localeCompare(right.id),
-			)
-			.find((credential) => {
-				const profile = catalogMappingTestProfile({
-					mappingId: mapping.id,
-					providerId: mapping.providerId,
-					region: mapping.region,
-					externalId: mappingPolicy?.externalIdOverride ?? mapping.externalId,
-					contextSizeLimit: mappingPolicy?.contextSizeLimit,
-					maxOutputLimit: mappingPolicy?.maxOutputLimit,
-					disabledCapabilities: mappingPolicy?.disabledCapabilities,
-					credentialId: credential.id,
-					credentialFingerprint: credential.tokenFingerprint,
-					baseUrl: credential.baseUrl,
-					credentialOptions: credential.options,
-				});
-				return view.passedTests.has(`${mapping.id}:${profile}`);
-			});
-		mappingReadiness[mapping.id] = {
-			priceReady: prices?.ready ?? false,
-			testPassed: testedCredential !== undefined,
-			platformCredentialId: testedCredential?.id ?? null,
-			platformCredentialProfile: testedCredential
-				? catalogCredentialConfigurationProfile({
-						credentialId: testedCredential.id,
-						credentialFingerprint: testedCredential.tokenFingerprint,
-						baseUrl: testedCredential.baseUrl,
-						credentialOptions: testedCredential.options,
-					})
-				: null,
-			sourcePrices,
-			customerPrices: prices?.customerPrices ?? {},
-			margin: prices?.margin ?? {},
-			pricingMode: pricePolicy?.mode ?? null,
-			markupBps: pricePolicy?.mode === "markup" ? pricePolicy.markupBps : null,
-		};
+}
+
+/**
+ * Insert the source rows for admin-created entities. Runs before the policy
+ * rows are persisted (they reference the new ids) and uses the exact row
+ * shapes the provisional snapshot was resolved with.
+ */
+export async function persistSourceCreates(
+	tx: CatalogTransaction,
+	sourceCreates: readonly CatalogSourceCreate[],
+): Promise<void> {
+	for (const created of sourceCreates) {
+		if (created.entityType === "provider") {
+			await tx
+				.insert(provider)
+				.values(createdProviderSourceRow(created.create));
+		} else if (created.entityType === "model") {
+			await tx.insert(model).values(createdModelSourceRow(created.create));
+		} else {
+			await tx
+				.insert(modelProviderMapping)
+				.values(createdMappingSourceRow(created.entityId, created.create));
+		}
 	}
-	return resolveEffectiveCatalog({
-		revision,
-		now: new Date(),
-		providers: view.providers.map((item) => ({
-			id: item.id,
-			status: item.status,
-		})),
-		models: view.models.map((item) => ({
-			id: item.id,
-			status: item.status,
-			name: item.name,
-			family: item.family,
-			aliases: item.aliases,
-			output: item.output,
-			free: item.free,
-		})),
-		mappings: view.mappings.map((item) => ({
-			id: item.id,
-			providerId: item.providerId,
-			modelId: item.modelId,
-			status: item.status,
-			externalId: item.externalId,
-			region: item.region,
-			deprecatedAt: item.deprecatedAt,
-			deactivatedAt: item.deactivatedAt,
-			contextSize: item.contextSize,
-			maxOutput: item.maxOutput,
-			streaming: item.streaming,
-			vision: item.vision,
-			reasoning: item.reasoning,
-			reasoningMaxTokens: item.reasoningMaxTokens,
-			tools: item.tools,
-			jsonOutput: item.jsonOutput,
-			jsonOutputSchema: item.jsonOutputSchema,
-			webSearch: item.webSearch,
-			supportedParameters: item.supportedParameters,
-			pricingTiers: item.pricingTiers,
-			serviceTierMultipliers: item.serviceTierMultipliers,
-		})),
-		providerPolicies: Object.values(state.providers).map((item) => ({
-			providerId: item.providerId,
-			visible: item.visible,
-			enabled: item.enabled,
-			lifecycle: item.lifecycle,
-			deprecatedAt: item.deprecatedAt ? new Date(item.deprecatedAt) : null,
-			retireAt: item.retireAt ? new Date(item.retireAt) : null,
-		})),
-		modelPolicies: Object.values(state.models).map((item) => ({
-			modelId: item.modelId,
-			visible: item.visible,
-			enabled: item.enabled,
-			allowDirect: item.allowDirect,
-			lifecycle: item.lifecycle,
-			deprecatedAt: item.deprecatedAt ? new Date(item.deprecatedAt) : null,
-			retireAt: item.retireAt ? new Date(item.retireAt) : null,
-			replacementModelId: item.replacementModelId,
-			retirementMessage: item.retirementMessage,
-		})),
-		mappingPolicies: Object.values(state.mappings).map((item) => ({
-			mappingId: item.mappingId,
-			enabled: item.enabled,
-			priority: item.priority ?? 100,
-			weight: item.weight ?? 100,
-			breakerEnabled: item.breakerEnabled ?? true,
-			externalIdOverride: item.externalIdOverride,
-			contextSizeLimit: item.contextSizeLimit,
-			maxOutputLimit: item.maxOutputLimit,
-			disabledCapabilities: item.disabledCapabilities,
-		})),
-		providerCredentialAvailability: credentialAvailability,
-		mappingReadiness,
-		breakerStates: {},
-	});
 }
 
 async function persistState(
@@ -385,24 +298,18 @@ async function persistState(
 	const mappingIds = new Set<string>();
 	const priceIds = new Set<string>();
 	for (const operation of operations) {
-		if (operation.type === "provider.set_policy") {
-			providerIds.add(operation.providerId);
-		} else if (operation.type === "model.set_policy") {
-			modelIds.add(operation.modelId);
-		} else if (operation.type === "entity.archive_policy") {
-			(operation.entityType === "provider"
-				? providerIds
-				: operation.entityType === "model"
-					? modelIds
-					: mappingIds
-			).add(operation.entityId);
-		} else if (
-			operation.type === "mapping.set_price_policy" ||
-			operation.type === "mapping.clear_price_policy"
-		) {
-			priceIds.add(operation.mappingId);
-		} else {
-			mappingIds.add(operation.mappingId);
+		const targets = catalogOperationTargets(operation);
+		for (const id of targets.providerIds) {
+			providerIds.add(id);
+		}
+		for (const id of targets.modelIds) {
+			modelIds.add(id);
+		}
+		for (const id of targets.mappingIds) {
+			mappingIds.add(id);
+		}
+		for (const id of targets.priceMappingIds) {
+			priceIds.add(id);
 		}
 	}
 	for (const id of providerIds) {
@@ -733,13 +640,20 @@ export async function applyStoredCatalogChangeSet(input: {
 			);
 			const view = await loadStoreView(tx);
 			validateOperationEntities(view, operations);
+			validateSourceInvariants(view, operations);
 			const applied = applyCatalogOperations({
 				state: policyState(view),
 				operations,
 				actor: input.actorId,
 				updatedAt: now.toISOString(),
+				sources: catalogSourceLookupFromRows(view),
 			});
-			const provisional = resolveStoreSnapshot(view, applied.state, 0);
+			const provisional = resolveStoreSnapshot(
+				view,
+				applied.state,
+				0,
+				applied.sourceCreates,
+			);
 			const previousSnapshot = resolveStoreSnapshot(
 				view,
 				policyState(view),
@@ -755,6 +669,7 @@ export async function applyStoredCatalogChangeSet(input: {
 				.update(platformCatalogChangeSet)
 				.set({ state: "applying", errorCode: null })
 				.where(eq(platformCatalogChangeSet.id, changeSet.id));
+			await persistSourceCreates(tx, applied.sourceCreates);
 			await persistState(tx, applied.state, operations);
 			const [revision] = await tx
 				.insert(platformCatalogRevision)

@@ -69,6 +69,9 @@ export async function syncProvidersAndModels() {
 					})
 					.onConflictDoUpdate({
 						target: provider.id,
+						// The sync mirrors code and only ever writes code-owned rows;
+						// admin-created rows are never touched.
+						setWhere: sql`${provider.source} = 'static'`,
 						set: {
 							name: providerDef.name,
 							description: providerDef.description,
@@ -122,6 +125,7 @@ export async function syncProvidersAndModels() {
 					})
 					.onConflictDoUpdate({
 						target: model.id,
+						setWhere: sql`${model.source} = 'static'`,
 						// Use explicit defaults for notNull fields when not defined
 						set: {
 							name: modelDef.name,
@@ -165,7 +169,20 @@ export async function syncProvidersAndModels() {
 								.limit(1)
 						)[0];
 
-						if (existingMapping) {
+						if (existingMapping?.source === "admin") {
+							// A code mapping now claims a (model, provider, region) slot an
+							// operator created first. The admin row wins until the operator
+							// retires it; overwriting it here would destroy operator data.
+							logger.warn(
+								"Skipping sync for admin-owned mapping slot; retire the admin mapping to let code claim it",
+								{
+									mappingId: existingMapping.id,
+									modelId: modelDef.id,
+									providerId: mapping.providerId,
+									region: mappingRegion ?? null,
+								},
+							);
+						} else if (existingMapping) {
 							// Use null (not undefined) for missing fields to ensure DB is updated
 							// undefined in Drizzle means "don't update", null means "set to NULL"
 							await database

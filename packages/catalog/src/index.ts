@@ -10,6 +10,8 @@ export * from "./flags.js";
 export * from "./model-resolution.js";
 export * from "./pricing.js";
 export * from "./request-policy.js";
+export * from "./resolver-input.js";
+export * from "./source-operations.js";
 export * from "./runtime.js";
 export * from "./snapshot-cache.js";
 export * from "./test-target.js";

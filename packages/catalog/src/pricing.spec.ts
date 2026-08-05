@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	fixedPricesToPriceMap,
 	fixedPricesV1ToPriceMap,
+	fixedPricesV2ToPriceMap,
 	resolveMappingPrice,
 	sourceMappingPricesToPriceMap,
 } from "./pricing.js";
@@ -75,5 +77,60 @@ describe("resolveMappingPrice", () => {
 				policy: { mode: "source_cost" },
 			}),
 		).toMatchObject({ ready: false });
+	});
+});
+
+describe("fixedPricesV2ToPriceMap", () => {
+	it("keeps V1 aliasing when the independent fields are absent", () => {
+		expect(
+			fixedPricesV2ToPriceMap({
+				version: 2,
+				inputPerMillionTokens: "2",
+				cachedInputPerMillionTokens: "0.5",
+			}),
+		).toEqual({
+			input: "2",
+			audioInput: "2",
+			cachedInput: "0.5",
+			cacheRead: "0.5",
+			cachedImageInput: "0.5",
+			cachedAudioInput: "0.5",
+		});
+	});
+
+	it("prices aliased units independently when set", () => {
+		expect(
+			fixedPricesV2ToPriceMap({
+				version: 2,
+				inputPerMillionTokens: "2",
+				cachedInputPerMillionTokens: "0.5",
+				cacheReadPerMillionTokens: "0.2",
+				cachedImageInputPerMillionTokens: "0.3",
+				cachedAudioInputPerMillionTokens: "0.4",
+				audioInputPerMillionTokens: "8",
+			}),
+		).toEqual({
+			input: "2",
+			audioInput: "8",
+			cachedInput: "0.5",
+			cacheRead: "0.2",
+			cachedImageInput: "0.3",
+			cachedAudioInput: "0.4",
+		});
+	});
+
+	it("dispatches by version so stored V1 policies stay readable", () => {
+		expect(
+			fixedPricesToPriceMap({ version: 1, inputPerMillionTokens: "2" }),
+		).toEqual(
+			fixedPricesV1ToPriceMap({ version: 1, inputPerMillionTokens: "2" }),
+		);
+		expect(
+			fixedPricesToPriceMap({
+				version: 2,
+				inputPerMillionTokens: "2",
+				audioInputPerMillionTokens: "8",
+			}),
+		).toEqual({ input: "2", audioInput: "8" });
 	});
 });
