@@ -40,7 +40,7 @@ export function pickCheapestRecentModel<
 }
 
 export function getValidationModel(
-	provider: ProviderId,
+	provider: ProviderId | string,
 	providerKeyOptions?: ProviderKeyOptions,
 ): { modelId: string; externalId: string } | null {
 	// A configured validation model bypasses the auto-pick entirely, using the
@@ -155,7 +155,7 @@ export function getValidationModel(
  * Validate a provider API key by making a minimal request
  */
 export async function validateProviderKey(
-	provider: ProviderId,
+	provider: ProviderId | string,
 	token: string,
 	baseUrl?: string,
 	skipValidation = false,

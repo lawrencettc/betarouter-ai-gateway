@@ -848,3 +848,60 @@ describe("getProviderEndpoint", () => {
 		});
 	});
 });
+
+describe("getProviderEndpoint - protocol-family defaults", () => {
+	it("routes an undeclared provider with a base URL to the OpenAI chat path", () => {
+		expect(
+			getProviderEndpoint("db-only-provider", "https://relay.example.com"),
+		).toBe("https://relay.example.com/v1/chat/completions");
+	});
+
+	it("honors an explicit anthropic-messages protocol for an undeclared provider", () => {
+		expect(
+			getProviderEndpoint(
+				"db-only-provider",
+				"https://relay.example.com",
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+				"anthropic-messages",
+			),
+		).toBe("https://relay.example.com/v1/messages");
+	});
+
+	it("still throws for an undeclared provider without any base URL", () => {
+		expect(() => getProviderEndpoint("db-only-provider")).toThrow(
+			"requires a baseUrl",
+		);
+	});
+
+	it("keeps the Anthropic messages path for the anthropic provider", () => {
+		expect(getProviderEndpoint("anthropic")).toBe(
+			"https://api.anthropic.com/v1/messages",
+		);
+	});
+
+	it("keeps the AI Studio generateContent path for google protocol providers", () => {
+		expect(
+			getProviderEndpoint(
+				"google-ai-studio",
+				"https://gemini.example.com",
+				undefined,
+				"tok",
+				true,
+			),
+		).toBe(
+			"https://gemini.example.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?key=tok&alt=sse",
+		);
+	});
+});

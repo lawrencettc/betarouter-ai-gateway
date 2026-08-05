@@ -4,7 +4,9 @@ import { getSupportedServiceTiers, supportsServiceTier } from "./helpers.js";
 import { anthropicModels } from "./models/anthropic.js";
 import { models } from "./models.js";
 import {
+	PROVIDER_PROTOCOLS,
 	formatServiceTierMultiplier,
+	getProviderProtocol,
 	getServiceTier,
 	isStealthProvider,
 	providers,
@@ -503,6 +505,28 @@ describe("AtlasCloud video models", () => {
 			expect(mapping?.supportsVideoWithoutAudio).toBe(
 				supportsVideoWithoutAudio ?? true,
 			);
+		}
+	});
+});
+
+describe("getProviderProtocol", () => {
+	it("returns the declared protocol family for catalogue providers", () => {
+		expect(getProviderProtocol("anthropic")).toBe("anthropic-messages");
+		expect(getProviderProtocol("vertex-anthropic")).toBe("anthropic-messages");
+		expect(getProviderProtocol("google-ai-studio")).toBe("google-generative");
+		expect(getProviderProtocol("google-vertex")).toBe("google-generative");
+		expect(getProviderProtocol("aws-bedrock")).toBe("bedrock-converse");
+		expect(getProviderProtocol("openai")).toBe("openai-chat");
+		expect(getProviderProtocol("custom")).toBe("openai-chat");
+	});
+
+	it("returns undefined for ids outside the static catalogue", () => {
+		expect(getProviderProtocol("db-only-provider")).toBeUndefined();
+	});
+
+	it("declares a known protocol on every provider", () => {
+		for (const provider of providers) {
+			expect(PROVIDER_PROTOCOLS).toContain(provider.protocol);
 		}
 	});
 });

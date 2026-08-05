@@ -87,6 +87,39 @@ export interface ProviderAdditionalLink {
 }
 
 /**
+ * Wire-protocol family a provider speaks for chat-style requests. Transport
+ * selection (endpoint path, auth headers, streaming transform) branches on
+ * the protocol first, so a new provider on an existing protocol is data, not
+ * code — named providers may still carry id-keyed special cases on top (e.g.
+ * Azure resource endpoints, Vertex OAuth). New wire protocols remain code
+ * changes.
+ */
+export const PROVIDER_PROTOCOLS = [
+	/**
+	 * OpenAI-compatible Chat Completions. Responses API upgrades are declared
+	 * per mapping via `supportsResponsesApi`, not as a separate protocol.
+	 */
+	"openai-chat",
+	/** Anthropic Messages API. */
+	"anthropic-messages",
+	/**
+	 * Google Generative Language (`models/{id}:generateContent`), in either
+	 * the AI Studio or the Vertex endpoint shape.
+	 */
+	"google-generative",
+	/** AWS Bedrock Converse / ConverseStream. */
+	"bedrock-converse",
+	/**
+	 * Bespoke non-chat transport (video/image/speech providers) implemented in
+	 * code and keyed on provider id. Providers on this protocol can never be
+	 * defined as data.
+	 */
+	"provider-specific",
+] as const;
+
+export type ProviderProtocol = (typeof PROVIDER_PROTOCOLS)[number];
+
+/**
  * Organization-level compliance policy. When enabled, the gateway only routes
  * to providers whose {@link ProviderDataPolicy} explicitly satisfies every
  * active requirement (fail-closed: unknown/`null` attributes never satisfy a
@@ -155,6 +188,8 @@ export interface ProviderDefinition {
 	id: string;
 	name: string;
 	description: string;
+	// Wire-protocol family used for transport selection (see PROVIDER_PROTOCOLS)
+	protocol: ProviderProtocol;
 	// Environment variable configuration
 	env: ProviderEnvConfig;
 	// Whether the provider supports streaming
@@ -208,6 +243,7 @@ export interface ProviderDefinition {
 export const providers: ProviderDefinition[] = [
 	{
 		id: "llmgateway",
+		protocol: "openai-chat",
 		name: "betarouter",
 		description:
 			"betarouter is a framework for building and deploying large language models.",
@@ -237,6 +273,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "openai",
+		protocol: "openai-chat",
 		name: "OpenAI",
 		description:
 			"OpenAI is an AI research and deployment company. Our mission is to ensure that artificial general intelligence benefits all of humanity.",
@@ -285,6 +322,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "anthropic",
+		protocol: "anthropic-messages",
 		name: "Anthropic",
 		description:
 			"Anthropic is a research and deployment company focused on building safe and useful AI.",
@@ -316,6 +354,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "google-ai-studio",
+		protocol: "google-generative",
 		name: "Google AI Studio",
 		description:
 			"Google AI Studio is a platform for accessing Google's Gemini models.",
@@ -365,6 +404,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "glacier",
+		protocol: "google-generative",
 		name: "Glacier",
 		description:
 			"Glacier is a stealth provider with Google AI Studio-compatible Gemini endpoints.",
@@ -388,6 +428,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "iceberg",
+		protocol: "google-generative",
 		name: "Iceberg",
 		description:
 			"Iceberg is a stealth provider with Google AI Studio-compatible Gemini endpoints.",
@@ -411,6 +452,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "granite",
+		protocol: "openai-chat",
 		name: "Granite",
 		description:
 			"Granite is a stealth provider with OpenAI-compatible chat completions endpoints.",
@@ -434,6 +476,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "google-vertex",
+		protocol: "google-generative",
 		name: "Google Vertex AI",
 		description:
 			"Google Vertex AI is a platform for accessing Google's Gemini models via Vertex AI.",
@@ -485,6 +528,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "vertex-openai",
+		protocol: "openai-chat",
 		name: "Vertex AI (OpenAI-compatible)",
 		description:
 			"Access partner models (e.g. xAI Grok) via Google Cloud Vertex AI's OpenAI-compatible Chat Completions endpoint.",
@@ -528,6 +572,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "vertex-anthropic",
+		protocol: "anthropic-messages",
 		name: "Vertex AI (Anthropic)",
 		description:
 			"Access Claude models via Google Cloud Vertex AI with the Anthropic Messages API.",
@@ -564,6 +609,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "quartz",
+		protocol: "google-generative",
 		name: "Quartz",
 		description:
 			"Quartz is a Vertex-compatible provider for accessing Gemini and other Vertex-routed models.",
@@ -591,6 +637,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "avalanche",
+		protocol: "provider-specific",
 		name: "Avalanche",
 		description: "Avalanche - video generation provider.",
 		env: {
@@ -615,6 +662,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "groq",
+		protocol: "openai-chat",
 		name: "Groq",
 		description: "Groq's ultra-fast LPU inference with various models",
 		env: {
@@ -642,6 +690,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "cerebras",
+		protocol: "openai-chat",
 		name: "Cerebras",
 		description:
 			"Cerebras high-performance inference with ultra-fast throughput",
@@ -670,6 +719,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "xai",
+		protocol: "openai-chat",
 		name: "xAI",
 		description: "xAI's Grok large language models",
 		env: {
@@ -697,6 +747,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "deepseek",
+		protocol: "openai-chat",
 		name: "DeepSeek",
 		description:
 			"DeepSeek's high-performance language models with OpenAI-compatible API",
@@ -726,6 +777,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "alibaba",
+		protocol: "openai-chat",
 		name: "Alibaba Cloud",
 		description:
 			"Alibaba Cloud's Qwen large language models with OpenAI-compatible API",
@@ -772,6 +824,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "novita",
+		protocol: "openai-chat",
 		name: "NovitaAI",
 		description: "NovitaAI's OpenAI-compatible large language models",
 		env: {
@@ -797,6 +850,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "atlascloud",
+		protocol: "provider-specific",
 		name: "AtlasCloud",
 		description:
 			"AtlasCloud provides unified APIs for video, image, audio, and language generation models.",
@@ -838,6 +892,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "aws-bedrock",
+		protocol: "bedrock-converse",
 		name: "AWS Bedrock",
 		description: "Amazon Bedrock - fully managed service for foundation models",
 		env: {
@@ -943,6 +998,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "aws-mantle",
+		protocol: "openai-chat",
 		name: "AWS Mantle",
 		description:
 			"Amazon Bedrock Mantle - OpenAI frontier models served on AWS via the Responses API",
@@ -979,6 +1035,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "azure",
+		protocol: "openai-chat",
 		name: "Azure",
 		description: "Microsoft Azure - enterprise-grade OpenAI models",
 		env: {
@@ -1018,6 +1075,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "azure-ai-foundry",
+		protocol: "openai-chat",
 		name: "Azure AI Foundry",
 		description:
 			"Microsoft Azure AI Foundry - third-party models (Grok, Llama, Mistral, ...) via the Azure Models inference endpoint",
@@ -1055,6 +1113,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "zai",
+		protocol: "openai-chat",
 		name: "Z AI",
 		description: "Z AI's OpenAI-compatible large language models",
 		env: {
@@ -1084,6 +1143,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "moonshot",
+		protocol: "openai-chat",
 		name: "Moonshot AI",
 		description: "Moonshot AI's OpenAI-compatible large language models",
 		env: {
@@ -1111,6 +1171,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "perplexity",
+		protocol: "openai-chat",
 		name: "Perplexity",
 		description:
 			"Perplexity's AI models for search and conversation with real-time web access",
@@ -1139,6 +1200,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "nebius",
+		protocol: "openai-chat",
 		name: "Nebius AI",
 		description:
 			"Nebius AI Studio - OpenAI-compatible API for large language models",
@@ -1167,6 +1229,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "mistral",
+		protocol: "openai-chat",
 		name: "Mistral AI",
 		description: "Mistral AI's large language models",
 		env: {
@@ -1195,6 +1258,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "canopywave",
+		protocol: "openai-chat",
 		name: "CanopyWave",
 		description:
 			"CanopyWave is a platform for running large language models with OpenAI-compatible API",
@@ -1224,6 +1288,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "inference.net",
+		protocol: "openai-chat",
 		name: "Inference.net",
 		description:
 			"Inference.net is a platform for running large language models in the cloud.",
@@ -1251,6 +1316,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "together-ai",
+		protocol: "openai-chat",
 		name: "Together AI",
 		description:
 			"Together AI is a platform for running large language models in the cloud with fast inference.",
@@ -1278,6 +1344,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "scx-ai",
+		protocol: "openai-chat",
 		name: "SCX.ai (Turbo)",
 		description:
 			"SCX.ai is an Australian sovereign AI platform providing OpenAI-compatible Turbo inference endpoints — up to 4x faster than comparable providers — for a range of open models and SCX's own models, hosted on renewable-powered infrastructure.",
@@ -1307,6 +1374,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "scx-ai-gp",
+		protocol: "openai-chat",
 		name: "SCX.ai",
 		description:
 			"SCX.ai is an Australian sovereign AI platform providing OpenAI-compatible general-purpose inference endpoints for a range of open models and SCX's own models, hosted on renewable-powered infrastructure.",
@@ -1335,6 +1403,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "custom",
+		protocol: "openai-chat",
 		name: "Custom",
 		description: "Custom OpenAI-compatible provider with configurable base URL",
 		env: {
@@ -1353,6 +1422,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "nanogpt",
+		protocol: "openai-chat",
 		name: "NanoGPT",
 		description: "NanoGPT offers a large selection of models",
 		env: {
@@ -1378,6 +1448,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "bytedance",
+		protocol: "openai-chat",
 		name: "ByteDance",
 		description:
 			"ByteDance's ModelArk platform with OpenAI-compatible API for large language models",
@@ -1412,6 +1483,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "minimax",
+		protocol: "openai-chat",
 		name: "MiniMax",
 		description:
 			"MiniMax's large language models with advanced reasoning and coding capabilities",
@@ -1439,6 +1511,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "embercloud",
+		protocol: "openai-chat",
 		name: "EmberCloud",
 		description:
 			"EmberCloud provides access to a variety of large language models via an OpenAI-compatible API",
@@ -1465,6 +1538,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "meta",
+		protocol: "openai-chat",
 		name: "Meta",
 		description:
 			"Meta's Model API serving the Muse Spark multimodal reasoning models via an OpenAI-compatible API",
@@ -1509,6 +1583,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "sakana",
+		protocol: "openai-chat",
 		name: "Sakana AI",
 		description:
 			"Sakana AI's Fugu multi-agent orchestration models, served through a single OpenAI-compatible API.",
@@ -1530,6 +1605,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "tundra",
+		protocol: "openai-chat",
 		name: "Tundra",
 		description: "Tundra is a stealth provider with an OpenAI-compatible API.",
 		env: {
@@ -1552,6 +1628,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "xiaomi",
+		protocol: "openai-chat",
 		name: "Xiaomi",
 		description:
 			"Xiaomi MiMo API Open Platform provides access to the MiMo series of large language models.",
@@ -1582,6 +1659,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "deepinfra",
+		protocol: "openai-chat",
 		name: "DeepInfra",
 		description:
 			"DeepInfra inference platform with OpenAI-compatible API for hosting open-source models.",
@@ -1614,6 +1692,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "reve",
+		protocol: "provider-specific",
 		name: "Reve",
 		description:
 			"Reve's image generation models with native 4K resolution and code-based controllable image creation.",
@@ -1637,6 +1716,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "elevenlabs",
+		protocol: "provider-specific",
 		name: "ElevenLabs",
 		description:
 			"ElevenLabs provides lifelike, low-latency text-to-speech models in 70+ languages.",
@@ -1669,6 +1749,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "runware",
+		protocol: "openai-chat",
 		name: "Runware",
 		description:
 			"Runware provides fast, cost-efficient inference for open and frontier LLMs through an OpenAI-compatible API.",
@@ -1698,6 +1779,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "gonka24",
+		protocol: "openai-chat",
 		name: "Gonka24",
 		description:
 			"Gonka24 serves open-weight large language models via an OpenAI-compatible inference gateway.",
@@ -1719,6 +1801,7 @@ export const providers: ProviderDefinition[] = [
 	},
 	{
 		id: "fireworks",
+		protocol: "openai-chat",
 		name: "Fireworks AI",
 		description:
 			"Fireworks AI serves open-weight models on a fast, OpenAI-compatible inference platform.",
@@ -1766,6 +1849,17 @@ export function getProviderDefinition(
 	providerId: ProviderId | string,
 ): ProviderDefinition | undefined {
 	return providers.find((p) => p.id === providerId);
+}
+
+/**
+ * Declared wire protocol of a provider, or undefined for ids outside the
+ * static catalogue (e.g. database-defined providers, whose protocol comes
+ * from their provider row instead).
+ */
+export function getProviderProtocol(
+	providerId: ProviderId | string,
+): ProviderProtocol | undefined {
+	return getProviderDefinition(providerId)?.protocol;
 }
 
 /**

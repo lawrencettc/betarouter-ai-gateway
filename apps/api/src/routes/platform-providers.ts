@@ -18,6 +18,7 @@ import {
 	ne,
 	platformAuditLog,
 	platformProviderCredential,
+	provider as providerTable,
 	shortid,
 } from "@betarouter/db";
 import { isStealthProvider, providers } from "@betarouter/models";
@@ -28,7 +29,6 @@ import type {
 	PlatformAuditLogAction,
 	ProviderKeyOptions,
 } from "@betarouter/db";
-import type { ProviderId } from "@betarouter/models";
 
 const platformProviders = new OpenAPIHono<ServerTypes>();
 platformProviders.use("/*", platformAdminMiddleware);
@@ -112,16 +112,28 @@ function normalizeBaseUrl<T extends string | null | undefined>(baseUrl: T): T {
 	) as T;
 }
 
-function assertSupportedProvider(
-	provider: string,
-): asserts provider is ProviderId {
+async function assertSupportedProvider(provider: string): Promise<void> {
 	const definition = providers.find((item) => item.id === provider);
-	if (
-		!definition ||
-		provider === "llmgateway" ||
-		provider === "custom" ||
-		isStealthProvider(definition)
-	) {
+	if (definition) {
+		if (
+			provider === "llmgateway" ||
+			provider === "custom" ||
+			isStealthProvider(definition)
+		) {
+			throw new HTTPException(400, {
+				message: "This provider cannot be configured as a platform provider",
+			});
+		}
+		return;
+	}
+	// Not in the static catalogue — allow providers that exist as rows in the
+	// provider table (database-defined platform providers).
+	const [row] = await db
+		.select({ id: providerTable.id })
+		.from(providerTable)
+		.where(eq(providerTable.id, provider))
+		.limit(1);
+	if (!row) {
 		throw new HTTPException(400, {
 			message: "This provider cannot be configured as a platform provider",
 		});
@@ -129,7 +141,7 @@ function assertSupportedProvider(
 }
 
 async function validateCredential(input: {
-	provider: ProviderId;
+	provider: string;
 	token: string;
 	baseUrl?: string;
 	options?: ProviderKeyOptions;
@@ -347,7 +359,7 @@ platformProviders.openapi(createCredentialRoute, async (c) => {
 			metadata: { provider: input.provider, name: input.name },
 		},
 		async () => {
-			assertSupportedProvider(input.provider);
+			await assertSupportedProvider(input.provider);
 			const options = input.options as ProviderKeyOptions | undefined;
 			const baseUrl = normalizeBaseUrl(input.baseUrl);
 			const validation = await validateCredential({
@@ -492,7 +504,7 @@ platformProviders.openapi(updateCredentialRoute, async (c) => {
 					});
 				}
 				const validation = await validateCredential({
-					provider: existing.provider as ProviderId,
+					provider: existing.provider,
 					token: validationToken,
 					baseUrl: baseUrl ?? undefined,
 					options,
@@ -613,7 +625,7 @@ platformProviders.openapi(validateRoute, async (c) => {
 			credential.provider,
 		);
 		const result = await validateCredential({
-			provider: credential.provider as ProviderId,
+			provider: credential.provider,
 			token,
 			baseUrl: credential.baseUrl ?? undefined,
 			options: credential.options ?? undefined,

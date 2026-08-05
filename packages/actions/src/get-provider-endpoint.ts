@@ -6,9 +6,11 @@ import {
 	type ProviderDefinition,
 	type ProviderModelMapping,
 	type ProviderId,
+	type ProviderProtocol,
 	type VertexTokenType,
 	getProviderEnvValue,
 	getProviderEnvConfig,
+	getProviderProtocol,
 	getVariantEnvVarNameFor,
 	resolveVertexTokenType,
 } from "@betarouter/models";
@@ -135,9 +137,37 @@ const PROVIDER_DEFAULT_BASE_URLS: Partial<Record<ProviderId, string>> = {
 };
 
 export function getProviderDefaultBaseUrl(
-	provider: ProviderId,
+	provider: ProviderId | string,
 ): string | undefined {
-	return PROVIDER_DEFAULT_BASE_URLS[provider];
+	return PROVIDER_DEFAULT_BASE_URLS[provider as ProviderId];
+}
+
+/**
+ * Google Generative Language `models/{id}:generateContent` endpoint shared by
+ * every AI Studio-shaped deployment (google-ai-studio, glacier, iceberg, and
+ * any other provider on the `google-generative` protocol without a Vertex-style
+ * special case).
+ */
+function getGoogleGenerateContentEndpoint(
+	url: string,
+	externalId: string | undefined,
+	token: string | undefined,
+	stream: boolean | undefined,
+): string {
+	const endpoint = stream ? "streamGenerateContent" : "generateContent";
+	const baseEndpoint = externalId
+		? `${url}/v1beta/models/${externalId}:${endpoint}`
+		: `${url}/v1beta/models/gemini-2.0-flash:${endpoint}`;
+	const queryParams = [];
+	if (token) {
+		queryParams.push(`key=${token}`);
+	}
+	if (stream) {
+		queryParams.push("alt=sse");
+	}
+	return queryParams.length > 0
+		? `${baseEndpoint}?${queryParams.join("&")}`
+		: baseEndpoint;
 }
 
 /**
@@ -151,9 +181,12 @@ export function getProviderDefaultBaseUrl(
  * @param modelId - Canonical gateway model id, used to look up
  *   capability info (e.g. supportsResponsesApi). When omitted, falls back to
  *   `model` — but pass the root id explicitly whenever you have it.
+ * @param protocol - Wire protocol for providers outside the static catalogue
+ *   (database-defined providers). Ignored when the provider id has a declared
+ *   protocol in code.
  */
 export function getProviderEndpoint(
-	provider: ProviderId,
+	provider: ProviderId | string,
 	baseUrl?: string,
 	model?: string,
 	token?: string,
@@ -168,6 +201,7 @@ export function getProviderEndpoint(
 	modelId?: string,
 	vertexTokenType?: VertexTokenType,
 	variant?: EnvVarVariant,
+	protocol?: ProviderProtocol,
 ): string {
 	let externalId = model;
 	let providerMapping: ProviderModelMapping | undefined;
@@ -471,42 +505,9 @@ export function getProviderEndpoint(
 	// upstreams answer with their HTML frontend instead of the API.
 	url = url.replace(/\/+$/, "");
 
+	// Path selection: id-keyed special cases first, then the protocol-family
+	// default paths below for everything else.
 	switch (provider) {
-		case "anthropic":
-			return `${url}/v1/messages`;
-		case "google-ai-studio": {
-			const endpoint = stream ? "streamGenerateContent" : "generateContent";
-			const baseEndpoint = externalId
-				? `${url}/v1beta/models/${externalId}:${endpoint}`
-				: `${url}/v1beta/models/gemini-2.0-flash:${endpoint}`;
-			const queryParams = [];
-			if (token) {
-				queryParams.push(`key=${token}`);
-			}
-			if (stream) {
-				queryParams.push("alt=sse");
-			}
-			return queryParams.length > 0
-				? `${baseEndpoint}?${queryParams.join("&")}`
-				: baseEndpoint;
-		}
-		case "glacier":
-		case "iceberg": {
-			const endpoint = stream ? "streamGenerateContent" : "generateContent";
-			const baseEndpoint = externalId
-				? `${url}/v1beta/models/${externalId}:${endpoint}`
-				: `${url}/v1beta/models/gemini-2.0-flash:${endpoint}`;
-			const queryParams = [];
-			if (token) {
-				queryParams.push(`key=${token}`);
-			}
-			if (stream) {
-				queryParams.push("alt=sse");
-			}
-			return queryParams.length > 0
-				? `${baseEndpoint}?${queryParams.join("&")}`
-				: baseEndpoint;
-		}
 		case "google-vertex":
 		case "quartz":
 			return buildVertexCompatibleEndpoint(
@@ -790,10 +791,6 @@ export function getProviderEndpoint(
 			}
 			return `${url}/v1/chat/completions`;
 		}
-		case "inference.net":
-		case "llmgateway":
-		case "groq":
-		case "cerebras":
 		case "meta": {
 			// Muse Spark only exposes reasoning (as summaries) through the
 			// Responses API — Chat Completions redacts reasoning_content entirely.
@@ -812,18 +809,18 @@ export function getProviderEndpoint(
 			}
 			return `${url}/v1/chat/completions`;
 		}
-		case "deepseek":
-		case "moonshot":
-		case "nebius":
-		case "nanogpt":
-		case "canopywave":
-		case "minimax":
-		case "xiaomi":
-		case "embercloud":
-		case "tundra":
-		case "scx-ai":
-		case "scx-ai-gp":
-		case "custom":
+		default:
+			break;
+	}
+
+	// Protocol-family default paths — any provider without an id-keyed special
+	// case above (including database-defined providers) resolves here.
+	switch (getProviderProtocol(provider) ?? protocol) {
+		case "anthropic-messages":
+			return `${url}/v1/messages`;
+		case "google-generative":
+			return getGoogleGenerateContentEndpoint(url, externalId, token, stream);
+		case "openai-chat":
 		default:
 			return `${url}/v1/chat/completions`;
 	}

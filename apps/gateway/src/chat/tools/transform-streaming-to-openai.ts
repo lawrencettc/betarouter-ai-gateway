@@ -1,6 +1,7 @@
 import { redisClient } from "@betarouter/cache";
 import { shortid } from "@betarouter/db";
 import { logger } from "@betarouter/logger";
+import { getProviderProtocol } from "@betarouter/models";
 
 import { calculatePromptTokensFromMessages } from "./calculate-prompt-tokens.js";
 import { extractImages } from "./extract-images.js";
@@ -13,7 +14,52 @@ import { buildEncryptedReasoningDetail } from "./reasoning-details.js";
 import { transformOpenaiStreaming } from "./transform-openai-streaming.js";
 
 import type { Annotation, StreamingDelta } from "./types.js";
-import type { Provider } from "@betarouter/models";
+import type { Provider, ProviderProtocol } from "@betarouter/models";
+
+/**
+ * Streaming transform family, resolved from the provider's declared wire
+ * protocol. "openai-responses-capable" is the id-keyed special case for the
+ * OpenAI-family providers that emit Responses API events (and Azure's
+ * prompt-filter leading chunk); every other OpenAI-compatible provider takes
+ * the plain "openai-chat" transform. "unknown" (an undeclared provider id
+ * without an explicit protocol) falls back to the OpenAI transform with a
+ * warning.
+ */
+type StreamTransformFamily =
+	| "anthropic-messages"
+	| "google-generative"
+	| "bedrock-converse"
+	| "openai-responses-capable"
+	| "openai-chat"
+	| "unknown";
+
+function getStreamTransformFamily(
+	usedProvider: Provider | string,
+	protocol: ProviderProtocol | undefined,
+): StreamTransformFamily {
+	switch (usedProvider) {
+		case "azure":
+		case "sakana":
+		case "meta":
+		case "aws-mantle":
+		case "openai":
+			return "openai-responses-capable";
+		default:
+			break;
+	}
+	switch (getProviderProtocol(usedProvider) ?? protocol) {
+		case "anthropic-messages":
+			return "anthropic-messages";
+		case "google-generative":
+			return "google-generative";
+		case "bedrock-converse":
+			return "bedrock-converse";
+		case undefined:
+			return "unknown";
+		default:
+			return "openai-chat";
+	}
+}
 
 function normalizeAnthropicUsage(usage: any): any {
 	if (!usage || typeof usage !== "object") {
@@ -59,12 +105,13 @@ function normalizeAnthropicUsage(usage: any): any {
 }
 
 export function transformStreamingToOpenai(
-	usedProvider: Provider,
+	usedProvider: Provider | string,
 	usedModel: string,
 	data: any,
 	messages: any[],
 	serverToolUseIndices?: Set<number>,
 	supportsReasoning = true,
+	protocol?: ProviderProtocol,
 ): any {
 	let transformedData = data;
 
@@ -89,9 +136,8 @@ export function transformStreamingToOpenai(
 		return false;
 	};
 
-	switch (usedProvider) {
-		case "anthropic":
-		case "vertex-anthropic": {
+	switch (getStreamTransformFamily(usedProvider, protocol)) {
+		case "anthropic-messages": {
 			const usage = data.message?.usage ?? data.usage;
 			if (data.type === "message_start") {
 				transformedData = {
@@ -393,11 +439,7 @@ export function transformStreamingToOpenai(
 			break;
 		}
 
-		case "google-ai-studio":
-		case "glacier":
-		case "iceberg":
-		case "google-vertex":
-		case "quartz": {
+		case "google-generative": {
 			const buildUsage = (
 				usageMetadata: any | undefined,
 				messagesForFallback: any[],
@@ -751,11 +793,7 @@ export function transformStreamingToOpenai(
 			break;
 		}
 
-		case "azure":
-		case "sakana":
-		case "meta":
-		case "aws-mantle":
-		case "openai": {
+		case "openai-responses-capable": {
 			// Azure precedes every stream with a prompt-filter-only chunk that has
 			// empty id/object/model and no choices. The default OpenAI fallback
 			// path passes the empty values through and breaks downstream
@@ -1193,7 +1231,7 @@ export function transformStreamingToOpenai(
 			break;
 		}
 
-		case "aws-bedrock": {
+		case "bedrock-converse": {
 			const eventType = data.__aws_event_type;
 
 			if (eventType === "contentBlockDelta" && data.delta?.text) {
@@ -1413,37 +1451,7 @@ export function transformStreamingToOpenai(
 			break;
 		}
 
-		case "mistral":
-		case "novita":
-		case "zai":
-		case "groq":
-		case "cerebras":
-		case "xai":
-		case "deepseek":
-		case "alibaba":
-		case "moonshot":
-		case "perplexity":
-		case "nebius":
-		case "fireworks":
-		case "canopywave":
-		case "inference.net":
-		case "together-ai":
-		case "scx-ai":
-		case "scx-ai-gp":
-		case "deepinfra":
-		case "custom":
-		case "nanogpt":
-		case "bytedance":
-		case "minimax":
-		case "embercloud":
-		case "runware":
-		case "gonka24":
-		case "granite":
-		case "tundra":
-		case "xiaomi":
-		case "azure-ai-foundry":
-		case "vertex-openai":
-		case "llmgateway": {
+		case "openai-chat": {
 			// Azure AI Foundry mirrors Azure OpenAI's prompt-filter-only leading
 			// chunk on some models — empty id/object/choices, no usage. Drop it
 			// for the same reason: it breaks downstream hasOpenAIFormat checks.
