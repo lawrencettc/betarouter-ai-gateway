@@ -14,6 +14,7 @@ import {
 } from "./source-operations.js";
 import {
 	catalogCredentialConfigurationProfile,
+	catalogMappingProfileForOutputs,
 	catalogMappingTestProfile,
 } from "./test-target.js";
 
@@ -189,6 +190,7 @@ export function buildCatalogResolverInput(input: {
 		]),
 	);
 
+	const modelOutputById = new Map(models.map((row) => [row.id, row.output]));
 	const mappingReadiness: CatalogResolverInput["mappingReadiness"] = {};
 	for (const mapping of mappings) {
 		const pricePolicy = input.state.prices[mapping.id]?.policy;
@@ -234,6 +236,12 @@ export function buildCatalogResolverInput(input: {
 					credentialFingerprint: credential.tokenFingerprint,
 					baseUrl: credential.baseUrl,
 					credentialOptions: credential.options,
+					// Modality-specific probe: an embeddings mapping is satisfied only
+					// by a passed minimal-embeddings run, never by a chat probe.
+					profile:
+						catalogMappingProfileForOutputs(
+							modelOutputById.get(mapping.modelId) ?? [],
+						) ?? undefined,
 				});
 				return input.passedTests.has(`${mapping.id}:${profile}`);
 			});

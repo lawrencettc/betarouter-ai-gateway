@@ -10,9 +10,11 @@ Cloudflare Tunnel.
 
 - The first launch catalog is curated by the operator in Admin.
 - Text/chat mappings may activate after an exact `minimal-chat` test passes.
-- Keep embeddings, moderation, image, audio/speech, OCR, and video mappings
-  disabled until their operation-specific profiles in the future build plan
-  are implemented.
+- Embeddings mappings may activate after an exact `minimal-embeddings` test
+  passes (Stage 11).
+- Keep moderation, image, audio/speech, OCR, and video mappings disabled
+  until their operation-specific profiles in the future build plan are
+  implemented.
 - Catalog editor permissions are not separated in this release. Existing
   immutable platform-admin authorization remains the only admin gate.
 
@@ -27,10 +29,11 @@ PLATFORM_CATALOG_SHADOW_READ=false
 PLATFORM_CATALOG_DISCOVERY_ENABLED=false
 PLATFORM_CATALOG_ROUTING_ENABLED=false
 PLATFORM_CATALOG_BASE_READ_ENABLED=false
+PLATFORM_CATALOG_EMBEDDINGS_ROUTING_ENABLED=false
 PLATFORM_CATALOG_BREAKER_MODE=off
 ```
 
-The production Compose file forwards all five flags to the unified service.
+The production Compose file forwards all six flags to the unified service.
 Do not enable a later stage in Git or the image; change the deployment secret
 file so emergency rollback remains independent of a new build.
 
@@ -289,23 +292,63 @@ Catalog page adds:
 - **Retire** (trash icon) wired to `entity.archive_policy` — hide, disable,
   and retire the policy. Nothing is ever hard-deleted.
 
+### Stage 11: Embeddings modality rollout
+
+The first Phase 7 modality slice. `/v1/embeddings` now resolves model base
+data through the same shared resolver as chat (static by default,
+catalog-first under `PLATFORM_CATALOG_BASE_READ_ENABLED`, dual-resolve
+divergence logging under `PLATFORM_CATALOG_SHADOW_READ` — the same
+zero-pricing-divergence abort rule applies), and passes
+`operation: "embeddings"` to catalog request enforcement.
+
+Enforcement is gated separately so this stage cannot break embeddings
+traffic on deploy: embeddings requests enforce catalog decisions only when
+BOTH `PLATFORM_CATALOG_ROUTING_ENABLED` and
+`PLATFORM_CATALOG_EMBEDDINGS_ROUTING_ENABLED` are true. Until the second
+flag flips, embeddings stay on legacy routing while shadow reads log every
+decision.
+
+1. Deploy with `PLATFORM_CATALOG_EMBEDDINGS_ROUTING_ENABLED` unset (off).
+   With shadow reads on, `Catalog routing decision` log lines with
+   `operation: "embeddings"` appear immediately; expect `allowed: false`
+   (`model_not_available`) until embeddings mappings are activated — that is
+   the soak signal, not a fault.
+2. Activate each embeddings mapping exactly as in Stage 8: credential, a
+   passed mapping test, price policy, enablement. The test console derives
+   the `minimal-embeddings` probe from the model's output modalities; a
+   passed `minimal-chat` run never satisfies an embeddings mapping (and the
+   activation validator blocks enabling until the right probe passed).
+   Pricing units for this modality are the per-token `inputPrice` and the
+   flat `requestPrice`; `inputCharacterPrice` also flows through price
+   policies, though no current embeddings mapping uses it.
+3. When the shadow decisions for embeddings traffic are `allowed: true` with
+   the expected mapping ids and prices, set
+   `PLATFORM_CATALOG_EMBEDDINGS_ROUTING_ENABLED=true` in the deployment
+   secret file (no rebuild) and restart.
+4. Rollback for this stage alone: unset
+   `PLATFORM_CATALOG_EMBEDDINGS_ROUTING_ENABLED`. Embeddings return to
+   legacy routing without touching chat enforcement.
+
 ## Emergency rollback
 
 Apply the smallest safe rollback in this order:
 
 1. Set `PLATFORM_CATALOG_BREAKER_MODE=off`.
 2. Set `PLATFORM_CATALOG_BASE_READ_ENABLED=false`.
-3. Set `PLATFORM_CATALOG_ROUTING_ENABLED=false`.
-4. If discovery is affected, set
+3. If only embeddings are affected, set
+   `PLATFORM_CATALOG_EMBEDDINGS_ROUTING_ENABLED=false` — embeddings return
+   to legacy routing without touching chat enforcement.
+4. Set `PLATFORM_CATALOG_ROUTING_ENABLED=false`.
+5. If discovery is affected, set
    `PLATFORM_CATALOG_DISCOVERY_ENABLED=false` and
    `PLATFORM_CATALOG_SHADOW_READ=false`.
-5. Use Admin rollback preview and audited inverse revision when the issue is an
+6. Use Admin rollback preview and audited inverse revision when the issue is an
    operator policy change. The inverse of a creation retires the created
    entry (no catalog row is ever hard-deleted); the inverse of a source
    override restores the previous override values.
-6. Redeploy the previous image when the application is faulty. Keep additive
+7. Redeploy the previous image when the application is faulty. Keep additive
    catalog tables and audit history.
-7. Restore the predeploy database backup only for proven data corruption and
+8. Restore the predeploy database backup only for proven data corruption and
    after recording an incident decision. A normal feature rollback does not
    require schema reversal.
 

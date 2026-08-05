@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { catalogMappingTestProfile } from "./test-target.js";
+import {
+	catalogMappingProfileForOutputs,
+	catalogMappingTestProfile,
+} from "./test-target.js";
 
 const target = {
 	mappingId: "mapping-1",
@@ -38,5 +41,28 @@ describe("catalogMappingTestProfile", () => {
 		]) {
 			expect(catalogMappingTestProfile(changed)).not.toBe(current);
 		}
+	});
+
+	it("separates probe profiles so a chat run cannot satisfy embeddings", () => {
+		expect(
+			catalogMappingTestProfile({ ...target, profile: "minimal-embeddings" }),
+		).toMatch(/^minimal-embeddings@sha256:[a-f0-9]{64}$/);
+		expect(
+			catalogMappingTestProfile({ ...target, profile: "minimal-embeddings" }),
+		).not.toBe(catalogMappingTestProfile(target));
+	});
+});
+
+describe("catalogMappingProfileForOutputs", () => {
+	it("derives the probe profile from output modalities", () => {
+		expect(catalogMappingProfileForOutputs(["text"])).toBe("minimal-chat");
+		expect(catalogMappingProfileForOutputs(["text", "image"])).toBe(
+			"minimal-chat",
+		);
+		expect(catalogMappingProfileForOutputs(["embedding"])).toBe(
+			"minimal-embeddings",
+		);
+		expect(catalogMappingProfileForOutputs(["image"])).toBeNull();
+		expect(catalogMappingProfileForOutputs([])).toBeNull();
 	});
 });

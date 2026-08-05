@@ -14,6 +14,29 @@ function canonical(value: unknown): unknown {
 	return value;
 }
 
+export type CatalogMappingTestProfileName =
+	"minimal-chat" | "minimal-embeddings";
+
+/**
+ * Which probe profile a model's output modalities call for, shared by the
+ * test-run route (which probe to send) and the resolver's expected-profile
+ * computation (which passed run satisfies the test gate) — the two MUST agree
+ * or passed tests can never unlock routing. Null means no probe profile
+ * exists for the modality yet: the launch boundary keeps such mappings
+ * disabled and the test console refuses to run them.
+ */
+export function catalogMappingProfileForOutputs(
+	output: readonly string[],
+): CatalogMappingTestProfileName | null {
+	if (output.includes("text")) {
+		return "minimal-chat";
+	}
+	if (output.includes("embedding")) {
+		return "minimal-embeddings";
+	}
+	return null;
+}
+
 export interface CatalogMappingTestTarget {
 	mappingId: string;
 	providerId: string;
