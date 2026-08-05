@@ -202,6 +202,10 @@ const requireOverrideField = {
 	message: "At least one override field is required",
 };
 
+const requireUpdateField = {
+	message: "At least one update field is required",
+};
+
 /**
  * Compliance attestations (`dataPolicy`, `headquarters`) are intentionally
  * not overridable while the console has a single operator role; the strict
@@ -310,6 +314,98 @@ export const mappingSourceOverridePatchSchema = z
 	})
 	.strict()
 	.refine((value) => Object.keys(value).length > 0, requireOverrideField);
+
+/**
+ * Direct edits to admin-created (`source: 'admin'`) rows — decision 2 of the
+ * plan: they have no code counterpart, so there is no mirror to override and
+ * the source row itself is the authority. Field coverage deliberately equals
+ * the corresponding create schema (what can be set at create time can be
+ * edited afterwards); nullability mirrors the database columns, not the
+ * override schemas, because `null` here means "store NULL", not "clear an
+ * override". Identity fields (ids, mapping model/provider/region) and
+ * compliance attestations stay immutable.
+ */
+export const providerUpdateSchema = z
+	.object({
+		name: z.string().trim().min(1).max(255).optional(),
+		description: z.string().max(10_000).optional(),
+		protocol: dataProtocolSchema.optional(),
+		streaming: z.boolean().nullable().optional(),
+		cancellation: z.boolean().nullable().optional(),
+		color: z.string().trim().min(1).max(64).nullable().optional(),
+		website: z.string().url().nullable().optional(),
+		announcement: z.string().max(2_000).nullable().optional(),
+		priority: z.number().min(0).max(1_000_000).nullable().optional(),
+		contentFilter: z.boolean().nullable().optional(),
+		maxTemperature: z.number().min(0).max(10).nullable().optional(),
+		termsUrl: z.string().url().nullable().optional(),
+		privacyPolicyUrl: z.string().url().nullable().optional(),
+		statusPageUrl: z.string().url().nullable().optional(),
+		apiKeyInstructions: z.string().max(10_000).nullable().optional(),
+	})
+	.strict()
+	.refine((value) => Object.keys(value).length > 0, requireUpdateField);
+
+export const modelUpdateSchema = z
+	.object({
+		name: z.string().trim().min(1).max(255).optional(),
+		description: z.string().max(10_000).optional(),
+		family: z.string().trim().min(1).max(255).optional(),
+		aliases: z.array(idSchema).max(100).optional(),
+		output: z.array(z.string().trim().min(1).max(64)).max(10).optional(),
+		free: z.boolean().optional(),
+	})
+	.strict()
+	.refine((value) => Object.keys(value).length > 0, requireUpdateField);
+
+export const mappingUpdateSchema = z
+	.object({
+		externalId: idSchema.optional(),
+		contextSize: z.number().int().positive().nullable().optional(),
+		maxOutput: z.number().int().positive().nullable().optional(),
+		streaming: z.boolean().optional(),
+		vision: z.boolean().nullable().optional(),
+		reasoning: z.boolean().nullable().optional(),
+		reasoningMaxTokens: z.boolean().optional(),
+		tools: z.boolean().nullable().optional(),
+		jsonOutput: z.boolean().optional(),
+		jsonOutputSchema: z.boolean().optional(),
+		webSearch: z.boolean().optional(),
+		supportedParameters: z.array(idSchema).max(100).nullable().optional(),
+		pricingTiers: z
+			.array(mappingPricingTierSchema)
+			.min(1)
+			.max(10)
+			.nullable()
+			.optional(),
+		serviceTierMultipliers: z
+			.record(idSchema, z.number().positive().max(100))
+			.nullable()
+			.optional(),
+		inputPrice: sourceDecimalStringSchema.nullable().optional(),
+		outputPrice: sourceDecimalStringSchema.nullable().optional(),
+		cachedInputPrice: sourceDecimalStringSchema.nullable().optional(),
+		cacheReadInputPrice: sourceDecimalStringSchema.nullable().optional(),
+		cacheWriteInputPrice: sourceDecimalStringSchema.nullable().optional(),
+		cacheWriteInputPrice1h: sourceDecimalStringSchema.nullable().optional(),
+		imageInputPrice: sourceDecimalStringSchema.nullable().optional(),
+		imageOutputPrice: sourceDecimalStringSchema.nullable().optional(),
+		inputAudioPrice: sourceDecimalStringSchema.nullable().optional(),
+		cachedImageInputPrice: sourceDecimalStringSchema.nullable().optional(),
+		cachedInputAudioPrice: sourceDecimalStringSchema.nullable().optional(),
+		outputAudioPrice: sourceDecimalStringSchema.nullable().optional(),
+		inputCharacterPrice: sourceDecimalStringSchema.nullable().optional(),
+		ocrPagePrice: sourceDecimalStringSchema.nullable().optional(),
+		inputAudioHourPrice: sourceDecimalStringSchema.nullable().optional(),
+		requestPrice: sourceDecimalStringSchema.nullable().optional(),
+		webSearchPrice: sourceDecimalStringSchema.nullable().optional(),
+		perSecondPrice: z
+			.record(idSchema, sourceDecimalStringSchema)
+			.nullable()
+			.optional(),
+	})
+	.strict()
+	.refine((value) => Object.keys(value).length > 0, requireUpdateField);
 
 export const providerCreateSchema = z
 	.object({
@@ -515,6 +611,30 @@ export const catalogOperationV1Schema = z.discriminatedUnion("type", [
 	z
 		.object({
 			...operationBase,
+			type: z.literal("provider.update"),
+			providerId: idSchema,
+			patch: providerUpdateSchema,
+		})
+		.strict(),
+	z
+		.object({
+			...operationBase,
+			type: z.literal("model.update"),
+			modelId: idSchema,
+			patch: modelUpdateSchema,
+		})
+		.strict(),
+	z
+		.object({
+			...operationBase,
+			type: z.literal("mapping.update"),
+			mappingId: idSchema,
+			patch: mappingUpdateSchema,
+		})
+		.strict(),
+	z
+		.object({
+			...operationBase,
 			type: z.literal("provider.create"),
 			create: providerCreateSchema,
 		})
@@ -561,3 +681,6 @@ export type MappingSourceOverridePatch = z.infer<
 export type ProviderCreateInput = z.infer<typeof providerCreateSchema>;
 export type ModelCreateInput = z.infer<typeof modelCreateSchema>;
 export type MappingCreateInput = z.infer<typeof mappingCreateSchema>;
+export type ProviderUpdatePatch = z.infer<typeof providerUpdateSchema>;
+export type ModelUpdatePatch = z.infer<typeof modelUpdateSchema>;
+export type MappingUpdatePatch = z.infer<typeof mappingUpdateSchema>;

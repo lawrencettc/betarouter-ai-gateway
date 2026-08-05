@@ -7,6 +7,7 @@ import {
 } from "./pricing.js";
 import {
 	applySourceOverridesToRow,
+	applySourceUpdateToRow,
 	createdMappingSourceRow,
 	createdModelSourceRow,
 	createdProviderSourceRow,
@@ -17,7 +18,11 @@ import {
 } from "./test-target.js";
 
 import type { CatalogBreakerState, CatalogResolverInput } from "./catalog.js";
-import type { CatalogPolicyState, CatalogSourceCreate } from "./change-set.js";
+import type {
+	CatalogPolicyState,
+	CatalogSourceCreate,
+	CatalogSourceUpdate,
+} from "./change-set.js";
 import type { SourceMappingPriceFields } from "./pricing.js";
 import type { MappingPricingTier } from "@betarouter/db/schema";
 import type { Provider } from "@betarouter/models";
@@ -97,7 +102,8 @@ export function environmentCredentialAvailable(providerId: string): boolean {
  *
  * `sourceCreates` lets a change set that creates entities resolve its
  * provisional snapshot before the rows are persisted, using exactly the row
- * values persistence will write.
+ * values persistence will write; `sourceUpdates` does the same for direct
+ * edits to admin-created rows.
  */
 export function buildCatalogResolverInput(input: {
 	revision: number;
@@ -107,6 +113,7 @@ export function buildCatalogResolverInput(input: {
 	mappings: readonly CatalogMappingRowInput[];
 	state: CatalogPolicyState;
 	sourceCreates?: readonly CatalogSourceCreate[];
+	sourceUpdates?: readonly CatalogSourceUpdate[];
 	credentials: readonly CatalogCredentialRowInput[];
 	passedTests: ReadonlySet<string>;
 	breakerStates?: Record<string, CatalogBreakerState>;
@@ -123,6 +130,35 @@ export function buildCatalogResolverInput(input: {
 			mappingRows.push(
 				createdMappingSourceRow(created.entityId, created.create),
 			);
+		}
+	}
+	for (const updated of input.sourceUpdates ?? []) {
+		if (updated.entityType === "provider") {
+			const index = providerRows.findIndex(
+				(row) => row.id === updated.entityId,
+			);
+			if (index >= 0) {
+				providerRows[index] = applySourceUpdateToRow(
+					providerRows[index],
+					updated.patch,
+				);
+			}
+		} else if (updated.entityType === "model") {
+			const index = modelRows.findIndex((row) => row.id === updated.entityId);
+			if (index >= 0) {
+				modelRows[index] = applySourceUpdateToRow(
+					modelRows[index],
+					updated.patch,
+				);
+			}
+		} else {
+			const index = mappingRows.findIndex((row) => row.id === updated.entityId);
+			if (index >= 0) {
+				mappingRows[index] = applySourceUpdateToRow(
+					mappingRows[index],
+					updated.patch,
+				);
+			}
 		}
 	}
 

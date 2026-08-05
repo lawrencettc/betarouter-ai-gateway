@@ -262,6 +262,33 @@ The first reconcile ever seeds the existing catalog as pre-resolved
 history. A field can drift again after a keep — each recurrence opens a new
 entry and the resolved rows remain as the audit trail.
 
+### Stage 10: Admin console workflows
+
+No flag gates this stage; it is UI over the Stage 8/9 operations, so every
+write still lands as a previewed, applied, revisioned change set. The Admin
+Catalog page adds:
+
+- **Create** buttons on the Providers/Models/Mappings tabs staging
+  `provider.create` / `model.create` / `mapping.create`. Created entries are
+  admin-owned drafts; the relay flow continues with credentials, mapping
+  test, and price policy exactly as in Stage 8.
+- **Source fields** (layers icon) per row. On a static entry it is the
+  three-value editor — source (mirror), override, and effective per field —
+  staging `*.set_source_override` (a cleared field reverts to upstream) or
+  `*.clear_source_override` for the whole entry. A field whose recorded base
+  value no longer matches the mirror shows an "Upstream moved" badge. On an
+  admin-created entry the same dialog edits the source row directly through
+  the `provider.update` / `model.update` / `mapping.update` operations —
+  admin rows have no code counterpart, so there is no mirror to override;
+  the inverse operation captures the previous values for rollback. Direct
+  updates refuse static targets (`update_targets_static_entity`), and
+  overrides still refuse admin targets (`override_targets_admin_entity`).
+- **Review** tab: the Stage 9 queue with open counts, on-demand reconcile,
+  acknowledge for informational entries, and Keep/Clear actions that stage
+  the corresponding override change set for a drift entry.
+- **Retire** (trash icon) wired to `entity.archive_policy` — hide, disable,
+  and retire the policy. Nothing is ever hard-deleted.
+
 ## Emergency rollback
 
 Apply the smallest safe rollback in this order:

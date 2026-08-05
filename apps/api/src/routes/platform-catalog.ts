@@ -24,6 +24,7 @@ import {
 	mappingPricePolicySchema,
 	operationsTouchSourceOverrides,
 	persistSourceCreates,
+	persistSourceUpdates,
 	publishCatalogRevisionInvalidation,
 	reconcileCatalogReviewEntries,
 	refreshCatalogRevisionFromSource,
@@ -66,9 +67,13 @@ import type {
 	CatalogPolicyState,
 	CatalogRevisionStatus,
 	CatalogSourceCreate,
+	CatalogSourceUpdate,
 	EffectiveCatalog,
 } from "@betarouter/catalog";
-import type { PlatformCatalogOperationV1 } from "@betarouter/db";
+import type {
+	PlatformCatalogOperationV1,
+	PlatformSourceOverridesV1,
+} from "@betarouter/db";
 import type { ProviderId } from "@betarouter/models";
 
 const platformCatalog = new OpenAPIHono<ServerTypes>();
@@ -157,10 +162,91 @@ const mappingPolicyViewSchema = z.object({
 	maxOutputLimit: z.number().nullable(),
 	disabledCapabilities: z.array(z.string()),
 });
+const catalogSourceSchema = z.enum(["static", "admin"]);
+const sourceOverrideFieldViewSchema = z.object({
+	value: z.unknown(),
+	baseValue: z.unknown(),
+	setAt: z.string(),
+	setBy: z.string(),
+});
+const sourceOverridesViewSchema = z
+	.record(z.string(), sourceOverrideFieldViewSchema)
+	.nullable();
+// Raw mirror values of the fields the source editor covers (the overridable
+// set for static rows, the directly editable set for admin rows). The
+// effective value composes client-side as override.value ?? sourceValues[key],
+// mirroring `applySourceOverridesToRow`.
+const providerSourceValuesSchema = z.object({
+	name: z.string(),
+	description: z.string(),
+	protocol: z.string().nullable(),
+	streaming: z.boolean().nullable(),
+	cancellation: z.boolean().nullable(),
+	color: z.string().nullable(),
+	website: z.string().nullable(),
+	announcement: z.string().nullable(),
+	priority: z.number().nullable(),
+	contentFilter: z.boolean().nullable(),
+	maxTemperature: z.number().nullable(),
+	serviceTiers: z.unknown(),
+	regionConfig: z.unknown(),
+	termsUrl: z.string().nullable(),
+	privacyPolicyUrl: z.string().nullable(),
+	statusPageUrl: z.string().nullable(),
+	apiKeyInstructions: z.string().nullable(),
+	modelCardBadge: z.string().nullable(),
+	additionalLinks: z.unknown(),
+});
+const modelSourceValuesSchema = z.object({
+	name: z.string(),
+	description: z.string(),
+	family: z.string(),
+	aliases: z.array(z.string()),
+	output: z.array(z.string()),
+	free: z.boolean(),
+});
+const mappingSourceValuesSchema = z.object({
+	externalId: z.string(),
+	region: z.string().nullable(),
+	contextSize: z.number().nullable(),
+	maxOutput: z.number().nullable(),
+	streaming: z.boolean(),
+	vision: z.boolean().nullable(),
+	reasoning: z.boolean().nullable(),
+	reasoningMaxTokens: z.boolean(),
+	tools: z.boolean().nullable(),
+	jsonOutput: z.boolean(),
+	jsonOutputSchema: z.boolean(),
+	webSearch: z.boolean(),
+	supportedParameters: z.array(z.string()).nullable(),
+	pricingTiers: z.unknown(),
+	serviceTierMultipliers: z.unknown(),
+	inputPrice: z.string().nullable(),
+	outputPrice: z.string().nullable(),
+	cachedInputPrice: z.string().nullable(),
+	cacheReadInputPrice: z.string().nullable(),
+	cacheWriteInputPrice: z.string().nullable(),
+	cacheWriteInputPrice1h: z.string().nullable(),
+	imageInputPrice: z.string().nullable(),
+	imageOutputPrice: z.string().nullable(),
+	inputAudioPrice: z.string().nullable(),
+	cachedImageInputPrice: z.string().nullable(),
+	cachedInputAudioPrice: z.string().nullable(),
+	outputAudioPrice: z.string().nullable(),
+	inputCharacterPrice: z.string().nullable(),
+	ocrPagePrice: z.string().nullable(),
+	inputAudioHourPrice: z.string().nullable(),
+	requestPrice: z.string().nullable(),
+	webSearchPrice: z.string().nullable(),
+	perSecondPrice: z.record(z.string(), z.string()).nullable(),
+});
 const adminProviderSchema = effectiveProviderSchema.extend({
 	name: z.string(),
 	description: z.string(),
 	credentialAvailable: z.boolean(),
+	source: catalogSourceSchema,
+	sourceValues: providerSourceValuesSchema,
+	sourceOverrides: sourceOverridesViewSchema,
 	policy: providerPolicyViewSchema.nullable(),
 });
 const adminModelSchema = effectiveModelSchema.extend({
@@ -168,10 +254,16 @@ const adminModelSchema = effectiveModelSchema.extend({
 	description: z.string(),
 	family: z.string(),
 	output: z.array(z.string()),
+	source: catalogSourceSchema,
+	sourceValues: modelSourceValuesSchema,
+	sourceOverrides: sourceOverridesViewSchema,
 	policy: modelPolicyViewSchema.nullable(),
 });
 const adminMappingSchema = effectiveMappingSchema.extend({
 	credentialAvailable: z.boolean(),
+	source: catalogSourceSchema,
+	sourceValues: mappingSourceValuesSchema,
+	sourceOverrides: sourceOverridesViewSchema,
 	policy: mappingPolicyViewSchema.nullable(),
 	providerPolicy: providerPolicyViewSchema.nullable(),
 	modelPolicy: modelPolicyViewSchema.nullable(),
@@ -426,6 +518,7 @@ function reservedNamespaceBlockers(
 			case "provider.set_policy":
 			case "provider.set_source_override":
 			case "provider.clear_source_override":
+			case "provider.update":
 				return operation.providerId === RESERVED_TENANT_PROVIDER_ID
 					? [operation.providerId]
 					: [];
@@ -434,6 +527,7 @@ function reservedNamespaceBlockers(
 			case "model.set_policy":
 			case "model.set_source_override":
 			case "model.clear_source_override":
+			case "model.update":
 			case "provider.create":
 			case "model.create":
 			case "mapping.create":
@@ -477,7 +571,8 @@ function missingOperationBlockers(
 		if (
 			operation.type === "provider.set_policy" ||
 			operation.type === "provider.set_source_override" ||
-			operation.type === "provider.clear_source_override"
+			operation.type === "provider.clear_source_override" ||
+			operation.type === "provider.update"
 		) {
 			return providerIds.has(operation.providerId)
 				? []
@@ -486,7 +581,8 @@ function missingOperationBlockers(
 		if (
 			operation.type === "model.set_policy" ||
 			operation.type === "model.set_source_override" ||
-			operation.type === "model.clear_source_override"
+			operation.type === "model.clear_source_override" ||
+			operation.type === "model.update"
 		) {
 			return modelIds.has(operation.modelId) ? [] : [operation.modelId];
 		}
@@ -596,6 +692,7 @@ function resolveStateSnapshot(
 	state: CatalogPolicyState,
 	revision: number,
 	sourceCreates?: readonly CatalogSourceCreate[],
+	sourceUpdates?: readonly CatalogSourceUpdate[],
 ): EffectiveCatalog {
 	return resolveEffectiveCatalog(
 		buildCatalogResolverInput({
@@ -605,6 +702,7 @@ function resolveStateSnapshot(
 			mappings: view.sourceMappings,
 			state,
 			sourceCreates,
+			sourceUpdates,
 			credentials: view.credentials,
 			passedTests: view.passedTests,
 		}),
@@ -1109,6 +1207,98 @@ function definedPriceRecord(
 	);
 }
 
+function sourceOverridesView(
+	overrides: PlatformSourceOverridesV1 | null | undefined,
+) {
+	if (!overrides || Object.keys(overrides.fields).length === 0) {
+		return null;
+	}
+	return Object.fromEntries(
+		Object.entries(overrides.fields).map(([key, field]) => [
+			key,
+			{
+				value: field.value ?? null,
+				baseValue: field.baseValue ?? null,
+				setAt: field.setAt,
+				setBy: field.setBy,
+			},
+		]),
+	);
+}
+
+function providerSourceValues(source: typeof provider.$inferSelect) {
+	return {
+		name: source.name,
+		description: source.description,
+		protocol: source.protocol ?? null,
+		streaming: source.streaming,
+		cancellation: source.cancellation,
+		color: source.color,
+		website: source.website,
+		announcement: source.announcement,
+		priority: source.priority,
+		contentFilter: source.contentFilter,
+		maxTemperature: source.maxTemperature,
+		serviceTiers: source.serviceTiers,
+		regionConfig: source.regionConfig,
+		termsUrl: source.termsUrl,
+		privacyPolicyUrl: source.privacyPolicyUrl,
+		statusPageUrl: source.statusPageUrl,
+		apiKeyInstructions: source.apiKeyInstructions,
+		modelCardBadge: source.modelCardBadge,
+		additionalLinks: source.additionalLinks,
+	};
+}
+
+function modelSourceValues(source: typeof model.$inferSelect) {
+	return {
+		name: source.name,
+		description: source.description,
+		family: source.family,
+		aliases: source.aliases,
+		output: source.output,
+		free: source.free,
+	};
+}
+
+function mappingSourceValues(source: typeof modelProviderMapping.$inferSelect) {
+	return {
+		externalId: source.externalId,
+		region: source.region,
+		contextSize: source.contextSize,
+		maxOutput: source.maxOutput,
+		streaming: source.streaming,
+		vision: source.vision,
+		reasoning: source.reasoning,
+		reasoningMaxTokens: source.reasoningMaxTokens,
+		tools: source.tools,
+		jsonOutput: source.jsonOutput,
+		jsonOutputSchema: source.jsonOutputSchema,
+		webSearch: source.webSearch,
+		supportedParameters: source.supportedParameters,
+		pricingTiers: source.pricingTiers,
+		serviceTierMultipliers: source.serviceTierMultipliers,
+		inputPrice: source.inputPrice,
+		outputPrice: source.outputPrice,
+		cachedInputPrice: source.cachedInputPrice,
+		cacheReadInputPrice: source.cacheReadInputPrice,
+		cacheWriteInputPrice: source.cacheWriteInputPrice,
+		cacheWriteInputPrice1h: source.cacheWriteInputPrice1h,
+		imageInputPrice: source.imageInputPrice,
+		imageOutputPrice: source.imageOutputPrice,
+		inputAudioPrice: source.inputAudioPrice,
+		cachedImageInputPrice: source.cachedImageInputPrice,
+		cachedInputAudioPrice: source.cachedInputAudioPrice,
+		outputAudioPrice: source.outputAudioPrice,
+		inputCharacterPrice: source.inputCharacterPrice,
+		ocrPagePrice: source.ocrPagePrice,
+		inputAudioHourPrice: source.inputAudioHourPrice,
+		requestPrice: source.requestPrice,
+		webSearchPrice: source.webSearchPrice,
+		perSecondPrice: source.perSecondPrice,
+	};
+}
+
 platformCatalog.openapi(
 	createRoute({
 		method: "get",
@@ -1300,6 +1490,9 @@ platformCatalog.openapi(
 				name: source.name,
 				description: source.description,
 				credentialAvailable: view.credentialAvailability[item.id] ?? false,
+				source: source.source,
+				sourceValues: providerSourceValues(source),
+				sourceOverrides: sourceOverridesView(policy?.sourceOverrides),
 				policy: policy
 					? {
 							updatedAt: policy.updatedAt.toISOString(),
@@ -1371,6 +1564,9 @@ platformCatalog.openapi(
 				description: source.description,
 				family: source.family,
 				output: source.output,
+				source: source.source,
+				sourceValues: modelSourceValues(source),
+				sourceOverrides: sourceOverridesView(policy?.sourceOverrides),
 				policy: policy
 					? {
 							updatedAt: policy.updatedAt.toISOString(),
@@ -1432,6 +1628,9 @@ platformCatalog.openapi(
 		const sourceModelById = new Map(
 			view.sourceModels.map((item) => [item.id, item]),
 		);
+		const sourceMappingById = new Map(
+			view.sourceMappings.map((item) => [item.id, item]),
+		);
 		const mappingCandidates = view.snapshot.mappings.filter(
 			(item) =>
 				(!query.providerId || item.providerId === query.providerId) &&
@@ -1439,6 +1638,7 @@ platformCatalog.openapi(
 					sourceModelById.get(item.modelId)?.output.includes(query.modality)),
 		);
 		const filtered = filterEffective(mappingCandidates, query).map((item) => {
+			const source = sourceMappingById.get(item.id)!;
 			const policy = policyById.get(item.id);
 			const providerPolicy = providerPolicyById.get(item.providerId);
 			const modelPolicy = modelPolicyById.get(item.modelId);
@@ -1448,6 +1648,9 @@ platformCatalog.openapi(
 				sourcePrices: definedPriceRecord(item.sourcePrices),
 				customerPrices: definedPriceRecord(item.customerPrices),
 				margin: definedPriceRecord(item.margin),
+				source: source.source,
+				sourceValues: mappingSourceValues(source),
+				sourceOverrides: sourceOverridesView(policy?.sourceOverrides),
 				pricePolicyUpdatedAt: pricePolicy?.updatedAt.toISOString() ?? null,
 				pricePolicy: pricePolicy
 					? serializeMappingPricePolicy(pricePolicy)
@@ -2187,6 +2390,7 @@ platformCatalog.openapi(
 				applied.state,
 				view.snapshot.revision + 1,
 				applied.sourceCreates,
+				applied.sourceUpdates,
 			);
 			const impact = await calculateCatalogImpact(
 				view,
@@ -2545,6 +2749,7 @@ platformCatalog.openapi(
 					applied.state,
 					0,
 					applied.sourceCreates,
+					applied.sourceUpdates,
 				);
 				try {
 					validateCatalogActivation(
@@ -2566,6 +2771,7 @@ platformCatalog.openapi(
 					.set({ state: "applying" })
 					.where(eq(platformCatalogChangeSet.id, changeSetId));
 				await persistSourceCreates(tx, applied.sourceCreates);
+				await persistSourceUpdates(tx, applied.sourceUpdates);
 				await persistPolicyState(tx, applied.state, operations);
 				const [revision] = await tx
 					.insert(platformCatalogRevision)
@@ -2713,6 +2919,7 @@ platformCatalog.openapi(
 			applied.state,
 			view.snapshot.revision + 1,
 			applied.sourceCreates,
+			applied.sourceUpdates,
 		);
 		const blockers = [...missing];
 		if (blockers.length === 0) {
@@ -2930,6 +3137,7 @@ platformCatalog.openapi(
 					applied.state,
 					0,
 					applied.sourceCreates,
+					applied.sourceUpdates,
 				);
 				try {
 					validateCatalogActivation(
@@ -2947,6 +3155,7 @@ platformCatalog.openapi(
 					});
 				}
 				await persistSourceCreates(tx, applied.sourceCreates);
+				await persistSourceUpdates(tx, applied.sourceUpdates);
 				await persistPolicyState(tx, applied.state, operations);
 				const [revision] = await tx
 					.insert(platformCatalogRevision)

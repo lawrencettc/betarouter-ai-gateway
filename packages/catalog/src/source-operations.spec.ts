@@ -155,6 +155,37 @@ describe("catalogSourceInvariantBlockers", () => {
 			{ entityId: "old-relay", reasons: ["override_targets_admin_entity"] },
 		]);
 	});
+
+	it("flags direct updates that target code-defined entities", () => {
+		expect(
+			catalogSourceInvariantBlockers(rows, [
+				{
+					version: 1,
+					type: "provider.update",
+					providerId: "openai",
+					expectedUpdatedAt: null,
+					patch: { name: "Renamed" },
+				},
+				{
+					version: 1,
+					type: "mapping.update",
+					mappingId: "map-1",
+					expectedUpdatedAt: null,
+					patch: { inputPrice: "2e-6" },
+				},
+				{
+					version: 1,
+					type: "provider.update",
+					providerId: "old-relay",
+					expectedUpdatedAt: null,
+					patch: { name: "Still fine" },
+				},
+			]),
+		).toEqual([
+			{ entityId: "openai", reasons: ["update_targets_static_entity"] },
+			{ entityId: "map-1", reasons: ["update_targets_static_entity"] },
+		]);
+	});
 });
 
 describe("catalogOperationTargets", () => {

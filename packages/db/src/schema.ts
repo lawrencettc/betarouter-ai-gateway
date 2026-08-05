@@ -3229,6 +3229,27 @@ export type PlatformCatalogOperationV1 =
 	  }
 	| {
 			version: 1;
+			type: "provider.update";
+			providerId: string;
+			expectedUpdatedAt: string | null;
+			patch: Record<string, unknown>;
+	  }
+	| {
+			version: 1;
+			type: "model.update";
+			modelId: string;
+			expectedUpdatedAt: string | null;
+			patch: Record<string, unknown>;
+	  }
+	| {
+			version: 1;
+			type: "mapping.update";
+			mappingId: string;
+			expectedUpdatedAt: string | null;
+			patch: Record<string, unknown>;
+	  }
+	| {
+			version: 1;
 			type: "provider.create";
 			expectedUpdatedAt: string | null;
 			create: Record<string, unknown>;

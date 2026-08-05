@@ -7,13 +7,16 @@ import {
 	ChevronLeft,
 	ChevronRight,
 	ExternalLink,
+	Layers,
 	Loader2,
 	Pencil,
+	Plus,
 	RefreshCw,
 	RotateCcw,
 	Search,
 	ShieldCheck,
 	TestTube2,
+	Trash2,
 	XCircle,
 } from "lucide-react";
 import Link from "next/link";
@@ -64,6 +67,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useFetchClient } from "@/lib/fetch-client";
 
 import { prepareHiddenCanaryOperations } from "./canary-operations";
+import { CreateEntityDialog } from "./create-entity-dialog";
+import { ReviewTab } from "./review-tab";
+import { SourceEditDialog } from "./source-edit-dialog";
 
 import type { paths } from "@/lib/api/v1";
 
@@ -1063,6 +1069,11 @@ export function CatalogClient({
 	const [previewOpen, setPreviewOpen] = useState(false);
 	const [editing, setEditing] = useState<Entity | null>(null);
 	const [editOpen, setEditOpen] = useState(false);
+	const [createKind, setCreateKind] = useState<
+		"provider" | "model" | "mapping" | null
+	>(null);
+	const [sourceEditing, setSourceEditing] = useState<Entity | null>(null);
+	const [sourceEditOpen, setSourceEditOpen] = useState(false);
 	const [health, setHealth] = useState<
 		Awaited<ReturnType<typeof api.GET>>["data"] | null
 	>(null);
@@ -1286,6 +1297,30 @@ export function CatalogClient({
 		setEditing(entity);
 		setEditOpen(true);
 	};
+	const openSourceEdit = (entity: Entity) => {
+		setSourceEditing(entity);
+		setSourceEditOpen(true);
+	};
+	// "Delete" is retire: entity.archive_policy hides, disables, and retires
+	// the policy without ever hard-deleting a catalog row.
+	const stageArchive = (entity: Entity) => {
+		const updatedAt = entity.item.policy?.updatedAt;
+		if (!updatedAt) {
+			toast.error(
+				"No policy row exists yet; use the bulk Retire action to create one",
+			);
+			return;
+		}
+		stage([
+			{
+				version: 1,
+				type: "entity.archive_policy",
+				entityType: entity.kind,
+				entityId: entity.item.id,
+				expectedUpdatedAt: updatedAt,
+			},
+		]);
+	};
 	const showHealth = async (item: MappingItem) => {
 		setHealthOpen(true);
 		setHealthMapping(item);
@@ -1378,11 +1413,12 @@ export function CatalogClient({
 					setSelected(new Map());
 				}}
 			>
-				<TabsList className="grid h-auto w-full grid-cols-2 sm:grid-cols-5">
+				<TabsList className="grid h-auto w-full grid-cols-2 sm:grid-cols-6">
 					<TabsTrigger value="overview">Overview</TabsTrigger>
 					<TabsTrigger value="providers">Providers</TabsTrigger>
 					<TabsTrigger value="models">Models</TabsTrigger>
 					<TabsTrigger value="mappings">Mappings</TabsTrigger>
+					<TabsTrigger value="review">Review</TabsTrigger>
 					<TabsTrigger value="changes">Changes</TabsTrigger>
 				</TabsList>
 				<TabsContent value="overview" className="space-y-5">
@@ -1508,6 +1544,21 @@ export function CatalogClient({
 								/>
 							</div>
 							<StateFilter value={state} onChange={setState} />
+							<Button
+								variant="outline"
+								onClick={() =>
+									setCreateKind(
+										kind === "providers"
+											? "provider"
+											: kind === "models"
+												? "model"
+												: "mapping",
+									)
+								}
+							>
+								<Plus className="size-4" />
+								Create
+							</Button>
 							{kind !== "providers" && (
 								<Input
 									className="w-48"
@@ -1627,6 +1678,11 @@ export function CatalogClient({
 														<div className="font-medium">{item.name}</div>
 														<div className="text-xs text-muted-foreground">
 															{item.id}
+															{item.source === "admin" && (
+																<Badge variant="outline" className="ml-1">
+																	admin
+																</Badge>
+															)}
 														</div>
 													</TableCell>
 													<TableCell className="space-x-1">
@@ -1648,14 +1704,32 @@ export function CatalogClient({
 														<Badge variant="outline">{item.lifecycle}</Badge>
 													</TableCell>
 													<TableCell className="text-right">
-														<Button
-															variant="ghost"
-															size="icon"
-															onClick={() => openEdit(entity)}
-															aria-label={`Edit ${item.id}`}
-														>
-															<Pencil className="size-4" />
-														</Button>
+														<div className="flex justify-end">
+															<Button
+																variant="ghost"
+																size="icon"
+																onClick={() => openSourceEdit(entity)}
+																aria-label={`Source fields ${item.id}`}
+															>
+																<Layers className="size-4" />
+															</Button>
+															<Button
+																variant="ghost"
+																size="icon"
+																onClick={() => openEdit(entity)}
+																aria-label={`Edit ${item.id}`}
+															>
+																<Pencil className="size-4" />
+															</Button>
+															<Button
+																variant="ghost"
+																size="icon"
+																onClick={() => stageArchive(entity)}
+																aria-label={`Retire ${item.id}`}
+															>
+																<Trash2 className="size-4" />
+															</Button>
+														</div>
 													</TableCell>
 												</TableRow>
 											);
@@ -1677,6 +1751,11 @@ export function CatalogClient({
 														<div className="font-medium">{item.name}</div>
 														<div className="text-xs text-muted-foreground">
 															{item.id}
+															{item.source === "admin" && (
+																<Badge variant="outline" className="ml-1">
+																	admin
+																</Badge>
+															)}
 														</div>
 													</TableCell>
 													<TableCell>
@@ -1705,14 +1784,32 @@ export function CatalogClient({
 														)}
 													</TableCell>
 													<TableCell className="text-right">
-														<Button
-															variant="ghost"
-															size="icon"
-															onClick={() => openEdit(entity)}
-															aria-label={`Edit ${item.id}`}
-														>
-															<Pencil className="size-4" />
-														</Button>
+														<div className="flex justify-end">
+															<Button
+																variant="ghost"
+																size="icon"
+																onClick={() => openSourceEdit(entity)}
+																aria-label={`Source fields ${item.id}`}
+															>
+																<Layers className="size-4" />
+															</Button>
+															<Button
+																variant="ghost"
+																size="icon"
+																onClick={() => openEdit(entity)}
+																aria-label={`Edit ${item.id}`}
+															>
+																<Pencil className="size-4" />
+															</Button>
+															<Button
+																variant="ghost"
+																size="icon"
+																onClick={() => stageArchive(entity)}
+																aria-label={`Retire ${item.id}`}
+															>
+																<Trash2 className="size-4" />
+															</Button>
+														</div>
 													</TableCell>
 												</TableRow>
 											);
@@ -1735,6 +1832,11 @@ export function CatalogClient({
 														<div className="text-xs text-muted-foreground">
 															{item.providerId} · {item.externalId}
 															{item.region ? ` · ${item.region}` : ""}
+															{item.source === "admin" && (
+																<Badge variant="outline" className="ml-1">
+																	admin
+																</Badge>
+															)}
 														</div>
 													</TableCell>
 													<TableCell>
@@ -1788,10 +1890,26 @@ export function CatalogClient({
 															<Button
 																variant="ghost"
 																size="icon"
+																onClick={() => openSourceEdit(entity)}
+																aria-label={`Source fields ${item.id}`}
+															>
+																<Layers className="size-4" />
+															</Button>
+															<Button
+																variant="ghost"
+																size="icon"
 																onClick={() => openEdit(entity)}
 																aria-label={`Edit ${item.id}`}
 															>
 																<Pencil className="size-4" />
+															</Button>
+															<Button
+																variant="ghost"
+																size="icon"
+																onClick={() => stageArchive(entity)}
+																aria-label={`Retire ${item.id}`}
+															>
+																<Trash2 className="size-4" />
 															</Button>
 														</div>
 													</TableCell>
@@ -1823,6 +1941,9 @@ export function CatalogClient({
 						</div>
 					</TabsContent>
 				))}
+				<TabsContent value="review">
+					<ReviewTab active={tab === "review"} onStageOperations={stage} />
+				</TabsContent>
 				<TabsContent value="changes">
 					<div className="overflow-hidden rounded-xl border bg-card">
 						<Table>
@@ -1926,6 +2047,24 @@ export function CatalogClient({
 				onOpenChange={setEditOpen}
 				onOperations={stage}
 			/>
+			<SourceEditDialog
+				entity={sourceEditing}
+				open={sourceEditOpen}
+				onOpenChange={setSourceEditOpen}
+				onOperations={stage}
+			/>
+			{createKind && (
+				<CreateEntityDialog
+					kind={createKind}
+					open={createKind !== null}
+					onOpenChange={(open) => {
+						if (!open) {
+							setCreateKind(null);
+						}
+					}}
+					onOperations={stage}
+				/>
+			)}
 			<Dialog open={healthOpen} onOpenChange={setHealthOpen}>
 				<DialogContent>
 					<DialogHeader>

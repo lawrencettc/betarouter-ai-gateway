@@ -4,8 +4,11 @@ import type {
 	CatalogOperationV1,
 	DisabledCatalogCapability,
 	MappingCreateInput,
+	MappingUpdatePatch,
 	ModelCreateInput,
+	ModelUpdatePatch,
 	ProviderCreateInput,
+	ProviderUpdatePatch,
 } from "./contracts.js";
 
 interface PolicyRecord {
@@ -181,15 +184,20 @@ export type CatalogSourceCreate =
 	| { entityType: "model"; entityId: string; create: ModelCreateInput }
 	| { entityType: "mapping"; entityId: string; create: MappingCreateInput };
 
+export type CatalogSourceUpdate =
+	| { entityType: "provider"; entityId: string; patch: ProviderUpdatePatch }
+	| { entityType: "model"; entityId: string; patch: ModelUpdatePatch }
+	| { entityType: "mapping"; entityId: string; patch: MappingUpdatePatch };
+
 interface ApplyCatalogOperationsInput {
 	state: CatalogPolicyState;
 	operations: CatalogOperationV1[];
 	actor: string;
 	updatedAt: string;
 	/**
-	 * Required for source-override and create operations (base-value capture,
-	 * static-only enforcement, existence conflicts). Policy-only operations
-	 * apply without it.
+	 * Required for source-override, create, and direct-update operations
+	 * (base-value capture, static/admin enforcement, existence conflicts,
+	 * inverse-value capture). Policy-only operations apply without it.
 	 */
 	sources?: CatalogSourceLookup;
 }
@@ -250,6 +258,48 @@ function assertStaticSourceEntity(
 			`Source overrides apply only to code-defined (static) entries; ${entityType} ${entityId} is admin-created and is edited directly`,
 		);
 	}
+}
+
+/**
+ * Direct updates need the source row twice over: to enforce that only
+ * admin-created rows are edited this way, and to capture the previous field
+ * values for the inverse operation. A missing row is therefore a conflict,
+ * not a soft skip.
+ */
+function requireAdminSourceEntity(
+	entity: CatalogSourceEntity | undefined,
+	entityType: "provider" | "model" | "mapping",
+	entityId: string,
+): CatalogSourceEntity {
+	if (!entity) {
+		throw new CatalogConflictError(entityType, entityId);
+	}
+	if (entity.source !== "admin") {
+		throw new Error(
+			`Direct updates apply only to admin-created entries; ${entityType} ${entityId} is code-defined — use a source override instead`,
+		);
+	}
+	return entity;
+}
+
+/**
+ * Previous values of the fields a direct update touches, shaped as another
+ * update patch so rollback replays through the same operation. `?? null` only
+ * fires for nullable columns — non-nullable fields always have a value on the
+ * row, so the inverse stays parseable by the strict patch schemas.
+ */
+function inverseUpdatePatch(
+	patch: Record<string, unknown>,
+	values: Record<string, unknown>,
+): Record<string, unknown> {
+	const inverse: Record<string, unknown> = {};
+	for (const [key, value] of Object.entries(patch)) {
+		if (value === undefined) {
+			continue;
+		}
+		inverse[key] = values[key] ?? null;
+	}
+	return inverse;
 }
 
 /**
@@ -316,11 +366,13 @@ export function applyCatalogOperations(input: ApplyCatalogOperationsInput): {
 	inverseOperations: CatalogOperationV1[];
 	affectedEntityIds: string[];
 	sourceCreates: CatalogSourceCreate[];
+	sourceUpdates: CatalogSourceUpdate[];
 } {
 	const next = structuredClone(input.state);
 	const inverseOperations: CatalogOperationV1[] = [];
 	const affectedEntityIds = new Set<string>();
 	const sourceCreates: CatalogSourceCreate[] = [];
+	const sourceUpdates: CatalogSourceUpdate[] = [];
 
 	for (const operation of input.operations) {
 		switch (operation.type) {
@@ -706,6 +758,133 @@ export function applyCatalogOperations(input: ApplyCatalogOperationsInput): {
 				affectedEntityIds.add(operation.mappingId);
 				break;
 			}
+			case "provider.update": {
+				const current = next.providers[operation.providerId];
+				assertExpected(
+					current,
+					operation.expectedUpdatedAt,
+					"provider",
+					operation.providerId,
+				);
+				const entity = requireAdminSourceEntity(
+					input.sources?.providers.get(operation.providerId),
+					"provider",
+					operation.providerId,
+				);
+				const base =
+					current ??
+					({
+						providerId: operation.providerId,
+						visible: false,
+						enabled: false,
+						lifecycle: "draft",
+					} satisfies Omit<ProviderPolicyRecord, keyof PolicyRecord>);
+				next.providers[operation.providerId] = {
+					...base,
+					updatedAt: input.updatedAt,
+					updatedBy: input.actor,
+				};
+				sourceUpdates.push({
+					entityType: "provider",
+					entityId: operation.providerId,
+					patch: operation.patch,
+				});
+				inverseOperations.unshift({
+					version: 1,
+					type: "provider.update",
+					providerId: operation.providerId,
+					expectedUpdatedAt: input.updatedAt,
+					patch: inverseUpdatePatch(
+						operation.patch,
+						entity.values,
+					) as typeof operation.patch,
+				});
+				affectedEntityIds.add(operation.providerId);
+				break;
+			}
+			case "model.update": {
+				const current = next.models[operation.modelId];
+				assertExpected(
+					current,
+					operation.expectedUpdatedAt,
+					"model",
+					operation.modelId,
+				);
+				const entity = requireAdminSourceEntity(
+					input.sources?.models.get(operation.modelId),
+					"model",
+					operation.modelId,
+				);
+				const base = current ?? {
+					modelId: operation.modelId,
+					visible: false,
+					enabled: false,
+					allowDirect: false,
+					lifecycle: "draft" as const,
+				};
+				next.models[operation.modelId] = {
+					...base,
+					updatedAt: input.updatedAt,
+					updatedBy: input.actor,
+				};
+				sourceUpdates.push({
+					entityType: "model",
+					entityId: operation.modelId,
+					patch: operation.patch,
+				});
+				inverseOperations.unshift({
+					version: 1,
+					type: "model.update",
+					modelId: operation.modelId,
+					expectedUpdatedAt: input.updatedAt,
+					patch: inverseUpdatePatch(
+						operation.patch,
+						entity.values,
+					) as typeof operation.patch,
+				});
+				affectedEntityIds.add(operation.modelId);
+				break;
+			}
+			case "mapping.update": {
+				const current = next.mappings[operation.mappingId];
+				assertExpected(
+					current,
+					operation.expectedUpdatedAt,
+					"mapping",
+					operation.mappingId,
+				);
+				const entity = requireAdminSourceEntity(
+					input.sources?.mappings.get(operation.mappingId),
+					"mapping",
+					operation.mappingId,
+				);
+				const base = current ?? {
+					mappingId: operation.mappingId,
+					enabled: false,
+				};
+				next.mappings[operation.mappingId] = {
+					...base,
+					updatedAt: input.updatedAt,
+					updatedBy: input.actor,
+				};
+				sourceUpdates.push({
+					entityType: "mapping",
+					entityId: operation.mappingId,
+					patch: operation.patch,
+				});
+				inverseOperations.unshift({
+					version: 1,
+					type: "mapping.update",
+					mappingId: operation.mappingId,
+					expectedUpdatedAt: input.updatedAt,
+					patch: inverseUpdatePatch(
+						operation.patch,
+						entity.values,
+					) as typeof operation.patch,
+				});
+				affectedEntityIds.add(operation.mappingId);
+				break;
+			}
 			case "provider.create": {
 				const providerId = operation.create.providerId;
 				const current = next.providers[providerId];
@@ -896,5 +1075,6 @@ export function applyCatalogOperations(input: ApplyCatalogOperationsInput): {
 		inverseOperations,
 		affectedEntityIds: [...affectedEntityIds].sort(),
 		sourceCreates,
+		sourceUpdates,
 	};
 }
