@@ -21,6 +21,17 @@ import {
 	expandAllProviderRegions,
 } from "@betarouter/models";
 
+import type { MappingPricingTier } from "@betarouter/db";
+import type { PricingTier } from "@betarouter/models";
+
+// JSON cannot represent Infinity, so an unbounded top tier mirrors as null.
+function mirrorPricingTiers(tiers: PricingTier[]): MappingPricingTier[] {
+	return tiers.map((tier) => ({
+		...tier,
+		upToTokens: Number.isFinite(tier.upToTokens) ? tier.upToTokens : null,
+	}));
+}
+
 export async function syncProvidersAndModels() {
 	logger.info("Starting providers and models sync...");
 
@@ -40,6 +51,20 @@ export async function syncProvidersAndModels() {
 						color: providerDef.color,
 						website: providerDef.website,
 						announcement: providerDef.announcement,
+						protocol: providerDef.protocol,
+						priority: providerDef.priority ?? null,
+						contentFilter: providerDef.contentFilter ?? null,
+						maxTemperature: providerDef.maxTemperature ?? null,
+						headquarters: providerDef.headquarters ?? null,
+						dataPolicy: providerDef.dataPolicy ?? null,
+						serviceTiers: providerDef.serviceTiers ?? null,
+						regionConfig: providerDef.regionConfig ?? null,
+						termsUrl: providerDef.termsUrl ?? null,
+						privacyPolicyUrl: providerDef.privacyPolicyUrl ?? null,
+						statusPageUrl: providerDef.statusPageUrl ?? null,
+						apiKeyInstructions: providerDef.apiKeyInstructions ?? null,
+						modelCardBadge: providerDef.modelCardBadge ?? null,
+						additionalLinks: providerDef.additionalLinks ?? null,
 						status: "active",
 					})
 					.onConflictDoUpdate({
@@ -52,6 +77,21 @@ export async function syncProvidersAndModels() {
 							color: providerDef.color,
 							website: providerDef.website,
 							announcement: providerDef.announcement,
+							// Use null (not undefined) so removed definition fields clear
+							protocol: providerDef.protocol,
+							priority: providerDef.priority ?? null,
+							contentFilter: providerDef.contentFilter ?? null,
+							maxTemperature: providerDef.maxTemperature ?? null,
+							headquarters: providerDef.headquarters ?? null,
+							dataPolicy: providerDef.dataPolicy ?? null,
+							serviceTiers: providerDef.serviceTiers ?? null,
+							regionConfig: providerDef.regionConfig ?? null,
+							termsUrl: providerDef.termsUrl ?? null,
+							privacyPolicyUrl: providerDef.privacyPolicyUrl ?? null,
+							statusPageUrl: providerDef.statusPageUrl ?? null,
+							apiKeyInstructions: providerDef.apiKeyInstructions ?? null,
+							modelCardBadge: providerDef.modelCardBadge ?? null,
+							additionalLinks: providerDef.additionalLinks ?? null,
 							updatedAt: new Date(),
 						},
 					});
@@ -220,6 +260,14 @@ export async function syncProvidersAndModels() {
 										mapping.requestPrice !== undefined
 											? mapping.requestPrice.toString()
 											: null,
+									pricingTiers:
+										"pricingTiers" in mapping && mapping.pricingTiers
+											? mirrorPricingTiers(mapping.pricingTiers)
+											: null,
+									serviceTierMultipliers:
+										"serviceTierMultipliers" in mapping
+											? (mapping.serviceTierMultipliers ?? null)
+											: null,
 									contextSize:
 										"contextSize" in mapping ? mapping.contextSize : null,
 									maxOutput: "maxOutput" in mapping ? mapping.maxOutput : null,
@@ -254,6 +302,14 @@ export async function syncProvidersAndModels() {
 									supportedParameters:
 										"supportedParameters" in mapping
 											? (mapping.supportedParameters as string[] | null)
+											: null,
+									supportedToolChoices:
+										"supportedToolChoices" in mapping
+											? (mapping.supportedToolChoices ?? null)
+											: null,
+									reasoningEfforts:
+										"reasoningEfforts" in mapping
+											? (mapping.reasoningEfforts ?? null)
 											: null,
 									test:
 										"test" in mapping
@@ -363,6 +419,14 @@ export async function syncProvidersAndModels() {
 									mapping.requestPrice !== undefined
 										? mapping.requestPrice.toString()
 										: undefined,
+								pricingTiers:
+									"pricingTiers" in mapping && mapping.pricingTiers
+										? mirrorPricingTiers(mapping.pricingTiers)
+										: undefined,
+								serviceTierMultipliers:
+									"serviceTierMultipliers" in mapping
+										? mapping.serviceTierMultipliers
+										: undefined,
 								contextSize:
 									"contextSize" in mapping ? mapping.contextSize : undefined,
 								maxOutput:
@@ -398,6 +462,14 @@ export async function syncProvidersAndModels() {
 								supportedParameters:
 									"supportedParameters" in mapping
 										? (mapping.supportedParameters as string[] | undefined)
+										: undefined,
+								supportedToolChoices:
+									"supportedToolChoices" in mapping
+										? mapping.supportedToolChoices
+										: undefined,
+								reasoningEfforts:
+									"reasoningEfforts" in mapping
+										? mapping.reasoningEfforts
 										: undefined,
 								deprecatedAt:
 									"deprecatedAt" in mapping ? mapping.deprecatedAt : undefined,

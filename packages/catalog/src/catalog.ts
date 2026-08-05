@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import type { DisabledCatalogCapability } from "./contracts.js";
 import type { PriceMap } from "./pricing.js";
+import type { MappingPricingTier } from "@betarouter/db/schema";
 
 export type CatalogLifecycle = "draft" | "active" | "deprecated" | "retired";
 
@@ -13,6 +14,11 @@ export interface SourceProvider {
 export interface SourceModel {
 	id: string;
 	status: "active" | "inactive";
+	name?: string;
+	family?: string;
+	aliases?: string[];
+	output?: string[];
+	free?: boolean;
 }
 
 export interface SourceMapping {
@@ -24,6 +30,19 @@ export interface SourceMapping {
 	region?: string | null;
 	deprecatedAt?: Date | null;
 	deactivatedAt?: Date | null;
+	contextSize?: number | null;
+	maxOutput?: number | null;
+	streaming?: boolean;
+	vision?: boolean | null;
+	reasoning?: boolean | null;
+	reasoningMaxTokens?: boolean;
+	tools?: boolean | null;
+	jsonOutput?: boolean;
+	jsonOutputSchema?: boolean;
+	webSearch?: boolean;
+	supportedParameters?: string[] | null;
+	pricingTiers?: MappingPricingTier[] | null;
+	serviceTierMultipliers?: Partial<Record<string, number>> | null;
 }
 
 export interface ProviderPolicy {
@@ -130,6 +149,13 @@ export interface EffectiveModel {
 	deprecatedAt: string | null;
 	retireAt: string | null;
 	retirementMessage: string | null;
+	// Base model data mirrored from the source row. Optional because
+	// snapshots stored before this data existed must still parse.
+	name?: string;
+	family?: string;
+	aliases?: string[];
+	output?: string[];
+	free?: boolean;
 }
 
 export interface EffectiveMapping {
@@ -158,6 +184,21 @@ export interface EffectiveMapping {
 	pricingMode: "source_cost" | "markup" | "fixed" | null;
 	markupBps: number | null;
 	reasons: MappingEligibilityReason[];
+	// Base capability data mirrored from the source row. Optional because
+	// snapshots stored before this data existed must still parse.
+	contextSize?: number | null;
+	maxOutput?: number | null;
+	streaming?: boolean;
+	vision?: boolean | null;
+	reasoning?: boolean | null;
+	reasoningMaxTokens?: boolean;
+	tools?: boolean | null;
+	jsonOutput?: boolean;
+	jsonOutputSchema?: boolean;
+	webSearch?: boolean;
+	supportedParameters?: string[] | null;
+	pricingTiers?: MappingPricingTier[] | null;
+	serviceTierMultipliers?: Partial<Record<string, number>> | null;
 }
 
 export interface EffectiveCatalog {
@@ -373,6 +414,19 @@ export function resolveEffectiveCatalog(
 			pricingMode: readiness?.pricingMode ?? null,
 			markupBps: readiness?.markupBps ?? null,
 			reasons: reasons.sort(),
+			contextSize: mapping.contextSize,
+			maxOutput: mapping.maxOutput,
+			streaming: mapping.streaming,
+			vision: mapping.vision,
+			reasoning: mapping.reasoning,
+			reasoningMaxTokens: mapping.reasoningMaxTokens,
+			tools: mapping.tools,
+			jsonOutput: mapping.jsonOutput,
+			jsonOutputSchema: mapping.jsonOutputSchema,
+			webSearch: mapping.webSearch,
+			supportedParameters: mapping.supportedParameters,
+			pricingTiers: mapping.pricingTiers,
+			serviceTierMultipliers: mapping.serviceTierMultipliers,
 		};
 	});
 
@@ -400,6 +454,11 @@ export function resolveEffectiveCatalog(
 			deprecatedAt: policy?.deprecatedAt?.toISOString() ?? null,
 			retireAt: policy?.retireAt?.toISOString() ?? null,
 			retirementMessage: policy?.retirementMessage ?? null,
+			name: model.name,
+			family: model.family,
+			aliases: model.aliases,
+			output: model.output,
+			free: model.free,
 		};
 	});
 
