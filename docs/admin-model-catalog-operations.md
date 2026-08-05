@@ -10,10 +10,14 @@ Cloudflare Tunnel.
 
 - The first launch catalog is curated by the operator in Admin.
 - Text/chat mappings may activate after an exact `minimal-chat` test passes.
+  This includes text+image chat models (e.g. the Gemini image previews):
+  their output contains text, so they derive the chat profile.
 - Embeddings mappings may activate after an exact `minimal-embeddings` test
   passes (Stage 11).
-- Keep moderation, image, audio/speech, OCR, and video mappings disabled
-  until their operation-specific profiles in the future build plan are
+- Image-only mappings (model output `["image"]` without text) may activate
+  after an exact `minimal-images` test passes (Stage 12).
+- Keep moderation, audio/speech, OCR, and video mappings disabled until
+  their operation-specific profiles in the future build plan are
   implemented.
 - Catalog editor permissions are not separated in this release. Existing
   immutable platform-admin authorization remains the only admin gate.
@@ -328,6 +332,52 @@ decision.
 4. Rollback for this stage alone: unset
    `PLATFORM_CATALOG_EMBEDDINGS_ROUTING_ENABLED`. Embeddings return to
    legacy routing without touching chat enforcement.
+
+### Stage 12: Images modality rollout
+
+Unlike embeddings, images introduce no new flag and no new enforcement
+operation: `/v1/images/generations` and `/v1/images/edits` re-dispatch
+internally through `/v1/chat/completions`, and that hop has enforced catalog
+decisions under `PLATFORM_CATALOG_ROUTING_ENABLED` since routing flipped.
+Text+image chat models have therefore been fully governed — routed, gated,
+and billed through the catalog — since their `minimal-chat` activation.
+
+What this stage adds is activation for image-ONLY models (output
+`["image"]`), which previously had no probe profile and were held disabled
+by the launch boundary; under chat enforcement they reject with
+`model_not_available` (404) until activated. Per-mapping activation IS the
+flip: blast radius is one mapping, and rollback is disabling it again. The
+images surface's model-output guard also resolves through the shared
+resolver now (static by default, catalog-first under
+`PLATFORM_CATALOG_BASE_READ_ENABLED`, divergence-logged under
+`PLATFORM_CATALOG_SHADOW_READ`), so admin-created image models are
+validated like static ones.
+
+1. Activate each image-only mapping exactly as in Stage 8: credential, a
+   passed mapping test, price policy, enablement. The test console derives
+   the `minimal-images` probe from the model's output modalities; a passed
+   `minimal-chat` run never satisfies an image mapping (the activation
+   validator blocks enabling until the right probe passed). Each
+   minimal-images run performs one real minimal generation against the
+   deployment and bills its cost — cents rather than the embeddings probe's
+   fractions of a cent, the same trade the chat probe makes with tokens.
+   The probe covers OpenAI-compatible deployments (including admin-created
+   relays), Azure, xAI, Z.AI, ByteDance, Alibaba, and Reve; Google image
+   deployments have no image-only probe shape yet and must stay disabled.
+2. Pricing units for this modality: per-token `imageInputPrice`,
+   `imageOutputPrice`, and `cachedImageInputPrice` (mirrored per million),
+   plus the flat per-request `requestPrice`. All flow through fixed and
+   markup price policies. `contentFilterPrice` is not catalog-managed: it
+   stays code-defined and grafts from the static mapping, so it cannot be
+   set for admin-created mappings yet.
+3. Verify each activated mapping with a pinned request
+   (`<provider>/<model>` plus `x-no-fallback: true`) through
+   `/v1/images/generations`, then confirm the log row's billed cost matches
+   the mapping's effective prices.
+4. Rollback for this stage alone: disable the affected mapping(s) or model
+   via policy — image-only models return to their pre-activation 404 and no
+   other modality is touched. There is no modality flag to unset; anything
+   broader follows the emergency rollback ladder below.
 
 ## Emergency rollback
 

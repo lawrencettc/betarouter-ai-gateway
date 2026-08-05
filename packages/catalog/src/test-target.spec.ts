@@ -50,19 +50,31 @@ describe("catalogMappingTestProfile", () => {
 		expect(
 			catalogMappingTestProfile({ ...target, profile: "minimal-embeddings" }),
 		).not.toBe(catalogMappingTestProfile(target));
+		expect(
+			catalogMappingTestProfile({ ...target, profile: "minimal-images" }),
+		).toMatch(/^minimal-images@sha256:[a-f0-9]{64}$/);
+		expect(
+			catalogMappingTestProfile({ ...target, profile: "minimal-images" }),
+		).not.toBe(catalogMappingTestProfile(target));
 	});
 });
 
 describe("catalogMappingProfileForOutputs", () => {
 	it("derives the probe profile from output modalities", () => {
 		expect(catalogMappingProfileForOutputs(["text"])).toBe("minimal-chat");
-		expect(catalogMappingProfileForOutputs(["text", "image"])).toBe(
-			"minimal-chat",
-		);
 		expect(catalogMappingProfileForOutputs(["embedding"])).toBe(
 			"minimal-embeddings",
 		);
-		expect(catalogMappingProfileForOutputs(["image"])).toBeNull();
+		expect(catalogMappingProfileForOutputs(["image"])).toBe("minimal-images");
+		expect(catalogMappingProfileForOutputs(["video"])).toBeNull();
 		expect(catalogMappingProfileForOutputs([])).toBeNull();
+	});
+
+	it("keeps activated text+image chat models on the chat profile", () => {
+		// Changing an activated mapping's expected profile would invalidate its
+		// passed runs and de-route it, so text always wins the derivation.
+		expect(catalogMappingProfileForOutputs(["text", "image"])).toBe(
+			"minimal-chat",
+		);
 	});
 });

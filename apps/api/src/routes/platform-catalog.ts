@@ -6,6 +6,7 @@ import { platformAdminMiddleware } from "@/middleware/admin.js";
 
 import {
 	validateProviderEmbeddings,
+	validateProviderImages,
 	validateProviderKey,
 } from "@betarouter/actions";
 import { redisClient } from "@betarouter/cache";
@@ -1958,7 +1959,7 @@ platformCatalog.openapi(
 							// Omitted → derived from the model's output modalities;
 							// an explicit value must match the derived profile.
 							testProfile: z
-								.enum(["minimal-chat", "minimal-embeddings"])
+								.enum(["minimal-chat", "minimal-embeddings", "minimal-images"])
 								.optional(),
 						}),
 					},
@@ -2035,7 +2036,7 @@ platformCatalog.openapi(
 		if (!probeProfile) {
 			throw new HTTPException(400, {
 				message:
-					"Mapping probes exist for text/chat and embeddings models only. Keep this mapping disabled until its operation-specific probe profile is available.",
+					"Mapping probes exist for text/chat, embeddings, and image generation models only. Keep this mapping disabled until its operation-specific probe profile is available.",
 			});
 		}
 		if (input.testProfile && input.testProfile !== probeProfile) {
@@ -2101,19 +2102,32 @@ platformCatalog.openapi(
 								region: mapping.region,
 							},
 						)
-					: await validateProviderKey(
-							credential.provider as ProviderId,
-							token,
-							credential.baseUrl ?? undefined,
-							process.env.NODE_ENV === "test",
-							credential.options ?? undefined,
-							{
-								modelId: mapping.modelId,
-								externalId:
-									currentPolicy?.externalIdOverride ?? mapping.externalId,
-								region: mapping.region,
-							},
-						);
+					: probeProfile === "minimal-images"
+						? await validateProviderImages(
+								credential.provider as ProviderId,
+								token,
+								credential.baseUrl ?? undefined,
+								process.env.NODE_ENV === "test",
+								credential.options ?? undefined,
+								{
+									externalId:
+										currentPolicy?.externalIdOverride ?? mapping.externalId,
+									region: mapping.region,
+								},
+							)
+						: await validateProviderKey(
+								credential.provider as ProviderId,
+								token,
+								credential.baseUrl ?? undefined,
+								process.env.NODE_ENV === "test",
+								credential.options ?? undefined,
+								{
+									modelId: mapping.modelId,
+									externalId:
+										currentPolicy?.externalIdOverride ?? mapping.externalId,
+									region: mapping.region,
+								},
+							);
 			status = result.valid ? "passed" : "failed";
 			upstreamStatus = result.statusCode ?? null;
 			errorClass = result.valid ? null : "upstream_validation_failed";
