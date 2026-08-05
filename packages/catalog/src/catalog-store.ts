@@ -33,6 +33,7 @@ import {
 	createdMappingSourceRow,
 	createdModelSourceRow,
 	createdProviderSourceRow,
+	sourceUpdateValues,
 } from "./source-operations.js";
 import {
 	operationsTouchSourceOverrides,
@@ -40,7 +41,11 @@ import {
 } from "./upstream-review.js";
 
 import type { CatalogLifecycle, EffectiveCatalog } from "./catalog.js";
-import type { CatalogPolicyState, CatalogSourceCreate } from "./change-set.js";
+import type {
+	CatalogPolicyState,
+	CatalogSourceCreate,
+	CatalogSourceUpdate,
+} from "./change-set.js";
 import type { CatalogOperationV1 } from "./contracts.js";
 import type { PlatformCatalogOperationV1 } from "@betarouter/db/schema";
 
@@ -132,7 +137,8 @@ function validateOperationEntities(
 		if (
 			operation.type === "provider.set_policy" ||
 			operation.type === "provider.set_source_override" ||
-			operation.type === "provider.clear_source_override"
+			operation.type === "provider.clear_source_override" ||
+			operation.type === "provider.update"
 		) {
 			return providerIds.has(operation.providerId)
 				? []
@@ -141,7 +147,8 @@ function validateOperationEntities(
 		if (
 			operation.type === "model.set_policy" ||
 			operation.type === "model.set_source_override" ||
-			operation.type === "model.clear_source_override"
+			operation.type === "model.clear_source_override" ||
+			operation.type === "model.update"
 		) {
 			return modelIds.has(operation.modelId) ? [] : [operation.modelId];
 		}
@@ -253,6 +260,7 @@ function resolveStoreSnapshot(
 	state: CatalogPolicyState,
 	revision: number,
 	sourceCreates?: readonly CatalogSourceCreate[],
+	sourceUpdates?: readonly CatalogSourceUpdate[],
 ): EffectiveCatalog {
 	return resolveEffectiveCatalog(
 		buildCatalogResolverInput({
@@ -262,6 +270,7 @@ function resolveStoreSnapshot(
 			mappings: view.mappings,
 			state,
 			sourceCreates,
+			sourceUpdates,
 			credentials: view.credentials,
 			passedTests: view.passedTests,
 		}),
@@ -288,6 +297,34 @@ export async function persistSourceCreates(
 			await tx
 				.insert(modelProviderMapping)
 				.values(createdMappingSourceRow(created.entityId, created.create));
+		}
+	}
+}
+
+/**
+ * Apply direct-update patches to admin-created source rows, using the exact
+ * column values the provisional snapshot was resolved with
+ * (`sourceUpdateValues`). The operations layer already enforced that every
+ * target row exists and is `source = 'admin'`.
+ */
+export async function persistSourceUpdates(
+	tx: CatalogTransaction,
+	sourceUpdates: readonly CatalogSourceUpdate[],
+): Promise<void> {
+	for (const updated of sourceUpdates) {
+		const values = sourceUpdateValues(updated.patch);
+		if (updated.entityType === "provider") {
+			await tx
+				.update(provider)
+				.set(values)
+				.where(eq(provider.id, updated.entityId));
+		} else if (updated.entityType === "model") {
+			await tx.update(model).set(values).where(eq(model.id, updated.entityId));
+		} else {
+			await tx
+				.update(modelProviderMapping)
+				.set(values)
+				.where(eq(modelProviderMapping.id, updated.entityId));
 		}
 	}
 }
@@ -657,6 +694,7 @@ export async function applyStoredCatalogChangeSet(input: {
 				applied.state,
 				0,
 				applied.sourceCreates,
+				applied.sourceUpdates,
 			);
 			const previousSnapshot = resolveStoreSnapshot(
 				view,
@@ -674,6 +712,7 @@ export async function applyStoredCatalogChangeSet(input: {
 				.set({ state: "applying", errorCode: null })
 				.where(eq(platformCatalogChangeSet.id, changeSet.id));
 			await persistSourceCreates(tx, applied.sourceCreates);
+			await persistSourceUpdates(tx, applied.sourceUpdates);
 			await persistState(tx, applied.state, operations);
 			const [revision] = await tx
 				.insert(platformCatalogRevision)

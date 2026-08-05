@@ -678,3 +678,176 @@ describe("creation operations", () => {
 		).toThrow(CatalogConflictError);
 	});
 });
+
+describe("direct update operations", () => {
+	const sources = catalogSourceLookupFromRows({
+		providers: [
+			{ id: "openai", source: "static" },
+			{
+				id: "acme-relay",
+				source: "admin",
+				name: "Acme Relay",
+				description: "OpenAI-compatible relay",
+				protocol: "openai-chat",
+				website: null,
+			},
+		],
+		models: [{ id: "acme-model", source: "admin", family: "acme" }],
+		mappings: [
+			{ id: "mapping-1", source: "static", inputPrice: "1.5e-6" },
+			{
+				id: "adm:gpt-5.5:acme-relay",
+				source: "admin",
+				externalId: "gpt-5.5",
+				inputPrice: "2e-6",
+				outputPrice: "8e-6",
+				vision: null,
+				streaming: true,
+			},
+		],
+	});
+
+	it("updates an admin mapping, captures previous values in the inverse, and restores on rollback", () => {
+		const applied = applyCatalogOperations({
+			state,
+			actor: "admin-2",
+			updatedAt: "2026-07-22T01:00:00.000Z",
+			sources,
+			operations: [
+				{
+					version: 1,
+					type: "mapping.update",
+					mappingId: "adm:gpt-5.5:acme-relay",
+					expectedUpdatedAt: null,
+					patch: { inputPrice: "3e-6", vision: true, externalId: "gpt-5.5-v2" },
+				},
+			],
+		});
+
+		expect(applied.sourceUpdates).toEqual([
+			{
+				entityType: "mapping",
+				entityId: "adm:gpt-5.5:acme-relay",
+				patch: { inputPrice: "3e-6", vision: true, externalId: "gpt-5.5-v2" },
+			},
+		]);
+		// A policy record now anchors optimistic concurrency for the row.
+		expect(applied.state.mappings["adm:gpt-5.5:acme-relay"]).toMatchObject({
+			enabled: false,
+			updatedAt: "2026-07-22T01:00:00.000Z",
+		});
+		// The inverse restores each touched field's previous value; a
+		// previously-NULL nullable column round-trips as null.
+		expect(applied.inverseOperations[0]).toMatchObject({
+			type: "mapping.update",
+			mappingId: "adm:gpt-5.5:acme-relay",
+			patch: { inputPrice: "2e-6", vision: null, externalId: "gpt-5.5" },
+		});
+		expect(
+			catalogOperationV1Schema.safeParse(applied.inverseOperations[0]).success,
+		).toBe(true);
+
+		const rolledBack = applyCatalogOperations({
+			state: applied.state,
+			actor: "admin-2",
+			updatedAt: "2026-07-22T02:00:00.000Z",
+			sources,
+			operations: applied.inverseOperations,
+		});
+		expect(rolledBack.sourceUpdates).toEqual([
+			{
+				entityType: "mapping",
+				entityId: "adm:gpt-5.5:acme-relay",
+				patch: { inputPrice: "2e-6", vision: null, externalId: "gpt-5.5" },
+			},
+		]);
+	});
+
+	it("updates admin providers and models with schema-valid inverses", () => {
+		const applied = applyCatalogOperations({
+			state,
+			actor: "admin-2",
+			updatedAt: "2026-07-22T01:00:00.000Z",
+			sources,
+			operations: [
+				{
+					version: 1,
+					type: "provider.update",
+					providerId: "acme-relay",
+					expectedUpdatedAt: null,
+					patch: { name: "Acme Relay EU", website: "https://acme.example" },
+				},
+				{
+					version: 1,
+					type: "model.update",
+					modelId: "acme-model",
+					expectedUpdatedAt: null,
+					patch: { family: "acme-2" },
+				},
+			],
+		});
+		expect(applied.sourceUpdates).toEqual([
+			{
+				entityType: "provider",
+				entityId: "acme-relay",
+				patch: { name: "Acme Relay EU", website: "https://acme.example" },
+			},
+			{
+				entityType: "model",
+				entityId: "acme-model",
+				patch: { family: "acme-2" },
+			},
+		]);
+		expect(
+			applied.inverseOperations.map((operation) => operation.type),
+		).toEqual(["model.update", "provider.update"]);
+		expect(applied.inverseOperations[1]).toMatchObject({
+			patch: { name: "Acme Relay", website: null },
+		});
+		expect(
+			applied.inverseOperations.every(
+				(operation) => catalogOperationV1Schema.safeParse(operation).success,
+			),
+		).toBe(true);
+	});
+
+	it("refuses direct updates on code-defined entities", () => {
+		expect(() =>
+			applyCatalogOperations({
+				state,
+				actor: "admin-2",
+				updatedAt: "2026-07-22T01:00:00.000Z",
+				sources,
+				operations: [
+					{
+						version: 1,
+						type: "mapping.update",
+						mappingId: "mapping-1",
+						expectedUpdatedAt: null,
+						patch: { inputPrice: "3e-6" },
+					},
+				],
+			}),
+		).toThrow(/code-defined/);
+	});
+
+	it("treats a missing target row as a conflict", () => {
+		expect(() =>
+			applyCatalogOperations({
+				state,
+				actor: "admin-2",
+				updatedAt: "2026-07-22T01:00:00.000Z",
+				sources,
+				operations: [
+					{
+						version: 1,
+						type: "provider.update",
+						providerId: "ghost-provider",
+						expectedUpdatedAt: null,
+						patch: { name: "Ghost" },
+					},
+				],
+			}),
+		).toThrow(CatalogConflictError);
+	});
+});
