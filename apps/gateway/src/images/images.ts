@@ -12,12 +12,13 @@ import {
 } from "@/lib/cached-queries.js";
 import { parseApiToken } from "@/lib/extract-api-token.js";
 import { calculateDataStorageCost, insertLog } from "@/lib/logs.js";
-import { validateModelOutput } from "@/lib/validate-model-output.js";
+import { getCatalogModelResolutionContext } from "@/lib/model-resolution.js";
 
 import { parseDataUrl, processImageUrl } from "@betarouter/actions";
 import { shortid } from "@betarouter/db";
 import { logger, toError } from "@betarouter/logger";
-import { models } from "@betarouter/models";
+
+import { assertImageModel } from "./resolve-image-model.js";
 
 import type { ServerTypes } from "@/vars.js";
 import type { Context } from "hono";
@@ -572,23 +573,6 @@ async function logImageClientError(
 	}
 }
 
-// Reject non-image models up front. Image generation forwards to
-// /v1/chat/completions (which accepts text and image models), so without this
-// guard a text-only model would be forwarded and produce a chat completion the
-// images endpoint can't turn into an image. Unknown models are left to the chat
-// handler to reject as "model not found".
-function assertImageModel(model: string): void {
-	const slashIdx = model.indexOf("/");
-	const modelKey = slashIdx > 0 ? model.slice(slashIdx + 1) : model;
-	if (modelKey === "auto" || modelKey === "custom") {
-		return;
-	}
-	const modelInfo = models.find((m) => m.id === model || m.id === modelKey);
-	if (modelInfo) {
-		validateModelOutput(modelInfo, modelKey, ["image"]);
-	}
-}
-
 async function forwardToChatCompletions(
 	c: Context,
 	chatRequest: Record<string, unknown>,
@@ -713,7 +697,7 @@ images.openapi(generations, async (c) => {
 	const model =
 		request.model === "auto" ? "gemini-3-pro-image-preview" : request.model;
 
-	assertImageModel(model);
+	assertImageModel(model, await getCatalogModelResolutionContext());
 
 	// Build the chat completions request
 	const chatPrompt = buildImagePrompt(request);
@@ -1128,7 +1112,7 @@ async function processImageEdit(
 			? "gemini-3-pro-image-preview"
 			: request.model;
 
-	assertImageModel(model);
+	assertImageModel(model, await getCatalogModelResolutionContext());
 
 	const chatRequest: Record<string, unknown> = {
 		model,

@@ -15,7 +15,7 @@ function canonical(value: unknown): unknown {
 }
 
 export type CatalogMappingTestProfileName =
-	"minimal-chat" | "minimal-embeddings";
+	"minimal-chat" | "minimal-embeddings" | "minimal-images";
 
 /**
  * Which probe profile a model's output modalities call for, shared by the
@@ -24,6 +24,13 @@ export type CatalogMappingTestProfileName =
  * or passed tests can never unlock routing. Null means no probe profile
  * exists for the modality yet: the launch boundary keeps such mappings
  * disabled and the test console refuses to run them.
+ *
+ * The checks are ordered: a model already routable under an earlier profile
+ * must KEEP that profile, because changing an activated mapping's expected
+ * profile invalidates its passed test runs and instantly de-routes it. In
+ * particular, text+image chat models (e.g. the Gemini image previews) serve
+ * chat traffic and stay on minimal-chat; minimal-images is only for models
+ * whose output is image without text.
  */
 export function catalogMappingProfileForOutputs(
 	output: readonly string[],
@@ -33,6 +40,9 @@ export function catalogMappingProfileForOutputs(
 	}
 	if (output.includes("embedding")) {
 		return "minimal-embeddings";
+	}
+	if (output.includes("image")) {
+		return "minimal-images";
 	}
 	return null;
 }
