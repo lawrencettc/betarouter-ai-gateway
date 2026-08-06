@@ -31,7 +31,10 @@ jobs:
         run: |
           git fetch --prune origin "$DEPLOY_SHA"
           git checkout --detach "$DEPLOY_SHA"
-          echo "BETAROUTER_IMAGE=ghcr.io/${GITHUB_REPOSITORY}-unified:v0.0.0-$(git rev-parse --short "$DEPLOY_SHA")" >> "$GITHUB_ENV"
+          # Deterministic 7-char slice, matching the tag images.yml pushes:
+          # `git rev-parse --short` grows with the clone's object count and
+          # already produces 8 chars here, pointing at a nonexistent tag.
+          echo "BETAROUTER_IMAGE=ghcr.io/${GITHUB_REPOSITORY}-unified:v0.0.0-${DEPLOY_SHA:0:7}" >> "$GITHUB_ENV"
           echo "BETAROUTER_PULL_POLICY=always" >> "$GITHUB_ENV"
 
       - name: Log in to GitHub Container Registry
