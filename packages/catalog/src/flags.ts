@@ -17,6 +17,13 @@ export interface CatalogFeatureFlags {
 	 * flag are set; shadow decisions still log under `shadowRead` regardless.
 	 */
 	embeddingsRoutingEnabled: boolean;
+	/**
+	 * Per-modality enforcement flip for the videos surface, with the same
+	 * deploy invariant as embeddings: a deployment already enforcing chat
+	 * must not start rejecting video requests before the operator has
+	 * activated video mappings in the catalog.
+	 */
+	videosRoutingEnabled: boolean;
 	breakerMode: "off" | "observe" | "enforce";
 }
 
@@ -39,6 +46,7 @@ export function readCatalogFeatureFlags(
 		embeddingsRoutingEnabled: enabled(
 			env.PLATFORM_CATALOG_EMBEDDINGS_ROUTING_ENABLED,
 		),
+		videosRoutingEnabled: enabled(env.PLATFORM_CATALOG_VIDEOS_ROUTING_ENABLED),
 		breakerMode,
 	};
 }

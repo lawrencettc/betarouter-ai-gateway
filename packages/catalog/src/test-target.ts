@@ -15,7 +15,7 @@ function canonical(value: unknown): unknown {
 }
 
 export type CatalogMappingTestProfileName =
-	"minimal-chat" | "minimal-embeddings" | "minimal-images";
+	"minimal-chat" | "minimal-embeddings" | "minimal-images" | "minimal-videos";
 
 /**
  * Which probe profile a model's output modalities call for, shared by the
@@ -43,6 +43,9 @@ export function catalogMappingProfileForOutputs(
 	}
 	if (output.includes("image")) {
 		return "minimal-images";
+	}
+	if (output.includes("video")) {
+		return "minimal-videos";
 	}
 	return null;
 }

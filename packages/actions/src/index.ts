@@ -12,6 +12,7 @@ export * from "./get-cheapest-from-available-providers.js";
 export * from "./validate-provider-embeddings.js";
 export * from "./validate-provider-images.js";
 export * from "./validate-provider-key.js";
+export * from "./validate-provider-videos.js";
 export * from "./get-cheapest-model-for-provider.js";
 export * from "./select-provider-mapping.js";
 export * from "./gcp-access-token.js";
