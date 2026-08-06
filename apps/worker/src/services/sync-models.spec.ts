@@ -5,9 +5,12 @@ import {
 	applyStoredCatalogChangeSet,
 	catalogMappingTestProfile,
 	catalogSnapshotHasBaseData,
+	catalogSnapshotHasProviderBaseData,
 	compareCatalogModelResolution,
+	compareCatalogProviderResolution,
 	parseStoredCatalogSnapshot,
 	resolveModelFromCatalog,
+	resolveProviderFromCatalog,
 } from "@betarouter/catalog";
 import {
 	and,
@@ -687,6 +690,44 @@ describe("sync-models", () => {
 			const resolved = resolveModelFromCatalog(def.id, snapshot);
 			expect(resolved, `model ${def.id} reconstructs`).not.toBeNull();
 			for (const divergence of compareCatalogModelResolution(def, resolved!)) {
+				allDivergences.push(divergence);
+			}
+		}
+		expect(allDivergences).toEqual([]);
+	});
+
+	// Provider analog of the exit gate above: after one sync, the published
+	// snapshot must reconstruct every static provider definition (via
+	// resolveProviderFromCatalog) with zero divergence across the mirrored
+	// fields — protocol, routing priority, contentFilter, maxTemperature,
+	// regionConfig, serviceTiers, and the display/compliance metadata.
+	it("reconstructs every static provider from the stored snapshot", async () => {
+		await syncProvidersAndModels();
+
+		const [revision] = await db
+			.select({
+				checksum: platformCatalogRevision.checksum,
+				snapshot: platformCatalogRevision.snapshot,
+			})
+			.from(platformCatalogRevision)
+			.orderBy(desc(platformCatalogRevision.id))
+			.limit(1);
+		expect(revision).toBeDefined();
+		const snapshot = parseStoredCatalogSnapshot(
+			revision!.snapshot,
+			revision!.checksum,
+		);
+		expect(catalogSnapshotHasProviderBaseData(snapshot)).toBe(true);
+
+		const allDivergences: unknown[] = [];
+		for (const def of providerDefinitions) {
+			const resolved = resolveProviderFromCatalog(def.id, snapshot);
+			expect(resolved, `provider ${def.id} reconstructs`).not.toBeNull();
+			expect(resolved?.env, `provider ${def.id} env grafts`).toEqual(def.env);
+			for (const divergence of compareCatalogProviderResolution(
+				def,
+				resolved!,
+			)) {
 				allDivergences.push(divergence);
 			}
 		}

@@ -246,6 +246,26 @@ these mirrors existed lack the fields; reconstruction grafts them from the
 static array there, which means an admin-created non-chat mapping only serves
 correctly from revisions published after this build's first sync.
 
+Provider base data (`name`, `description`, `protocol`, `streaming`,
+`cancellation`, `color`, `website`, `announcement`, `priority`,
+`contentFilter`, `maxTemperature`, `serviceTiers`, `regionConfig`, the policy
+links, `apiKeyInstructions`, `modelCardBadge`, `additionalLinks`, and the
+code-only compliance attestations) rides the snapshot the same way:
+`resolveProviderFromCatalog` reconstructs a provider definition with
+snapshot-wins / null-mirror-is-authoritative / graft-for-older-revisions
+semantics, and the gateway consumes it catalog-first under
+`PLATFORM_CATALOG_BASE_READ_ENABLED` for routing priority, content-filter
+rerouting, region config (locks, pinned defaults, key regions), temperature
+clamping, cancellation, and the wire protocol of database-defined providers.
+Two deliberate carve-outs: `env` is deployment config and never mirrors
+(admin-created providers get an empty env config and are credentialed only
+through platform credentials), and a `protocol` override on a *static*
+provider does not switch transports — code-declared protocols and id-keyed
+bespoke transports stay authoritative for code providers; protocol-as-data
+only drives providers without a code declaration (admin-created ones).
+Compliance gates keep reading the static attestations (not overridable, so
+never divergent) and fail closed for admin-created providers.
+
 Editing code-defined (static) entries uses `*.set_source_override` /
 `*.clear_source_override`: the mirror row is never mutated — the override is
 a per-field patch stored on the policy row, composed as

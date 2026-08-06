@@ -5,7 +5,10 @@ import {
 	applyCatalogCustomerPrices,
 	findProviderMappingForCatalogMapping,
 } from "@/lib/catalog-policy.js";
-import { resolveGatewayModelDefinition } from "@/lib/model-resolution.js";
+import {
+	resolveGatewayModelDefinition,
+	resolveGatewayProviderDefinition,
+} from "@/lib/model-resolution.js";
 
 import {
 	catalogSnapshotHasBaseData,
@@ -407,10 +410,13 @@ modelsApi.openapi(listModels, async (c) => {
 					is_moderated: true,
 				},
 				providers: model.providers.map((provider: ProviderModelMapping) => {
-					// Find the provider definition to get cancellation support
-					const providerDef = providers.find(
-						(p) => p.id === provider.providerId,
-					);
+					// Provider definition for cancellation support — catalog-first so
+					// admin-created providers and overrides are reflected.
+					const providerDef =
+						resolveGatewayProviderDefinition(
+							provider.providerId,
+							modelResolutionContext,
+						) ?? providers.find((p) => p.id === provider.providerId);
 
 					return {
 						providerId: provider.providerId,

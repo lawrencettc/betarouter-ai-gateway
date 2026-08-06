@@ -9,6 +9,7 @@ import {
 	getProviderDefinition,
 	type AvailableModelProvider,
 	type ModelWithPricing,
+	type ProviderDefinition,
 	type ProviderModelMapping,
 } from "@betarouter/models";
 import { randomFloat, randomInt } from "@betarouter/shared/random";
@@ -60,12 +61,17 @@ function getExplorationRate(cfg: ResolvedRoutingConfig): number {
 function getEffectivePriority(
 	providerId: string,
 	cfg: ResolvedRoutingConfig,
+	resolveProviderDefinition?: (
+		providerId: string,
+	) => ProviderDefinition | undefined,
 ): number {
 	const override = cfg.providerPriorities[providerId];
 	if (typeof override === "number") {
 		return override;
 	}
-	const providerDef = getProviderDefinition(providerId);
+	const providerDef =
+		resolveProviderDefinition?.(providerId) ??
+		getProviderDefinition(providerId);
 	return providerDef?.priority ?? 1;
 }
 
@@ -188,6 +194,14 @@ export interface ProviderSelectionOptions {
 		provider: AvailableModelProvider,
 		modelId: string,
 	) => Promise<string | null | undefined> | string | null | undefined;
+	/**
+	 * Catalog-resolved provider lookup (read-path inversion) so an
+	 * operator-overridden routing `priority` and admin-created providers'
+	 * priorities apply; the static array serves lookups when absent.
+	 */
+	providerDefinitionResolver?: (
+		providerId: string,
+	) => ProviderDefinition | undefined;
 }
 
 function findProviderMapping<P extends ModelWithPricing["providers"][number]>(
@@ -560,7 +574,13 @@ export async function getCheapestFromAvailableProviders<
 			) {
 				return false;
 			}
-			return getEffectivePriority(provider.providerId, cfg) > 0;
+			return (
+				getEffectivePriority(
+					provider.providerId,
+					cfg,
+					options?.providerDefinitionResolver,
+				) > 0
+			);
 		}),
 	);
 
@@ -604,7 +624,11 @@ export async function getCheapestFromAvailableProviders<
 						modelWithPricing.providers,
 						provider,
 					);
-					const priority = getEffectivePriority(provider.providerId, cfg);
+					const priority = getEffectivePriority(
+						provider.providerId,
+						cfg,
+						options?.providerDefinitionResolver,
+					);
 					const metrics = metricsMap?.get(
 						metricsKey(
 							modelWithPricing.id,
@@ -645,6 +669,7 @@ export async function getCheapestFromAvailableProviders<
 			videoPricing,
 			cfg,
 			providerSelectionPrices,
+			options?.providerDefinitionResolver,
 		);
 		return sessionSticky
 			? await applySessionSticky(
@@ -676,6 +701,7 @@ export async function getCheapestFromAvailableProviders<
 			videoPricing,
 			cfg,
 			providerSelectionPrices,
+			options?.providerDefinitionResolver,
 		);
 		return sessionSticky
 			? await applySessionSticky(
@@ -831,6 +857,7 @@ export async function getCheapestFromAvailableProviders<
 		const priority = getEffectivePriority(
 			providerScore.provider.providerId,
 			cfg,
+			options?.providerDefinitionResolver,
 		);
 		const priorityPenalty = new Decimal(1).minus(priority);
 
@@ -860,7 +887,11 @@ export async function getCheapestFromAvailableProviders<
 		selectedProvider: bestProvider.provider.providerId,
 		selectionReason: metricsMap ? "weighted-score" : "price-only",
 		providerScores: providerScores.map((p) => {
-			const priority = getEffectivePriority(p.provider.providerId, cfg);
+			const priority = getEffectivePriority(
+				p.provider.providerId,
+				cfg,
+				options?.providerDefinitionResolver,
+			);
 			return {
 				providerId: p.provider.providerId,
 				region: p.provider.region,
@@ -902,6 +933,9 @@ function selectByPriceOnly<T extends AvailableModelProvider>(
 	videoPricing: VideoPricingContext | undefined,
 	cfg: ResolvedRoutingConfig,
 	providerSelectionPrices: Map<string, { price: Decimal; discount: Decimal }>,
+	resolveProviderDefinition?: (
+		providerId: string,
+	) => ProviderDefinition | undefined,
 ): ProviderSelectionResult<T> {
 	let cheapestProvider = stableProviders[0];
 	let lowestEffectivePrice: Decimal | null = null;
@@ -928,7 +962,11 @@ function selectByPriceOnly<T extends AvailableModelProvider>(
 			getProviderSelectionPrice(providerInfo, videoPricing);
 
 		// Apply provider priority: lower priority = effectively higher price
-		const priority = getEffectivePriority(provider.providerId, cfg);
+		const priority = getEffectivePriority(
+			provider.providerId,
+			cfg,
+			resolveProviderDefinition,
+		);
 		const providerPriorityPrice =
 			priority > 0 ? totalPrice.div(priority) : totalPrice;
 		const catalogWeight = catalogWeightFactor(provider);

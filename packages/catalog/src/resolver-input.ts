@@ -26,12 +26,39 @@ import type {
 } from "./change-set.js";
 import type { SourceMappingPriceFields } from "./pricing.js";
 import type { MappingPricingTier } from "@betarouter/db/schema";
-import type { Provider } from "@betarouter/models";
+import type {
+	Provider,
+	ProviderAdditionalLink,
+	ProviderDataPolicy,
+	ProviderRegionConfig,
+	ServiceTier,
+} from "@betarouter/models";
 
 export interface CatalogProviderRowInput {
 	id: string;
 	status: "active" | "inactive";
 	source: string;
+	name: string;
+	description: string;
+	streaming: boolean | null;
+	cancellation: boolean | null;
+	color: string | null;
+	website: string | null;
+	announcement: string | null;
+	protocol: string | null;
+	priority: number | null;
+	contentFilter: boolean | null;
+	maxTemperature: number | null;
+	headquarters: string | null;
+	dataPolicy: ProviderDataPolicy | null;
+	serviceTiers: ServiceTier[] | null;
+	regionConfig: ProviderRegionConfig | null;
+	termsUrl: string | null;
+	privacyPolicyUrl: string | null;
+	statusPageUrl: string | null;
+	apiKeyInstructions: string | null;
+	modelCardBadge: string | null;
+	additionalLinks: ProviderAdditionalLink[] | null;
 }
 
 export interface CatalogModelRowInput {
@@ -286,7 +313,31 @@ export function buildCatalogResolverInput(input: {
 	return {
 		revision: input.revision,
 		now: input.now ?? new Date(),
-		providers: providers.map((row) => ({ id: row.id, status: row.status })),
+		providers: providers.map((row) => ({
+			id: row.id,
+			status: row.status,
+			name: row.name,
+			description: row.description,
+			streaming: row.streaming,
+			cancellation: row.cancellation,
+			color: row.color,
+			website: row.website,
+			announcement: row.announcement,
+			protocol: row.protocol,
+			priority: row.priority,
+			contentFilter: row.contentFilter,
+			maxTemperature: row.maxTemperature,
+			headquarters: row.headquarters,
+			dataPolicy: row.dataPolicy,
+			serviceTiers: row.serviceTiers,
+			regionConfig: row.regionConfig,
+			termsUrl: row.termsUrl,
+			privacyPolicyUrl: row.privacyPolicyUrl,
+			statusPageUrl: row.statusPageUrl,
+			apiKeyInstructions: row.apiKeyInstructions,
+			modelCardBadge: row.modelCardBadge,
+			additionalLinks: row.additionalLinks,
+		})),
 		models: models.map((row) => ({
 			id: row.id,
 			status: row.status,

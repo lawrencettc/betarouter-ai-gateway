@@ -27,6 +27,7 @@ import {
 	type PromptCacheOptions,
 	type PromptCacheRetention,
 	type Provider,
+	type ProviderDefinition,
 	type ProviderRequestBody,
 	providers,
 	resolveVertexTokenType,
@@ -160,6 +161,14 @@ export interface ProviderContextOptions {
 	 * instead of doing its own static registry lookup.
 	 */
 	baseModelDefinition?: ModelDefinition;
+	/**
+	 * Catalog-first provider definition lookup (read-path inversion). Supplies
+	 * cancellation, maxTemperature, and the wire protocol for database-defined
+	 * providers; the static array serves lookups when absent.
+	 */
+	resolveProviderDefinition?: (
+		providerId: string,
+	) => ProviderDefinition | undefined;
 }
 
 interface ProjectInfo {
@@ -334,6 +343,10 @@ export async function resolveProviderContext(
 	options: ProviderContextOptions,
 ): Promise<ProviderContext> {
 	const usedProvider = providerMapping.providerId as Provider;
+	// Catalog-first provider definition (read-path inversion): overrides and
+	// admin-created providers' base data apply; static array without a resolver.
+	const resolvedProviderDefinition =
+		options.resolveProviderDefinition?.(usedProvider);
 	// The upstream model id (sent verbatim to the provider API). For BYOK
 	// Azure deployments this is overridden by `azure_deployment_name` below.
 	const usedExternalId = providerMapping.externalId;
@@ -576,7 +589,9 @@ export async function resolveProviderContext(
 		usedInternalModel,
 		vertexTokenType,
 		envVariant,
-		undefined,
+		// Database-defined providers have no code-declared protocol; the
+		// catalog-resolved definition supplies it for path selection.
+		resolvedProviderDefinition?.protocol,
 		// Read-path inversion: the selected mapping drives externalId and
 		// capability checks instead of a fresh static registry lookup.
 		providerMappingForSelected,
@@ -638,7 +653,11 @@ export async function resolveProviderContext(
 		}
 	}
 
-	temperature = clampTemperature(temperature, usedProvider);
+	temperature = clampTemperature(
+		temperature,
+		usedProvider,
+		resolvedProviderDefinition,
+	);
 
 	// --- max_tokens validation ---
 	if (max_tokens !== undefined && providerMappingForSelected) {
@@ -682,7 +701,8 @@ export async function resolveProviderContext(
 
 	// --- requestCanBeCanceled ---
 	const requestCanBeCanceled =
-		providers.find((p) => p.id === usedProvider)?.cancellation === true;
+		(resolvedProviderDefinition ?? providers.find((p) => p.id === usedProvider))
+			?.cancellation === true;
 
 	// --- Request body preparation ---
 	const requestBody: ProviderRequestBody | FormData = await prepareRequestBody(
@@ -774,6 +794,7 @@ export async function resolveProviderContext(
 		requestId: options.requestId,
 		webSearchEnabled: options.webSearchEnabled,
 		tokenType: vertexTokenType,
+		protocol: resolvedProviderDefinition?.protocol,
 	});
 	headers["Content-Type"] = "application/json";
 

@@ -1,16 +1,18 @@
 import {
 	catalogSnapshotHasBaseData,
 	compareCatalogModelResolution,
+	compareCatalogProviderResolution,
 	getEffectiveCatalogSnapshot,
 	readCatalogFeatureFlags,
 	resolveModelFromCatalog,
+	resolveProviderFromCatalog,
 } from "@betarouter/catalog";
 import { logger } from "@betarouter/logger";
-import { models, providers } from "@betarouter/models";
+import { getProviderDefinition, models, providers } from "@betarouter/models";
 
 import type { CatalogParseContext } from "@/chat/tools/parse-model-input.js";
 import type { EffectiveCatalog } from "@betarouter/catalog";
-import type { ModelDefinition } from "@betarouter/models";
+import type { ModelDefinition, ProviderDefinition } from "@betarouter/models";
 
 /**
  * Per-request context for chat-path model resolution (the read-path
@@ -169,6 +171,86 @@ export function resolveGatewayModelDefinition(
 		return catalogDefinition ?? staticDefinition;
 	}
 	return staticDefinition;
+}
+
+/** Per-request lookup passed to helpers that read provider-level fields. */
+export type GatewayProviderResolver = (
+	providerId: string,
+) => ProviderDefinition | undefined;
+
+// Provider divergences follow the model dedupe scheme: once per provider per
+// catalog revision, so the soak signal stays readable.
+let loggedProviderDivergenceRevision = -1;
+const loggedProviderDivergenceIds = new Set<string>();
+
+/** Test hook: clear the once-per-revision provider divergence log dedupe. */
+export function resetCatalogProviderResolutionLogState(): void {
+	loggedProviderDivergenceRevision = -1;
+	loggedProviderDivergenceIds.clear();
+}
+
+function logProviderResolutionDivergence(
+	revision: number,
+	staticDefinition: ProviderDefinition,
+	catalogDefinition: ProviderDefinition,
+): void {
+	if (revision !== loggedProviderDivergenceRevision) {
+		loggedProviderDivergenceRevision = revision;
+		loggedProviderDivergenceIds.clear();
+	}
+	if (loggedProviderDivergenceIds.has(staticDefinition.id)) {
+		return;
+	}
+	loggedProviderDivergenceIds.add(staticDefinition.id);
+	for (const divergence of compareCatalogProviderResolution(
+		staticDefinition,
+		catalogDefinition,
+	)) {
+		logger.warn("Catalog provider resolution divergence", {
+			revision,
+			...divergence,
+		});
+	}
+}
+
+/**
+ * Resolve a provider definition for request serving. Catalog-first when base
+ * reads are enabled — this is what makes provider-level source overrides and
+ * admin-created providers' base data (protocol, priority, maxTemperature,
+ * cancellation, contentFilter, regionConfig, ...) take effect — with static
+ * fallback for providers the snapshot cannot back. Under shadow read, both
+ * paths resolve and divergence is logged per provider and field.
+ */
+export function resolveGatewayProviderDefinition(
+	providerId: string,
+	context: CatalogModelResolutionContext,
+): ProviderDefinition | undefined {
+	const staticDefinition = getProviderDefinition(providerId);
+	if (!context.snapshot) {
+		return staticDefinition;
+	}
+	const catalogDefinition = resolveProviderFromCatalog(
+		providerId,
+		context.snapshot,
+	);
+	if (context.shadowRead && staticDefinition && catalogDefinition) {
+		logProviderResolutionDivergence(
+			context.snapshot.revision,
+			staticDefinition,
+			catalogDefinition,
+		);
+	}
+	if (context.baseReadEnabled) {
+		return catalogDefinition ?? staticDefinition;
+	}
+	return staticDefinition;
+}
+
+/** Bind the per-request context into a resolver helpers can be handed. */
+export function buildGatewayProviderResolver(
+	context: CatalogModelResolutionContext,
+): GatewayProviderResolver {
+	return (providerId) => resolveGatewayProviderDefinition(providerId, context);
 }
 
 export interface GatewayCatalogParseContext extends CatalogParseContext {

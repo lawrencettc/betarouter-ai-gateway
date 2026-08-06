@@ -2,24 +2,36 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
 	compareCatalogModelResolution,
+	compareCatalogProviderResolution,
 	resolveEffectiveCatalog,
 	sourceMappingPricesToPriceMap,
 } from "@betarouter/catalog";
 import { logger } from "@betarouter/logger";
-import { expandAllProviderRegions, models } from "@betarouter/models";
+import {
+	expandAllProviderRegions,
+	getProviderDefinition,
+	models,
+} from "@betarouter/models";
 
 import {
 	buildCatalogParseContext,
 	findStaticModelDefinition,
 	resetCatalogModelResolutionLogState,
+	resetCatalogProviderResolutionLogState,
 	resolveGatewayModelDefinition,
+	resolveGatewayProviderDefinition,
 } from "./model-resolution.js";
 
 import type {
 	CatalogResolverInput,
 	EffectiveCatalog,
+	SourceProvider,
 } from "@betarouter/catalog";
-import type { ModelDefinition, ProviderModelMapping } from "@betarouter/models";
+import type {
+	ModelDefinition,
+	ProviderDefinition,
+	ProviderModelMapping,
+} from "@betarouter/models";
 
 // The production canary model — reconstructing it from a snapshot with zero
 // divergence is the per-model version of the worker sweep's exit gate.
@@ -206,6 +218,160 @@ describe("resolveGatewayModelDefinition", () => {
 			shadowRead: false,
 		});
 		expect(resolved).toBe(findStaticModelDefinition("claude-haiku-4-5"));
+	});
+});
+
+/** Provider source row shaped like the worker sync writes it. */
+function mirroredProviderRow(def: ProviderDefinition): SourceProvider {
+	return {
+		id: def.id,
+		status: "active",
+		name: def.name,
+		description: def.description,
+		streaming: def.streaming ?? null,
+		cancellation: def.cancellation ?? null,
+		color: def.color ?? null,
+		website: def.website ?? null,
+		announcement: def.announcement ?? null,
+		protocol: def.protocol,
+		priority: def.priority ?? null,
+		contentFilter: def.contentFilter ?? null,
+		maxTemperature: def.maxTemperature ?? null,
+		headquarters: def.headquarters ?? null,
+		dataPolicy: def.dataPolicy ?? null,
+		serviceTiers: def.serviceTiers ?? null,
+		regionConfig: def.regionConfig ?? null,
+		termsUrl: def.termsUrl ?? null,
+		privacyPolicyUrl: def.privacyPolicyUrl ?? null,
+		statusPageUrl: def.statusPageUrl ?? null,
+		apiKeyInstructions: def.apiKeyInstructions ?? null,
+		modelCardBadge: def.modelCardBadge ?? null,
+		additionalLinks: def.additionalLinks ?? null,
+	};
+}
+
+function canaryProviderDefinition(): ProviderDefinition {
+	const def = getProviderDefinition("openai");
+	expect(def, "static provider openai").toBeDefined();
+	return def as ProviderDefinition;
+}
+
+function providerSnapshot(
+	mutate?: (row: SourceProvider) => void,
+): EffectiveCatalog {
+	const input = resolverInputForStatic(canaryDefinition(), 11);
+	input.providers = input.providers.map((row) => {
+		const def = getProviderDefinition(row.id);
+		if (!def) {
+			return row;
+		}
+		const mirrored = mirroredProviderRow(def as ProviderDefinition);
+		if (mirrored.id === "openai") {
+			mutate?.(mirrored);
+		}
+		return mirrored;
+	});
+	return resolveEffectiveCatalog(input);
+}
+
+describe("resolveGatewayProviderDefinition", () => {
+	beforeEach(() => {
+		resetCatalogProviderResolutionLogState();
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("serves static without a snapshot or when base reads are disabled", () => {
+		const staticDef = canaryProviderDefinition();
+		expect(
+			resolveGatewayProviderDefinition("openai", {
+				snapshot: null,
+				baseReadEnabled: false,
+				shadowRead: false,
+			}),
+		).toBe(staticDef);
+		expect(
+			resolveGatewayProviderDefinition("openai", {
+				snapshot: providerSnapshot((row) => {
+					row.priority = 0.1;
+				}),
+				baseReadEnabled: false,
+				shadowRead: false,
+			}),
+		).toBe(staticDef);
+	});
+
+	it("serves the catalog reconstruction with zero divergence under base reads", () => {
+		const staticDef = canaryProviderDefinition();
+		const resolved = resolveGatewayProviderDefinition("openai", {
+			snapshot: providerSnapshot(),
+			baseReadEnabled: true,
+			shadowRead: false,
+		});
+		expect(resolved).toBeDefined();
+		expect(resolved).not.toBe(staticDef);
+		expect(compareCatalogProviderResolution(staticDef, resolved!)).toEqual([]);
+	});
+
+	it("applies snapshot-composed values (source overrides) under base reads", () => {
+		const resolved = resolveGatewayProviderDefinition("openai", {
+			snapshot: providerSnapshot((row) => {
+				row.priority = 0.2;
+				row.maxTemperature = 1.5;
+			}),
+			baseReadEnabled: true,
+			shadowRead: false,
+		});
+		expect(resolved?.priority).toBe(0.2);
+		expect(resolved?.maxTemperature).toBe(1.5);
+	});
+
+	it("logs provider divergence under shadow read and dedupes per revision", () => {
+		const warn = vi.spyOn(logger, "warn").mockImplementation(() => undefined);
+		const context = {
+			snapshot: providerSnapshot((row) => {
+				row.priority = 0.2;
+			}),
+			baseReadEnabled: false,
+			shadowRead: true,
+		};
+		resolveGatewayProviderDefinition("openai", context);
+		const divergenceCalls = warn.mock.calls.filter(
+			(call) => call[0] === "Catalog provider resolution divergence",
+		);
+		expect(divergenceCalls.length).toBe(1);
+		expect(divergenceCalls[0]?.[1]).toMatchObject({
+			providerId: "openai",
+			field: "priority",
+		});
+
+		warn.mockClear();
+		resolveGatewayProviderDefinition("openai", context);
+		expect(
+			warn.mock.calls.filter(
+				(call) => call[0] === "Catalog provider resolution divergence",
+			),
+		).toEqual([]);
+	});
+
+	it("falls back to static when the snapshot cannot back the provider", () => {
+		// Pre-provider-base-data snapshot: providers carry no base fields.
+		const resolved = resolveGatewayProviderDefinition("openai", {
+			snapshot: canarySnapshot(),
+			baseReadEnabled: true,
+			shadowRead: false,
+		});
+		expect(resolved).toBe(canaryProviderDefinition());
+		// Providers absent from the snapshot resolve statically too.
+		expect(
+			resolveGatewayProviderDefinition("anthropic", {
+				snapshot: providerSnapshot(),
+				baseReadEnabled: true,
+				shadowRead: false,
+			}),
+		).toBe(getProviderDefinition("anthropic"));
 	});
 });
 

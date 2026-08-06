@@ -3,12 +3,44 @@ import { createHash } from "node:crypto";
 import type { DisabledCatalogCapability } from "./contracts.js";
 import type { PriceMap } from "./pricing.js";
 import type { MappingPricingTier } from "@betarouter/db/schema";
+import type {
+	ProviderAdditionalLink,
+	ProviderDataPolicy,
+	ProviderRegionConfig,
+	ServiceTier,
+} from "@betarouter/models";
 
 export type CatalogLifecycle = "draft" | "active" | "deprecated" | "retired";
 
 export interface SourceProvider {
 	id: string;
 	status: "active" | "inactive";
+	// Base provider data mirrored from the source row. Optional because
+	// resolver inputs built before this data existed must still resolve.
+	// `env` is deliberately absent: platform env credentials are deployment
+	// config, not catalog data, and database-defined providers never have env
+	// keys.
+	name?: string;
+	description?: string;
+	streaming?: boolean | null;
+	cancellation?: boolean | null;
+	color?: string | null;
+	website?: string | null;
+	announcement?: string | null;
+	protocol?: string | null;
+	priority?: number | null;
+	contentFilter?: boolean | null;
+	maxTemperature?: number | null;
+	headquarters?: string | null;
+	dataPolicy?: ProviderDataPolicy | null;
+	serviceTiers?: ServiceTier[] | null;
+	regionConfig?: ProviderRegionConfig | null;
+	termsUrl?: string | null;
+	privacyPolicyUrl?: string | null;
+	statusPageUrl?: string | null;
+	apiKeyInstructions?: string | null;
+	modelCardBadge?: string | null;
+	additionalLinks?: ProviderAdditionalLink[] | null;
 }
 
 export interface SourceModel {
@@ -155,6 +187,29 @@ export interface EffectiveProvider {
 	configuredVisible: boolean;
 	visible: boolean;
 	available: boolean;
+	// Base provider data mirrored from the source row. Optional because
+	// snapshots stored before this data existed must still parse.
+	name?: string;
+	description?: string;
+	streaming?: boolean | null;
+	cancellation?: boolean | null;
+	color?: string | null;
+	website?: string | null;
+	announcement?: string | null;
+	protocol?: string | null;
+	priority?: number | null;
+	contentFilter?: boolean | null;
+	maxTemperature?: number | null;
+	headquarters?: string | null;
+	dataPolicy?: ProviderDataPolicy | null;
+	serviceTiers?: ServiceTier[] | null;
+	regionConfig?: ProviderRegionConfig | null;
+	termsUrl?: string | null;
+	privacyPolicyUrl?: string | null;
+	statusPageUrl?: string | null;
+	apiKeyInstructions?: string | null;
+	modelCardBadge?: string | null;
+	additionalLinks?: ProviderAdditionalLink[] | null;
 }
 
 export interface EffectiveModel {
@@ -543,6 +598,27 @@ export function resolveEffectiveCatalog(
 				Boolean(policy?.enabled) &&
 				lifecycle !== "retired" &&
 				Boolean(input.providerCredentialAvailability[provider.id]),
+			name: provider.name,
+			description: provider.description,
+			streaming: provider.streaming,
+			cancellation: provider.cancellation,
+			color: provider.color,
+			website: provider.website,
+			announcement: provider.announcement,
+			protocol: provider.protocol,
+			priority: provider.priority,
+			contentFilter: provider.contentFilter,
+			maxTemperature: provider.maxTemperature,
+			headquarters: provider.headquarters,
+			dataPolicy: provider.dataPolicy,
+			serviceTiers: provider.serviceTiers,
+			regionConfig: provider.regionConfig,
+			termsUrl: provider.termsUrl,
+			privacyPolicyUrl: provider.privacyPolicyUrl,
+			statusPageUrl: provider.statusPageUrl,
+			apiKeyInstructions: provider.apiKeyInstructions,
+			modelCardBadge: provider.modelCardBadge,
+			additionalLinks: provider.additionalLinks,
 		};
 	});
 
