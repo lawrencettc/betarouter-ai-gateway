@@ -241,7 +241,27 @@ export const MODEL_SOURCE_FIELDS: SourceFieldDescriptor[] = [
 		overridable: true,
 		updatable: true,
 	},
+	{
+		key: "imageInputRequired",
+		label: "Image input required",
+		input: "boolean",
+		nullable: false,
+		overridable: true,
+		updatable: true,
+	},
 ];
+
+const MAPPING_MODALITY_FLAG_KEYS = [
+	["embeddings", "Embeddings API"],
+	["imageGenerations", "Image generations API"],
+	["videoGenerations", "Video generations API"],
+	["speechGenerations", "Speech generations API"],
+	["transcriptions", "Transcriptions API"],
+	["realtime", "Realtime API"],
+	["realtimeTranscription", "Realtime transcription"],
+	["ocr", "OCR API"],
+	["rerank", "Rerank API"],
+] as const;
 
 const MAPPING_PRICE_FIELD_KEYS = [
 	["inputPrice", "Input price"],
@@ -354,6 +374,14 @@ export const MAPPING_SOURCE_FIELDS: SourceFieldDescriptor[] = [
 		overridable: true,
 		updatable: true,
 	},
+	...MAPPING_MODALITY_FLAG_KEYS.map(([key, label]): SourceFieldDescriptor => ({
+		key,
+		label,
+		input: "boolean",
+		nullable: false,
+		overridable: true,
+		updatable: true,
+	})),
 	{
 		key: "supportedParameters",
 		label: "Supported parameters",

@@ -3028,6 +3028,19 @@ export const modelProviderMapping = pgTable(
 		jsonOutputSchema: boolean().default(false).notNull(),
 		webSearch: boolean().default(false).notNull(),
 		webSearchPrice: decimal(),
+		// Modality routing flags mirrored from the code catalogue. These decide
+		// which gateway surface serves the mapping, so they must live in the
+		// snapshot — admin-created non-chat mappings have no static definition
+		// to graft them from.
+		embeddings: boolean().default(false).notNull(),
+		imageGenerations: boolean().default(false).notNull(),
+		videoGenerations: boolean().default(false).notNull(),
+		speechGenerations: boolean().default(false).notNull(),
+		transcriptions: boolean().default(false).notNull(),
+		realtime: boolean().default(false).notNull(),
+		realtimeTranscription: boolean().default(false).notNull(),
+		ocr: boolean().default(false).notNull(),
+		rerank: boolean().default(false).notNull(),
 		stability: text({
 			enum: ["stable", "beta", "unstable", "experimental"],
 		})

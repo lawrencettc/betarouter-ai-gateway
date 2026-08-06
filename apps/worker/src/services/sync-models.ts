@@ -308,6 +308,31 @@ export async function syncProvidersAndModels() {
 											? mapping.jsonOutputSchema
 											: false,
 									webSearch: "webSearch" in mapping ? mapping.webSearch : false,
+									embeddings:
+										"embeddings" in mapping ? mapping.embeddings : false,
+									imageGenerations:
+										"imageGenerations" in mapping
+											? mapping.imageGenerations
+											: false,
+									videoGenerations:
+										"videoGenerations" in mapping
+											? mapping.videoGenerations
+											: false,
+									speechGenerations:
+										"speechGenerations" in mapping
+											? mapping.speechGenerations
+											: false,
+									transcriptions:
+										"transcriptions" in mapping
+											? mapping.transcriptions
+											: false,
+									realtime: "realtime" in mapping ? mapping.realtime : false,
+									realtimeTranscription:
+										"realtimeTranscription" in mapping
+											? mapping.realtimeTranscription
+											: false,
+									ocr: "ocr" in mapping ? mapping.ocr : false,
+									rerank: "rerank" in mapping ? mapping.rerank : false,
 									webSearchPrice:
 										"webSearchPrice" in mapping &&
 										mapping.webSearchPrice !== undefined
@@ -469,6 +494,31 @@ export async function syncProvidersAndModels() {
 										: undefined,
 								webSearch:
 									"webSearch" in mapping ? mapping.webSearch : undefined,
+								embeddings:
+									"embeddings" in mapping ? mapping.embeddings : undefined,
+								imageGenerations:
+									"imageGenerations" in mapping
+										? mapping.imageGenerations
+										: undefined,
+								videoGenerations:
+									"videoGenerations" in mapping
+										? mapping.videoGenerations
+										: undefined,
+								speechGenerations:
+									"speechGenerations" in mapping
+										? mapping.speechGenerations
+										: undefined,
+								transcriptions:
+									"transcriptions" in mapping
+										? mapping.transcriptions
+										: undefined,
+								realtime: "realtime" in mapping ? mapping.realtime : undefined,
+								realtimeTranscription:
+									"realtimeTranscription" in mapping
+										? mapping.realtimeTranscription
+										: undefined,
+								ocr: "ocr" in mapping ? mapping.ocr : undefined,
+								rerank: "rerank" in mapping ? mapping.rerank : undefined,
 								webSearchPrice:
 									"webSearchPrice" in mapping &&
 									mapping.webSearchPrice !== undefined

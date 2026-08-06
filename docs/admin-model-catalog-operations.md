@@ -231,6 +231,16 @@ code later ships a mapping for a slot an admin mapping occupies, the sync
 logs `Skipping sync for admin-owned mapping slot` and the admin row keeps
 serving until it is retired.
 
+Modality routing flags (`embeddings`, `imageGenerations`, `videoGenerations`,
+`speechGenerations`, `transcriptions`, `realtime`, `realtimeTranscription`,
+`ocr`, `rerank`) and the model-level `imageInputRequired` are mirrored,
+snapshot-carried, and settable on `*.create` / `*.update` / source-override
+operations, so admin-created non-chat mappings route from the snapshot alone.
+Revisions published before the modality-flag mirror lack these fields;
+reconstruction grafts them from the static array there, which means an
+admin-created non-chat mapping only serves correctly from revisions published
+after this build's first sync.
+
 Editing code-defined (static) entries uses `*.set_source_override` /
 `*.clear_source_override`: the mirror row is never mutated — the override is
 a per-field patch stored on the policy row, composed as

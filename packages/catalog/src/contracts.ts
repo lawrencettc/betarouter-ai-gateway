@@ -256,6 +256,7 @@ export const modelSourceOverridePatchSchema = z
 			.nullable()
 			.optional(),
 		free: z.boolean().nullable().optional(),
+		imageInputRequired: z.boolean().nullable().optional(),
 	})
 	.strict()
 	.refine((value) => Object.keys(value).length > 0, requireOverrideField);
@@ -279,6 +280,15 @@ export const mappingSourceOverridePatchSchema = z
 		jsonOutput: z.boolean().nullable().optional(),
 		jsonOutputSchema: z.boolean().nullable().optional(),
 		webSearch: z.boolean().nullable().optional(),
+		embeddings: z.boolean().nullable().optional(),
+		imageGenerations: z.boolean().nullable().optional(),
+		videoGenerations: z.boolean().nullable().optional(),
+		speechGenerations: z.boolean().nullable().optional(),
+		transcriptions: z.boolean().nullable().optional(),
+		realtime: z.boolean().nullable().optional(),
+		realtimeTranscription: z.boolean().nullable().optional(),
+		ocr: z.boolean().nullable().optional(),
+		rerank: z.boolean().nullable().optional(),
 		supportedParameters: z.array(idSchema).max(100).nullable().optional(),
 		pricingTiers: z
 			.array(mappingPricingTierSchema)
@@ -354,6 +364,7 @@ export const modelUpdateSchema = z
 		aliases: z.array(idSchema).max(100).optional(),
 		output: z.array(z.string().trim().min(1).max(64)).max(10).optional(),
 		free: z.boolean().optional(),
+		imageInputRequired: z.boolean().optional(),
 	})
 	.strict()
 	.refine((value) => Object.keys(value).length > 0, requireUpdateField);
@@ -371,6 +382,15 @@ export const mappingUpdateSchema = z
 		jsonOutput: z.boolean().optional(),
 		jsonOutputSchema: z.boolean().optional(),
 		webSearch: z.boolean().optional(),
+		embeddings: z.boolean().optional(),
+		imageGenerations: z.boolean().optional(),
+		videoGenerations: z.boolean().optional(),
+		speechGenerations: z.boolean().optional(),
+		transcriptions: z.boolean().optional(),
+		realtime: z.boolean().optional(),
+		realtimeTranscription: z.boolean().optional(),
+		ocr: z.boolean().optional(),
+		rerank: z.boolean().optional(),
 		supportedParameters: z.array(idSchema).max(100).nullable().optional(),
 		pricingTiers: z
 			.array(mappingPricingTierSchema)
@@ -437,6 +457,7 @@ export const modelCreateSchema = z
 		aliases: z.array(idSchema).max(100).optional(),
 		output: z.array(z.string().trim().min(1).max(64)).max(10).optional(),
 		free: z.boolean().optional(),
+		imageInputRequired: z.boolean().optional(),
 	})
 	.strict();
 
@@ -456,6 +477,15 @@ export const mappingCreateSchema = z
 		jsonOutput: z.boolean().optional(),
 		jsonOutputSchema: z.boolean().optional(),
 		webSearch: z.boolean().optional(),
+		embeddings: z.boolean().optional(),
+		imageGenerations: z.boolean().optional(),
+		videoGenerations: z.boolean().optional(),
+		speechGenerations: z.boolean().optional(),
+		transcriptions: z.boolean().optional(),
+		realtime: z.boolean().optional(),
+		realtimeTranscription: z.boolean().optional(),
+		ocr: z.boolean().optional(),
+		rerank: z.boolean().optional(),
 		supportedParameters: z.array(idSchema).max(100).optional(),
 		pricingTiers: z.array(mappingPricingTierSchema).min(1).max(10).optional(),
 		serviceTierMultipliers: z

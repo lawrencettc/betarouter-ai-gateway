@@ -240,6 +240,7 @@ const modelSourceValuesSchema = z.object({
 	aliases: z.array(z.string()),
 	output: z.array(z.string()),
 	free: z.boolean(),
+	imageInputRequired: z.boolean(),
 });
 const mappingSourceValuesSchema = z.object({
 	externalId: z.string(),
@@ -254,6 +255,15 @@ const mappingSourceValuesSchema = z.object({
 	jsonOutput: z.boolean(),
 	jsonOutputSchema: z.boolean(),
 	webSearch: z.boolean(),
+	embeddings: z.boolean(),
+	imageGenerations: z.boolean(),
+	videoGenerations: z.boolean(),
+	speechGenerations: z.boolean(),
+	transcriptions: z.boolean(),
+	realtime: z.boolean(),
+	realtimeTranscription: z.boolean(),
+	ocr: z.boolean(),
+	rerank: z.boolean(),
 	supportedParameters: z.array(z.string()).nullable(),
 	pricingTiers: z.unknown(),
 	serviceTierMultipliers: z.unknown(),
@@ -1294,6 +1304,7 @@ function modelSourceValues(source: typeof model.$inferSelect) {
 		aliases: source.aliases,
 		output: source.output,
 		free: source.free,
+		imageInputRequired: source.imageInputRequired,
 	};
 }
 
@@ -1311,6 +1322,15 @@ function mappingSourceValues(source: typeof modelProviderMapping.$inferSelect) {
 		jsonOutput: source.jsonOutput,
 		jsonOutputSchema: source.jsonOutputSchema,
 		webSearch: source.webSearch,
+		embeddings: source.embeddings,
+		imageGenerations: source.imageGenerations,
+		videoGenerations: source.videoGenerations,
+		speechGenerations: source.speechGenerations,
+		transcriptions: source.transcriptions,
+		realtime: source.realtime,
+		realtimeTranscription: source.realtimeTranscription,
+		ocr: source.ocr,
+		rerank: source.rerank,
 		supportedParameters: source.supportedParameters,
 		pricingTiers: source.pricingTiers,
 		serviceTierMultipliers: source.serviceTierMultipliers,

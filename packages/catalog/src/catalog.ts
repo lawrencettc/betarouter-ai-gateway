@@ -19,6 +19,7 @@ export interface SourceModel {
 	aliases?: string[];
 	output?: string[];
 	free?: boolean;
+	imageInputRequired?: boolean;
 }
 
 export interface SourceMapping {
@@ -43,6 +44,15 @@ export interface SourceMapping {
 	supportedParameters?: string[] | null;
 	pricingTiers?: MappingPricingTier[] | null;
 	serviceTierMultipliers?: Partial<Record<string, number>> | null;
+	embeddings?: boolean;
+	imageGenerations?: boolean;
+	videoGenerations?: boolean;
+	speechGenerations?: boolean;
+	transcriptions?: boolean;
+	realtime?: boolean;
+	realtimeTranscription?: boolean;
+	ocr?: boolean;
+	rerank?: boolean;
 }
 
 export interface ProviderPolicy {
@@ -156,6 +166,7 @@ export interface EffectiveModel {
 	aliases?: string[];
 	output?: string[];
 	free?: boolean;
+	imageInputRequired?: boolean;
 }
 
 export interface EffectiveMapping {
@@ -199,6 +210,18 @@ export interface EffectiveMapping {
 	supportedParameters?: string[] | null;
 	pricingTiers?: MappingPricingTier[] | null;
 	serviceTierMultipliers?: Partial<Record<string, number>> | null;
+	// Modality routing flags. Optional for the same reason: snapshots stored
+	// before the modality-flag mirror existed must still parse (reconstruction
+	// falls back to the static graft for those revisions).
+	embeddings?: boolean;
+	imageGenerations?: boolean;
+	videoGenerations?: boolean;
+	speechGenerations?: boolean;
+	transcriptions?: boolean;
+	realtime?: boolean;
+	realtimeTranscription?: boolean;
+	ocr?: boolean;
+	rerank?: boolean;
 }
 
 export interface EffectiveCatalog {
@@ -427,6 +450,15 @@ export function resolveEffectiveCatalog(
 			supportedParameters: mapping.supportedParameters,
 			pricingTiers: mapping.pricingTiers,
 			serviceTierMultipliers: mapping.serviceTierMultipliers,
+			embeddings: mapping.embeddings,
+			imageGenerations: mapping.imageGenerations,
+			videoGenerations: mapping.videoGenerations,
+			speechGenerations: mapping.speechGenerations,
+			transcriptions: mapping.transcriptions,
+			realtime: mapping.realtime,
+			realtimeTranscription: mapping.realtimeTranscription,
+			ocr: mapping.ocr,
+			rerank: mapping.rerank,
 		};
 	});
 
@@ -459,6 +491,7 @@ export function resolveEffectiveCatalog(
 			aliases: model.aliases,
 			output: model.output,
 			free: model.free,
+			imageInputRequired: model.imageInputRequired,
 		};
 	});
 

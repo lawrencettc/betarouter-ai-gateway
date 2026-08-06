@@ -59,6 +59,7 @@ const storedCatalogSnapshotSchema = z
 				aliases: z.array(z.string()).optional(),
 				output: z.array(z.string()).optional(),
 				free: z.boolean().optional(),
+				imageInputRequired: z.boolean().optional(),
 			}),
 		),
 		mappings: z.array(
@@ -103,6 +104,17 @@ const storedCatalogSnapshotSchema = z
 					.record(z.string(), z.number())
 					.nullable()
 					.optional(),
+				// Modality flags are optional: snapshots stored before the
+				// modality-flag mirror existed must still parse.
+				embeddings: z.boolean().optional(),
+				imageGenerations: z.boolean().optional(),
+				videoGenerations: z.boolean().optional(),
+				speechGenerations: z.boolean().optional(),
+				transcriptions: z.boolean().optional(),
+				realtime: z.boolean().optional(),
+				realtimeTranscription: z.boolean().optional(),
+				ocr: z.boolean().optional(),
+				rerank: z.boolean().optional(),
 			}),
 		),
 		visibleProviderIds: z.array(z.string()),
