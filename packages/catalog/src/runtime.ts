@@ -39,6 +39,35 @@ const storedCatalogSnapshotSchema = z
 				configuredVisible: z.boolean(),
 				visible: z.boolean(),
 				available: z.boolean(),
+				// Base provider data is optional: snapshots stored before the
+				// provider mirror rode the snapshot must still parse.
+				name: z.string().optional(),
+				description: z.string().optional(),
+				streaming: z.boolean().nullable().optional(),
+				cancellation: z.boolean().nullable().optional(),
+				color: z.string().nullable().optional(),
+				website: z.string().nullable().optional(),
+				announcement: z.string().nullable().optional(),
+				protocol: z.string().nullable().optional(),
+				priority: z.number().nullable().optional(),
+				contentFilter: z.boolean().nullable().optional(),
+				maxTemperature: z.number().nullable().optional(),
+				headquarters: z.string().nullable().optional(),
+				dataPolicy: z.record(z.string(), z.unknown()).nullable().optional(),
+				serviceTiers: z
+					.array(z.record(z.string(), z.unknown()))
+					.nullable()
+					.optional(),
+				regionConfig: z.record(z.string(), z.unknown()).nullable().optional(),
+				termsUrl: z.string().nullable().optional(),
+				privacyPolicyUrl: z.string().nullable().optional(),
+				statusPageUrl: z.string().nullable().optional(),
+				apiKeyInstructions: z.string().nullable().optional(),
+				modelCardBadge: z.string().nullable().optional(),
+				additionalLinks: z
+					.array(z.record(z.string(), z.unknown()))
+					.nullable()
+					.optional(),
 			}),
 		),
 		models: z.array(

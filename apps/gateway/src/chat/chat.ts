@@ -79,8 +79,10 @@ import {
 } from "@/lib/logs.js";
 import {
 	buildCatalogParseContext,
+	buildGatewayProviderResolver,
 	getCatalogModelResolutionContext,
 	resolveGatewayModelDefinition,
+	type GatewayProviderResolver,
 } from "@/lib/model-resolution.js";
 import {
 	createSessionProviderStore,
@@ -167,7 +169,6 @@ import {
 	type ModelDefinition,
 	models,
 	type Provider,
-	type ProviderDefinition,
 	type ProviderModelMapping,
 	type ProviderRequestBody,
 	providers,
@@ -178,7 +179,6 @@ import {
 	expandAllProviderRegions,
 	type EnvVarVariant,
 	getOrganizationEnvVariant,
-	getProviderDefinition,
 	getRegionSpecificEnvVarName,
 	getProviderEnvValue,
 } from "@betarouter/models";
@@ -392,13 +392,13 @@ function customModelToProviderMapping(cm: CustomModel): ProviderModelMapping {
 
 function filterRegionsByAvailableKeys(
 	expandedProviders: ProviderModelMapping[],
+	resolveProvider: GatewayProviderResolver,
 ): ProviderModelMapping[] {
 	return expandedProviders.filter((mapping) => {
 		if (!mapping.region) {
 			return true;
 		}
-		const providerDef = providers.find((p) => p.id === mapping.providerId) as
-			ProviderDefinition | undefined;
+		const providerDef = resolveProvider(mapping.providerId);
 		if (!providerDef?.regionConfig) {
 			return true;
 		}
@@ -448,6 +448,7 @@ async function collapseProvidersToBestRegionPerProvider(
 		promptTokens?: number;
 		routingConfig?: ResolvedRoutingConfig;
 		organizationId: string;
+		providerDefinitionResolver?: GatewayProviderResolver;
 	},
 ): Promise<ProviderModelMapping[]> {
 	const providersById = new Map<string, ProviderModelMapping[]>();
@@ -484,9 +485,9 @@ async function collapseProvidersToBestRegionPerProvider(
 
 function resolveRegionFromProviderKey(
 	key: InferSelectModel<typeof tables.providerKey>,
+	resolveProvider: GatewayProviderResolver,
 ): string | undefined {
-	const providerDef = providers.find((p) => p.id === key.provider) as
-		ProviderDefinition | undefined;
+	const providerDef = resolveProvider(key.provider);
 	if (!providerDef?.regionConfig) {
 		return undefined;
 	}
@@ -499,9 +500,9 @@ function resolveRegionFromProviderKey(
 
 function resolveExplicitRegionFromProviderKey(
 	key: InferSelectModel<typeof tables.providerKey>,
+	resolveProvider: GatewayProviderResolver,
 ): string | undefined {
-	const providerDef = providers.find((p) => p.id === key.provider) as
-		ProviderDefinition | undefined;
+	const providerDef = resolveProvider(key.provider);
 	if (!providerDef?.regionConfig) {
 		return undefined;
 	}
@@ -518,11 +519,11 @@ function resolveExplicitRegionFromProviderKey(
  */
 function buildProviderLockedRegions(
 	providerKeys: InferSelectModel<typeof tables.providerKey>[],
+	resolveProvider: GatewayProviderResolver,
 ): Map<string, string> {
 	const locked = new Map<string, string>();
 	for (const key of providerKeys) {
-		const providerDef = providers.find((p) => p.id === key.provider) as
-			ProviderDefinition | undefined;
+		const providerDef = resolveProvider(key.provider);
 		const regionKey = providerDef?.regionConfig?.optionsKey;
 		if (regionKey && key.options) {
 			const lockedRegion = (key.options as Record<string, string | undefined>)[
@@ -620,13 +621,17 @@ interface ContentFilterRoutingDecision {
 	rerouted: boolean;
 }
 
-function isContentFilterProvider(providerId: string): boolean {
-	return getProviderDefinition(providerId)?.contentFilter === true;
+function isContentFilterProvider(
+	providerId: string,
+	resolveProvider: GatewayProviderResolver,
+): boolean {
+	return resolveProvider(providerId)?.contentFilter === true;
 }
 
 function getContentFilterRoutingDecision(
 	availableModelProviders: ProviderModelMapping[],
 	contentFilterMatched: boolean,
+	resolveProvider: GatewayProviderResolver,
 ): ContentFilterRoutingDecision {
 	if (!contentFilterMatched) {
 		return {
@@ -637,7 +642,8 @@ function getContentFilterRoutingDecision(
 	}
 
 	const preferredProviders = availableModelProviders.filter(
-		(provider) => !isContentFilterProvider(provider.providerId),
+		(provider) =>
+			!isContentFilterProvider(provider.providerId, resolveProvider),
 	);
 
 	if (preferredProviders.length === 0) {
@@ -649,7 +655,7 @@ function getContentFilterRoutingDecision(
 	}
 
 	const excludedProviders = availableModelProviders.filter((provider) =>
-		isContentFilterProvider(provider.providerId),
+		isContentFilterProvider(provider.providerId, resolveProvider),
 	);
 
 	if (excludedProviders.length === 0) {
@@ -1734,6 +1740,12 @@ chat.openapi(completions, async (c) => {
 			modelResolutionContext,
 			lookupRequestedProvider,
 		);
+	// Provider analog of the inversion: provider-level source overrides and
+	// admin-created providers' base data (priority, contentFilter, protocol,
+	// maxTemperature, cancellation, regionConfig) resolve catalog-first.
+	const resolveProviderDef = buildGatewayProviderResolver(
+		modelResolutionContext,
+	);
 
 	// Parse model input to resolve model, provider, and custom provider name.
 	// The catalog existence context only extends what parsing accepts, so it
@@ -2050,12 +2062,19 @@ chat.openapi(completions, async (c) => {
 	if (project.mode === "credits") {
 		modelInfo = {
 			...modelInfo,
-			providers: filterRegionsByAvailableKeys(modelInfo.providers),
+			providers: filterRegionsByAvailableKeys(
+				modelInfo.providers,
+				resolveProviderDef,
+			),
 		};
 		routingExpandedModelProviders = filterRegionsByAvailableKeys(
 			routingExpandedModelProviders,
+			resolveProviderDef,
 		);
-		allModelProviders = filterRegionsByAvailableKeys(allModelProviders);
+		allModelProviders = filterRegionsByAvailableKeys(
+			allModelProviders,
+			resolveProviderDef,
+		);
 	} else if (project.mode === "hybrid") {
 		const dbProviderKeys = await findActiveProviderKeys(project.organizationId);
 		const providersWithDbKeys = new Set(dbProviderKeys.map((k) => k.provider));
@@ -2071,9 +2090,7 @@ chat.openapi(completions, async (c) => {
 				if (!mapping.region) {
 					return true;
 				}
-				const providerDef = providers.find(
-					(p) => p.id === mapping.providerId,
-				) as ProviderDefinition | undefined;
+				const providerDef = resolveProviderDef(mapping.providerId);
 				if (!providerDef?.regionConfig) {
 					return true;
 				}
@@ -3157,7 +3174,10 @@ chat.openapi(completions, async (c) => {
 		// Region locks from DB provider keys, so auto-routing honors an org's
 		// configured region (e.g. aws_bedrock_region: "eu") instead of being
 		// collapsed to the pinned default by applyPinnedDefaultRegions.
-		const autoProviderLockedRegions = buildProviderLockedRegions(providerKeys);
+		const autoProviderLockedRegions = buildProviderLockedRegions(
+			providerKeys,
+			resolveProviderDef,
+		);
 
 		// Find the cheapest model that meets our context size requirements
 		// Only consider hardcoded models for auto selection
@@ -3271,6 +3291,7 @@ chat.openapi(completions, async (c) => {
 								expandAllProviderRegions(
 									modelDef.providers as ProviderModelMapping[],
 								),
+								resolveProviderDef,
 							)
 						: expandAllProviderRegions(
 								modelDef.providers as ProviderModelMapping[],
@@ -3278,6 +3299,7 @@ chat.openapi(completions, async (c) => {
 					{
 						explicitLocks: autoProviderLockedRegions,
 						requestedRegion,
+						resolveProvider: resolveProviderDef,
 					},
 				),
 			);
@@ -3400,6 +3422,7 @@ chat.openapi(completions, async (c) => {
 						promptTokens: routingPromptTokens,
 						routingConfig: routingCfg,
 						organizationId: project.organizationId,
+						providerDefinitionResolver: resolveProviderDef,
 					},
 				);
 
@@ -3414,6 +3437,7 @@ chat.openapi(completions, async (c) => {
 					routingConfig: routingCfg,
 					organizationId: project.organizationId,
 					providerDiscountResolver,
+					providerDefinitionResolver: resolveProviderDef,
 				},
 			);
 
@@ -3612,7 +3636,10 @@ chat.openapi(completions, async (c) => {
 					modelInfo.id || usedInternalModel,
 				);
 				lockedRegion = providerKey
-					? resolveExplicitRegionFromProviderKey(providerKey)
+					? resolveExplicitRegionFromProviderKey(
+							providerKey,
+							resolveProviderDef,
+						)
 					: undefined;
 			}
 
@@ -3674,6 +3701,7 @@ chat.openapi(completions, async (c) => {
 							routingConfig: routingCfg,
 							organizationId: project.organizationId,
 							providerDiscountResolver,
+							providerDefinitionResolver: resolveProviderDef,
 						},
 					);
 
@@ -3789,8 +3817,12 @@ chat.openapi(completions, async (c) => {
 
 				const availableModelProviders = preferConcreteRegionalMappings(
 					applyPinnedDefaultRegions(iamFilteredModelProviders, {
-						explicitLocks: buildProviderLockedRegions(providerKeys),
+						explicitLocks: buildProviderLockedRegions(
+							providerKeys,
+							resolveProviderDef,
+						),
 						requestedRegion,
+						resolveProvider: resolveProviderDef,
 					}),
 				).filter((provider) => {
 					if (!availableProviders.includes(provider.providerId)) {
@@ -3885,6 +3917,7 @@ chat.openapi(completions, async (c) => {
 								routingConfig: routingCfg,
 								organizationId: project.organizationId,
 								providerDiscountResolver,
+								providerDefinitionResolver: resolveProviderDef,
 							},
 						);
 
@@ -4015,8 +4048,12 @@ chat.openapi(completions, async (c) => {
 				const availableModelProviders = filterEligibleModelProviders(
 					preferConcreteRegionalMappings(
 						applyPinnedDefaultRegions(expandedIamFilteredModelProviders, {
-							explicitLocks: buildProviderLockedRegions(providerKeys),
+							explicitLocks: buildProviderLockedRegions(
+								providerKeys,
+								resolveProviderDef,
+							),
 							requestedRegion,
+							resolveProvider: resolveProviderDef,
 						}),
 					),
 					{
@@ -4080,6 +4117,7 @@ chat.openapi(completions, async (c) => {
 									promptTokens: routingPromptTokens,
 									routingConfig: routingCfg,
 									organizationId: project.organizationId,
+									providerDefinitionResolver: resolveProviderDef,
 								},
 							);
 
@@ -4122,6 +4160,7 @@ chat.openapi(completions, async (c) => {
 									routingConfig: routingCfg,
 									organizationId: project.organizationId,
 									providerDiscountResolver,
+									providerDefinitionResolver: resolveProviderDef,
 								},
 							);
 
@@ -4234,13 +4273,17 @@ chat.openapi(completions, async (c) => {
 			// Build a map of provider → locked region from DB provider keys.
 			// When a user sets a region in their provider key (e.g. alibaba_region: "cn-beijing"),
 			// only that region should be a candidate — not all expanded regions.
-			const providerLockedRegions = buildProviderLockedRegions(providerKeys);
+			const providerLockedRegions = buildProviderLockedRegions(
+				providerKeys,
+				resolveProviderDef,
+			);
 
 			// Filter model providers to only those eligible for this request
 			const preparedModelProviders = preferConcreteRegionalMappings(
 				applyPinnedDefaultRegions(expandedIamFilteredModelProviders, {
 					explicitLocks: providerLockedRegions,
 					requestedRegion,
+					resolveProvider: resolveProviderDef,
 				}),
 			);
 			const eligibilityOptions = {
@@ -4335,6 +4378,7 @@ chat.openapi(completions, async (c) => {
 			const contentFilterRoutingDecision = getContentFilterRoutingDecision(
 				availableModelProviders,
 				shouldRerouteContentFilter,
+				resolveProviderDef,
 			);
 			const contentFilterPreferredProviders =
 				contentFilterRoutingDecision.candidates;
@@ -4393,6 +4437,7 @@ chat.openapi(completions, async (c) => {
 							promptTokens: routingPromptTokens,
 							routingConfig: routingCfg,
 							organizationId: project.organizationId,
+							providerDefinitionResolver: resolveProviderDef,
 						},
 					);
 
@@ -4407,6 +4452,7 @@ chat.openapi(completions, async (c) => {
 						routingConfig: routingCfg,
 						organizationId: project.organizationId,
 						providerDiscountResolver,
+						providerDefinitionResolver: resolveProviderDef,
 					},
 				);
 
@@ -4577,7 +4623,10 @@ chat.openapi(completions, async (c) => {
 					modelInfo.id || usedInternalModel,
 				);
 				explicitDirectRegion = providerKey
-					? resolveExplicitRegionFromProviderKey(providerKey)
+					? resolveExplicitRegionFromProviderKey(
+							providerKey,
+							resolveProviderDef,
+						)
 					: undefined;
 			}
 
@@ -4589,7 +4638,11 @@ chat.openapi(completions, async (c) => {
 				allModelProviders.filter(
 					(provider) => provider.providerId === requestedProvider,
 				),
-				{ explicitLocks: providerLockedRegions, requestedRegion },
+				{
+					explicitLocks: providerLockedRegions,
+					requestedRegion,
+					resolveProvider: resolveProviderDef,
+				},
 			);
 			const directProviderRegionalMappings = directProviderMappings.filter(
 				(provider) => provider.region,
@@ -4670,6 +4723,7 @@ chat.openapi(completions, async (c) => {
 							routingConfig: routingCfg,
 							organizationId: project.organizationId,
 							providerDiscountResolver,
+							providerDefinitionResolver: resolveProviderDef,
 						},
 					);
 
@@ -4897,7 +4951,10 @@ chat.openapi(completions, async (c) => {
 				usedProvider,
 			)
 		) {
-			const keyConfiguredRegion = resolveRegionFromProviderKey(providerKey);
+			const keyConfiguredRegion = resolveRegionFromProviderKey(
+				providerKey,
+				resolveProviderDef,
+			);
 			usedRegion ??= keyConfiguredRegion;
 			// The BYOK key is always used for the requested region (no silent env
 			// fallback), so a mismatch surfaces as an upstream auth error; log it
@@ -5037,7 +5094,10 @@ chat.openapi(completions, async (c) => {
 					usedProvider,
 				)
 			) {
-				const keyConfiguredRegion = resolveRegionFromProviderKey(providerKey);
+				const keyConfiguredRegion = resolveRegionFromProviderKey(
+					providerKey,
+					resolveProviderDef,
+				);
 				usedRegion ??= keyConfiguredRegion;
 				// The BYOK key is always used for the requested region (no silent env
 				// fallback), so a mismatch surfaces as an upstream auth error; log it
@@ -5559,8 +5619,7 @@ chat.openapi(completions, async (c) => {
 		// If region is still unset but the provider supports regions, resolve the
 		// default region so it appears in logs and metadata.
 		if (!usedRegion) {
-			const providerDef = providers.find((p) => p.id === usedProvider) as
-				{ regionConfig?: { defaultRegion: string } } | undefined;
+			const providerDef = resolveProviderDef(usedProvider);
 			if (providerDef?.regionConfig) {
 				usedRegion = providerDef.regionConfig.defaultRegion;
 			}
@@ -6351,11 +6410,15 @@ chat.openapi(completions, async (c) => {
 		}
 	}
 
-	temperature = clampTemperature(temperature, usedProvider);
+	temperature = clampTemperature(
+		temperature,
+		usedProvider,
+		resolveProviderDef(usedProvider),
+	);
 
 	// Check if the request can be canceled
 	let requestCanBeCanceled =
-		providers.find((p) => p.id === usedProvider)?.cancellation === true;
+		resolveProviderDef(usedProvider)?.cancellation === true;
 
 	// Classify a failed upstream body read as a client cancellation. A client
 	// disconnect usually surfaces as an AbortError (raceClientAbort guarantees
@@ -6667,6 +6730,7 @@ chat.openapi(completions, async (c) => {
 				baseModelDefinition: modelInfo.id
 					? lookupModelDefinition(modelInfo.id)
 					: undefined,
+				resolveProviderDefinition: resolveProviderDef,
 			},
 		);
 	}
@@ -9533,6 +9597,9 @@ chat.openapi(completions, async (c) => {
 									messages,
 									serverToolUseIndices,
 									supportsReasoning,
+									// Database-defined providers have no code-declared protocol;
+									// the catalog-resolved definition supplies it.
+									resolveProviderDef(streamFormatProvider)?.protocol,
 								);
 
 								// Skip null events (some providers have non-data events)

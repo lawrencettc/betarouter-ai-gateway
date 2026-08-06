@@ -25,11 +25,17 @@ export function applyPinnedDefaultRegions(
 	options: {
 		explicitLocks?: Map<string, string>;
 		requestedRegion?: string;
+		/** Catalog-resolved provider lookup; falls back to the static array. */
+		resolveProvider?: (id: string) => ProviderDefinition | undefined;
 	} = {},
 ): ProviderModelMapping[] {
 	if (options.requestedRegion) {
 		return mappings;
 	}
+	const resolveProvider =
+		options.resolveProvider ??
+		((id: string) =>
+			providers.find((p) => p.id === id) as ProviderDefinition | undefined);
 	const providerHasAnyRegion = new Set<string>();
 	const providerHasDefaultRegion = new Set<string>();
 	for (const m of mappings) {
@@ -37,15 +43,13 @@ export function applyPinnedDefaultRegions(
 			continue;
 		}
 		providerHasAnyRegion.add(m.providerId);
-		const def = providers.find((p) => p.id === m.providerId) as
-			ProviderDefinition | undefined;
+		const def = resolveProvider(m.providerId);
 		if (m.region === def?.regionConfig?.defaultRegion) {
 			providerHasDefaultRegion.add(m.providerId);
 		}
 	}
 	return mappings.filter((m) => {
-		const def = providers.find((p) => p.id === m.providerId) as
-			ProviderDefinition | undefined;
+		const def = resolveProvider(m.providerId);
 		if (!def?.regionConfig?.pinDefaultRegion) {
 			return true;
 		}
