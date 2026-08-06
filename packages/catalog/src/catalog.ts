@@ -20,6 +20,7 @@ export interface SourceModel {
 	output?: string[];
 	free?: boolean;
 	imageInputRequired?: boolean;
+	maxVideoDurationSeconds?: number | null;
 }
 
 export interface SourceMapping {
@@ -53,6 +54,14 @@ export interface SourceMapping {
 	realtimeTranscription?: boolean;
 	ocr?: boolean;
 	rerank?: boolean;
+	supportedVideoSizes?: string[] | null;
+	supportedVideoDurationsSeconds?: number[] | null;
+	supportedVideoDurationsSecondsImageToVideo?: number[] | null;
+	supportsVideoAudio?: boolean | null;
+	supportsVideoWithoutAudio?: boolean | null;
+	supportedVoices?: string[] | null;
+	/** Flat USD per content-filter violation, mirrored as a decimal string. */
+	contentFilterPrice?: string | null;
 }
 
 export interface ProviderPolicy {
@@ -167,6 +176,7 @@ export interface EffectiveModel {
 	output?: string[];
 	free?: boolean;
 	imageInputRequired?: boolean;
+	maxVideoDurationSeconds?: number | null;
 }
 
 export interface EffectiveMapping {
@@ -222,6 +232,14 @@ export interface EffectiveMapping {
 	realtimeTranscription?: boolean;
 	ocr?: boolean;
 	rerank?: boolean;
+	// Modality serving-config, same optionality contract as the flags above.
+	supportedVideoSizes?: string[] | null;
+	supportedVideoDurationsSeconds?: number[] | null;
+	supportedVideoDurationsSecondsImageToVideo?: number[] | null;
+	supportsVideoAudio?: boolean | null;
+	supportsVideoWithoutAudio?: boolean | null;
+	supportedVoices?: string[] | null;
+	contentFilterPrice?: string | null;
 }
 
 export interface EffectiveCatalog {
@@ -459,6 +477,14 @@ export function resolveEffectiveCatalog(
 			realtimeTranscription: mapping.realtimeTranscription,
 			ocr: mapping.ocr,
 			rerank: mapping.rerank,
+			supportedVideoSizes: mapping.supportedVideoSizes,
+			supportedVideoDurationsSeconds: mapping.supportedVideoDurationsSeconds,
+			supportedVideoDurationsSecondsImageToVideo:
+				mapping.supportedVideoDurationsSecondsImageToVideo,
+			supportsVideoAudio: mapping.supportsVideoAudio,
+			supportsVideoWithoutAudio: mapping.supportsVideoWithoutAudio,
+			supportedVoices: mapping.supportedVoices,
+			contentFilterPrice: mapping.contentFilterPrice,
 		};
 	});
 
@@ -492,6 +518,7 @@ export function resolveEffectiveCatalog(
 			output: model.output,
 			free: model.free,
 			imageInputRequired: model.imageInputRequired,
+			maxVideoDurationSeconds: model.maxVideoDurationSeconds,
 		};
 	});
 

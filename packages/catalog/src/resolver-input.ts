@@ -44,6 +44,7 @@ export interface CatalogModelRowInput {
 	output: string[];
 	free: boolean;
 	imageInputRequired: boolean;
+	maxVideoDurationSeconds: number | null;
 }
 
 export interface CatalogMappingRowInput extends SourceMappingPriceFields {
@@ -78,6 +79,13 @@ export interface CatalogMappingRowInput extends SourceMappingPriceFields {
 	realtimeTranscription: boolean;
 	ocr: boolean;
 	rerank: boolean;
+	supportedVideoSizes: string[] | null;
+	supportedVideoDurationsSeconds: number[] | null;
+	supportedVideoDurationsSecondsImageToVideo: number[] | null;
+	supportsVideoAudio: boolean | null;
+	supportsVideoWithoutAudio: boolean | null;
+	supportedVoices: string[] | null;
+	contentFilterPrice: string | null;
 }
 
 export interface CatalogCredentialRowInput {
@@ -288,6 +296,7 @@ export function buildCatalogResolverInput(input: {
 			output: row.output,
 			free: row.free,
 			imageInputRequired: row.imageInputRequired,
+			maxVideoDurationSeconds: row.maxVideoDurationSeconds,
 		})),
 		mappings: mappings.map((row) => ({
 			id: row.id,
@@ -320,6 +329,14 @@ export function buildCatalogResolverInput(input: {
 			realtimeTranscription: row.realtimeTranscription,
 			ocr: row.ocr,
 			rerank: row.rerank,
+			supportedVideoSizes: row.supportedVideoSizes,
+			supportedVideoDurationsSeconds: row.supportedVideoDurationsSeconds,
+			supportedVideoDurationsSecondsImageToVideo:
+				row.supportedVideoDurationsSecondsImageToVideo,
+			supportsVideoAudio: row.supportsVideoAudio,
+			supportsVideoWithoutAudio: row.supportsVideoWithoutAudio,
+			supportedVoices: row.supportedVoices,
+			contentFilterPrice: row.contentFilterPrice,
 		})),
 		providerPolicies: Object.values(input.state.providers).map((item) => ({
 			providerId: item.providerId,

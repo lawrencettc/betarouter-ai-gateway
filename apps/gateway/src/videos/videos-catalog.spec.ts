@@ -59,6 +59,15 @@ function resolverInputForStatic(
 		jsonOutput: mapping.jsonOutput ?? false,
 		jsonOutputSchema: mapping.jsonOutputSchema ?? false,
 		webSearch: mapping.webSearch ?? false,
+		embeddings: mapping.embeddings ?? false,
+		imageGenerations: mapping.imageGenerations ?? false,
+		videoGenerations: mapping.videoGenerations ?? false,
+		speechGenerations: mapping.speechGenerations ?? false,
+		transcriptions: mapping.transcriptions ?? false,
+		realtime: mapping.realtime ?? false,
+		realtimeTranscription: mapping.realtimeTranscription ?? false,
+		ocr: mapping.ocr ?? false,
+		rerank: mapping.rerank ?? false,
 		supportedParameters: mapping.supportedParameters ?? null,
 		pricingTiers: mapping.pricingTiers
 			? mapping.pricingTiers.map((tier) => ({
@@ -67,6 +76,14 @@ function resolverInputForStatic(
 				}))
 			: null,
 		serviceTierMultipliers: mapping.serviceTierMultipliers ?? null,
+		supportedVideoSizes: mapping.supportedVideoSizes ?? null,
+		supportedVideoDurationsSeconds:
+			mapping.supportedVideoDurationsSeconds ?? null,
+		supportedVideoDurationsSecondsImageToVideo:
+			mapping.supportedVideoDurationsSecondsImageToVideo ?? null,
+		supportsVideoAudio: mapping.supportsVideoAudio ?? null,
+		supportsVideoWithoutAudio: mapping.supportsVideoWithoutAudio ?? null,
+		contentFilterPrice: mapping.contentFilterPrice?.toString() ?? null,
 	}));
 	return {
 		revision,
@@ -83,6 +100,8 @@ function resolverInputForStatic(
 				aliases: def.aliases ?? [],
 				output: def.output ?? ["text"],
 				free: def.free ?? false,
+				imageInputRequired: def.imageInputRequired ?? false,
+				maxVideoDurationSeconds: def.maxVideoDurationSeconds ?? null,
 			},
 		],
 		mappings,
@@ -194,9 +213,10 @@ describe("videos catalog resolution", () => {
 			shadowRead: true,
 		});
 		expect(resolved).toBeDefined();
-		// The definition really came from the snapshot; the videoGenerations
-		// serving flag and the model-level imageInputRequired constraint are
-		// grafted from the static definition.
+		// The definition really came from the snapshot, which now carries the
+		// videoGenerations flag and the model-level imageInputRequired
+		// constraint itself (mirrored since the modality-flag and
+		// serving-config slices).
 		expect(resolved).not.toBe(staticDef);
 		expect(resolved!.output).toEqual(["video"]);
 		expect(

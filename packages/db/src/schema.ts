@@ -2946,6 +2946,7 @@ export const model = pgTable(
 		free: boolean().default(false).notNull(),
 		output: json().$type<string[]>().default(["text"]).notNull(),
 		imageInputRequired: boolean().default(false).notNull(),
+		maxVideoDurationSeconds: integer(),
 		stability: text({
 			enum: ["stable", "beta", "unstable", "experimental"],
 		})
@@ -3041,6 +3042,17 @@ export const modelProviderMapping = pgTable(
 		realtimeTranscription: boolean().default(false).notNull(),
 		ocr: boolean().default(false).notNull(),
 		rerank: boolean().default(false).notNull(),
+		// Modality serving-config mirrored from the code catalogue: request
+		// validation (sizes/durations/voices) and per-violation billing
+		// (contentFilterPrice) read these off the resolved mapping, so
+		// admin-created mappings need them in the snapshot too.
+		supportedVideoSizes: jsonb().$type<string[]>(),
+		supportedVideoDurationsSeconds: jsonb().$type<number[]>(),
+		supportedVideoDurationsSecondsImageToVideo: jsonb().$type<number[]>(),
+		supportsVideoAudio: boolean(),
+		supportsVideoWithoutAudio: boolean(),
+		supportedVoices: jsonb().$type<string[]>(),
+		contentFilterPrice: decimal(),
 		stability: text({
 			enum: ["stable", "beta", "unstable", "experimental"],
 		})
