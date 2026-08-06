@@ -8,6 +8,7 @@ import {
 	validateProviderEmbeddings,
 	validateProviderImages,
 	validateProviderKey,
+	validateProviderSpeech,
 	validateProviderVideos,
 } from "@betarouter/actions";
 import { redisClient } from "@betarouter/cache";
@@ -117,6 +118,27 @@ function videoProbeHints(
 		supportedVideoDurationsSeconds:
 			mappingRow.supportedVideoDurationsSeconds ??
 			staticMapping?.supportedVideoDurationsSeconds,
+	};
+}
+
+/**
+ * Voice hint for the minimal-speech probe, mirror-first like the video hints:
+ * the mapping row covers admin-created mappings and operator edits, the
+ * static definition backs rows synced before the column was mirrored.
+ */
+function speechProbeHints(mappingRow: {
+	modelId: string;
+	providerId: string;
+	supportedVoices: string[] | null;
+}): { supportedVoices?: readonly string[] } {
+	const staticMapping = staticModels
+		.find((model) => model.id === mappingRow.modelId)
+		?.providers.find(
+			(candidate) => candidate.providerId === mappingRow.providerId,
+		) as ProviderModelMapping | undefined;
+	return {
+		supportedVoices:
+			mappingRow.supportedVoices ?? staticMapping?.supportedVoices,
 	};
 }
 const CATALOG_INVALIDATION_CHANNEL = "platform-catalog:invalidate";
@@ -2037,6 +2059,7 @@ platformCatalog.openapi(
 									"minimal-embeddings",
 									"minimal-images",
 									"minimal-videos",
+									"minimal-speech",
 								])
 								.optional(),
 						}),
@@ -2117,7 +2140,7 @@ platformCatalog.openapi(
 		if (!probeProfile) {
 			throw new HTTPException(400, {
 				message:
-					"Mapping probes exist for text/chat, embeddings, image generation, and video generation models only. Keep this mapping disabled until its operation-specific probe profile is available.",
+					"Mapping probes exist for text/chat, embeddings, image generation, video generation, and speech generation models only. Keep this mapping disabled until its operation-specific probe profile is available.",
 			});
 		}
 		if (input.testProfile && input.testProfile !== probeProfile) {
@@ -2190,10 +2213,15 @@ platformCatalog.openapi(
 									...probeTarget,
 									...videoProbeHints(mapping, sourceModel),
 								})
-							: await validateProviderKey(...probeArgs, {
-									modelId: mapping.modelId,
-									...probeTarget,
-								});
+							: probeProfile === "minimal-speech"
+								? await validateProviderSpeech(...probeArgs, {
+										...probeTarget,
+										...speechProbeHints(mapping),
+									})
+								: await validateProviderKey(...probeArgs, {
+										modelId: mapping.modelId,
+										...probeTarget,
+									});
 			status = result.valid ? "passed" : "failed";
 			upstreamStatus = result.statusCode ?? null;
 			errorClass = result.valid ? null : "upstream_validation_failed";

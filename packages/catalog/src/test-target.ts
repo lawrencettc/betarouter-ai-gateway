@@ -15,7 +15,11 @@ function canonical(value: unknown): unknown {
 }
 
 export type CatalogMappingTestProfileName =
-	"minimal-chat" | "minimal-embeddings" | "minimal-images" | "minimal-videos";
+	| "minimal-chat"
+	| "minimal-embeddings"
+	| "minimal-images"
+	| "minimal-videos"
+	| "minimal-speech";
 
 /**
  * Which probe profile a model's output modalities call for, shared by the
@@ -30,7 +34,9 @@ export type CatalogMappingTestProfileName =
  * profile invalidates its passed test runs and instantly de-routes it. In
  * particular, text+image chat models (e.g. the Gemini image previews) serve
  * chat traffic and stay on minimal-chat; minimal-images is only for models
- * whose output is image without text.
+ * whose output is image without text. Likewise text+audio chat models (the
+ * native-audio / realtime deployments) stay on minimal-chat; minimal-speech
+ * is only for text-to-speech models whose output is audio without text.
  */
 export function catalogMappingProfileForOutputs(
 	output: readonly string[],
@@ -46,6 +52,9 @@ export function catalogMappingProfileForOutputs(
 	}
 	if (output.includes("video")) {
 		return "minimal-videos";
+	}
+	if (output.includes("audio")) {
+		return "minimal-speech";
 	}
 	return null;
 }
