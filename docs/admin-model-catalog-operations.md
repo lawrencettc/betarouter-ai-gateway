@@ -16,9 +16,10 @@ Cloudflare Tunnel.
   passes (Stage 11).
 - Image-only mappings (model output `["image"]` without text) may activate
   after an exact `minimal-images` test passes (Stage 12).
-- Keep moderation, audio/speech, OCR, and video mappings disabled until
-  their operation-specific profiles in the future build plan are
-  implemented.
+- Video mappings may activate after an exact `minimal-videos` test passes
+  (Stage 13); serving additionally requires the videos enforcement flag.
+- Keep moderation, audio/speech, and OCR mappings disabled until their
+  operation-specific profiles in the future build plan are implemented.
 - Catalog editor permissions are not separated in this release. Existing
   immutable platform-admin authorization remains the only admin gate.
 
@@ -34,10 +35,11 @@ PLATFORM_CATALOG_DISCOVERY_ENABLED=false
 PLATFORM_CATALOG_ROUTING_ENABLED=false
 PLATFORM_CATALOG_BASE_READ_ENABLED=false
 PLATFORM_CATALOG_EMBEDDINGS_ROUTING_ENABLED=false
+PLATFORM_CATALOG_VIDEOS_ROUTING_ENABLED=false
 PLATFORM_CATALOG_BREAKER_MODE=off
 ```
 
-The production Compose file forwards all six flags to the unified service.
+The production Compose file forwards all seven flags to the unified service.
 Do not enable a later stage in Git or the image; change the deployment secret
 file so emergency rollback remains independent of a new build.
 
@@ -379,6 +381,58 @@ validated like static ones.
    other modality is touched. There is no modality flag to unset; anything
    broader follows the emergency rollback ladder below.
 
+### Stage 13: Videos modality rollout
+
+Videos follow the embeddings pattern, not the images one: `/v1/videos` has
+its own catalog enforcement call, so this stage flips a dedicated flag.
+Video requests enforce catalog decisions only when BOTH
+`PLATFORM_CATALOG_ROUTING_ENABLED` and
+`PLATFORM_CATALOG_VIDEOS_ROUTING_ENABLED` are true; until the second flag
+flips, videos stay on legacy routing while shadow reads log every decision
+with `operation: "videos"`.
+
+Two things are new beyond the embeddings template:
+
+- **Async billing replay.** Video jobs bill on completion in the worker,
+  minutes after dispatch. A job dispatched under catalog enforcement is
+  stamped with its revision and mapping (`catalog_revision_id`,
+  `model_provider_mapping_id` on `video_job`), and the worker bills from
+  THAT revision's customer prices — per-second-by-resolution
+  (`second:<resolution>` units), per-image input, and flat request price —
+  not from the static array and not from whatever revision is latest at
+  completion. Jobs without lineage (dispatched before the flip) keep static
+  billing.
+- **Probe cost.** The `minimal-videos` probe submits one real
+  cheapest-settings text-to-video generation (shortest supported duration,
+  no audio) and passes on upstream ACCEPTANCE — it never polls or downloads
+  the result. The accepted generation still runs and is billed by the
+  provider (dollars-order, one-time per mapping + credential fingerprint),
+  and its output is discarded. The probe covers Google Vertex (API-key
+  credentials with `google_vertex_project_id`; OAuth refused), xAI,
+  MiniMax, ByteDance, Alibaba, AtlasCloud, Avalanche, and OpenAI-compatible
+  `/v1/videos` deployments including relays. Veo probes may need the
+  mapping's region set if the default region is rejected.
+
+1. Deploy with `PLATFORM_CATALOG_VIDEOS_ROUTING_ENABLED` unset (off). With
+   shadow reads on, expect `operation: "videos"` decisions with
+   `allowed: false` until video mappings are activated — the soak signal,
+   not a fault.
+2. Activate each video mapping exactly as in Stage 8: credential, a passed
+   `minimal-videos` test (a `minimal-chat` run never satisfies a video
+   mapping), price policy, enablement. Fixed price policies must cover the
+   per-second units via `perSecondByResolution`.
+3. When shadow decisions for video traffic are `allowed: true` with the
+   expected mapping ids and prices, set
+   `PLATFORM_CATALOG_VIDEOS_ROUTING_ENABLED=true` in the deployment secret
+   file (no rebuild) and restart. Verify one pinned generation per
+   activated mapping and compare the finalized log row's cost against the
+   mapping's effective prices (remember completion lags dispatch).
+4. Rollback for this stage alone: unset
+   `PLATFORM_CATALOG_VIDEOS_ROUTING_ENABLED`. Videos return to legacy
+   routing and static billing for newly dispatched jobs without touching
+   chat or embeddings enforcement; in-flight jobs with lineage still bill
+   at their dispatch revision, which remains correct.
+
 ## Emergency rollback
 
 Apply the smallest safe rollback in this order:
@@ -387,7 +441,8 @@ Apply the smallest safe rollback in this order:
 2. Set `PLATFORM_CATALOG_BASE_READ_ENABLED=false`.
 3. If only embeddings are affected, set
    `PLATFORM_CATALOG_EMBEDDINGS_ROUTING_ENABLED=false` — embeddings return
-   to legacy routing without touching chat enforcement.
+   to legacy routing without touching chat enforcement. If only videos are
+   affected, set `PLATFORM_CATALOG_VIDEOS_ROUTING_ENABLED=false` likewise.
 4. Set `PLATFORM_CATALOG_ROUTING_ENABLED=false`.
 5. If discovery is affected, set
    `PLATFORM_CATALOG_DISCOVERY_ENABLED=false` and

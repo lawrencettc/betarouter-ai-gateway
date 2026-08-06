@@ -8,6 +8,7 @@ import {
 	validateProviderEmbeddings,
 	validateProviderImages,
 	validateProviderKey,
+	validateProviderVideos,
 } from "@betarouter/actions";
 import { redisClient } from "@betarouter/cache";
 import {
@@ -64,6 +65,7 @@ import {
 	sql,
 	videoJob,
 } from "@betarouter/db";
+import { models as staticModels } from "@betarouter/models";
 
 import type { ServerTypes } from "@/vars.js";
 import type {
@@ -79,10 +81,39 @@ import type {
 	PlatformCatalogOperationV1,
 	PlatformSourceOverridesV1,
 } from "@betarouter/db";
-import type { ProviderId } from "@betarouter/models";
+import type { ProviderId, ProviderModelMapping } from "@betarouter/models";
 
 const platformCatalog = new OpenAPIHono<ServerTypes>();
 platformCatalog.use("/*", platformAdminMiddleware);
+
+/**
+ * Cheapest-settings hints for the minimal-videos probe, from the static
+ * definition when the mapping mirrors one. These fields are not mirrored in
+ * the catalog (graft-only), so admin-created mappings probe with the
+ * provider defaults instead.
+ */
+function videoProbeHints(
+	modelId: string,
+	providerId: string,
+): {
+	imageInputRequired?: boolean;
+	supportedVideoDurationsSeconds?: readonly number[];
+} {
+	const definition = staticModels.find((model) => model.id === modelId);
+	if (!definition) {
+		return {};
+	}
+	const mapping = definition.providers.find(
+		(candidate) => candidate.providerId === providerId,
+	) as ProviderModelMapping | undefined;
+	return {
+		imageInputRequired:
+			"imageInputRequired" in definition
+				? definition.imageInputRequired === true
+				: undefined,
+		supportedVideoDurationsSeconds: mapping?.supportedVideoDurationsSeconds,
+	};
+}
 const CATALOG_INVALIDATION_CHANNEL = "platform-catalog:invalidate";
 
 const lifecycleSchema = z.enum(["draft", "active", "deprecated", "retired"]);
@@ -1959,7 +1990,12 @@ platformCatalog.openapi(
 							// Omitted → derived from the model's output modalities;
 							// an explicit value must match the derived profile.
 							testProfile: z
-								.enum(["minimal-chat", "minimal-embeddings", "minimal-images"])
+								.enum([
+									"minimal-chat",
+									"minimal-embeddings",
+									"minimal-images",
+									"minimal-videos",
+								])
 								.optional(),
 						}),
 					},
@@ -2036,7 +2072,7 @@ platformCatalog.openapi(
 		if (!probeProfile) {
 			throw new HTTPException(400, {
 				message:
-					"Mapping probes exist for text/chat, embeddings, and image generation models only. Keep this mapping disabled until its operation-specific probe profile is available.",
+					"Mapping probes exist for text/chat, embeddings, image generation, and video generation models only. Keep this mapping disabled until its operation-specific probe profile is available.",
 			});
 		}
 		if (input.testProfile && input.testProfile !== probeProfile) {
@@ -2088,46 +2124,31 @@ platformCatalog.openapi(
 				credential.id,
 				credential.provider,
 			);
+			const probeArgs = [
+				credential.provider as ProviderId,
+				token,
+				credential.baseUrl ?? undefined,
+				process.env.NODE_ENV === "test",
+				credential.options ?? undefined,
+			] as const;
+			const probeTarget = {
+				externalId: currentPolicy?.externalIdOverride ?? mapping.externalId,
+				region: mapping.region,
+			};
 			const result =
 				probeProfile === "minimal-embeddings"
-					? await validateProviderEmbeddings(
-							credential.provider as ProviderId,
-							token,
-							credential.baseUrl ?? undefined,
-							process.env.NODE_ENV === "test",
-							credential.options ?? undefined,
-							{
-								externalId:
-									currentPolicy?.externalIdOverride ?? mapping.externalId,
-								region: mapping.region,
-							},
-						)
+					? await validateProviderEmbeddings(...probeArgs, probeTarget)
 					: probeProfile === "minimal-images"
-						? await validateProviderImages(
-								credential.provider as ProviderId,
-								token,
-								credential.baseUrl ?? undefined,
-								process.env.NODE_ENV === "test",
-								credential.options ?? undefined,
-								{
-									externalId:
-										currentPolicy?.externalIdOverride ?? mapping.externalId,
-									region: mapping.region,
-								},
-							)
-						: await validateProviderKey(
-								credential.provider as ProviderId,
-								token,
-								credential.baseUrl ?? undefined,
-								process.env.NODE_ENV === "test",
-								credential.options ?? undefined,
-								{
+						? await validateProviderImages(...probeArgs, probeTarget)
+						: probeProfile === "minimal-videos"
+							? await validateProviderVideos(...probeArgs, {
+									...probeTarget,
+									...videoProbeHints(mapping.modelId, mapping.providerId),
+								})
+							: await validateProviderKey(...probeArgs, {
 									modelId: mapping.modelId,
-									externalId:
-										currentPolicy?.externalIdOverride ?? mapping.externalId,
-									region: mapping.region,
-								},
-							);
+									...probeTarget,
+								});
 			status = result.valid ? "passed" : "failed";
 			upstreamStatus = result.statusCode ?? null;
 			errorClass = result.valid ? null : "upstream_validation_failed";

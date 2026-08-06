@@ -4,6 +4,7 @@ import { getStopSignal, isStopRequested } from "@/shutdown.js";
 
 import { redisClient } from "@betarouter/cache";
 import {
+	loadCatalogRevisionSnapshot,
 	readCatalogFeatureFlags,
 	recordCatalogBreakerOutcome,
 } from "@betarouter/catalog";
@@ -1684,7 +1685,84 @@ function inferVideoIncludesAudioFromPricing(
 	return null;
 }
 
-function getVideoPricing(job: VideoJobRecord): Record<string, string> | null {
+/**
+ * Effective prices for a job dispatched under catalog enforcement, replayed
+ * from the exact revision the gateway routed with (the job's lineage
+ * columns). When present these are AUTHORITATIVE for every price unit — a
+ * unit absent from the operator-approved price surface bills as absent, it
+ * does not fall back to the static array — mirroring how
+ * `applyCatalogCustomerPrices` overwrites all price fields on the chat path.
+ * Null means the job predates catalog enforcement (or videos enforcement was
+ * off at dispatch), and billing keeps the historical static resolution.
+ */
+export interface VideoJobCatalogPrices {
+	perSecondPrice: Record<string, string> | null;
+	requestPrice: number | null;
+	imageInputPrice: number | null;
+}
+
+export async function getVideoJobCatalogPrices(
+	job: Pick<
+		VideoJobRecord,
+		"id" | "catalogRevisionId" | "modelProviderMappingId"
+	>,
+): Promise<VideoJobCatalogPrices | null> {
+	if (!job.catalogRevisionId || !job.modelProviderMappingId) {
+		return null;
+	}
+	// A load failure here must propagate: the finalize retries on the next
+	// poll, whereas a silent static fallback would bill a catalog-enforced
+	// job at prices the operator may have overridden.
+	const snapshot = await loadCatalogRevisionSnapshot(job.catalogRevisionId);
+	const mapping = snapshot?.mappings.find(
+		(item) => item.id === job.modelProviderMappingId,
+	);
+	if (!mapping) {
+		// Revisions are immutable and never hard-deleted, so this is a data
+		// inconsistency, not a transient state; billing falls back to static
+		// rather than wedging the job forever.
+		logger.error("Video job catalog lineage did not resolve to a mapping", {
+			videoId: job.id,
+			catalogRevisionId: job.catalogRevisionId,
+			modelProviderMappingId: job.modelProviderMappingId,
+		});
+		return null;
+	}
+	const prices = mapping.customerPrices;
+	const perSecondEntries = Object.entries(prices).flatMap(([unit, value]) =>
+		unit.startsWith("second:") && value !== undefined
+			? [[unit.slice("second:".length), value] as const]
+			: [],
+	);
+	const requestPrice =
+		prices.request !== undefined ? Number(prices.request) : null;
+	// customerPrices carries imageInput per million tokens; video billing
+	// charges it per input image, matching the static field's semantics.
+	const imageInputPrice =
+		prices.imageInput !== undefined
+			? Number(prices.imageInput) / 1_000_000
+			: null;
+	return {
+		perSecondPrice:
+			perSecondEntries.length > 0 ? Object.fromEntries(perSecondEntries) : null,
+		requestPrice:
+			requestPrice !== null && Number.isFinite(requestPrice)
+				? requestPrice
+				: null,
+		imageInputPrice:
+			imageInputPrice !== null && Number.isFinite(imageInputPrice)
+				? imageInputPrice
+				: null,
+	};
+}
+
+function getVideoPricing(
+	job: VideoJobRecord,
+	catalogPrices: VideoJobCatalogPrices | null,
+): Record<string, string> | null {
+	if (catalogPrices) {
+		return catalogPrices.perSecondPrice;
+	}
 	const model = models.find((item) => item.id === job.model);
 	const mapping = model?.providers.find(
 		(provider) => provider.providerId === job.usedProvider,
@@ -1692,7 +1770,13 @@ function getVideoPricing(job: VideoJobRecord): Record<string, string> | null {
 	return mapping?.perSecondPrice ?? null;
 }
 
-function getVideoRequestPrice(job: VideoJobRecord): number | null {
+function getVideoRequestPrice(
+	job: VideoJobRecord,
+	catalogPrices: VideoJobCatalogPrices | null,
+): number | null {
+	if (catalogPrices) {
+		return catalogPrices.requestPrice;
+	}
 	const model = models.find((item) => item.id === job.model);
 	const mapping = model?.providers.find(
 		(provider) => provider.providerId === job.usedProvider,
@@ -1704,7 +1788,13 @@ function getVideoRequestPrice(job: VideoJobRecord): number | null {
 	return Number.isFinite(n) ? n : null;
 }
 
-function getVideoImageInputPrice(job: VideoJobRecord): number | null {
+function getVideoImageInputPrice(
+	job: VideoJobRecord,
+	catalogPrices: VideoJobCatalogPrices | null,
+): number | null {
+	if (catalogPrices) {
+		return catalogPrices.imageInputPrice;
+	}
 	const model = models.find((item) => item.id === job.model);
 	const mapping = model?.providers.find(
 		(provider) => provider.providerId === job.usedProvider,
@@ -1734,8 +1824,11 @@ function getVideoInputImageCount(job: VideoJobRecord): number {
 	return 0;
 }
 
-function getVideoImageInputCost(job: VideoJobRecord): number {
-	const pricePerImage = getVideoImageInputPrice(job);
+function getVideoImageInputCost(
+	job: VideoJobRecord,
+	catalogPrices: VideoJobCatalogPrices | null,
+): number {
+	const pricePerImage = getVideoImageInputPrice(job, catalogPrices);
 	if (pricePerImage === null) {
 		return 0;
 	}
@@ -1743,10 +1836,13 @@ function getVideoImageInputCost(job: VideoJobRecord): number {
 	return Number((getVideoInputImageCount(job) * pricePerImage).toFixed(6));
 }
 
-function getVideoOutputCost(job: VideoJobRecord): number {
-	const pricing = getVideoPricing(job);
+function getVideoOutputCost(
+	job: VideoJobRecord,
+	catalogPrices: VideoJobCatalogPrices | null,
+): number {
+	const pricing = getVideoPricing(job, catalogPrices);
 	if (!pricing) {
-		return getVideoRequestPrice(job) ?? 0;
+		return getVideoRequestPrice(job, catalogPrices) ?? 0;
 	}
 
 	const durationSeconds = extractVideoDurationSeconds(job);
@@ -1839,6 +1935,9 @@ async function finalizeVideoJob(job: VideoJobRecord): Promise<void> {
 	if (!currentJob.resultLoggedAt) {
 		const now = new Date();
 		const logId = shortid();
+		// Loaded before the claim transaction so a snapshot read failure
+		// leaves the job unclaimed and retryable on the next poll.
+		const catalogPrices = await getVideoJobCatalogPrices(currentJob);
 		const claimedJob = await db.transaction(async (tx) => {
 			const jobToLog = await tx
 				.update(tables.videoJob)
@@ -1865,9 +1964,13 @@ async function finalizeVideoJob(job: VideoJobRecord): Promise<void> {
 				.limit(1)
 				.then((rows) => rows[0]);
 			const videoOutputCost =
-				jobToLog.status === "completed" ? getVideoOutputCost(jobToLog) : 0;
+				jobToLog.status === "completed"
+					? getVideoOutputCost(jobToLog, catalogPrices)
+					: 0;
 			const imageInputCost =
-				jobToLog.status === "completed" ? getVideoImageInputCost(jobToLog) : 0;
+				jobToLog.status === "completed"
+					? getVideoImageInputCost(jobToLog, catalogPrices)
+					: 0;
 			const totalCost = Number((videoOutputCost + imageInputCost).toFixed(6));
 			const responsePayload = await serializeVideoJob(jobToLog, logId);
 			const responseSize = JSON.stringify(responsePayload).length;

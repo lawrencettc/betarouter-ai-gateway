@@ -19,13 +19,15 @@ describe("filterProviderMappingsByCatalog", () => {
 	it("keeps unvalidated non-chat operations on legacy routing at launch", () => {
 		expect(isCatalogOperationEnabled("chat")).toBe(true);
 		expect(isCatalogOperationEnabled("embeddings")).toBe(true);
+		expect(isCatalogOperationEnabled("videos")).toBe(true);
 		expect(isCatalogOperationEnabled("deferred_non_chat")).toBe(false);
 	});
 
-	it("enforces embeddings only behind its own routing flip", () => {
+	it("enforces embeddings and videos only behind their own routing flips", () => {
 		const routingOff = {
 			routingEnabled: false,
 			embeddingsRoutingEnabled: true,
+			videosRoutingEnabled: true,
 		};
 		expect(isCatalogRoutingEnforcedForOperation("chat", routingOff)).toBe(
 			false,
@@ -33,23 +35,51 @@ describe("filterProviderMappingsByCatalog", () => {
 		expect(isCatalogRoutingEnforcedForOperation("embeddings", routingOff)).toBe(
 			false,
 		);
+		expect(isCatalogRoutingEnforcedForOperation("videos", routingOff)).toBe(
+			false,
+		);
 
 		// A deployment already enforcing chat must not start enforcing
-		// embeddings until the operator flips the embeddings flag.
-		const chatOnly = { routingEnabled: true, embeddingsRoutingEnabled: false };
+		// embeddings or videos until the operator flips the modality flag.
+		const chatOnly = {
+			routingEnabled: true,
+			embeddingsRoutingEnabled: false,
+			videosRoutingEnabled: false,
+		};
 		expect(isCatalogRoutingEnforcedForOperation("chat", chatOnly)).toBe(true);
 		expect(isCatalogRoutingEnforcedForOperation("embeddings", chatOnly)).toBe(
+			false,
+		);
+		expect(isCatalogRoutingEnforcedForOperation("videos", chatOnly)).toBe(
 			false,
 		);
 		expect(
 			isCatalogRoutingEnforcedForOperation("deferred_non_chat", chatOnly),
 		).toBe(false);
 
-		const both = { routingEnabled: true, embeddingsRoutingEnabled: true };
-		expect(isCatalogRoutingEnforcedForOperation("embeddings", both)).toBe(true);
-		expect(
-			isCatalogRoutingEnforcedForOperation("deferred_non_chat", both),
-		).toBe(false);
+		// The modality flips are independent of each other.
+		const videosOnly = {
+			routingEnabled: true,
+			embeddingsRoutingEnabled: false,
+			videosRoutingEnabled: true,
+		};
+		expect(isCatalogRoutingEnforcedForOperation("videos", videosOnly)).toBe(
+			true,
+		);
+		expect(isCatalogRoutingEnforcedForOperation("embeddings", videosOnly)).toBe(
+			false,
+		);
+
+		const all = {
+			routingEnabled: true,
+			embeddingsRoutingEnabled: true,
+			videosRoutingEnabled: true,
+		};
+		expect(isCatalogRoutingEnforcedForOperation("embeddings", all)).toBe(true);
+		expect(isCatalogRoutingEnforcedForOperation("videos", all)).toBe(true);
+		expect(isCatalogRoutingEnforcedForOperation("deferred_non_chat", all)).toBe(
+			false,
+		);
 	});
 
 	it("removes disabled fallbacks and applies the effective external id", () => {

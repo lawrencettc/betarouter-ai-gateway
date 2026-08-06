@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { redisClient } from "@betarouter/cache";
 import { db } from "@betarouter/db/db";
-import { desc } from "@betarouter/db/orm";
+import { desc, eq } from "@betarouter/db/orm";
 import { platformCatalogRevision } from "@betarouter/db/schema";
 
 import { getCatalogBreakerStates } from "./breaker-store.js";
@@ -139,6 +139,50 @@ export async function loadLatestCatalogSnapshot(): Promise<EffectiveCatalog | nu
 		.orderBy(desc(platformCatalogRevision.id))
 		.limit(1);
 	return row ? parseStoredCatalogSnapshot(row.snapshot, row.checksum) : null;
+}
+
+// Revisions are immutable, so parsed snapshots can be cached by id forever;
+// the cap only bounds memory when a long-lived worker replays many distinct
+// revisions (e.g. billing old async video jobs after several publishes).
+const revisionSnapshotCache = new Map<number, EffectiveCatalog | null>();
+const REVISION_SNAPSHOT_CACHE_MAX = 8;
+
+/**
+ * Load the stored snapshot of one specific revision — the billing replay
+ * primitive for async work: a job dispatched under revision N is billed at
+ * revision N's customer prices, not at whatever revision is latest when the
+ * job completes. Returns null when the revision does not exist.
+ */
+export async function loadCatalogRevisionSnapshot(
+	revisionId: number,
+): Promise<EffectiveCatalog | null> {
+	if (revisionSnapshotCache.has(revisionId)) {
+		return revisionSnapshotCache.get(revisionId) ?? null;
+	}
+	const [row] = await db
+		.select({
+			checksum: platformCatalogRevision.checksum,
+			snapshot: platformCatalogRevision.snapshot,
+		})
+		.from(platformCatalogRevision)
+		.where(eq(platformCatalogRevision.id, revisionId))
+		.limit(1);
+	const snapshot = row
+		? parseStoredCatalogSnapshot(row.snapshot, row.checksum)
+		: null;
+	if (revisionSnapshotCache.size >= REVISION_SNAPSHOT_CACHE_MAX) {
+		const oldest = revisionSnapshotCache.keys().next().value;
+		if (oldest !== undefined) {
+			revisionSnapshotCache.delete(oldest);
+		}
+	}
+	revisionSnapshotCache.set(revisionId, snapshot);
+	return snapshot;
+}
+
+/** Test hook: clear the immutable-revision snapshot cache. */
+export function resetCatalogRevisionSnapshotCache(): void {
+	revisionSnapshotCache.clear();
 }
 
 const maxStaleMs = Number(

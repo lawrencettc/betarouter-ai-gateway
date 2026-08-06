@@ -66,7 +66,8 @@ describe("catalogMappingProfileForOutputs", () => {
 			"minimal-embeddings",
 		);
 		expect(catalogMappingProfileForOutputs(["image"])).toBe("minimal-images");
-		expect(catalogMappingProfileForOutputs(["video"])).toBeNull();
+		expect(catalogMappingProfileForOutputs(["video"])).toBe("minimal-videos");
+		expect(catalogMappingProfileForOutputs(["audio"])).toBeNull();
 		expect(catalogMappingProfileForOutputs([])).toBeNull();
 	});
 

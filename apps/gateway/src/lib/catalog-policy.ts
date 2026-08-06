@@ -17,7 +17,7 @@ import type {
 import type { ProviderModelMapping } from "@betarouter/models";
 
 interface EnforceCatalogRequestOptions {
-	operation: "chat" | "embeddings" | "deferred_non_chat";
+	operation: "chat" | "embeddings" | "videos" | "deferred_non_chat";
 	setHeader?: (name: string, value: string) => void;
 }
 
@@ -41,7 +41,9 @@ export function isTenantCustomProviderId(
 export function isCatalogOperationEnabled(
 	operation: EnforceCatalogRequestOptions["operation"],
 ): boolean {
-	return operation === "chat" || operation === "embeddings";
+	return (
+		operation === "chat" || operation === "embeddings" || operation === "videos"
+	);
 }
 
 /**
@@ -56,7 +58,7 @@ export function isCatalogRoutingEnforcedForOperation(
 	operation: EnforceCatalogRequestOptions["operation"],
 	flags: Pick<
 		CatalogFeatureFlags,
-		"routingEnabled" | "embeddingsRoutingEnabled"
+		"routingEnabled" | "embeddingsRoutingEnabled" | "videosRoutingEnabled"
 	>,
 ): boolean {
 	if (!flags.routingEnabled) {
@@ -67,6 +69,9 @@ export function isCatalogRoutingEnforcedForOperation(
 	}
 	if (operation === "embeddings") {
 		return flags.embeddingsRoutingEnabled;
+	}
+	if (operation === "videos") {
+		return flags.videosRoutingEnabled;
 	}
 	return false;
 }

@@ -40,6 +40,10 @@ import {
 	assertTestWalletModelAllowed,
 } from "@/lib/end-user-session.js";
 import { validateRequestModelAccess } from "@/lib/iam.js";
+import {
+	getCatalogModelResolutionContext,
+	resolveGatewayModelDefinition,
+} from "@/lib/model-resolution.js";
 import { getProviderMetricsForRouting } from "@/lib/provider-metrics-for-routing.js";
 import { getResolvedRoutingConfig } from "@/lib/routing-config-loader.js";
 import { getNoFallbackRoutingMetadata } from "@/lib/routing-metadata.js";
@@ -4457,7 +4461,17 @@ videos.openapi(createVideo, async (c) => {
 		c.req.raw.headers.has("x-no-fallback") ||
 		c.req.raw.headers.has("X-No-Fallback");
 
-	const modelInfo = models.find((model) => model.id === normalizedModel);
+	// Shared-resolver model resolution (static by default, catalog-first under
+	// BASE_READ, divergence-logged under SHADOW_READ). getVideoModel above
+	// already normalized the id and rejected non-video/deactivated models from
+	// the static registry, so this lookup cannot introduce new model ids — it
+	// swaps where the definition's base data (prices, limits, capabilities)
+	// comes from.
+	const modelInfo = resolveGatewayModelDefinition(
+		normalizedModel,
+		await getCatalogModelResolutionContext(),
+		requestedProvider,
+	);
 	if (!modelInfo) {
 		throw new HTTPException(400, {
 			message: `Model ${normalizedModel} not found`,
@@ -4469,7 +4483,7 @@ videos.openapi(createVideo, async (c) => {
 			providerId: requestedProvider,
 		},
 		{
-			operation: "deferred_non_chat",
+			operation: "videos",
 			setHeader: (name, value) => c.header(name, value),
 		},
 	);
