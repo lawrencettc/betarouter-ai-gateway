@@ -43,6 +43,7 @@ export interface CatalogModelRowInput {
 	aliases: string[];
 	output: string[];
 	free: boolean;
+	imageInputRequired: boolean;
 }
 
 export interface CatalogMappingRowInput extends SourceMappingPriceFields {
@@ -68,6 +69,15 @@ export interface CatalogMappingRowInput extends SourceMappingPriceFields {
 	supportedParameters: string[] | null;
 	pricingTiers: MappingPricingTier[] | null;
 	serviceTierMultipliers: Partial<Record<string, number>> | null;
+	embeddings: boolean;
+	imageGenerations: boolean;
+	videoGenerations: boolean;
+	speechGenerations: boolean;
+	transcriptions: boolean;
+	realtime: boolean;
+	realtimeTranscription: boolean;
+	ocr: boolean;
+	rerank: boolean;
 }
 
 export interface CatalogCredentialRowInput {
@@ -277,6 +287,7 @@ export function buildCatalogResolverInput(input: {
 			aliases: row.aliases,
 			output: row.output,
 			free: row.free,
+			imageInputRequired: row.imageInputRequired,
 		})),
 		mappings: mappings.map((row) => ({
 			id: row.id,
@@ -300,6 +311,15 @@ export function buildCatalogResolverInput(input: {
 			supportedParameters: row.supportedParameters,
 			pricingTiers: row.pricingTiers,
 			serviceTierMultipliers: row.serviceTierMultipliers,
+			embeddings: row.embeddings,
+			imageGenerations: row.imageGenerations,
+			videoGenerations: row.videoGenerations,
+			speechGenerations: row.speechGenerations,
+			transcriptions: row.transcriptions,
+			realtime: row.realtime,
+			realtimeTranscription: row.realtimeTranscription,
+			ocr: row.ocr,
+			rerank: row.rerank,
 		})),
 		providerPolicies: Object.values(input.state.providers).map((item) => ({
 			providerId: item.providerId,

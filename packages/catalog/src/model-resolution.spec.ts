@@ -239,6 +239,45 @@ describe("resolveModelFromCatalog", () => {
 		expect(Number(relay.inputPrice)).toBe(1e-6);
 	});
 
+	it("serves modality flags from the snapshot without a static graft", () => {
+		const input = resolverInput();
+		input.models[0]!.output = ["video"];
+		input.models[0]!.imageInputRequired = true;
+		input.mappings[0]!.videoGenerations = true;
+		input.mappings[0]!.embeddings = false;
+		// JSON round trip proves the stored-snapshot schema accepts the flags.
+		const snapshot = parseStoredCatalogSnapshot(
+			JSON.parse(JSON.stringify(resolveEffectiveCatalog(input))),
+		);
+		// No static definitions: an admin-created model must get its modality
+		// routing from the snapshot alone.
+		const resolved = resolveModelFromCatalog("gpt", snapshot, {
+			staticModels: [],
+		});
+		expect(resolved?.imageInputRequired).toBe(true);
+		const mapping = resolved!.providers[0]!;
+		expect(mapping.videoGenerations).toBe(true);
+		expect(mapping.embeddings).toBe(false);
+		expect(mapping.speechGenerations).toBeUndefined();
+	});
+
+	it("grafts modality flags for pre-modality-flag snapshots", () => {
+		// resolverInput leaves the flags unset, modeling a revision published
+		// before the modality-flag mirror existed.
+		const embeddingsStatic: ModelDefinition = {
+			...staticDef,
+			imageInputRequired: true,
+			providers: [{ ...staticDef.providers[0]!, embeddings: true }],
+		};
+		const resolved = resolveModelFromCatalog(
+			"gpt",
+			resolveEffectiveCatalog(resolverInput()),
+			{ staticModels: [embeddingsStatic] },
+		);
+		expect(resolved?.imageInputRequired).toBe(true);
+		expect(resolved!.providers[0]!.embeddings).toBe(true);
+	});
+
 	it("returns null for unknown models and pre-base-data snapshots", () => {
 		const snapshot = resolveEffectiveCatalog(resolverInput());
 		expect(
@@ -295,6 +334,22 @@ describe("compareCatalogModelResolution", () => {
 			pricing: true,
 		});
 		expect(hasPricingDivergence(divergences)).toBe(true);
+	});
+
+	it("flags modality-flag drift without a pricing marker", () => {
+		const input = resolverInput();
+		input.mappings[0]!.embeddings = true;
+		const resolved = resolveModelFromCatalog(
+			"gpt",
+			resolveEffectiveCatalog(input),
+			{ staticModels: [staticDef] },
+		);
+		const divergences = compareCatalogModelResolution(staticDef, resolved!);
+		expect(divergences).toHaveLength(1);
+		expect(divergences[0]).toMatchObject({
+			field: "embeddings",
+			pricing: false,
+		});
 	});
 
 	it("flags capability drift and missing mappings without a pricing marker", () => {
