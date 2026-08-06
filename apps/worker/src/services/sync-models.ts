@@ -118,6 +118,10 @@ export async function syncProvidersAndModels() {
 							"imageInputRequired" in modelDef
 								? modelDef.imageInputRequired
 								: undefined,
+						maxVideoDurationSeconds:
+							"maxVideoDurationSeconds" in modelDef
+								? modelDef.maxVideoDurationSeconds
+								: undefined,
 						stability: "stability" in modelDef ? modelDef.stability : undefined,
 						releasedAt:
 							"releasedAt" in modelDef ? modelDef.releasedAt : undefined,
@@ -139,6 +143,10 @@ export async function syncProvidersAndModels() {
 								"imageInputRequired" in modelDef
 									? modelDef.imageInputRequired
 									: false,
+							maxVideoDurationSeconds:
+								"maxVideoDurationSeconds" in modelDef
+									? (modelDef.maxVideoDurationSeconds ?? null)
+									: null,
 							stability:
 								"stability" in modelDef ? modelDef.stability : "stable",
 							releasedAt:
@@ -333,6 +341,36 @@ export async function syncProvidersAndModels() {
 											: false,
 									ocr: "ocr" in mapping ? mapping.ocr : false,
 									rerank: "rerank" in mapping ? mapping.rerank : false,
+									supportedVideoSizes:
+										"supportedVideoSizes" in mapping
+											? (mapping.supportedVideoSizes ?? null)
+											: null,
+									supportedVideoDurationsSeconds:
+										"supportedVideoDurationsSeconds" in mapping
+											? (mapping.supportedVideoDurationsSeconds ?? null)
+											: null,
+									supportedVideoDurationsSecondsImageToVideo:
+										"supportedVideoDurationsSecondsImageToVideo" in mapping
+											? (mapping.supportedVideoDurationsSecondsImageToVideo ??
+												null)
+											: null,
+									supportsVideoAudio:
+										"supportsVideoAudio" in mapping
+											? (mapping.supportsVideoAudio ?? null)
+											: null,
+									supportsVideoWithoutAudio:
+										"supportsVideoWithoutAudio" in mapping
+											? (mapping.supportsVideoWithoutAudio ?? null)
+											: null,
+									supportedVoices:
+										"supportedVoices" in mapping
+											? (mapping.supportedVoices ?? null)
+											: null,
+									contentFilterPrice:
+										"contentFilterPrice" in mapping &&
+										mapping.contentFilterPrice !== undefined
+											? mapping.contentFilterPrice.toString()
+											: null,
 									webSearchPrice:
 										"webSearchPrice" in mapping &&
 										mapping.webSearchPrice !== undefined
@@ -519,6 +557,35 @@ export async function syncProvidersAndModels() {
 										: undefined,
 								ocr: "ocr" in mapping ? mapping.ocr : undefined,
 								rerank: "rerank" in mapping ? mapping.rerank : undefined,
+								supportedVideoSizes:
+									"supportedVideoSizes" in mapping
+										? mapping.supportedVideoSizes
+										: undefined,
+								supportedVideoDurationsSeconds:
+									"supportedVideoDurationsSeconds" in mapping
+										? mapping.supportedVideoDurationsSeconds
+										: undefined,
+								supportedVideoDurationsSecondsImageToVideo:
+									"supportedVideoDurationsSecondsImageToVideo" in mapping
+										? mapping.supportedVideoDurationsSecondsImageToVideo
+										: undefined,
+								supportsVideoAudio:
+									"supportsVideoAudio" in mapping
+										? mapping.supportsVideoAudio
+										: undefined,
+								supportsVideoWithoutAudio:
+									"supportsVideoWithoutAudio" in mapping
+										? mapping.supportsVideoWithoutAudio
+										: undefined,
+								supportedVoices:
+									"supportedVoices" in mapping
+										? mapping.supportedVoices
+										: undefined,
+								contentFilterPrice:
+									"contentFilterPrice" in mapping &&
+									mapping.contentFilterPrice !== undefined
+										? mapping.contentFilterPrice.toString()
+										: undefined,
 								webSearchPrice:
 									"webSearchPrice" in mapping &&
 									mapping.webSearchPrice !== undefined

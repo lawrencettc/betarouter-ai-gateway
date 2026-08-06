@@ -243,31 +243,52 @@ describe("resolveModelFromCatalog", () => {
 		const input = resolverInput();
 		input.models[0]!.output = ["video"];
 		input.models[0]!.imageInputRequired = true;
+		input.models[0]!.maxVideoDurationSeconds = 8;
 		input.mappings[0]!.videoGenerations = true;
 		input.mappings[0]!.embeddings = false;
-		// JSON round trip proves the stored-snapshot schema accepts the flags.
+		input.mappings[0]!.supportedVideoSizes = ["1280x720"];
+		input.mappings[0]!.supportedVideoDurationsSeconds = [4, 8];
+		input.mappings[0]!.supportsVideoAudio = true;
+		input.mappings[0]!.supportedVoices = null;
+		input.mappings[0]!.contentFilterPrice = "0.05";
+		// JSON round trip proves the stored-snapshot schema accepts the fields.
 		const snapshot = parseStoredCatalogSnapshot(
 			JSON.parse(JSON.stringify(resolveEffectiveCatalog(input))),
 		);
 		// No static definitions: an admin-created model must get its modality
-		// routing from the snapshot alone.
+		// routing and serving-config from the snapshot alone.
 		const resolved = resolveModelFromCatalog("gpt", snapshot, {
 			staticModels: [],
 		});
 		expect(resolved?.imageInputRequired).toBe(true);
+		expect(resolved?.maxVideoDurationSeconds).toBe(8);
 		const mapping = resolved!.providers[0]!;
 		expect(mapping.videoGenerations).toBe(true);
 		expect(mapping.embeddings).toBe(false);
 		expect(mapping.speechGenerations).toBeUndefined();
+		expect(mapping.supportedVideoSizes).toEqual(["1280x720"]);
+		expect(mapping.supportedVideoDurationsSeconds).toEqual([4, 8]);
+		expect(mapping.supportsVideoAudio).toBe(true);
+		// null in the mirror is authoritative "not set", never re-grafted.
+		expect(mapping.supportedVoices).toBeUndefined();
+		expect(mapping.contentFilterPrice).toBe(0.05);
 	});
 
 	it("grafts modality flags for pre-modality-flag snapshots", () => {
-		// resolverInput leaves the flags unset, modeling a revision published
-		// before the modality-flag mirror existed.
+		// resolverInput leaves the flags and serving-config unset, modeling a
+		// revision published before those mirrors existed.
 		const embeddingsStatic: ModelDefinition = {
 			...staticDef,
 			imageInputRequired: true,
-			providers: [{ ...staticDef.providers[0]!, embeddings: true }],
+			maxVideoDurationSeconds: 10,
+			providers: [
+				{
+					...staticDef.providers[0]!,
+					embeddings: true,
+					supportedVoices: ["alloy"],
+					contentFilterPrice: 0.03,
+				},
+			],
 		};
 		const resolved = resolveModelFromCatalog(
 			"gpt",
@@ -275,7 +296,10 @@ describe("resolveModelFromCatalog", () => {
 			{ staticModels: [embeddingsStatic] },
 		);
 		expect(resolved?.imageInputRequired).toBe(true);
+		expect(resolved?.maxVideoDurationSeconds).toBe(10);
 		expect(resolved!.providers[0]!.embeddings).toBe(true);
+		expect(resolved!.providers[0]!.supportedVoices).toEqual(["alloy"]);
+		expect(resolved!.providers[0]!.contentFilterPrice).toBe(0.03);
 	});
 
 	it("returns null for unknown models and pre-base-data snapshots", () => {

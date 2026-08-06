@@ -478,6 +478,7 @@ describe("sync-models", () => {
 					free: row!.free,
 					output: row!.output,
 					imageInputRequired: row!.imageInputRequired,
+					maxVideoDurationSeconds: row!.maxVideoDurationSeconds,
 					stability: row!.stability,
 					source: row!.source,
 					status: row!.status,
@@ -492,6 +493,10 @@ describe("sync-models", () => {
 				output: "output" in def ? def.output : ["text"],
 				imageInputRequired:
 					"imageInputRequired" in def ? def.imageInputRequired : false,
+				maxVideoDurationSeconds:
+					"maxVideoDurationSeconds" in def
+						? (def.maxVideoDurationSeconds ?? null)
+						: null,
 				stability: "stability" in def ? def.stability : "stable",
 				source: "static",
 				status: "active",
@@ -570,6 +575,14 @@ describe("sync-models", () => {
 						realtimeTranscription: row!.realtimeTranscription,
 						ocr: row!.ocr,
 						rerank: row!.rerank,
+						supportedVideoSizes: row!.supportedVideoSizes,
+						supportedVideoDurationsSeconds: row!.supportedVideoDurationsSeconds,
+						supportedVideoDurationsSecondsImageToVideo:
+							row!.supportedVideoDurationsSecondsImageToVideo,
+						supportsVideoAudio: row!.supportsVideoAudio,
+						supportsVideoWithoutAudio: row!.supportsVideoWithoutAudio,
+						supportedVoices: row!.supportedVoices,
+						contentFilterPrice: numeric(row!.contentFilterPrice),
 						stability: row!.stability,
 						supportedParameters: row!.supportedParameters,
 						supportedToolChoices: row!.supportedToolChoices,
@@ -611,6 +624,18 @@ describe("sync-models", () => {
 					realtimeTranscription: mapping.realtimeTranscription ?? false,
 					ocr: mapping.ocr ?? false,
 					rerank: mapping.rerank ?? false,
+					supportedVideoSizes: mapping.supportedVideoSizes ?? null,
+					supportedVideoDurationsSeconds:
+						mapping.supportedVideoDurationsSeconds ?? null,
+					supportedVideoDurationsSecondsImageToVideo:
+						mapping.supportedVideoDurationsSecondsImageToVideo ?? null,
+					supportsVideoAudio: mapping.supportsVideoAudio ?? null,
+					supportsVideoWithoutAudio: mapping.supportsVideoWithoutAudio ?? null,
+					supportedVoices: mapping.supportedVoices ?? null,
+					contentFilterPrice:
+						mapping.contentFilterPrice !== undefined
+							? Number(mapping.contentFilterPrice)
+							: null,
 					stability: mapping.stability ?? "stable",
 					supportedParameters: mapping.supportedParameters ?? null,
 					supportedToolChoices: mapping.supportedToolChoices ?? null,

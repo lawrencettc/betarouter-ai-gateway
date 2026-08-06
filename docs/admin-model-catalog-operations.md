@@ -233,13 +233,18 @@ serving until it is retired.
 
 Modality routing flags (`embeddings`, `imageGenerations`, `videoGenerations`,
 `speechGenerations`, `transcriptions`, `realtime`, `realtimeTranscription`,
-`ocr`, `rerank`) and the model-level `imageInputRequired` are mirrored,
-snapshot-carried, and settable on `*.create` / `*.update` / source-override
-operations, so admin-created non-chat mappings route from the snapshot alone.
-Revisions published before the modality-flag mirror lack these fields;
-reconstruction grafts them from the static array there, which means an
-admin-created non-chat mapping only serves correctly from revisions published
-after this build's first sync.
+`ocr`, `rerank`), the modality serving-config (`supportedVideoSizes`,
+`supportedVideoDurationsSeconds`, `supportedVideoDurationsSecondsImageToVideo`,
+`supportsVideoAudio`, `supportsVideoWithoutAudio`, `supportedVoices`,
+`contentFilterPrice`), and the model-level `imageInputRequired` /
+`maxVideoDurationSeconds` are mirrored, snapshot-carried, and settable on
+`*.create` / `*.update` / source-override operations, so admin-created
+non-chat mappings route, validate requests, and bill content-filter charges
+from the snapshot alone. `contentFilterPrice` is base data, not a price-policy
+unit: markup/fixed policies do not transform it. Revisions published before
+these mirrors existed lack the fields; reconstruction grafts them from the
+static array there, which means an admin-created non-chat mapping only serves
+correctly from revisions published after this build's first sync.
 
 Editing code-defined (static) entries uses `*.set_source_override` /
 `*.clear_source_override`: the mirror row is never mutated — the override is
@@ -379,9 +384,10 @@ validated like static ones.
 2. Pricing units for this modality: per-token `imageInputPrice`,
    `imageOutputPrice`, and `cachedImageInputPrice` (mirrored per million),
    plus the flat per-request `requestPrice`. All flow through fixed and
-   markup price policies. `contentFilterPrice` is not catalog-managed: it
-   stays code-defined and grafts from the static mapping, so it cannot be
-   set for admin-created mappings yet.
+   markup price policies. `contentFilterPrice` is mirrored base data (the
+   serving-config slice): the snapshot carries it and it can be set on
+   admin-created mappings, but price policies do not transform it — it
+   bills at the mirrored flat USD amount.
 3. Verify each activated mapping with a pinned request
    (`<provider>/<model>` plus `x-no-fallback: true`) through
    `/v1/images/generations`, then confirm the log row's billed cost matches

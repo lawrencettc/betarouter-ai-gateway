@@ -257,6 +257,7 @@ export const modelSourceOverridePatchSchema = z
 			.optional(),
 		free: z.boolean().nullable().optional(),
 		imageInputRequired: z.boolean().nullable().optional(),
+		maxVideoDurationSeconds: z.number().int().positive().nullable().optional(),
 	})
 	.strict()
 	.refine((value) => Object.keys(value).length > 0, requireOverrideField);
@@ -289,6 +290,29 @@ export const mappingSourceOverridePatchSchema = z
 		realtimeTranscription: z.boolean().nullable().optional(),
 		ocr: z.boolean().nullable().optional(),
 		rerank: z.boolean().nullable().optional(),
+		supportedVideoSizes: z
+			.array(z.string().trim().min(1).max(32))
+			.max(50)
+			.nullable()
+			.optional(),
+		supportedVideoDurationsSeconds: z
+			.array(z.number().positive())
+			.max(50)
+			.nullable()
+			.optional(),
+		supportedVideoDurationsSecondsImageToVideo: z
+			.array(z.number().positive())
+			.max(50)
+			.nullable()
+			.optional(),
+		supportsVideoAudio: z.boolean().nullable().optional(),
+		supportsVideoWithoutAudio: z.boolean().nullable().optional(),
+		supportedVoices: z
+			.array(z.string().trim().min(1).max(64))
+			.max(100)
+			.nullable()
+			.optional(),
+		contentFilterPrice: sourceDecimalStringSchema.nullable().optional(),
 		supportedParameters: z.array(idSchema).max(100).nullable().optional(),
 		pricingTiers: z
 			.array(mappingPricingTierSchema)
@@ -365,6 +389,7 @@ export const modelUpdateSchema = z
 		output: z.array(z.string().trim().min(1).max(64)).max(10).optional(),
 		free: z.boolean().optional(),
 		imageInputRequired: z.boolean().optional(),
+		maxVideoDurationSeconds: z.number().int().positive().nullable().optional(),
 	})
 	.strict()
 	.refine((value) => Object.keys(value).length > 0, requireUpdateField);
@@ -391,6 +416,29 @@ export const mappingUpdateSchema = z
 		realtimeTranscription: z.boolean().optional(),
 		ocr: z.boolean().optional(),
 		rerank: z.boolean().optional(),
+		supportedVideoSizes: z
+			.array(z.string().trim().min(1).max(32))
+			.max(50)
+			.nullable()
+			.optional(),
+		supportedVideoDurationsSeconds: z
+			.array(z.number().positive())
+			.max(50)
+			.nullable()
+			.optional(),
+		supportedVideoDurationsSecondsImageToVideo: z
+			.array(z.number().positive())
+			.max(50)
+			.nullable()
+			.optional(),
+		supportsVideoAudio: z.boolean().nullable().optional(),
+		supportsVideoWithoutAudio: z.boolean().nullable().optional(),
+		supportedVoices: z
+			.array(z.string().trim().min(1).max(64))
+			.max(100)
+			.nullable()
+			.optional(),
+		contentFilterPrice: sourceDecimalStringSchema.nullable().optional(),
 		supportedParameters: z.array(idSchema).max(100).nullable().optional(),
 		pricingTiers: z
 			.array(mappingPricingTierSchema)
@@ -458,6 +506,7 @@ export const modelCreateSchema = z
 		output: z.array(z.string().trim().min(1).max(64)).max(10).optional(),
 		free: z.boolean().optional(),
 		imageInputRequired: z.boolean().optional(),
+		maxVideoDurationSeconds: z.number().int().positive().optional(),
 	})
 	.strict();
 
@@ -486,6 +535,25 @@ export const mappingCreateSchema = z
 		realtimeTranscription: z.boolean().optional(),
 		ocr: z.boolean().optional(),
 		rerank: z.boolean().optional(),
+		supportedVideoSizes: z
+			.array(z.string().trim().min(1).max(32))
+			.max(50)
+			.optional(),
+		supportedVideoDurationsSeconds: z
+			.array(z.number().positive())
+			.max(50)
+			.optional(),
+		supportedVideoDurationsSecondsImageToVideo: z
+			.array(z.number().positive())
+			.max(50)
+			.optional(),
+		supportsVideoAudio: z.boolean().optional(),
+		supportsVideoWithoutAudio: z.boolean().optional(),
+		supportedVoices: z
+			.array(z.string().trim().min(1).max(64))
+			.max(100)
+			.optional(),
+		contentFilterPrice: sourceDecimalStringSchema.optional(),
 		supportedParameters: z.array(idSchema).max(100).optional(),
 		pricingTiers: z.array(mappingPricingTierSchema).min(1).max(10).optional(),
 		serviceTierMultipliers: z

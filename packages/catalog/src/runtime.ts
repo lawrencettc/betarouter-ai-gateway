@@ -60,6 +60,7 @@ const storedCatalogSnapshotSchema = z
 				output: z.array(z.string()).optional(),
 				free: z.boolean().optional(),
 				imageInputRequired: z.boolean().optional(),
+				maxVideoDurationSeconds: z.number().int().nullable().optional(),
 			}),
 		),
 		mappings: z.array(
@@ -115,6 +116,19 @@ const storedCatalogSnapshotSchema = z
 				realtimeTranscription: z.boolean().optional(),
 				ocr: z.boolean().optional(),
 				rerank: z.boolean().optional(),
+				supportedVideoSizes: z.array(z.string()).nullable().optional(),
+				supportedVideoDurationsSeconds: z
+					.array(z.number())
+					.nullable()
+					.optional(),
+				supportedVideoDurationsSecondsImageToVideo: z
+					.array(z.number())
+					.nullable()
+					.optional(),
+				supportsVideoAudio: z.boolean().nullable().optional(),
+				supportsVideoWithoutAudio: z.boolean().nullable().optional(),
+				supportedVoices: z.array(z.string()).nullable().optional(),
+				contentFilterPrice: z.string().nullable().optional(),
 			}),
 		),
 		visibleProviderIds: z.array(z.string()),

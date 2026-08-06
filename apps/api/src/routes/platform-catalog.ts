@@ -87,31 +87,36 @@ const platformCatalog = new OpenAPIHono<ServerTypes>();
 platformCatalog.use("/*", platformAdminMiddleware);
 
 /**
- * Cheapest-settings hints for the minimal-videos probe, from the static
- * definition when the mapping mirrors one. These fields are not mirrored in
- * the catalog (graft-only), so admin-created mappings probe with the
- * provider defaults instead.
+ * Cheapest-settings hints for the minimal-videos probe. The mirror rows are
+ * authoritative (they cover admin-created mappings and any operator edits);
+ * the static definition only backs rows synced before these columns existed.
  */
 function videoProbeHints(
-	modelId: string,
-	providerId: string,
+	mappingRow: {
+		modelId: string;
+		providerId: string;
+		supportedVideoDurationsSeconds: number[] | null;
+	},
+	modelRow: { imageInputRequired: boolean } | undefined,
 ): {
 	imageInputRequired?: boolean;
 	supportedVideoDurationsSeconds?: readonly number[];
 } {
-	const definition = staticModels.find((model) => model.id === modelId);
-	if (!definition) {
-		return {};
-	}
-	const mapping = definition.providers.find(
-		(candidate) => candidate.providerId === providerId,
+	const definition = staticModels.find(
+		(model) => model.id === mappingRow.modelId,
+	);
+	const staticMapping = definition?.providers.find(
+		(candidate) => candidate.providerId === mappingRow.providerId,
 	) as ProviderModelMapping | undefined;
 	return {
 		imageInputRequired:
-			"imageInputRequired" in definition
+			modelRow?.imageInputRequired ??
+			(definition && "imageInputRequired" in definition
 				? definition.imageInputRequired === true
-				: undefined,
-		supportedVideoDurationsSeconds: mapping?.supportedVideoDurationsSeconds,
+				: undefined),
+		supportedVideoDurationsSeconds:
+			mappingRow.supportedVideoDurationsSeconds ??
+			staticMapping?.supportedVideoDurationsSeconds,
 	};
 }
 const CATALOG_INVALIDATION_CHANNEL = "platform-catalog:invalidate";
@@ -241,6 +246,7 @@ const modelSourceValuesSchema = z.object({
 	output: z.array(z.string()),
 	free: z.boolean(),
 	imageInputRequired: z.boolean(),
+	maxVideoDurationSeconds: z.number().nullable(),
 });
 const mappingSourceValuesSchema = z.object({
 	externalId: z.string(),
@@ -264,6 +270,13 @@ const mappingSourceValuesSchema = z.object({
 	realtimeTranscription: z.boolean(),
 	ocr: z.boolean(),
 	rerank: z.boolean(),
+	supportedVideoSizes: z.array(z.string()).nullable(),
+	supportedVideoDurationsSeconds: z.array(z.number()).nullable(),
+	supportedVideoDurationsSecondsImageToVideo: z.array(z.number()).nullable(),
+	supportsVideoAudio: z.boolean().nullable(),
+	supportsVideoWithoutAudio: z.boolean().nullable(),
+	supportedVoices: z.array(z.string()).nullable(),
+	contentFilterPrice: z.string().nullable(),
 	supportedParameters: z.array(z.string()).nullable(),
 	pricingTiers: z.unknown(),
 	serviceTierMultipliers: z.unknown(),
@@ -1305,6 +1318,7 @@ function modelSourceValues(source: typeof model.$inferSelect) {
 		output: source.output,
 		free: source.free,
 		imageInputRequired: source.imageInputRequired,
+		maxVideoDurationSeconds: source.maxVideoDurationSeconds,
 	};
 }
 
@@ -1331,6 +1345,14 @@ function mappingSourceValues(source: typeof modelProviderMapping.$inferSelect) {
 		realtimeTranscription: source.realtimeTranscription,
 		ocr: source.ocr,
 		rerank: source.rerank,
+		supportedVideoSizes: source.supportedVideoSizes,
+		supportedVideoDurationsSeconds: source.supportedVideoDurationsSeconds,
+		supportedVideoDurationsSecondsImageToVideo:
+			source.supportedVideoDurationsSecondsImageToVideo,
+		supportsVideoAudio: source.supportsVideoAudio,
+		supportsVideoWithoutAudio: source.supportsVideoWithoutAudio,
+		supportedVoices: source.supportedVoices,
+		contentFilterPrice: source.contentFilterPrice,
 		supportedParameters: source.supportedParameters,
 		pricingTiers: source.pricingTiers,
 		serviceTierMultipliers: source.serviceTierMultipliers,
@@ -2082,7 +2104,10 @@ platformCatalog.openapi(
 			});
 		}
 		const [sourceModel] = await db
-			.select({ output: model.output })
+			.select({
+				output: model.output,
+				imageInputRequired: model.imageInputRequired,
+			})
 			.from(model)
 			.where(eq(model.id, mapping.modelId))
 			.limit(1);
@@ -2163,7 +2188,7 @@ platformCatalog.openapi(
 						: probeProfile === "minimal-videos"
 							? await validateProviderVideos(...probeArgs, {
 									...probeTarget,
-									...videoProbeHints(mapping.modelId, mapping.providerId),
+									...videoProbeHints(mapping, sourceModel),
 								})
 							: await validateProviderKey(...probeArgs, {
 									modelId: mapping.modelId,

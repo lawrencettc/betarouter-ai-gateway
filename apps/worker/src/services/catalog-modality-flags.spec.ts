@@ -100,6 +100,7 @@ describe("catalog modality-flag snapshot gap", () => {
 					family: "modality",
 					output: ["video"],
 					imageInputRequired: true,
+					maxVideoDurationSeconds: 8,
 				},
 			},
 			{
@@ -112,6 +113,10 @@ describe("catalog modality-flag snapshot gap", () => {
 					externalId: "modality-video-upstream",
 					videoGenerations: true,
 					perSecondPrice: { "720p": "0.14" },
+					supportedVideoSizes: ["1280x720"],
+					supportedVideoDurationsSeconds: [4, 8],
+					supportsVideoAudio: true,
+					contentFilterPrice: "0.05",
 				},
 			},
 		]);
@@ -125,6 +130,7 @@ describe("catalog modality-flag snapshot gap", () => {
 		expect(modelRow).toMatchObject({
 			source: "admin",
 			imageInputRequired: true,
+			maxVideoDurationSeconds: 8,
 		});
 		const [mappingRow] = await db
 			.select()
@@ -134,6 +140,10 @@ describe("catalog modality-flag snapshot gap", () => {
 			source: "admin",
 			videoGenerations: true,
 			embeddings: false,
+			supportedVideoSizes: ["1280x720"],
+			supportedVideoDurationsSeconds: [4, 8],
+			supportsVideoAudio: true,
+			contentFilterPrice: "0.05",
 		});
 
 		// The provisional snapshot was resolved from in-memory synthesized rows;
@@ -146,21 +156,37 @@ describe("catalog modality-flag snapshot gap", () => {
 		const snapshot = await loadLatestSnapshot();
 		expect(
 			snapshot.models.find((item) => item.id === "modality-video-model"),
-		).toMatchObject({ output: ["video"], imageInputRequired: true });
+		).toMatchObject({
+			output: ["video"],
+			imageInputRequired: true,
+			maxVideoDurationSeconds: 8,
+		});
 		expect(
 			snapshot.mappings.find((item) => item.id === mappingId),
-		).toMatchObject({ videoGenerations: true, embeddings: false });
+		).toMatchObject({
+			videoGenerations: true,
+			embeddings: false,
+			supportedVideoSizes: ["1280x720"],
+			supportedVideoDurationsSeconds: [4, 8],
+			supportsVideoAudio: true,
+			contentFilterPrice: "0.05",
+		});
 
 		const resolved = resolveModelFromCatalog("modality-video-model", snapshot, {
 			staticModels: [],
 		});
 		expect(resolved).not.toBeNull();
 		expect(resolved?.imageInputRequired).toBe(true);
+		expect(resolved?.maxVideoDurationSeconds).toBe(8);
 		expect(resolved?.output).toEqual(["video"]);
 		expect(resolved?.providers[0]).toMatchObject({
 			providerId: "modality-prov",
 			externalId: "modality-video-upstream",
 			videoGenerations: true,
+			supportedVideoSizes: ["1280x720"],
+			supportedVideoDurationsSeconds: [4, 8],
+			supportsVideoAudio: true,
+			contentFilterPrice: 0.05,
 		});
 	});
 

@@ -62,6 +62,15 @@ function resolverInputForStatic(
 		jsonOutput: mapping.jsonOutput ?? false,
 		jsonOutputSchema: mapping.jsonOutputSchema ?? false,
 		webSearch: mapping.webSearch ?? false,
+		embeddings: mapping.embeddings ?? false,
+		imageGenerations: mapping.imageGenerations ?? false,
+		videoGenerations: mapping.videoGenerations ?? false,
+		speechGenerations: mapping.speechGenerations ?? false,
+		transcriptions: mapping.transcriptions ?? false,
+		realtime: mapping.realtime ?? false,
+		realtimeTranscription: mapping.realtimeTranscription ?? false,
+		ocr: mapping.ocr ?? false,
+		rerank: mapping.rerank ?? false,
 		supportedParameters: mapping.supportedParameters ?? null,
 		pricingTiers: mapping.pricingTiers
 			? mapping.pricingTiers.map((tier) => ({
@@ -70,6 +79,7 @@ function resolverInputForStatic(
 				}))
 			: null,
 		serviceTierMultipliers: mapping.serviceTierMultipliers ?? null,
+		contentFilterPrice: mapping.contentFilterPrice?.toString() ?? null,
 	}));
 	return {
 		revision,
@@ -242,7 +252,7 @@ describe("images catalog resolution", () => {
 		);
 	});
 
-	it("reconstructs the request-priced canary and grafts the content-filter charge", () => {
+	it("reconstructs the request-priced canary and its content-filter charge", () => {
 		const staticDef = staticDefinition(REQUEST_PRICED_MODEL_ID);
 		const snapshot = resolveEffectiveCatalog(
 			resolverInputForStatic(staticDef, 13),
@@ -268,8 +278,9 @@ describe("images catalog resolution", () => {
 				new Decimal(staticMapping.requestPrice!),
 			),
 		).toBe(true);
-		// contentFilterPrice is not mirrored; base reads graft it from the
-		// static mapping so filtered generations keep billing their flat charge.
+		// contentFilterPrice is mirrored (serving-config slice); the snapshot
+		// value round-trips so filtered generations keep billing their flat
+		// charge, admin-created mappings included.
 		expect(reconstructed.contentFilterPrice).toBe(
 			staticMapping.contentFilterPrice,
 		);
