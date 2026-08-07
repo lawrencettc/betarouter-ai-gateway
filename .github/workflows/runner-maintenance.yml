@@ -11,6 +11,11 @@ name: runner-maintenance
 
 on:
   workflow_dispatch:
+  # Automation fallback: the repo's CI integration cannot call the
+  # workflow_dispatch API (403), so pushing any maintenance/** branch with
+  # this trigger queues the cleanup job without UI access.
+  push:
+    branches: ["maintenance/**"]
 
 permissions: {}
 
