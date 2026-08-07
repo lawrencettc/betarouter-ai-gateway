@@ -22,9 +22,13 @@ Cloudflare Tunnel.
   an exact `minimal-speech` test passes (Stage 14); serving additionally
   requires the speech enforcement flag. Text+audio chat models (native-audio
   / realtime deployments) stay on `minimal-chat`.
-- Keep moderation, transcription (audio input), and OCR mappings disabled
-  until their operation-specific profiles in the future build plan are
-  implemented.
+- Transcription mappings (model output `["transcription"]`) may activate
+  after an exact `minimal-transcriptions` test passes (Stage 15); OCR
+  mappings (output `["ocr"]`) after `minimal-ocr` (Stage 16); rerank
+  mappings (output `["rerank"]`) after `minimal-rerank` (Stage 17); the
+  moderation mapping (output `["moderation"]`) after `minimal-moderations`
+  (Stage 18). Serving each additionally requires that modality's
+  enforcement flag.
 - Catalog editor permissions are not separated in this release. Existing
   immutable platform-admin authorization remains the only admin gate.
 
@@ -45,10 +49,11 @@ PLATFORM_CATALOG_SPEECH_ROUTING_ENABLED=false
 PLATFORM_CATALOG_TRANSCRIPTIONS_ROUTING_ENABLED=false
 PLATFORM_CATALOG_OCR_ROUTING_ENABLED=false
 PLATFORM_CATALOG_RERANK_ROUTING_ENABLED=false
+PLATFORM_CATALOG_MODERATIONS_ROUTING_ENABLED=false
 PLATFORM_CATALOG_BREAKER_MODE=off
 ```
 
-The production Compose file forwards all eleven flags to the unified service.
+The production Compose file forwards all twelve flags to the unified service.
 Do not enable a later stage in Git or the image; change the deployment secret
 file so emergency rollback remains independent of a new build.
 
@@ -268,7 +273,7 @@ rerouting, region config (locks, pinned defaults, key regions), temperature
 clamping, cancellation, and the wire protocol of database-defined providers.
 Two deliberate carve-outs: `env` is deployment config and never mirrors
 (admin-created providers get an empty env config and are credentialed only
-through platform credentials), and a `protocol` override on a *static*
+through platform credentials), and a `protocol` override on a _static_
 provider does not switch transports — code-declared protocols and id-keyed
 bespoke transports stay authoritative for code providers; protocol-as-data
 only drives providers without a code declaration (admin-created ones).
@@ -647,6 +652,46 @@ with `operation: "rerank"`.
    routing and static billing without touching any other modality's
    enforcement.
 
+### Stage 18: Moderations modality rollout
+
+Moderations (`/v1/moderations`) is the smallest modality: the surface serves
+exactly one fixed pseudo-model, `openai-moderation` on provider `openai`
+(upstream `omni-moderation-latest` unless the catalog mapping's effective
+external id overrides it), and the endpoint is free — every price field on
+the mapping is zero and the log rows bill zero cost — so there is no billing
+verification at all, only routing and credential binding. Moderation
+requests enforce catalog decisions only when BOTH
+`PLATFORM_CATALOG_ROUTING_ENABLED` and
+`PLATFORM_CATALOG_MODERATIONS_ROUTING_ENABLED` are true; until the second
+flag flips, moderations stay on legacy routing while shadow reads log every
+decision with `operation: "moderations"`.
+
+- **Probe cost.** The `minimal-moderations` probe classifies one benign
+  sentence through the exact deployment the mapping routes to
+  (OpenAI-compatible JSON POST to `/v1/moderations`) and passes on a JSON
+  success body. The moderation endpoint is free, so the probe costs
+  nothing.
+
+1. Deploy with `PLATFORM_CATALOG_MODERATIONS_ROUTING_ENABLED` unset (off).
+   With shadow reads on, expect `operation: "moderations"` decisions with
+   `allowed: false` until the moderation mapping is activated — the soak
+   signal, not a fault. The moderation model (output `["moderation"]`)
+   previously declared text output and was held on legacy routing by the
+   deferred operation.
+2. Activate the `openai-moderation` mapping exactly as in Stage 8:
+   credential, a passed `minimal-moderations` test (a `minimal-chat` run
+   never satisfies the moderation mapping), price policy, enablement.
+3. When shadow decisions for moderation traffic are `allowed: true` with
+   the expected mapping id, set
+   `PLATFORM_CATALOG_MODERATIONS_ROUTING_ENABLED=true` in the deployment
+   secret file (no rebuild) and restart. Verify one `/v1/moderations`
+   request returns a classification, its log row records the catalog
+   mapping and revision, and the platform credential selected is the
+   catalog-bound one.
+4. Rollback for this stage alone: unset
+   `PLATFORM_CATALOG_MODERATIONS_ROUTING_ENABLED`. Moderations return to
+   legacy routing without touching any other modality's enforcement.
+
 ## Emergency rollback
 
 Apply the smallest safe rollback in this order:
@@ -661,7 +706,9 @@ Apply the smallest safe rollback in this order:
    if only transcriptions are affected,
    `PLATFORM_CATALOG_TRANSCRIPTIONS_ROUTING_ENABLED=false`; if only OCR is
    affected, `PLATFORM_CATALOG_OCR_ROUTING_ENABLED=false`; if only rerank
-   is affected, `PLATFORM_CATALOG_RERANK_ROUTING_ENABLED=false`.
+   is affected, `PLATFORM_CATALOG_RERANK_ROUTING_ENABLED=false`; if only
+   moderations are affected,
+   `PLATFORM_CATALOG_MODERATIONS_ROUTING_ENABLED=false`.
 4. Set `PLATFORM_CATALOG_ROUTING_ENABLED=false`.
 5. If discovery is affected, set
    `PLATFORM_CATALOG_DISCOVERY_ENABLED=false` and

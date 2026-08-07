@@ -8,6 +8,7 @@ import {
 	validateProviderEmbeddings,
 	validateProviderImages,
 	validateProviderKey,
+	validateProviderModerations,
 	validateProviderOcr,
 	validateProviderRerank,
 	validateProviderSpeech,
@@ -2066,6 +2067,7 @@ platformCatalog.openapi(
 									"minimal-transcriptions",
 									"minimal-ocr",
 									"minimal-rerank",
+									"minimal-moderations",
 								])
 								.optional(),
 						}),
@@ -2233,10 +2235,15 @@ platformCatalog.openapi(
 										? await validateProviderOcr(...probeArgs, probeTarget)
 										: probeProfile === "minimal-rerank"
 											? await validateProviderRerank(...probeArgs, probeTarget)
-											: await validateProviderKey(...probeArgs, {
-													modelId: mapping.modelId,
-													...probeTarget,
-												});
+											: probeProfile === "minimal-moderations"
+												? await validateProviderModerations(
+														...probeArgs,
+														probeTarget,
+													)
+												: await validateProviderKey(...probeArgs, {
+														modelId: mapping.modelId,
+														...probeTarget,
+													});
 			status = result.valid ? "passed" : "failed";
 			upstreamStatus = result.statusCode ?? null;
 			errorClass = result.valid ? null : "upstream_validation_failed";

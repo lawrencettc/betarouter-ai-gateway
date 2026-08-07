@@ -345,7 +345,7 @@ moderations.openapi(createModeration, async (c): Promise<any> => {
 	const catalogDecision = await enforceCatalogRequest(
 		{ modelId: "openai-moderation", providerId: "openai" },
 		{
-			operation: "deferred_non_chat",
+			operation: "moderations",
 			setHeader: (name, value) => c.header(name, value),
 		},
 	);

@@ -62,7 +62,10 @@ export const openaiModels = [
 		description:
 			"OpenAI text and image safety classification through the moderation endpoint.",
 		family: "openai",
-		output: ["text"],
+		// Served only by /v1/moderations: "moderation" (not "text") keeps chat
+		// completions from accepting it and derives the minimal-moderations
+		// probe profile for catalog admission.
+		output: ["moderation"],
 		releasedAt: new Date("2024-09-26"),
 		providers: [
 			{
