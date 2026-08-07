@@ -48,10 +48,12 @@ function buildProbeWav(): ArrayBuffer {
 	view.setUint16(34, 16, true);
 	writeAscii(36, "data");
 	view.setUint32(40, dataSize, true);
+	let sampleOffset = 44;
 	for (let i = 0; i < sampleCount; i++) {
 		const sample =
 			Math.sin((2 * Math.PI * PROBE_TONE_HZ * i) / PROBE_SAMPLE_RATE) * 0.25;
-		view.setInt16(44 + i * 2, Math.round(sample * 32767), true);
+		view.setInt16(sampleOffset, Math.round(sample * 32767), true);
+		sampleOffset += 2;
 	}
 	return buffer;
 }
