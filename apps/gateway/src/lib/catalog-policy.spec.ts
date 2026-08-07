@@ -21,15 +21,17 @@ describe("filterProviderMappingsByCatalog", () => {
 		expect(isCatalogOperationEnabled("embeddings")).toBe(true);
 		expect(isCatalogOperationEnabled("videos")).toBe(true);
 		expect(isCatalogOperationEnabled("speech")).toBe(true);
+		expect(isCatalogOperationEnabled("transcriptions")).toBe(true);
 		expect(isCatalogOperationEnabled("deferred_non_chat")).toBe(false);
 	});
 
-	it("enforces embeddings, videos, and speech only behind their own routing flips", () => {
+	it("enforces non-chat modalities only behind their own routing flips", () => {
 		const routingOff = {
 			routingEnabled: false,
 			embeddingsRoutingEnabled: true,
 			videosRoutingEnabled: true,
 			speechRoutingEnabled: true,
+			transcriptionsRoutingEnabled: true,
 		};
 		expect(isCatalogRoutingEnforcedForOperation("chat", routingOff)).toBe(
 			false,
@@ -43,14 +45,18 @@ describe("filterProviderMappingsByCatalog", () => {
 		expect(isCatalogRoutingEnforcedForOperation("speech", routingOff)).toBe(
 			false,
 		);
+		expect(
+			isCatalogRoutingEnforcedForOperation("transcriptions", routingOff),
+		).toBe(false);
 
-		// A deployment already enforcing chat must not start enforcing
-		// embeddings, videos, or speech until the operator flips the flag.
+		// A deployment already enforcing chat must not start enforcing any
+		// other modality until the operator flips that modality's flag.
 		const chatOnly = {
 			routingEnabled: true,
 			embeddingsRoutingEnabled: false,
 			videosRoutingEnabled: false,
 			speechRoutingEnabled: false,
+			transcriptionsRoutingEnabled: false,
 		};
 		expect(isCatalogRoutingEnforcedForOperation("chat", chatOnly)).toBe(true);
 		expect(isCatalogRoutingEnforcedForOperation("embeddings", chatOnly)).toBe(
@@ -63,35 +69,49 @@ describe("filterProviderMappingsByCatalog", () => {
 			false,
 		);
 		expect(
+			isCatalogRoutingEnforcedForOperation("transcriptions", chatOnly),
+		).toBe(false);
+		expect(
 			isCatalogRoutingEnforcedForOperation("deferred_non_chat", chatOnly),
 		).toBe(false);
 
 		// The modality flips are independent of each other.
-		const speechOnly = {
+		const transcriptionsOnly = {
 			routingEnabled: true,
 			embeddingsRoutingEnabled: false,
 			videosRoutingEnabled: false,
-			speechRoutingEnabled: true,
+			speechRoutingEnabled: false,
+			transcriptionsRoutingEnabled: true,
 		};
-		expect(isCatalogRoutingEnforcedForOperation("speech", speechOnly)).toBe(
-			true,
-		);
-		expect(isCatalogRoutingEnforcedForOperation("videos", speechOnly)).toBe(
-			false,
-		);
-		expect(isCatalogRoutingEnforcedForOperation("embeddings", speechOnly)).toBe(
-			false,
-		);
+		expect(
+			isCatalogRoutingEnforcedForOperation(
+				"transcriptions",
+				transcriptionsOnly,
+			),
+		).toBe(true);
+		expect(
+			isCatalogRoutingEnforcedForOperation("speech", transcriptionsOnly),
+		).toBe(false);
+		expect(
+			isCatalogRoutingEnforcedForOperation("videos", transcriptionsOnly),
+		).toBe(false);
+		expect(
+			isCatalogRoutingEnforcedForOperation("embeddings", transcriptionsOnly),
+		).toBe(false);
 
 		const all = {
 			routingEnabled: true,
 			embeddingsRoutingEnabled: true,
 			videosRoutingEnabled: true,
 			speechRoutingEnabled: true,
+			transcriptionsRoutingEnabled: true,
 		};
 		expect(isCatalogRoutingEnforcedForOperation("embeddings", all)).toBe(true);
 		expect(isCatalogRoutingEnforcedForOperation("videos", all)).toBe(true);
 		expect(isCatalogRoutingEnforcedForOperation("speech", all)).toBe(true);
+		expect(isCatalogRoutingEnforcedForOperation("transcriptions", all)).toBe(
+			true,
+		);
 		expect(isCatalogRoutingEnforcedForOperation("deferred_non_chat", all)).toBe(
 			false,
 		);

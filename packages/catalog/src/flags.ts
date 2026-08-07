@@ -31,6 +31,14 @@ export interface CatalogFeatureFlags {
 	 * the operator has activated speech mappings in the catalog.
 	 */
 	speechRoutingEnabled: boolean;
+	/**
+	 * Per-modality enforcement flip for the transcriptions (speech-to-text)
+	 * surface, with the same deploy invariant as the other modalities: a
+	 * deployment already enforcing chat must not start rejecting transcription
+	 * requests before the operator has activated transcription mappings in the
+	 * catalog.
+	 */
+	transcriptionsRoutingEnabled: boolean;
 	breakerMode: "off" | "observe" | "enforce";
 }
 
@@ -55,6 +63,9 @@ export function readCatalogFeatureFlags(
 		),
 		videosRoutingEnabled: enabled(env.PLATFORM_CATALOG_VIDEOS_ROUTING_ENABLED),
 		speechRoutingEnabled: enabled(env.PLATFORM_CATALOG_SPEECH_ROUTING_ENABLED),
+		transcriptionsRoutingEnabled: enabled(
+			env.PLATFORM_CATALOG_TRANSCRIPTIONS_ROUTING_ENABLED,
+		),
 		breakerMode,
 	};
 }

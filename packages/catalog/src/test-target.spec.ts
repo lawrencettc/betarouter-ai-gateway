@@ -68,6 +68,9 @@ describe("catalogMappingProfileForOutputs", () => {
 		expect(catalogMappingProfileForOutputs(["image"])).toBe("minimal-images");
 		expect(catalogMappingProfileForOutputs(["video"])).toBe("minimal-videos");
 		expect(catalogMappingProfileForOutputs(["audio"])).toBe("minimal-speech");
+		expect(catalogMappingProfileForOutputs(["transcription"])).toBe(
+			"minimal-transcriptions",
+		);
 		expect(catalogMappingProfileForOutputs([])).toBeNull();
 	});
 

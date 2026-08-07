@@ -12,6 +12,7 @@ describe("readCatalogFeatureFlags", () => {
 			embeddingsRoutingEnabled: false,
 			videosRoutingEnabled: false,
 			speechRoutingEnabled: false,
+			transcriptionsRoutingEnabled: false,
 			breakerMode: "off",
 		});
 	});
@@ -26,6 +27,7 @@ describe("readCatalogFeatureFlags", () => {
 				PLATFORM_CATALOG_EMBEDDINGS_ROUTING_ENABLED: "true",
 				PLATFORM_CATALOG_VIDEOS_ROUTING_ENABLED: "true",
 				PLATFORM_CATALOG_SPEECH_ROUTING_ENABLED: "true",
+				PLATFORM_CATALOG_TRANSCRIPTIONS_ROUTING_ENABLED: "true",
 				PLATFORM_CATALOG_BREAKER_MODE: "observe",
 			}),
 		).toEqual({
@@ -36,6 +38,7 @@ describe("readCatalogFeatureFlags", () => {
 			embeddingsRoutingEnabled: true,
 			videosRoutingEnabled: true,
 			speechRoutingEnabled: true,
+			transcriptionsRoutingEnabled: true,
 			breakerMode: "observe",
 		});
 	});
