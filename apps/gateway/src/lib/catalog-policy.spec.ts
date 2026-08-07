@@ -84,7 +84,10 @@ describe("filterProviderMappingsByCatalog", () => {
 			transcriptionsRoutingEnabled: true,
 		};
 		expect(
-			isCatalogRoutingEnforcedForOperation("transcriptions", transcriptionsOnly),
+			isCatalogRoutingEnforcedForOperation(
+				"transcriptions",
+				transcriptionsOnly,
+			),
 		).toBe(true);
 		expect(
 			isCatalogRoutingEnforcedForOperation("speech", transcriptionsOnly),
