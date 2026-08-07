@@ -1363,8 +1363,8 @@ export function CatalogClient({
 		}
 		// The server derives the probe profile (minimal-chat / minimal-embeddings
 		// / minimal-images / minimal-videos / minimal-speech /
-		// minimal-transcriptions / minimal-ocr / minimal-rerank) from the
-		// model's output modalities.
+		// minimal-transcriptions / minimal-ocr / minimal-rerank /
+		// minimal-moderations) from the model's output modalities.
 		const result = await api.POST("/admin/catalog/mappings/{id}/test", {
 			params: { path: { id: item.id } },
 			body: { credentialId: credential.id },

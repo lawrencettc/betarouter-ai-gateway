@@ -706,6 +706,7 @@ export interface ModelDefinition {
 		| "ocr"
 		| "transcription"
 		| "rerank"
+		| "moderation"
 	)[];
 	/**
 	 * Whether this model requires an image input to function (e.g. image editing models).

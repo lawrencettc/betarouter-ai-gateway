@@ -73,6 +73,9 @@ describe("catalogMappingProfileForOutputs", () => {
 		);
 		expect(catalogMappingProfileForOutputs(["ocr"])).toBe("minimal-ocr");
 		expect(catalogMappingProfileForOutputs(["rerank"])).toBe("minimal-rerank");
+		expect(catalogMappingProfileForOutputs(["moderation"])).toBe(
+			"minimal-moderations",
+		);
 		expect(catalogMappingProfileForOutputs([])).toBeNull();
 	});
 

@@ -53,6 +53,13 @@ export interface CatalogFeatureFlags {
 	 * activated rerank mappings in the catalog.
 	 */
 	rerankRoutingEnabled: boolean;
+	/**
+	 * Per-modality enforcement flip for the moderations surface, with the same
+	 * deploy invariant as the other modalities: a deployment already enforcing
+	 * chat must not start rejecting moderation requests before the operator
+	 * has activated the moderation mapping in the catalog.
+	 */
+	moderationsRoutingEnabled: boolean;
 	breakerMode: "off" | "observe" | "enforce";
 }
 
@@ -82,6 +89,9 @@ export function readCatalogFeatureFlags(
 		),
 		ocrRoutingEnabled: enabled(env.PLATFORM_CATALOG_OCR_ROUTING_ENABLED),
 		rerankRoutingEnabled: enabled(env.PLATFORM_CATALOG_RERANK_ROUTING_ENABLED),
+		moderationsRoutingEnabled: enabled(
+			env.PLATFORM_CATALOG_MODERATIONS_ROUTING_ENABLED,
+		),
 		breakerMode,
 	};
 }
