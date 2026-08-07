@@ -42,6 +42,7 @@ import {
 	Mic,
 	ListOrdered,
 	ShieldCheck,
+	ScanText,
 } from "lucide-react";
 import Link from "next/link.js";
 import { usePathname, useRouter, useSearchParams } from "next/navigation.js";
@@ -241,11 +242,25 @@ function computeCapabilities(
 			color: "text-sky-500",
 		});
 	}
+	if (model?.output?.includes("ocr")) {
+		capabilities.push({
+			icon: ScanText,
+			label: "OCR",
+			color: "text-orange-500",
+		});
+	}
 	if (model?.output?.includes("embedding")) {
 		capabilities.push({
 			icon: Boxes,
 			label: "Embeddings",
 			color: "text-indigo-500",
+		});
+	}
+	if (model?.output?.includes("rerank")) {
+		capabilities.push({
+			icon: ListOrdered,
+			label: "Rerank",
+			color: "text-amber-500",
 		});
 	}
 	if (model?.output?.includes("moderation")) {
@@ -743,6 +758,8 @@ export function AllModels({
 			imageGeneration: searchParams.get("imageGeneration") === "true",
 			videoGeneration: searchParams.get("videoGeneration") === "true",
 			audioGeneration: searchParams.get("audioGeneration") === "true",
+			transcription: searchParams.get("transcription") === "true",
+			ocr: searchParams.get("ocr") === "true",
 			embedding: searchParams.get("embedding") === "true",
 			rerank: searchParams.get("rerank") === "true",
 			moderation: searchParams.get("moderation") === "true",
@@ -1050,6 +1067,15 @@ export function AllModels({
 				filters.capabilities.audioGeneration &&
 				!model.output?.includes("audio")
 			) {
+				return false;
+			}
+			if (
+				filters.capabilities.transcription &&
+				!model.output?.includes("transcription")
+			) {
+				return false;
+			}
+			if (filters.capabilities.ocr && !model.output?.includes("ocr")) {
 				return false;
 			}
 			if (
@@ -1595,6 +1621,8 @@ export function AllModels({
 				imageGeneration: false,
 				videoGeneration: false,
 				audioGeneration: false,
+				transcription: false,
+				ocr: false,
 				embedding: false,
 				rerank: false,
 				moderation: false,
@@ -1826,6 +1854,18 @@ export function AllModels({
 									label: "Speech Gen",
 									icon: Volume2,
 									color: "text-rose-500",
+								},
+								{
+									key: "transcription",
+									label: "Transcription",
+									icon: Mic,
+									color: "text-sky-500",
+								},
+								{
+									key: "ocr",
+									label: "OCR",
+									icon: ScanText,
+									color: "text-orange-500",
 								},
 								{
 									key: "embedding",

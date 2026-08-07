@@ -24,7 +24,7 @@ import {
 } from "@/lib/components/table";
 import { useAppConfig } from "@/lib/config";
 import Logo from "@/lib/icons/Logo";
-import { getLoungeStudioPath } from "@/lib/model-utils";
+import { getLoungeStudioPath, hasLoungeStudio } from "@/lib/model-utils";
 import { formatContextSize } from "@/lib/utils";
 
 import {
@@ -741,7 +741,9 @@ export function ModelComparison() {
 		modelId?: string,
 		output?: readonly string[] | null,
 	) => {
-		if (!modelId) {
+		// No studio serves this modality — link to the playground without
+		// preselecting a model it cannot run.
+		if (!modelId || !hasLoungeStudio(output)) {
 			return config.playgroundUrl;
 		}
 		const modelParam = providerId ? `${providerId}/${modelId}` : modelId;

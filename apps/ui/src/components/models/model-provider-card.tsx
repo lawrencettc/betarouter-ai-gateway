@@ -37,7 +37,7 @@ import {
 } from "@/lib/components/tooltip";
 import { useAppConfig } from "@/lib/config";
 import { XIcon } from "@/lib/icons/XIcon";
-import { getLoungeStudioPath } from "@/lib/model-utils";
+import { getLoungeStudioPath, hasLoungeStudio } from "@/lib/model-utils";
 import { formatContextSize, formatDeprecationDate } from "@/lib/utils";
 
 import { getProviderIcon } from "@betarouter/shared/components";
@@ -800,21 +800,23 @@ export function ModelProviderCard({
 					</TooltipProvider>
 				</div>
 
-				<Button
-					variant="default"
-					size="default"
-					className="w-full gap-2 font-semibold"
-					asChild
-				>
-					<a
-						href={`${config.playgroundUrl}${getLoungeStudioPath(modelOutput)}?model=${encodeURIComponent(providerModelName)}`}
-						target="_blank"
-						rel="noopener noreferrer"
+				{hasLoungeStudio(modelOutput) && (
+					<Button
+						variant="default"
+						size="default"
+						className="w-full gap-2 font-semibold"
+						asChild
 					>
-						<Play className="h-4 w-4" />
-						Try in Lounge
-					</a>
-				</Button>
+						<a
+							href={`${config.playgroundUrl}${getLoungeStudioPath(modelOutput)}?model=${encodeURIComponent(providerModelName)}`}
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							<Play className="h-4 w-4" />
+							Try in Lounge
+						</a>
+					</Button>
+				)}
 			</CardContent>
 		</Card>
 	);

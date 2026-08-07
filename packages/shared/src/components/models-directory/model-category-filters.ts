@@ -212,12 +212,20 @@ export const OPEN_WEIGHT_LAB_FAMILIES: ReadonlySet<string> = new Set(
 );
 
 export function isTextOutput(output: string[] | null | undefined): boolean {
+	// Audio-only output is TTS; text+audio is a realtime speech-to-speech
+	// model, which stays listed with the conversational/text models (the
+	// public models API exposes no mapping-level realtime flag to key on).
+	if (output?.includes("audio") && !output.includes("text")) {
+		return false;
+	}
 	return (
 		!output?.includes("image") &&
 		!output?.includes("video") &&
 		!output?.includes("embedding") &&
 		!output?.includes("rerank") &&
-		!output?.includes("moderation")
+		!output?.includes("moderation") &&
+		!output?.includes("transcription") &&
+		!output?.includes("ocr")
 	);
 }
 
