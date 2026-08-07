@@ -23,6 +23,7 @@ describe("filterProviderMappingsByCatalog", () => {
 		expect(isCatalogOperationEnabled("speech")).toBe(true);
 		expect(isCatalogOperationEnabled("transcriptions")).toBe(true);
 		expect(isCatalogOperationEnabled("ocr")).toBe(true);
+		expect(isCatalogOperationEnabled("rerank")).toBe(true);
 		expect(isCatalogOperationEnabled("deferred_non_chat")).toBe(false);
 	});
 
@@ -34,6 +35,7 @@ describe("filterProviderMappingsByCatalog", () => {
 			speechRoutingEnabled: true,
 			transcriptionsRoutingEnabled: true,
 			ocrRoutingEnabled: true,
+			rerankRoutingEnabled: true,
 		};
 		expect(isCatalogRoutingEnforcedForOperation("chat", routingOff)).toBe(
 			false,
@@ -51,6 +53,9 @@ describe("filterProviderMappingsByCatalog", () => {
 			isCatalogRoutingEnforcedForOperation("transcriptions", routingOff),
 		).toBe(false);
 		expect(isCatalogRoutingEnforcedForOperation("ocr", routingOff)).toBe(false);
+		expect(isCatalogRoutingEnforcedForOperation("rerank", routingOff)).toBe(
+			false,
+		);
 
 		// A deployment already enforcing chat must not start enforcing any
 		// other modality until the operator flips that modality's flag.
@@ -61,6 +66,7 @@ describe("filterProviderMappingsByCatalog", () => {
 			speechRoutingEnabled: false,
 			transcriptionsRoutingEnabled: false,
 			ocrRoutingEnabled: false,
+			rerankRoutingEnabled: false,
 		};
 		expect(isCatalogRoutingEnforcedForOperation("chat", chatOnly)).toBe(true);
 		expect(isCatalogRoutingEnforcedForOperation("embeddings", chatOnly)).toBe(
@@ -76,26 +82,37 @@ describe("filterProviderMappingsByCatalog", () => {
 			isCatalogRoutingEnforcedForOperation("transcriptions", chatOnly),
 		).toBe(false);
 		expect(isCatalogRoutingEnforcedForOperation("ocr", chatOnly)).toBe(false);
+		expect(isCatalogRoutingEnforcedForOperation("rerank", chatOnly)).toBe(
+			false,
+		);
 		expect(
 			isCatalogRoutingEnforcedForOperation("deferred_non_chat", chatOnly),
 		).toBe(false);
 
 		// The modality flips are independent of each other.
-		const ocrOnly = {
+		const rerankOnly = {
 			routingEnabled: true,
 			embeddingsRoutingEnabled: false,
 			videosRoutingEnabled: false,
 			speechRoutingEnabled: false,
 			transcriptionsRoutingEnabled: false,
-			ocrRoutingEnabled: true,
+			ocrRoutingEnabled: false,
+			rerankRoutingEnabled: true,
 		};
-		expect(isCatalogRoutingEnforcedForOperation("ocr", ocrOnly)).toBe(true);
+		expect(isCatalogRoutingEnforcedForOperation("rerank", rerankOnly)).toBe(
+			true,
+		);
+		expect(isCatalogRoutingEnforcedForOperation("ocr", rerankOnly)).toBe(false);
 		expect(
-			isCatalogRoutingEnforcedForOperation("transcriptions", ocrOnly),
+			isCatalogRoutingEnforcedForOperation("transcriptions", rerankOnly),
 		).toBe(false);
-		expect(isCatalogRoutingEnforcedForOperation("speech", ocrOnly)).toBe(false);
-		expect(isCatalogRoutingEnforcedForOperation("videos", ocrOnly)).toBe(false);
-		expect(isCatalogRoutingEnforcedForOperation("embeddings", ocrOnly)).toBe(
+		expect(isCatalogRoutingEnforcedForOperation("speech", rerankOnly)).toBe(
+			false,
+		);
+		expect(isCatalogRoutingEnforcedForOperation("videos", rerankOnly)).toBe(
+			false,
+		);
+		expect(isCatalogRoutingEnforcedForOperation("embeddings", rerankOnly)).toBe(
 			false,
 		);
 
@@ -106,6 +123,7 @@ describe("filterProviderMappingsByCatalog", () => {
 			speechRoutingEnabled: true,
 			transcriptionsRoutingEnabled: true,
 			ocrRoutingEnabled: true,
+			rerankRoutingEnabled: true,
 		};
 		expect(isCatalogRoutingEnforcedForOperation("embeddings", all)).toBe(true);
 		expect(isCatalogRoutingEnforcedForOperation("videos", all)).toBe(true);
@@ -114,6 +132,7 @@ describe("filterProviderMappingsByCatalog", () => {
 			true,
 		);
 		expect(isCatalogRoutingEnforcedForOperation("ocr", all)).toBe(true);
+		expect(isCatalogRoutingEnforcedForOperation("rerank", all)).toBe(true);
 		expect(isCatalogRoutingEnforcedForOperation("deferred_non_chat", all)).toBe(
 			false,
 		);

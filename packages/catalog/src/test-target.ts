@@ -21,7 +21,8 @@ export type CatalogMappingTestProfileName =
 	| "minimal-videos"
 	| "minimal-speech"
 	| "minimal-transcriptions"
-	| "minimal-ocr";
+	| "minimal-ocr"
+	| "minimal-rerank";
 
 /**
  * Which probe profile a model's output modalities call for, shared by the
@@ -63,6 +64,9 @@ export function catalogMappingProfileForOutputs(
 	}
 	if (output.includes("ocr")) {
 		return "minimal-ocr";
+	}
+	if (output.includes("rerank")) {
+		return "minimal-rerank";
 	}
 	return null;
 }
