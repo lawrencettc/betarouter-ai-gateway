@@ -8,6 +8,7 @@ import {
 	validateProviderEmbeddings,
 	validateProviderImages,
 	validateProviderKey,
+	validateProviderOcr,
 	validateProviderSpeech,
 	validateProviderTranscriptions,
 	validateProviderVideos,
@@ -2062,6 +2063,7 @@ platformCatalog.openapi(
 									"minimal-videos",
 									"minimal-speech",
 									"minimal-transcriptions",
+									"minimal-ocr",
 								])
 								.optional(),
 						}),
@@ -2225,10 +2227,12 @@ platformCatalog.openapi(
 											...probeArgs,
 											probeTarget,
 										)
-									: await validateProviderKey(...probeArgs, {
-											modelId: mapping.modelId,
-											...probeTarget,
-										});
+									: probeProfile === "minimal-ocr"
+										? await validateProviderOcr(...probeArgs, probeTarget)
+										: await validateProviderKey(...probeArgs, {
+												modelId: mapping.modelId,
+												...probeTarget,
+											});
 			status = result.valid ? "passed" : "failed";
 			upstreamStatus = result.statusCode ?? null;
 			errorClass = result.valid ? null : "upstream_validation_failed";

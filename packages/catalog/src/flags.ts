@@ -39,6 +39,13 @@ export interface CatalogFeatureFlags {
 	 * catalog.
 	 */
 	transcriptionsRoutingEnabled: boolean;
+	/**
+	 * Per-modality enforcement flip for the OCR surface, with the same deploy
+	 * invariant as the other modalities: a deployment already enforcing chat
+	 * must not start rejecting OCR requests before the operator has activated
+	 * OCR mappings in the catalog.
+	 */
+	ocrRoutingEnabled: boolean;
 	breakerMode: "off" | "observe" | "enforce";
 }
 
@@ -66,6 +73,7 @@ export function readCatalogFeatureFlags(
 		transcriptionsRoutingEnabled: enabled(
 			env.PLATFORM_CATALOG_TRANSCRIPTIONS_ROUTING_ENABLED,
 		),
+		ocrRoutingEnabled: enabled(env.PLATFORM_CATALOG_OCR_ROUTING_ENABLED),
 		breakerMode,
 	};
 }
