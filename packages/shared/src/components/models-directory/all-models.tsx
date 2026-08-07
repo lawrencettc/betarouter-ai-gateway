@@ -41,6 +41,7 @@ import {
 	Volume2,
 	Mic,
 	ListOrdered,
+	ShieldCheck,
 } from "lucide-react";
 import Link from "next/link.js";
 import { usePathname, useRouter, useSearchParams } from "next/navigation.js";
@@ -245,6 +246,13 @@ function computeCapabilities(
 			icon: Boxes,
 			label: "Embeddings",
 			color: "text-indigo-500",
+		});
+	}
+	if (model?.output?.includes("moderation")) {
+		capabilities.push({
+			icon: ShieldCheck,
+			label: "Moderation",
+			color: "text-emerald-500",
 		});
 	}
 	if (provider.webSearch) {
@@ -737,6 +745,7 @@ export function AllModels({
 			audioGeneration: searchParams.get("audioGeneration") === "true",
 			embedding: searchParams.get("embedding") === "true",
 			rerank: searchParams.get("rerank") === "true",
+			moderation: searchParams.get("moderation") === "true",
 			webSearch: searchParams.get("webSearch") === "true",
 			free: searchParams.get("free") === "true",
 			discounted: searchParams.get("discounted") === "true",
@@ -1050,6 +1059,12 @@ export function AllModels({
 				return false;
 			}
 			if (filters.capabilities.rerank && !model.output?.includes("rerank")) {
+				return false;
+			}
+			if (
+				filters.capabilities.moderation &&
+				!model.output?.includes("moderation")
+			) {
 				return false;
 			}
 			if (
@@ -1582,6 +1597,7 @@ export function AllModels({
 				audioGeneration: false,
 				embedding: false,
 				rerank: false,
+				moderation: false,
 				webSearch: false,
 				free: false,
 				discounted: false,
@@ -1822,6 +1838,12 @@ export function AllModels({
 									label: "Rerank",
 									icon: ListOrdered,
 									color: "text-amber-500",
+								},
+								{
+									key: "moderation",
+									label: "Moderation",
+									icon: ShieldCheck,
+									color: "text-emerald-500",
 								},
 								{
 									key: "webSearch",
