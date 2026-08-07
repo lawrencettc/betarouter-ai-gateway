@@ -1364,7 +1364,9 @@ export function CatalogClient({
 		// The server derives the probe profile (minimal-chat / minimal-embeddings
 		// / minimal-images / minimal-videos / minimal-speech /
 		// minimal-transcriptions / minimal-ocr / minimal-rerank /
-		// minimal-moderations) from the model's output modalities.
+		// minimal-moderations / minimal-realtime) from the model's output
+		// modalities and the mapping's modality flags; test-exempt mappings
+		// (realtime transcription) are rejected with an explanatory 400.
 		const result = await api.POST("/admin/catalog/mappings/{id}/test", {
 			params: { path: { id: item.id } },
 			body: { credentialId: credential.id },

@@ -60,6 +60,13 @@ export interface CatalogFeatureFlags {
 	 * has activated the moderation mapping in the catalog.
 	 */
 	moderationsRoutingEnabled: boolean;
+	/**
+	 * Per-modality enforcement flip for the realtime WebSocket surface, with
+	 * the same deploy invariant as the other modalities: a deployment already
+	 * enforcing chat must not start rejecting realtime sessions before the
+	 * operator has activated realtime mappings in the catalog.
+	 */
+	realtimeRoutingEnabled: boolean;
 	breakerMode: "off" | "observe" | "enforce";
 }
 
@@ -91,6 +98,9 @@ export function readCatalogFeatureFlags(
 		rerankRoutingEnabled: enabled(env.PLATFORM_CATALOG_RERANK_ROUTING_ENABLED),
 		moderationsRoutingEnabled: enabled(
 			env.PLATFORM_CATALOG_MODERATIONS_ROUTING_ENABLED,
+		),
+		realtimeRoutingEnabled: enabled(
+			env.PLATFORM_CATALOG_REALTIME_ROUTING_ENABLED,
 		),
 		breakerMode,
 	};

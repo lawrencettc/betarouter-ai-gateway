@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	catalogMappingProfileForMapping,
 	catalogMappingProfileForOutputs,
+	isCatalogMappingTestExempt,
 	catalogMappingTestProfile,
 } from "./test-target.js";
 
@@ -90,5 +92,46 @@ describe("catalogMappingProfileForOutputs", () => {
 		expect(catalogMappingProfileForOutputs(["text", "audio"])).toBe(
 			"minimal-chat",
 		);
+	});
+});
+
+describe("catalogMappingProfileForMapping", () => {
+	it("keys realtime mappings on their modality flag, not their outputs", () => {
+		// Realtime models truthfully declare text+audio output but only answer
+		// the realtime WebSocket protocol — the output-derived chat probe could
+		// never pass, so the flag must win the derivation.
+		expect(
+			catalogMappingProfileForMapping(["text", "audio"], { realtime: true }),
+		).toBe("minimal-realtime");
+		// A hypothetical HTTP-servable text+audio chat model keeps minimal-chat.
+		expect(catalogMappingProfileForMapping(["text", "audio"], {})).toBe(
+			"minimal-chat",
+		);
+		expect(catalogMappingProfileForMapping(["text"], {})).toBe("minimal-chat");
+	});
+
+	it("exempts realtime-transcription mappings from the test gate", () => {
+		expect(isCatalogMappingTestExempt({ realtimeTranscription: true })).toBe(
+			true,
+		);
+		expect(
+			catalogMappingProfileForMapping(["text"], {
+				realtimeTranscription: true,
+			}),
+		).toBeNull();
+		// A mapping serving both roles is probed as a realtime session.
+		expect(
+			isCatalogMappingTestExempt({
+				realtime: true,
+				realtimeTranscription: true,
+			}),
+		).toBe(false);
+		expect(
+			catalogMappingProfileForMapping(["text", "audio"], {
+				realtime: true,
+				realtimeTranscription: true,
+			}),
+		).toBe("minimal-realtime");
+		expect(isCatalogMappingTestExempt({})).toBe(false);
 	});
 });

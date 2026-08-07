@@ -23,7 +23,8 @@ export type CatalogMappingTestProfileName =
 	| "minimal-transcriptions"
 	| "minimal-ocr"
 	| "minimal-rerank"
-	| "minimal-moderations";
+	| "minimal-moderations"
+	| "minimal-realtime";
 
 /**
  * Which probe profile a model's output modalities call for, shared by the
@@ -38,9 +39,13 @@ export type CatalogMappingTestProfileName =
  * profile invalidates its passed test runs and instantly de-routes it. In
  * particular, text+image chat models (e.g. the Gemini image previews) serve
  * chat traffic and stay on minimal-chat; minimal-images is only for models
- * whose output is image without text. Likewise text+audio chat models (the
- * native-audio / realtime deployments) stay on minimal-chat; minimal-speech
- * is only for text-to-speech models whose output is audio without text.
+ * whose output is image without text. Likewise a text+audio chat model
+ * served over HTTP chat completions would stay on minimal-chat;
+ * minimal-speech is only for text-to-speech models whose output is audio
+ * without text. Realtime deployments also declare text+audio output but are
+ * never HTTP-servable, so they are diverted to minimal-realtime by
+ * `catalogMappingProfileForMapping` BEFORE this output-based fallback — use
+ * that function wherever the mapping's modality flags are available.
  */
 export function catalogMappingProfileForOutputs(
 	output: readonly string[],
@@ -73,6 +78,55 @@ export function catalogMappingProfileForOutputs(
 		return "minimal-moderations";
 	}
 	return null;
+}
+
+export interface CatalogMappingModalityFlags {
+	realtime?: boolean | null;
+	realtimeTranscription?: boolean | null;
+}
+
+/**
+ * Whether a mapping is exempt from the mapping-test gate entirely.
+ *
+ * Recorded reason (plan-admin-catalog-authority Phase 7 allows exempting a
+ * modality "with a recorded reason"): realtime-transcription mappings have no
+ * standalone deployment to probe and no credential of their own to bind. The
+ * ASR model runs INSIDE a host realtime session — the gateway configures it
+ * via `session.update` on the session's existing WebSocket, authenticated by
+ * the host realtime mapping's credential (see
+ * `apps/gateway/src/realtime/preflight.ts`, which resolves one upstream
+ * credential per session from the realtime match, never from the ASR match).
+ * A probe would have to open a session on some OTHER mapping's deployment,
+ * coupling this mapping's activation to a deployment it does not route to.
+ * Exempt mappings still require prices and an operator enable to become
+ * routable; only the passed-test requirement is waived.
+ */
+export function isCatalogMappingTestExempt(
+	mapping: CatalogMappingModalityFlags,
+): boolean {
+	return mapping.realtimeTranscription === true && mapping.realtime !== true;
+}
+
+/**
+ * Mapping-aware probe-profile derivation. Realtime mappings are keyed on
+ * their modality FLAG, not their output modalities: they declare
+ * `["text", "audio"]` output (truthful for /v1/models and the UI), but the
+ * deployment only answers the realtime WebSocket protocol, so the
+ * output-derived minimal-chat probe could never pass and the mapping could
+ * never activate. Test-exempt mappings return null — the console refuses to
+ * run them and the resolver waives the test gate instead.
+ */
+export function catalogMappingProfileForMapping(
+	output: readonly string[],
+	mapping: CatalogMappingModalityFlags,
+): CatalogMappingTestProfileName | null {
+	if (mapping.realtime === true) {
+		return "minimal-realtime";
+	}
+	if (isCatalogMappingTestExempt(mapping)) {
+		return null;
+	}
+	return catalogMappingProfileForOutputs(output);
 }
 
 export interface CatalogMappingTestTarget {
