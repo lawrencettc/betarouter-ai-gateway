@@ -26,7 +26,7 @@ interface EnforceCatalogRequestOptions {
 		| "ocr"
 		| "rerank"
 		| "moderations"
-		| "deferred_non_chat";
+		| "realtime";
 	setHeader?: (name: string, value: string) => void;
 }
 
@@ -44,21 +44,6 @@ export function isTenantCustomProviderId(
 	return (
 		providerId === TENANT_CUSTOM_PROVIDER_ID ||
 		providerId?.startsWith(`${TENANT_CUSTOM_PROVIDER_ID}/`) === true
-	);
-}
-
-export function isCatalogOperationEnabled(
-	operation: EnforceCatalogRequestOptions["operation"],
-): boolean {
-	return (
-		operation === "chat" ||
-		operation === "embeddings" ||
-		operation === "videos" ||
-		operation === "speech" ||
-		operation === "transcriptions" ||
-		operation === "ocr" ||
-		operation === "rerank" ||
-		operation === "moderations"
 	);
 }
 
@@ -82,6 +67,7 @@ export function isCatalogRoutingEnforcedForOperation(
 		| "ocrRoutingEnabled"
 		| "rerankRoutingEnabled"
 		| "moderationsRoutingEnabled"
+		| "realtimeRoutingEnabled"
 	>,
 ): boolean {
 	if (!flags.routingEnabled) {
@@ -110,6 +96,9 @@ export function isCatalogRoutingEnforcedForOperation(
 	}
 	if (operation === "moderations") {
 		return flags.moderationsRoutingEnabled;
+	}
+	if (operation === "realtime") {
+		return flags.realtimeRoutingEnabled;
 	}
 	return false;
 }
@@ -243,9 +232,6 @@ export async function enforceCatalogRequest(
 	input: CatalogRequestInput,
 	options: EnforceCatalogRequestOptions,
 ): Promise<Extract<CatalogRequestDecision, { allowed: true }> | null> {
-	if (!isCatalogOperationEnabled(options.operation)) {
-		return null;
-	}
 	if (input.modelId === "auto" || input.modelId === "custom") {
 		return null;
 	}

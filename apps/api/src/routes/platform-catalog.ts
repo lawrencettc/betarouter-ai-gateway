@@ -10,6 +10,7 @@ import {
 	validateProviderKey,
 	validateProviderModerations,
 	validateProviderOcr,
+	validateProviderRealtime,
 	validateProviderRerank,
 	validateProviderSpeech,
 	validateProviderTranscriptions,
@@ -19,9 +20,10 @@ import { redisClient } from "@betarouter/cache";
 import {
 	applyCatalogOperations,
 	buildCatalogResolverInput,
-	catalogMappingProfileForOutputs,
+	catalogMappingProfileForMapping,
 	catalogMappingTestProfile,
 	catalogOperationTargets,
+	isCatalogMappingTestExempt,
 	catalogSourceInvariantBlockers,
 	catalogSourceLookupFromRows,
 	compareCatalogRevision,
@@ -2068,6 +2070,7 @@ platformCatalog.openapi(
 									"minimal-ocr",
 									"minimal-rerank",
 									"minimal-moderations",
+									"minimal-realtime",
 								])
 								.optional(),
 						}),
@@ -2142,13 +2145,20 @@ platformCatalog.openapi(
 			.from(model)
 			.where(eq(model.id, mapping.modelId))
 			.limit(1);
-		const probeProfile = catalogMappingProfileForOutputs(
+		if (isCatalogMappingTestExempt(mapping)) {
+			throw new HTTPException(400, {
+				message:
+					"This mapping is exempt from the mapping test: realtime-transcription models run inside a host realtime session and have no standalone deployment or credential of their own to probe. It becomes routable once priced and enabled.",
+			});
+		}
+		const probeProfile = catalogMappingProfileForMapping(
 			sourceModel?.output ?? [],
+			mapping,
 		);
 		if (!probeProfile) {
 			throw new HTTPException(400, {
 				message:
-					"Mapping probes exist for text/chat, embeddings, image generation, video generation, and speech generation models only. Keep this mapping disabled until its operation-specific probe profile is available.",
+					"No mapping probe exists for this model's modality yet. Keep this mapping disabled until its operation-specific probe profile is available.",
 			});
 		}
 		if (input.testProfile && input.testProfile !== probeProfile) {
@@ -2240,10 +2250,15 @@ platformCatalog.openapi(
 														...probeArgs,
 														probeTarget,
 													)
-												: await validateProviderKey(...probeArgs, {
-														modelId: mapping.modelId,
-														...probeTarget,
-													});
+												: probeProfile === "minimal-realtime"
+													? await validateProviderRealtime(
+															...probeArgs,
+															probeTarget,
+														)
+													: await validateProviderKey(...probeArgs, {
+															modelId: mapping.modelId,
+															...probeTarget,
+														});
 			status = result.valid ? "passed" : "failed";
 			upstreamStatus = result.statusCode ?? null;
 			errorClass = result.valid ? null : "upstream_validation_failed";

@@ -20,8 +20,7 @@ Cloudflare Tunnel.
   (Stage 13); serving additionally requires the videos enforcement flag.
 - Speech mappings (model output `["audio"]` without text) may activate after
   an exact `minimal-speech` test passes (Stage 14); serving additionally
-  requires the speech enforcement flag. Text+audio chat models (native-audio
-  / realtime deployments) stay on `minimal-chat`.
+  requires the speech enforcement flag.
 - Transcription mappings (model output `["transcription"]`) may activate
   after an exact `minimal-transcriptions` test passes (Stage 15); OCR
   mappings (output `["ocr"]`) after `minimal-ocr` (Stage 16); rerank
@@ -29,6 +28,13 @@ Cloudflare Tunnel.
   moderation mapping (output `["moderation"]`) after `minimal-moderations`
   (Stage 18). Serving each additionally requires that modality's
   enforcement flag.
+- Realtime mappings (mapping flag `realtime`, regardless of their
+  text+audio output) may activate after an exact `minimal-realtime` test
+  passes (Stage 19). Realtime-transcription mappings (flag
+  `realtimeTranscription` without `realtime`) are exempt from the test gate
+  — they have no standalone deployment or credential of their own — and
+  activate on price policy plus enablement alone. Serving both requires the
+  realtime enforcement flag.
 - Catalog editor permissions are not separated in this release. Existing
   immutable platform-admin authorization remains the only admin gate.
 
@@ -50,10 +56,11 @@ PLATFORM_CATALOG_TRANSCRIPTIONS_ROUTING_ENABLED=false
 PLATFORM_CATALOG_OCR_ROUTING_ENABLED=false
 PLATFORM_CATALOG_RERANK_ROUTING_ENABLED=false
 PLATFORM_CATALOG_MODERATIONS_ROUTING_ENABLED=false
+PLATFORM_CATALOG_REALTIME_ROUTING_ENABLED=false
 PLATFORM_CATALOG_BREAKER_MODE=off
 ```
 
-The production Compose file forwards all twelve flags to the unified service.
+The production Compose file forwards all thirteen flags to the unified service.
 Do not enable a later stage in Git or the image; change the deployment secret
 file so emergency rollback remains independent of a new build.
 
@@ -692,6 +699,53 @@ decision with `operation: "moderations"`.
    `PLATFORM_CATALOG_MODERATIONS_ROUTING_ENABLED`. Moderations return to
    legacy routing without touching any other modality's enforcement.
 
+### Stage 19: Realtime modality rollout
+
+Realtime (`/v1/realtime`, WebSocket) is the last Phase 7 surface. It serves
+two mapping kinds, admitted separately through the same catalog gate:
+speech-to-speech session mappings (flag `realtime`) and the ASR mappings
+configurable inside a session (flag `realtimeTranscription`). Sessions
+enforce catalog decisions only when BOTH `PLATFORM_CATALOG_ROUTING_ENABLED`
+and `PLATFORM_CATALOG_REALTIME_ROUTING_ENABLED` are true; until the second
+flag flips, realtime stays on legacy routing while shadow reads log every
+decision with `operation: "realtime"`.
+
+- **Probe cost.** The `minimal-realtime` probe opens the provider's realtime
+  WebSocket for the exact deployment the mapping routes to and waits for the
+  session-ready event (`session.created` on the OpenAI protocol,
+  `setupComplete` after a setup message on Gemini Live), then closes before
+  any audio or text turn — no tokens are generated, so the probe costs
+  nothing.
+- **ASR exemption.** Realtime-transcription mappings are exempt from the
+  test gate (recorded in `isCatalogMappingTestExempt`): the ASR model runs
+  inside a host realtime session over that session's connection and
+  credential, so there is no standalone deployment to probe and no
+  credential of its own to bind. They activate on price policy plus
+  enablement, and their snapshot rows carry `platformCredentialId: null`.
+
+1. Deploy with `PLATFORM_CATALOG_REALTIME_ROUTING_ENABLED` unset (off).
+   With shadow reads on, expect `operation: "realtime"` decisions with
+   `allowed: false` until realtime mappings are activated — the soak
+   signal, not a fault.
+2. Activate each `realtime` mapping as in Stage 8: credential, a passed
+   `minimal-realtime` test (a `minimal-chat` run never satisfies a realtime
+   mapping), price policy, enablement. Activate each
+   `realtimeTranscription` mapping with price policy and enablement only —
+   the test console refuses to probe them by design.
+3. When shadow decisions for realtime traffic are `allowed: true` with the
+   expected mapping ids and prices, set
+   `PLATFORM_CATALOG_REALTIME_ROUTING_ENABLED=true` in the deployment
+   secret file (no rebuild) and restart. Verify one short session per
+   activated realtime mapping: the session connects, the log rows record
+   the catalog mapping and revision, the platform credential selected is
+   the catalog-bound one, and the billed cost matches the mapping's
+   effective per-modality prices times the reported usage (text and audio
+   tokens bill at different rates — check both).
+4. Rollback for this stage alone: unset
+   `PLATFORM_CATALOG_REALTIME_ROUTING_ENABLED`. Realtime returns to legacy
+   routing and static billing without touching any other modality's
+   enforcement.
+
 ## Emergency rollback
 
 Apply the smallest safe rollback in this order:
@@ -708,7 +762,8 @@ Apply the smallest safe rollback in this order:
    affected, `PLATFORM_CATALOG_OCR_ROUTING_ENABLED=false`; if only rerank
    is affected, `PLATFORM_CATALOG_RERANK_ROUTING_ENABLED=false`; if only
    moderations are affected,
-   `PLATFORM_CATALOG_MODERATIONS_ROUTING_ENABLED=false`.
+   `PLATFORM_CATALOG_MODERATIONS_ROUTING_ENABLED=false`; if only realtime
+   is affected, `PLATFORM_CATALOG_REALTIME_ROUTING_ENABLED=false`.
 4. Set `PLATFORM_CATALOG_ROUTING_ENABLED=false`.
 5. If discovery is affected, set
    `PLATFORM_CATALOG_DISCOVERY_ENABLED=false` and

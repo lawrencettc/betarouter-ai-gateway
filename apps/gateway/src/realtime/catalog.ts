@@ -53,7 +53,7 @@ export async function admitRealtimeMapping(
 			providerId: match.mapping.providerId,
 			region: match.mapping.region,
 		},
-		{ operation: "deferred_non_chat" },
+		{ operation: "realtime" },
 	);
 	const [mapping] = filterProviderMappingsByCatalog(
 		match.modelDef.providers.filter(

@@ -14,8 +14,9 @@ import {
 } from "./source-operations.js";
 import {
 	catalogCredentialConfigurationProfile,
-	catalogMappingProfileForOutputs,
+	catalogMappingProfileForMapping,
 	catalogMappingTestProfile,
+	isCatalogMappingTestExempt,
 } from "./test-target.js";
 
 import type { CatalogBreakerState, CatalogResolverInput } from "./catalog.js";
@@ -262,37 +263,47 @@ export function buildCatalogResolverInput(input: {
 				})
 			: null;
 		const mappingPolicy = input.state.mappings[mapping.id];
-		const testedCredential = input.credentials
-			.filter((credential) => credential.provider === mapping.providerId)
-			.sort(
-				(left, right) =>
-					left.priority - right.priority || left.id.localeCompare(right.id),
-			)
-			.find((credential) => {
-				const profile = catalogMappingTestProfile({
-					mappingId: mapping.id,
-					providerId: mapping.providerId,
-					region: mapping.region,
-					externalId: mappingPolicy?.externalIdOverride ?? mapping.externalId,
-					contextSizeLimit: mappingPolicy?.contextSizeLimit,
-					maxOutputLimit: mappingPolicy?.maxOutputLimit,
-					disabledCapabilities: mappingPolicy?.disabledCapabilities,
-					credentialId: credential.id,
-					credentialFingerprint: credential.tokenFingerprint,
-					baseUrl: credential.baseUrl,
-					credentialOptions: credential.options,
-					// Modality-specific probe: an embeddings mapping is satisfied only
-					// by a passed minimal-embeddings run, never by a chat probe.
-					profile:
-						catalogMappingProfileForOutputs(
-							modelOutputById.get(mapping.modelId) ?? [],
-						) ?? undefined,
-				});
-				return input.passedTests.has(`${mapping.id}:${profile}`);
-			});
+		// Test-exempt mappings (see isCatalogMappingTestExempt) activate without
+		// a probe run and bind no platform credential: they are served inside a
+		// host realtime session's connection, never by a credential of their own,
+		// so no passed run — not even minimal-chat — may bind one here.
+		const testExempt = isCatalogMappingTestExempt(mapping);
+		const testedCredential = testExempt
+			? undefined
+			: input.credentials
+					.filter((credential) => credential.provider === mapping.providerId)
+					.sort(
+						(left, right) =>
+							left.priority - right.priority || left.id.localeCompare(right.id),
+					)
+					.find((credential) => {
+						const profile = catalogMappingTestProfile({
+							mappingId: mapping.id,
+							providerId: mapping.providerId,
+							region: mapping.region,
+							externalId:
+								mappingPolicy?.externalIdOverride ?? mapping.externalId,
+							contextSizeLimit: mappingPolicy?.contextSizeLimit,
+							maxOutputLimit: mappingPolicy?.maxOutputLimit,
+							disabledCapabilities: mappingPolicy?.disabledCapabilities,
+							credentialId: credential.id,
+							credentialFingerprint: credential.tokenFingerprint,
+							baseUrl: credential.baseUrl,
+							credentialOptions: credential.options,
+							// Modality-specific probe: an embeddings mapping is satisfied
+							// only by a passed minimal-embeddings run, never by a chat
+							// probe; realtime mappings are keyed on their modality flag.
+							profile:
+								catalogMappingProfileForMapping(
+									modelOutputById.get(mapping.modelId) ?? [],
+									mapping,
+								) ?? undefined,
+						});
+						return input.passedTests.has(`${mapping.id}:${profile}`);
+					});
 		mappingReadiness[mapping.id] = {
 			priceReady: prices?.ready ?? false,
-			testPassed: testedCredential !== undefined,
+			testPassed: testExempt || testedCredential !== undefined,
 			platformCredentialId: testedCredential?.id ?? null,
 			platformCredentialProfile: testedCredential
 				? catalogCredentialConfigurationProfile({

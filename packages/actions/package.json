@@ -27,7 +27,10 @@
 		"@betarouter/logger": "workspace:*",
 		"@betarouter/models": "workspace:*",
 		"@betarouter/shared": "workspace:*",
-		"decimal.js": "10.5.0"
+		"decimal.js": "10.5.0",
+		"ws": "8.21.0"
 	},
-	"devDependencies": {}
+	"devDependencies": {
+		"@types/ws": "8.18.1"
+	}
 }

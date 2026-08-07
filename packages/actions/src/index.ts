@@ -14,6 +14,7 @@ export * from "./validate-provider-images.js";
 export * from "./validate-provider-key.js";
 export * from "./validate-provider-moderations.js";
 export * from "./validate-provider-ocr.js";
+export * from "./validate-provider-realtime.js";
 export * from "./validate-provider-rerank.js";
 export * from "./validate-provider-speech.js";
 export * from "./validate-provider-transcriptions.js";
