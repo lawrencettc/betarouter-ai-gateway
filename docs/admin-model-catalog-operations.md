@@ -43,10 +43,11 @@ PLATFORM_CATALOG_EMBEDDINGS_ROUTING_ENABLED=false
 PLATFORM_CATALOG_VIDEOS_ROUTING_ENABLED=false
 PLATFORM_CATALOG_SPEECH_ROUTING_ENABLED=false
 PLATFORM_CATALOG_TRANSCRIPTIONS_ROUTING_ENABLED=false
+PLATFORM_CATALOG_OCR_ROUTING_ENABLED=false
 PLATFORM_CATALOG_BREAKER_MODE=off
 ```
 
-The production Compose file forwards all nine flags to the unified service.
+The production Compose file forwards all ten flags to the unified service.
 Do not enable a later stage in Git or the image; change the deployment secret
 file so emergency rollback remains independent of a new build.
 
@@ -565,6 +566,46 @@ log every decision with `operation: "transcriptions"`.
    to legacy routing and static billing without touching any other
    modality's enforcement.
 
+### Stage 16: OCR modality rollout
+
+OCR (`/v1/ocr`) follows the transcriptions template: the surface bills
+synchronously at request time from the catalog-filtered mapping (per-page
+billing on the upstream's reported `pages_processed`), so there is no
+billing replay to stage. OCR requests enforce catalog decisions only when
+BOTH `PLATFORM_CATALOG_ROUTING_ENABLED` and
+`PLATFORM_CATALOG_OCR_ROUTING_ENABLED` are true; until the second flag
+flips, OCR stays on legacy routing while shadow reads log every decision
+with `operation: "ocr"`.
+
+- **Probe cost.** The `minimal-ocr` probe runs OCR over one synthesized
+  single-page PNG (built in code — no binary asset) through the exact
+  deployment the mapping routes to and passes on a JSON success body. The
+  endpoint path and payload shape mirror the gateway's dispatch: a JSON
+  POST to `{baseUrl}/v1/ocr` with the model id and an inline `image_url`
+  document. Page billing prices the run at one page (Mistral: $0.004).
+- **Prices.** Page-billed mappings mirror `ocrPagePrice` as the flat
+  USD-per-page `ocrPage` unit (not a per-million unit), plus `requestPrice`
+  where set. Both flow through fixed and markup price policies.
+
+1. Deploy with `PLATFORM_CATALOG_OCR_ROUTING_ENABLED` unset (off). With
+   shadow reads on, expect `operation: "ocr"` decisions with
+   `allowed: false` until OCR mappings are activated — the soak signal, not
+   a fault. OCR models (output `["ocr"]`) previously had no probe profile
+   and were held disabled by the launch boundary.
+2. Activate each OCR mapping exactly as in Stage 8: credential, a passed
+   `minimal-ocr` test (a `minimal-chat` run never satisfies an OCR
+   mapping), price policy, enablement.
+3. When shadow decisions for OCR traffic are `allowed: true` with the
+   expected mapping ids and prices, set
+   `PLATFORM_CATALOG_OCR_ROUTING_ENABLED=true` in the deployment secret
+   file (no rebuild) and restart. Verify one pinned OCR request per
+   activated mapping through `/v1/ocr` and compare the log row's billed
+   cost against the mapping's effective `ocrPage` price times the reported
+   `pages_processed`.
+4. Rollback for this stage alone: unset
+   `PLATFORM_CATALOG_OCR_ROUTING_ENABLED`. OCR returns to legacy routing
+   and static billing without touching any other modality's enforcement.
+
 ## Emergency rollback
 
 Apply the smallest safe rollback in this order:
@@ -577,7 +618,8 @@ Apply the smallest safe rollback in this order:
    affected, set `PLATFORM_CATALOG_VIDEOS_ROUTING_ENABLED=false` likewise;
    if only speech is affected, `PLATFORM_CATALOG_SPEECH_ROUTING_ENABLED=false`;
    if only transcriptions are affected,
-   `PLATFORM_CATALOG_TRANSCRIPTIONS_ROUTING_ENABLED=false`.
+   `PLATFORM_CATALOG_TRANSCRIPTIONS_ROUTING_ENABLED=false`; if only OCR is
+   affected, `PLATFORM_CATALOG_OCR_ROUTING_ENABLED=false`.
 4. Set `PLATFORM_CATALOG_ROUTING_ENABLED=false`.
 5. If discovery is affected, set
    `PLATFORM_CATALOG_DISCOVERY_ENABLED=false` and

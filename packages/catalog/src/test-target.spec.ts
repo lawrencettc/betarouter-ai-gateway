@@ -71,6 +71,7 @@ describe("catalogMappingProfileForOutputs", () => {
 		expect(catalogMappingProfileForOutputs(["transcription"])).toBe(
 			"minimal-transcriptions",
 		);
+		expect(catalogMappingProfileForOutputs(["ocr"])).toBe("minimal-ocr");
 		expect(catalogMappingProfileForOutputs([])).toBeNull();
 	});
 

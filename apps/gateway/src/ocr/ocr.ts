@@ -435,7 +435,7 @@ ocr.openapi(createOcr, async (c): Promise<any> => {
 			region: explicitProvider ? legacyMapping.region : undefined,
 		},
 		{
-			operation: "deferred_non_chat",
+			operation: "ocr",
 			setHeader: (name, value) => c.header(name, value),
 		},
 	);
