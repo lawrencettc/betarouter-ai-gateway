@@ -5,7 +5,7 @@ import { ArrowRight, Play } from "lucide-react";
 import { useSessionStatus, useUser } from "@/hooks/useUser";
 import { Button } from "@/lib/components/button";
 import { useAppConfig } from "@/lib/config";
-import { getLoungeStudioPath } from "@/lib/model-utils";
+import { getLoungeStudioPath, hasLoungeStudio } from "@/lib/model-utils";
 
 export function ModelCtaButton({
 	modelId,
@@ -27,13 +27,10 @@ export function ModelCtaButton({
 	const { user, isLoading } = useUser({ enabled: isAuthenticated });
 	const isLoggedIn = !!user && !isLoading;
 
-	// Rerank and moderation models have no playground studio — logged-in
-	// users see the "Get Started" CTA too (no chat playground to link to).
-	if (
-		isLoggedIn &&
-		!output?.includes("rerank") &&
-		!output?.includes("moderation")
-	) {
+	// Models without a playground studio (embeddings, rerank, transcription,
+	// OCR, moderation) fall back to the "Get Started" CTA for logged-in users
+	// too — a chat-playground deep link would land on a model it cannot serve.
+	if (isLoggedIn && hasLoungeStudio(output)) {
 		const studioPath = getLoungeStudioPath(output);
 		return (
 			<Button

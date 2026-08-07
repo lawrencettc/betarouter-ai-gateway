@@ -14,7 +14,7 @@ import {
 	TooltipTrigger,
 } from "@/lib/components/tooltip";
 import { useAppConfig } from "@/lib/config";
-import { getLoungeStudioPath } from "@/lib/model-utils";
+import { getLoungeStudioPath, hasLoungeStudio } from "@/lib/model-utils";
 import { formatContextSize } from "@/lib/utils";
 
 import type {
@@ -281,22 +281,24 @@ export function ProviderModelCard({
 						</div>
 					</div>
 
-					<Button
-						variant="default"
-						size="default"
-						className="w-full gap-2 font-semibold"
-						onClick={(e) => e.stopPropagation()}
-						asChild
-					>
-						<a
-							href={`${config.playgroundUrl}${getLoungeStudioPath(model.output)}?model=${encodeURIComponent(providerModelId)}`}
-							target="_blank"
-							rel="noopener noreferrer"
+					{hasLoungeStudio(model.output) && (
+						<Button
+							variant="default"
+							size="default"
+							className="w-full gap-2 font-semibold"
+							onClick={(e) => e.stopPropagation()}
+							asChild
 						>
-							<Play className="h-4 w-4" />
-							Try in Lounge
-						</a>
-					</Button>
+							<a
+								href={`${config.playgroundUrl}${getLoungeStudioPath(model.output)}?model=${encodeURIComponent(providerModelId)}`}
+								target="_blank"
+								rel="noopener noreferrer"
+							>
+								<Play className="h-4 w-4" />
+								Try in Lounge
+							</a>
+						</Button>
+					)}
 				</div>
 			</Card>
 		</TooltipProvider>

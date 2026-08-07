@@ -50,10 +50,28 @@ export function getLoungeStudioPath(
 	if (output?.includes("image")) {
 		return "/image";
 	}
+	// Text+audio output is a realtime speech-to-speech model; audio without
+	// text is TTS and belongs in the speech studio.
 	if (output?.includes("audio")) {
-		return "/audio";
+		return output.includes("text") ? "/realtime" : "/audio";
 	}
 	return "";
+}
+
+// Output modalities with no playground studio at all — CTAs for these models
+// must not deep-link into the playground.
+const STUDIO_LESS_OUTPUTS = new Set([
+	"embedding",
+	"rerank",
+	"transcription",
+	"ocr",
+	"moderation",
+]);
+
+export function hasLoungeStudio(
+	output: readonly string[] | null | undefined,
+): boolean {
+	return !output?.some((modality) => STUDIO_LESS_OUTPUTS.has(modality));
 }
 
 export function getModelCapabilities(model: ModelDefinition): string[] {
