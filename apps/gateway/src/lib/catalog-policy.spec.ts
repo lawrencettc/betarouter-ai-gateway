@@ -20,14 +20,16 @@ describe("filterProviderMappingsByCatalog", () => {
 		expect(isCatalogOperationEnabled("chat")).toBe(true);
 		expect(isCatalogOperationEnabled("embeddings")).toBe(true);
 		expect(isCatalogOperationEnabled("videos")).toBe(true);
+		expect(isCatalogOperationEnabled("speech")).toBe(true);
 		expect(isCatalogOperationEnabled("deferred_non_chat")).toBe(false);
 	});
 
-	it("enforces embeddings and videos only behind their own routing flips", () => {
+	it("enforces embeddings, videos, and speech only behind their own routing flips", () => {
 		const routingOff = {
 			routingEnabled: false,
 			embeddingsRoutingEnabled: true,
 			videosRoutingEnabled: true,
+			speechRoutingEnabled: true,
 		};
 		expect(isCatalogRoutingEnforcedForOperation("chat", routingOff)).toBe(
 			false,
@@ -38,13 +40,17 @@ describe("filterProviderMappingsByCatalog", () => {
 		expect(isCatalogRoutingEnforcedForOperation("videos", routingOff)).toBe(
 			false,
 		);
+		expect(isCatalogRoutingEnforcedForOperation("speech", routingOff)).toBe(
+			false,
+		);
 
 		// A deployment already enforcing chat must not start enforcing
-		// embeddings or videos until the operator flips the modality flag.
+		// embeddings, videos, or speech until the operator flips the flag.
 		const chatOnly = {
 			routingEnabled: true,
 			embeddingsRoutingEnabled: false,
 			videosRoutingEnabled: false,
+			speechRoutingEnabled: false,
 		};
 		expect(isCatalogRoutingEnforcedForOperation("chat", chatOnly)).toBe(true);
 		expect(isCatalogRoutingEnforcedForOperation("embeddings", chatOnly)).toBe(
@@ -53,20 +59,27 @@ describe("filterProviderMappingsByCatalog", () => {
 		expect(isCatalogRoutingEnforcedForOperation("videos", chatOnly)).toBe(
 			false,
 		);
+		expect(isCatalogRoutingEnforcedForOperation("speech", chatOnly)).toBe(
+			false,
+		);
 		expect(
 			isCatalogRoutingEnforcedForOperation("deferred_non_chat", chatOnly),
 		).toBe(false);
 
 		// The modality flips are independent of each other.
-		const videosOnly = {
+		const speechOnly = {
 			routingEnabled: true,
 			embeddingsRoutingEnabled: false,
-			videosRoutingEnabled: true,
+			videosRoutingEnabled: false,
+			speechRoutingEnabled: true,
 		};
-		expect(isCatalogRoutingEnforcedForOperation("videos", videosOnly)).toBe(
+		expect(isCatalogRoutingEnforcedForOperation("speech", speechOnly)).toBe(
 			true,
 		);
-		expect(isCatalogRoutingEnforcedForOperation("embeddings", videosOnly)).toBe(
+		expect(isCatalogRoutingEnforcedForOperation("videos", speechOnly)).toBe(
+			false,
+		);
+		expect(isCatalogRoutingEnforcedForOperation("embeddings", speechOnly)).toBe(
 			false,
 		);
 
@@ -74,9 +87,11 @@ describe("filterProviderMappingsByCatalog", () => {
 			routingEnabled: true,
 			embeddingsRoutingEnabled: true,
 			videosRoutingEnabled: true,
+			speechRoutingEnabled: true,
 		};
 		expect(isCatalogRoutingEnforcedForOperation("embeddings", all)).toBe(true);
 		expect(isCatalogRoutingEnforcedForOperation("videos", all)).toBe(true);
+		expect(isCatalogRoutingEnforcedForOperation("speech", all)).toBe(true);
 		expect(isCatalogRoutingEnforcedForOperation("deferred_non_chat", all)).toBe(
 			false,
 		);

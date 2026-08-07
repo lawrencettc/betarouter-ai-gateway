@@ -24,6 +24,13 @@ export interface CatalogFeatureFlags {
 	 * activated video mappings in the catalog.
 	 */
 	videosRoutingEnabled: boolean;
+	/**
+	 * Per-modality enforcement flip for the speech (text-to-speech) surface,
+	 * with the same deploy invariant as embeddings and videos: a deployment
+	 * already enforcing chat must not start rejecting speech requests before
+	 * the operator has activated speech mappings in the catalog.
+	 */
+	speechRoutingEnabled: boolean;
 	breakerMode: "off" | "observe" | "enforce";
 }
 
@@ -47,6 +54,7 @@ export function readCatalogFeatureFlags(
 			env.PLATFORM_CATALOG_EMBEDDINGS_ROUTING_ENABLED,
 		),
 		videosRoutingEnabled: enabled(env.PLATFORM_CATALOG_VIDEOS_ROUTING_ENABLED),
+		speechRoutingEnabled: enabled(env.PLATFORM_CATALOG_SPEECH_ROUTING_ENABLED),
 		breakerMode,
 	};
 }

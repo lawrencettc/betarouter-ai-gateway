@@ -67,7 +67,7 @@ describe("catalogMappingProfileForOutputs", () => {
 		);
 		expect(catalogMappingProfileForOutputs(["image"])).toBe("minimal-images");
 		expect(catalogMappingProfileForOutputs(["video"])).toBe("minimal-videos");
-		expect(catalogMappingProfileForOutputs(["audio"])).toBeNull();
+		expect(catalogMappingProfileForOutputs(["audio"])).toBe("minimal-speech");
 		expect(catalogMappingProfileForOutputs([])).toBeNull();
 	});
 
@@ -75,6 +75,11 @@ describe("catalogMappingProfileForOutputs", () => {
 		// Changing an activated mapping's expected profile would invalidate its
 		// passed runs and de-route it, so text always wins the derivation.
 		expect(catalogMappingProfileForOutputs(["text", "image"])).toBe(
+			"minimal-chat",
+		);
+		// Same for native-audio chat deployments: text+audio is chat territory,
+		// minimal-speech is only for audio-without-text TTS models.
+		expect(catalogMappingProfileForOutputs(["text", "audio"])).toBe(
 			"minimal-chat",
 		);
 	});

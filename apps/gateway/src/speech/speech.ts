@@ -514,7 +514,7 @@ speech.openapi(createSpeech, async (c): Promise<Response> => {
 			region: explicitProvider ? legacyMapping.region : undefined,
 		},
 		{
-			operation: "deferred_non_chat",
+			operation: "speech",
 			setHeader: (name, value) => c.header(name, value),
 		},
 	);

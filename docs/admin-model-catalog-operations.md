@@ -18,8 +18,13 @@ Cloudflare Tunnel.
   after an exact `minimal-images` test passes (Stage 12).
 - Video mappings may activate after an exact `minimal-videos` test passes
   (Stage 13); serving additionally requires the videos enforcement flag.
-- Keep moderation, audio/speech, and OCR mappings disabled until their
-  operation-specific profiles in the future build plan are implemented.
+- Speech mappings (model output `["audio"]` without text) may activate after
+  an exact `minimal-speech` test passes (Stage 14); serving additionally
+  requires the speech enforcement flag. Text+audio chat models (native-audio
+  / realtime deployments) stay on `minimal-chat`.
+- Keep moderation, transcription (audio input), and OCR mappings disabled
+  until their operation-specific profiles in the future build plan are
+  implemented.
 - Catalog editor permissions are not separated in this release. Existing
   immutable platform-admin authorization remains the only admin gate.
 
@@ -36,10 +41,11 @@ PLATFORM_CATALOG_ROUTING_ENABLED=false
 PLATFORM_CATALOG_BASE_READ_ENABLED=false
 PLATFORM_CATALOG_EMBEDDINGS_ROUTING_ENABLED=false
 PLATFORM_CATALOG_VIDEOS_ROUTING_ENABLED=false
+PLATFORM_CATALOG_SPEECH_ROUTING_ENABLED=false
 PLATFORM_CATALOG_BREAKER_MODE=off
 ```
 
-The production Compose file forwards all seven flags to the unified service.
+The production Compose file forwards all eight flags to the unified service.
 Do not enable a later stage in Git or the image; change the deployment secret
 file so emergency rollback remains independent of a new build.
 
@@ -469,6 +475,50 @@ Two things are new beyond the embeddings template:
    chat or embeddings enforcement; in-flight jobs with lineage still bill
    at their dispatch revision, which remains correct.
 
+### Stage 14: Speech modality rollout
+
+Speech (text-to-speech, `/v1/audio/speech`) follows the videos template
+minus the async part: the surface bills synchronously at request time from
+the catalog-filtered mapping, so there is no billing replay to stage.
+Speech requests enforce catalog decisions only when BOTH
+`PLATFORM_CATALOG_ROUTING_ENABLED` and
+`PLATFORM_CATALOG_SPEECH_ROUTING_ENABLED` are true; until the second flag
+flips, speech stays on legacy routing while shadow reads log every decision
+with `operation: "speech"`.
+
+- **Probe cost.** The `minimal-speech` probe synthesizes one three-character
+  utterance through the exact deployment the mapping routes to and passes on
+  a success response whose body is plausibly audio (or, for JSON transports,
+  valid JSON). Character-billed models make this the cheapest probe of any
+  modality — fractions of a cent per run. The probe covers OpenAI,
+  ElevenLabs, Google AI Studio, Google Vertex (API-key credentials with
+  `google_vertex_project_id`; OAuth refused), Alibaba DashScope, and
+  OpenAI-compatible `/v1/audio/speech` deployments including relays. The
+  probe voice comes from the mapping's mirrored `supportedVoices` (first
+  entry), so keep that list accurate on admin-created mappings.
+- **Prices.** Character-billed mappings mirror `inputCharacterPrice` as the
+  per-million `inputCharacters` unit; token-billed TTS (e.g. SSE-usage
+  OpenAI models) bills through `input`/`audioOutput`. Both flow through
+  fixed and markup price policies.
+
+1. Deploy with `PLATFORM_CATALOG_SPEECH_ROUTING_ENABLED` unset (off). With
+   shadow reads on, expect `operation: "speech"` decisions with
+   `allowed: false` until speech mappings are activated — the soak signal,
+   not a fault.
+2. Activate each speech mapping exactly as in Stage 8: credential, a passed
+   `minimal-speech` test (a `minimal-chat` run never satisfies a speech
+   mapping), price policy, enablement.
+3. When shadow decisions for speech traffic are `allowed: true` with the
+   expected mapping ids and prices, set
+   `PLATFORM_CATALOG_SPEECH_ROUTING_ENABLED=true` in the deployment secret
+   file (no rebuild) and restart. Verify one pinned synthesis per activated
+   mapping through `/v1/audio/speech` and compare the log row's billed cost
+   against the mapping's effective prices.
+4. Rollback for this stage alone: unset
+   `PLATFORM_CATALOG_SPEECH_ROUTING_ENABLED`. Speech returns to legacy
+   routing and static billing without touching any other modality's
+   enforcement.
+
 ## Emergency rollback
 
 Apply the smallest safe rollback in this order:
@@ -478,7 +528,8 @@ Apply the smallest safe rollback in this order:
 3. If only embeddings are affected, set
    `PLATFORM_CATALOG_EMBEDDINGS_ROUTING_ENABLED=false` — embeddings return
    to legacy routing without touching chat enforcement. If only videos are
-   affected, set `PLATFORM_CATALOG_VIDEOS_ROUTING_ENABLED=false` likewise.
+   affected, set `PLATFORM_CATALOG_VIDEOS_ROUTING_ENABLED=false` likewise;
+   if only speech is affected, `PLATFORM_CATALOG_SPEECH_ROUTING_ENABLED=false`.
 4. Set `PLATFORM_CATALOG_ROUTING_ENABLED=false`.
 5. If discovery is affected, set
    `PLATFORM_CATALOG_DISCOVERY_ENABLED=false` and
