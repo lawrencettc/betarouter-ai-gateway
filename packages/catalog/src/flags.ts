@@ -46,6 +46,13 @@ export interface CatalogFeatureFlags {
 	 * OCR mappings in the catalog.
 	 */
 	ocrRoutingEnabled: boolean;
+	/**
+	 * Per-modality enforcement flip for the rerank surface, with the same
+	 * deploy invariant as the other modalities: a deployment already enforcing
+	 * chat must not start rejecting rerank requests before the operator has
+	 * activated rerank mappings in the catalog.
+	 */
+	rerankRoutingEnabled: boolean;
 	breakerMode: "off" | "observe" | "enforce";
 }
 
@@ -74,6 +81,7 @@ export function readCatalogFeatureFlags(
 			env.PLATFORM_CATALOG_TRANSCRIPTIONS_ROUTING_ENABLED,
 		),
 		ocrRoutingEnabled: enabled(env.PLATFORM_CATALOG_OCR_ROUTING_ENABLED),
+		rerankRoutingEnabled: enabled(env.PLATFORM_CATALOG_RERANK_ROUTING_ENABLED),
 		breakerMode,
 	};
 }

@@ -24,6 +24,7 @@ interface EnforceCatalogRequestOptions {
 		| "speech"
 		| "transcriptions"
 		| "ocr"
+		| "rerank"
 		| "deferred_non_chat";
 	setHeader?: (name: string, value: string) => void;
 }
@@ -54,7 +55,8 @@ export function isCatalogOperationEnabled(
 		operation === "videos" ||
 		operation === "speech" ||
 		operation === "transcriptions" ||
-		operation === "ocr"
+		operation === "ocr" ||
+		operation === "rerank"
 	);
 }
 
@@ -76,6 +78,7 @@ export function isCatalogRoutingEnforcedForOperation(
 		| "speechRoutingEnabled"
 		| "transcriptionsRoutingEnabled"
 		| "ocrRoutingEnabled"
+		| "rerankRoutingEnabled"
 	>,
 ): boolean {
 	if (!flags.routingEnabled) {
@@ -98,6 +101,9 @@ export function isCatalogRoutingEnforcedForOperation(
 	}
 	if (operation === "ocr") {
 		return flags.ocrRoutingEnabled;
+	}
+	if (operation === "rerank") {
+		return flags.rerankRoutingEnabled;
 	}
 	return false;
 }
