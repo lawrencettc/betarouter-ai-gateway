@@ -52,10 +52,26 @@ jobs:
             previous_image=$(docker inspect --format '{{.Config.Image}}' "$container_id")
             echo "PREVIOUS_IMAGE=$previous_image" >> "$GITHUB_ENV"
             mkdir -p /opt/betarouter-backups
+            # Rotate before dumping so the rotation still frees space when the
+            # disk is too full to write the new backup: keep the 6 newest plus
+            # the one about to be written.
+            ls -1t /opt/betarouter-backups/pre-deploy-*.sql.gz 2>/dev/null | tail -n +7 | xargs -r rm -f
             backup_path="/opt/betarouter-backups/pre-deploy-$(date -u +%Y%m%dT%H%M%SZ).sql.gz"
             docker compose --env-file .env.production -f infra/docker-compose.betarouter.yml exec -T betarouter \
               sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' | gzip > "$backup_path"
           fi
+
+      - name: Free disk for the incoming image
+        run: |
+          # Every deploy pulls a new uniquely-tagged multi-GB unified image and
+          # nothing removed the old ones, which eventually filled the droplet's
+          # disk and took the runner itself down (jobs died at "Set up job"
+          # with ENOSPC). Prune here, before the pull: images used by running
+          # containers survive, so the currently-serving image stays available
+          # as the same-run rollback target and only older, unused images go.
+          docker image prune -af
+          docker builder prune -af || true
+          df -h /
 
       - name: Pull and deploy unified image
         working-directory: /opt/betarouter-ai-gateway

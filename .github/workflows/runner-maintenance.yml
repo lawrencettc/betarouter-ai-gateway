@@ -1,0 +1,44 @@
+name: runner-maintenance
+
+# Emergency disk cleanup for the self-hosted production runner. Dispatch this
+# when the droplet's disk fills up and deploy jobs start dying at "Set up job"
+# with "No space left on device". The job deliberately uses NO actions and no
+# checkout — action downloads are what a full disk fails on first, so keeping
+# the job's own footprint at zero gives it the best chance of running on a
+# nearly-full machine. If even this job fails at "Set up job", the disk is
+# completely full and someone must SSH into the droplet and run the same
+# commands by hand.
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  clean:
+    runs-on: [self-hosted, linux, x64, betarouter-production]
+    timeout-minutes: 15
+    steps:
+      - name: Report disk usage
+        run: |
+          df -h /
+          docker system df || true
+
+      - name: Rotate runner diagnostic logs
+        run: find /opt/actions-runner/_diag -name '*.log' -mtime +1 -delete || true
+
+      - name: Prune unused docker data
+        # Removes stopped containers, unused networks, unused images (old
+        # deploy tags), and build cache. Volumes are deliberately NOT pruned —
+        # the production database lives in one. Unused images are re-pullable
+        # from ghcr.io, so losing an old rollback tag here is recoverable.
+        run: docker system prune -af
+
+      - name: Rotate pre-deploy database backups
+        run: |
+          ls -1t /opt/betarouter-backups/pre-deploy-*.sql.gz 2>/dev/null | tail -n +8 | xargs -r rm -f
+
+      - name: Report disk usage after cleanup
+        run: |
+          df -h /
+          docker system df || true
