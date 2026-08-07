@@ -42,10 +42,11 @@ PLATFORM_CATALOG_BASE_READ_ENABLED=false
 PLATFORM_CATALOG_EMBEDDINGS_ROUTING_ENABLED=false
 PLATFORM_CATALOG_VIDEOS_ROUTING_ENABLED=false
 PLATFORM_CATALOG_SPEECH_ROUTING_ENABLED=false
+PLATFORM_CATALOG_TRANSCRIPTIONS_ROUTING_ENABLED=false
 PLATFORM_CATALOG_BREAKER_MODE=off
 ```
 
-The production Compose file forwards all eight flags to the unified service.
+The production Compose file forwards all nine flags to the unified service.
 Do not enable a later stage in Git or the image; change the deployment secret
 file so emergency rollback remains independent of a new build.
 
@@ -519,6 +520,51 @@ with `operation: "speech"`.
    routing and static billing without touching any other modality's
    enforcement.
 
+### Stage 15: Transcriptions modality rollout
+
+Transcriptions (speech-to-text, `/v1/audio/transcriptions`) follows the
+speech template: the surface bills synchronously at request time from the
+catalog-filtered mapping (audio-hour duration billing), so there is no
+billing replay to stage. Transcription requests enforce catalog decisions
+only when BOTH `PLATFORM_CATALOG_ROUTING_ENABLED` and
+`PLATFORM_CATALOG_TRANSCRIPTIONS_ROUTING_ENABLED` are true; until the
+second flag flips, transcriptions stay on legacy routing while shadow reads
+log every decision with `operation: "transcriptions"`.
+
+- **Probe cost.** The `minimal-transcriptions` probe transcribes one
+  synthesized half-second WAV clip through the exact deployment the mapping
+  routes to and passes on a JSON success body. The endpoint path and
+  multipart shape mirror the gateway's dispatch — a multipart POST to
+  `{baseUrl}/v1/stt` with no `model` form field, because the gateway never
+  sends one — so any deployment that needs a different shape fails the
+  probe rather than failing live traffic. Audio-hour billing prices the run
+  at fractions of a cent (half a second of audio).
+- **Prices.** Duration-billed mappings mirror `inputAudioHourPrice` as the
+  flat USD-per-hour `audioHour` unit (not a per-million unit), plus
+  `requestPrice` where set. Both flow through fixed and markup price
+  policies.
+
+1. Deploy with `PLATFORM_CATALOG_TRANSCRIPTIONS_ROUTING_ENABLED` unset
+   (off). With shadow reads on, expect `operation: "transcriptions"`
+   decisions with `allowed: false` until transcription mappings are
+   activated — the soak signal, not a fault. Transcription models (output
+   `["transcription"]`) previously had no probe profile and were held
+   disabled by the launch boundary.
+2. Activate each transcription mapping exactly as in Stage 8: credential, a
+   passed `minimal-transcriptions` test (a `minimal-chat` run never
+   satisfies a transcription mapping), price policy, enablement.
+3. When shadow decisions for transcription traffic are `allowed: true` with
+   the expected mapping ids and prices, set
+   `PLATFORM_CATALOG_TRANSCRIPTIONS_ROUTING_ENABLED=true` in the deployment
+   secret file (no rebuild) and restart. Verify one pinned transcription
+   per activated mapping through `/v1/audio/transcriptions` and compare the
+   log row's billed cost against the mapping's effective `audioHour` price
+   times the reported duration.
+4. Rollback for this stage alone: unset
+   `PLATFORM_CATALOG_TRANSCRIPTIONS_ROUTING_ENABLED`. Transcriptions return
+   to legacy routing and static billing without touching any other
+   modality's enforcement.
+
 ## Emergency rollback
 
 Apply the smallest safe rollback in this order:
@@ -529,7 +575,9 @@ Apply the smallest safe rollback in this order:
    `PLATFORM_CATALOG_EMBEDDINGS_ROUTING_ENABLED=false` — embeddings return
    to legacy routing without touching chat enforcement. If only videos are
    affected, set `PLATFORM_CATALOG_VIDEOS_ROUTING_ENABLED=false` likewise;
-   if only speech is affected, `PLATFORM_CATALOG_SPEECH_ROUTING_ENABLED=false`.
+   if only speech is affected, `PLATFORM_CATALOG_SPEECH_ROUTING_ENABLED=false`;
+   if only transcriptions are affected,
+   `PLATFORM_CATALOG_TRANSCRIPTIONS_ROUTING_ENABLED=false`.
 4. Set `PLATFORM_CATALOG_ROUTING_ENABLED=false`.
 5. If discovery is affected, set
    `PLATFORM_CATALOG_DISCOVERY_ENABLED=false` and

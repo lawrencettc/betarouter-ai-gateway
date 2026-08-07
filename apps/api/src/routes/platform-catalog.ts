@@ -9,6 +9,7 @@ import {
 	validateProviderImages,
 	validateProviderKey,
 	validateProviderSpeech,
+	validateProviderTranscriptions,
 	validateProviderVideos,
 } from "@betarouter/actions";
 import { redisClient } from "@betarouter/cache";
@@ -2060,6 +2061,7 @@ platformCatalog.openapi(
 									"minimal-images",
 									"minimal-videos",
 									"minimal-speech",
+									"minimal-transcriptions",
 								])
 								.optional(),
 						}),
@@ -2218,10 +2220,15 @@ platformCatalog.openapi(
 										...probeTarget,
 										...speechProbeHints(mapping),
 									})
-								: await validateProviderKey(...probeArgs, {
-										modelId: mapping.modelId,
-										...probeTarget,
-									});
+								: probeProfile === "minimal-transcriptions"
+									? await validateProviderTranscriptions(
+											...probeArgs,
+											probeTarget,
+										)
+									: await validateProviderKey(...probeArgs, {
+											modelId: mapping.modelId,
+											...probeTarget,
+										});
 			status = result.valid ? "passed" : "failed";
 			upstreamStatus = result.statusCode ?? null;
 			errorClass = result.valid ? null : "upstream_validation_failed";

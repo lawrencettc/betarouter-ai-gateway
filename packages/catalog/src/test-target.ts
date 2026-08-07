@@ -19,7 +19,8 @@ export type CatalogMappingTestProfileName =
 	| "minimal-embeddings"
 	| "minimal-images"
 	| "minimal-videos"
-	| "minimal-speech";
+	| "minimal-speech"
+	| "minimal-transcriptions";
 
 /**
  * Which probe profile a model's output modalities call for, shared by the
@@ -55,6 +56,9 @@ export function catalogMappingProfileForOutputs(
 	}
 	if (output.includes("audio")) {
 		return "minimal-speech";
+	}
+	if (output.includes("transcription")) {
+		return "minimal-transcriptions";
 	}
 	return null;
 }

@@ -17,7 +17,13 @@ import type {
 import type { ProviderModelMapping } from "@betarouter/models";
 
 interface EnforceCatalogRequestOptions {
-	operation: "chat" | "embeddings" | "videos" | "speech" | "deferred_non_chat";
+	operation:
+		| "chat"
+		| "embeddings"
+		| "videos"
+		| "speech"
+		| "transcriptions"
+		| "deferred_non_chat";
 	setHeader?: (name: string, value: string) => void;
 }
 
@@ -45,7 +51,8 @@ export function isCatalogOperationEnabled(
 		operation === "chat" ||
 		operation === "embeddings" ||
 		operation === "videos" ||
-		operation === "speech"
+		operation === "speech" ||
+		operation === "transcriptions"
 	);
 }
 
@@ -65,6 +72,7 @@ export function isCatalogRoutingEnforcedForOperation(
 		| "embeddingsRoutingEnabled"
 		| "videosRoutingEnabled"
 		| "speechRoutingEnabled"
+		| "transcriptionsRoutingEnabled"
 	>,
 ): boolean {
 	if (!flags.routingEnabled) {
@@ -81,6 +89,9 @@ export function isCatalogRoutingEnforcedForOperation(
 	}
 	if (operation === "speech") {
 		return flags.speechRoutingEnabled;
+	}
+	if (operation === "transcriptions") {
+		return flags.transcriptionsRoutingEnabled;
 	}
 	return false;
 }

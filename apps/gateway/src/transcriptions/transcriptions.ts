@@ -444,7 +444,7 @@ transcriptions.openapi(createTranscription, async (c): Promise<any> => {
 			region: explicitProvider ? legacyMapping.region : undefined,
 		},
 		{
-			operation: "deferred_non_chat",
+			operation: "transcriptions",
 			setHeader: (name, value) => c.header(name, value),
 		},
 	);
